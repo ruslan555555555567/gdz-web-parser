@@ -1,7 +1,14 @@
 import re
-from playwright.async_api import async_playwright
+from curl_cffi import requests
 from bs4 import BeautifulSoup
 from urllib.parse import urljoin
+
+# Заголовки как у настоящего Chrome
+HEADERS = {
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+    "Accept-Language": "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7",
+    "Referer": "https://gdz.ru/",
+}
 
 
 def extract_numbers(text: str) -> list[str]:
@@ -17,13 +24,22 @@ def extract_numbers(text: str) -> list[str]:
     return result
 
 
-async def _get_images(page, url: str) -> list[str]:
-    """Открывает страницу и достаёт картинки с решением."""
+def _get_images(url: str) -> list[str]:
+    """Открывает страницу через curl_cffi и достаёт картинки с решением."""
     try:
-        await page.goto(url, wait_until="domcontentloaded", timeout=60000)
-        await page.wait_for_timeout(4000)
-        html = await page.content()
-    except Exception:
+        # impersonate="chrome" — эмулируем TLS-отпечаток Chrome
+        r = requests.get(
+            url,
+            headers=HEADERS,
+            impersonate="chrome",
+            timeout=30,
+        )
+        if r.status_code != 200:
+            print(f"[parser] {url} → HTTP {r.status_code}")
+            return []
+        html = r.text
+    except Exception as e:
+        print(f"[parser] Ошибка запроса {url}: {e}")
         return []
 
     soup = BeautifulSoup(html, "lxml")
@@ -39,50 +55,42 @@ async def _get_images(page, url: str) -> list[str]:
 
 
 async def parse_tasks(jobs: list[dict]) -> list[dict]:
-    """jobs = [{"subject": "Алгебра", "url": "...", "numbers": "447,449"}]"""
+    """
+    jobs = [
+        {"subject": "Алгебра", "url": "https://gdz.ru/.../", "numbers": "447,449"},
+    ]
+    """
+    import asyncio
+
     results = []
+    for job in jobs:
+        subject = job["subject"]
+        base = job["url"]
+        if not base.endswith("/"):
+            base += "/"
 
-    async with async_playwright() as p:
-        browser = await p.chromium.launch(
-            headless=True,
-            args=['--disable-blink-features=AutomationControlled']
-        )
-        context = await browser.new_context(
-            user_agent='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
-            viewport={'width': 1920, 'height': 1080},
-            locale='ru-RU',
-        )
-        page = await context.new_page()
+        numbers = extract_numbers(job.get("numbers", ""))
+        for num in numbers:
+            candidates = [
+                urljoin(base, f"{num}-task/"),
+                urljoin(base, f"{num}-s/"),
+                urljoin(base, f"{num}-nom/"),
+                urljoin(base, f"task-{num}/"),
+            ]
+            images, used = [], candidates[0]
+            for url in candidates:
+                # Выполняем синхронный запрос в отдельном потоке, чтобы не блокировать event loop
+                images = await asyncio.to_thread(_get_images, url)
+                if images:
+                    used = url
+                    break
 
-        for job in jobs:
-            subject = job["subject"]
-            base = job["url"]
-            if not base.endswith("/"):
-                base += "/"
-
-            numbers = extract_numbers(job.get("numbers", ""))
-            for num in numbers:
-                candidates = [
-                    urljoin(base, f"{num}-task/"),
-                    urljoin(base, f"{num}-s/"),
-                    urljoin(base, f"{num}-nom/"),
-                    urljoin(base, f"task-{num}/"),
-                ]
-                images, used = [], candidates[0]
-                for url in candidates:
-                    images = await _get_images(page, url)
-                    if images:
-                        used = url
-                        break
-
-                results.append({
-                    "subject": subject,
-                    "number": num,
-                    "url": used,
-                    "images": images,
-                    "found": len(images) > 0,
-                })
-
-        await browser.close()
+            results.append({
+                "subject": subject,
+                "number": num,
+                "url": used,
+                "images": images,
+                "found": len(images) > 0,
+            })
 
     return results

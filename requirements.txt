@@ -2,7 +2,7 @@ fastapi
 uvicorn[standard]
 jinja2
 httpx
-playwright==1.63.0
+curl_cffi
 beautifulsoup4
 lxml
 pydantic

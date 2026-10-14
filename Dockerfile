@@ -1,6 +1,12 @@
-FROM mcr.microsoft.com/playwright/python:v1.63.0-noble
+FROM python:3.11-slim
 
 WORKDIR /app
+
+# Системные зависимости для curl_cffi (libcurl, SSL)
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libcurl4-openssl-dev \
+    libssl-dev \
+    && rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
