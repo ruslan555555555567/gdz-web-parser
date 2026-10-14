@@ -10,6 +10,13 @@ import asyncio
 
 from parser import parse_tasks
 
+# ⬇️ МЕНЯЙ ЭТО ЧИСЛО, КОГДА ЧТО-ТО ОБНОВЛЯЕШЬ
+VERSION = "1.0.0"
+
+# ⬇️ ТВОИ КОНТАКТЫ ДЛЯ ТЕХПОДДЕРЖКИ (замени на свои)
+SUPPORT_TELEGRAM = "https://t.me/Ruslan5242"
+SUPPORT_EMAIL = "Ruslanlhalin1234gmail.com"
+
 app = FastAPI(title="GDZ Парсер")
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
@@ -27,7 +34,20 @@ class ParseRequest(BaseModel):
 
 @app.get("/", response_class=HTMLResponse)
 async def index(request: Request):
-    return templates.TemplateResponse(request, "index.html")
+    return templates.TemplateResponse(
+        request,
+        "index.html",
+        {
+            "version": VERSION,
+            "telegram": SUPPORT_TELEGRAM,
+            "email": SUPPORT_EMAIL,
+        },
+    )
+
+
+@app.get("/api/version")
+async def get_version():
+    return {"version": VERSION}
 
 
 @app.post("/api/parse")

@@ -8,6 +8,11 @@
 </head>
 <body>
     <div class="container">
+        <div class="topbar">
+            <span class="version">v{{ version }}</span>
+            <button id="supportBtn" class="support-btn" title="Техподдержка">💬</button>
+        </div>
+
         <h1>📚 GDZ Парсер</h1>
         <p class="subtitle">7 класс · Введи номера заданий</p>
 
@@ -31,10 +36,32 @@
 
         <div id="status" class="status"></div>
         <div id="result" class="result"></div>
+
+        <footer class="footer">
+            <span>GDZ Парсер · v{{ version }}</span>
+        </footer>
+    </div>
+
+    <!-- Модалка техподдержки -->
+    <div id="supportModal" class="modal hidden">
+        <div class="modal-content">
+            <h3>💬 Техподдержка</h3>
+            <p class="modal-text">Нашли ошибку или есть предложение? Напишите нам:</p>
+            <div class="support-links">
+                <a href="{{ telegram }}" target="_blank" class="support-link tg">
+                    ✈️ Telegram
+                </a>
+                <a href="mailto:{{ email }}" class="support-link mail">
+                    ✉️ Email
+                </a>
+            </div>
+            <div class="modal-actions">
+                <button id="closeSupport" class="btn-secondary">Закрыть</button>
+            </div>
+        </div>
     </div>
 
     <script>
-        // Предметы "зашиты" в приложение
         const SUBJECTS = [
             {
                 id: 'algebra',
@@ -51,19 +78,23 @@
         const btn = document.getElementById('btn');
         const status = document.getElementById('status');
         const result = document.getElementById('result');
+        const supportBtn = document.getElementById('supportBtn');
+        const supportModal = document.getElementById('supportModal');
+        const closeSupport = document.getElementById('closeSupport');
+
+        supportBtn.addEventListener('click', () => supportModal.classList.remove('hidden'));
+        closeSupport.addEventListener('click', () => supportModal.classList.add('hidden'));
+        supportModal.addEventListener('click', (e) => {
+            if (e.target === supportModal) supportModal.classList.add('hidden');
+        });
 
         btn.addEventListener('click', async () => {
-            // Собираем задачи только из заполненных полей
             const jobs = [];
             SUBJECTS.forEach(s => {
                 const input = document.getElementById(s.id);
                 const numbers = input.value.trim();
                 if (numbers) {
-                    jobs.push({
-                        subject: s.subject,
-                        url: s.url,
-                        numbers: numbers,
-                    });
+                    jobs.push({ subject: s.subject, url: s.url, numbers: numbers });
                 }
             });
 
@@ -96,7 +127,6 @@
                     found > 0 ? 'success' : 'error'
                 );
 
-                // Группируем по предмету
                 const bySubject = {};
                 data.results.forEach(r => {
                     (bySubject[r.subject] = bySubject[r.subject] || []).push(r);
