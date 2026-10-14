@@ -32,7 +32,7 @@ def extract_numbers(text: str) -> list[str]:
 
 
 def _get_images(url: str) -> list[str]:
-    """Открывает страницу задания и возвращает первую картинку с решением."""
+    """Возвращает картинку с самым свежим годом издания."""
     try:
         r = requests.get(
             url,
@@ -49,19 +49,55 @@ def _get_images(url: str) -> list[str]:
         return []
 
     soup = BeautifulSoup(html, "lxml")
+
+    # Собираем все картинки с решением + ищем рядом с ними год
+    candidates = []  # [(год, url_картинки), ...]
+    seen = set()
+
     for img in soup.find_all("img"):
         src = img.get("src")
-        if src and "/attachments/images/tasks/" in src:
-            return [urljoin(url, src)]
-    return []
+        if not src or "/attachments/images/tasks/" not in src:
+            continue
+        full = urljoin(url, src)
+        if full in seen:
+            continue
+        seen.add(full)
+
+        # Ищем год в родительских блоках (до 4 уровней вверх)
+        year = None
+        parent = img.find_parent()
+        for _ in range(4):
+            if parent is None:
+                break
+            text = parent.get_text(" ", strip=True)
+            years = re.findall(r'\b(20\d{2})\b', text)
+            if years:
+                year = max(int(y) for y in years)
+                break
+            parent = parent.find_parent()
+
+        # Если не нашли — ищем в alt/title
+        if year is None:
+            alt = img.get("alt", "") + " " + img.get("title", "")
+            years = re.findall(r'\b(20\d{2})\b', alt)
+            if years:
+                year = max(int(y) for y in years)
+
+        candidates.append((year or 0, full))
+
+    if not candidates:
+        return []
+
+    # Берём картинку с максимальным годом. Если у всех 0 — берём последнюю.
+    candidates.sort(key=lambda x: x[0])
+    best_year, best_url = candidates[-1]
+    print(f"[parser] {url} -> выбрана картинка, год={best_year}")
+
+    return [best_url]
 
 
 async def parse_tasks(jobs: list[dict]) -> list[dict]:
-    """
-    jobs = [
-        {"subject": "Алгебра", "url": "https://gdz.ru/.../", "numbers": "447,449"},
-    ]
-    """
+    """jobs = [{"subject": "Алгебра", "url": "...", "numbers": "447,449"}]"""
     import asyncio
 
     results = []
