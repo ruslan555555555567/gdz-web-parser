@@ -1,11 +1,12 @@
 from io import BytesIO
 from typing import List
 from fastapi import FastAPI, HTTPException, Request
-from fastapi.responses import HTMLResponse, StreamingResponse
+from fastapi.responses import HTMLResponse, StreamingResponse, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
-import httpx
+from curl_cffi import requests as cffi_requests
+import asyncio
 
 from parser import parse_tasks
 
@@ -47,14 +48,24 @@ async def parse(req: ParseRequest):
 async def proxy_image(url: str):
     if not url.startswith("https://gdz.ru/"):
         raise HTTPException(400, "Недопустимый URL")
-    async with httpx.AsyncClient(timeout=30) as client:
-        r = await client.get(url, headers={
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
-            "Referer": "https://gdz.ru/",
-        })
+
+    def fetch():
+        return cffi_requests.get(
+            url,
+            impersonate="chrome",
+            timeout=30,
+            headers={"Referer": "https://gdz.ru/"},
+        )
+
+    try:
+        r = await asyncio.to_thread(fetch)
+    except Exception as e:
+        raise HTTPException(500, f"Ошибка загрузки: {e}")
+
     if r.status_code != 200:
         raise HTTPException(r.status_code, "Не удалось загрузить картинку")
-    return StreamingResponse(
-        BytesIO(r.content),
-        media_type=r.headers.get("content-type", "image/jpeg")
+
+    return Response(
+        content=r.content,
+        media_type=r.headers.get("content-type", "image/jpeg"),
     )

@@ -1,5 +1,4 @@
 import re
-import time
 from curl_cffi import requests
 from bs4 import BeautifulSoup
 from urllib.parse import urljoin
@@ -9,9 +8,6 @@ HEADERS = {
     "Accept-Language": "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7",
     "Referer": "https://gdz.ru/",
 }
-
-MIN_IMAGE_SIZE = 15000   # минимальный размер картинки-решения в байтах
-MAX_ATTEMPTS = 3         # сколько раз пробовать страницу
 
 
 def extract_numbers(text: str) -> list[str]:
@@ -35,66 +31,28 @@ def extract_numbers(text: str) -> list[str]:
     return result
 
 
-def _download_size(url: str) -> int:
-    """Скачивает картинку и возвращает её размер в байтах (0 при ошибке)."""
-    try:
-        r = requests.get(url, headers=HEADERS, impersonate="chrome", timeout=30)
-        if r.status_code == 200:
-            return len(r.content)
-    except Exception as e:
-        print(f"[parser] Ошибка скачивания {url}: {e}")
-    return 0
-
-
 def _get_images(url: str) -> list[str]:
-    """
-    Пробует до MAX_ATTEMPTS раз достать страницу задания.
-    Возвращает ссылку на первую картинку-решение (не заглушку).
-    """
-    for attempt in range(1, MAX_ATTEMPTS + 1):
-        try:
-            r = requests.get(
-                url,
-                headers=HEADERS,
-                impersonate="chrome",
-                timeout=30,
-            )
-            if r.status_code != 200:
-                print(f"[parser] {url} -> HTTP {r.status_code} (попытка {attempt})")
-                time.sleep(2)
-                continue
-            html = r.text
-        except Exception as e:
-            print(f"[parser] Ошибка {url} (попытка {attempt}): {e}")
-            time.sleep(2)
-            continue
+    """Открывает страницу задания и возвращает первую картинку с решением."""
+    try:
+        r = requests.get(
+            url,
+            headers=HEADERS,
+            impersonate="chrome",
+            timeout=20,
+        )
+        if r.status_code != 200:
+            print(f"[parser] {url} -> HTTP {r.status_code}")
+            return []
+        html = r.text
+    except Exception as e:
+        print(f"[parser] {url} -> {e}")
+        return []
 
-        soup = BeautifulSoup(html, "lxml")
-        candidates, seen = [], set()
-        for img in soup.find_all("img"):
-            src = img.get("src")
-            if src and "/attachments/images/tasks/" in src:
-                full = urljoin(url, src)
-                if full not in seen:
-                    seen.add(full)
-                    candidates.append(full)
-
-        if not candidates:
-            print(f"[parser] {url}: картинок не найдено (попытка {attempt})")
-            time.sleep(2)
-            continue
-
-        # Ищем первую картинку с реальным содержимым
-        for img_url in candidates:
-            size = _download_size(img_url)
-            print(f"[parser] {img_url} -> {size} байт")
-            if size >= MIN_IMAGE_SIZE:
-                return [img_url]
-
-        # Все картинки оказались заглушками — пробуем ещё раз
-        print(f"[parser] Все картинки мелкие, повтор через 2 сек... (попытка {attempt})")
-        time.sleep(2)
-
+    soup = BeautifulSoup(html, "lxml")
+    for img in soup.find_all("img"):
+        src = img.get("src")
+        if src and "/attachments/images/tasks/" in src:
+            return [urljoin(url, src)]
     return []
 
 
