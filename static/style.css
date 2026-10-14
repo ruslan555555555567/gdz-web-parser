@@ -199,6 +199,10 @@ h2 { font-size: 18px; color: #2d3748; margin-bottom: 12px; }
     font-size: 12px;
     font-weight: 600;
 }
+
+/* ═══════════════════════════════════════
+   КАРТИНКА С РЕШЕНИЕМ
+   ═══════════════════════════════════════ */
 .solution-img {
     width: 100%;
     height: auto;
@@ -207,8 +211,28 @@ h2 { font-size: 18px; color: #2d3748; margin-bottom: 12px; }
     margin-top: 8px;
     cursor: zoom-in;
     transition: opacity 0.2s;
+    background: #f7fafc;
+    min-height: 60px;
 }
 .solution-img:hover { opacity: 0.92; }
+
+/* Блок ошибки, если картинка не загрузилась */
+.img-error {
+    background: #fff5f5;
+    border: 2px solid #fed7d7;
+    border-radius: 8px;
+    padding: 20px;
+    text-align: center;
+    color: #c53030;
+    font-size: 14px;
+    line-height: 1.6;
+    margin-top: 8px;
+}
+.img-error-link {
+    color: #3182ce;
+    text-decoration: underline;
+    font-weight: 600;
+}
 
 /* ═══════════════════════════════════════
    ПОДВАЛ

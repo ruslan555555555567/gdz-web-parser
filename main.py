@@ -14,7 +14,7 @@ from motor.motor_asyncio import AsyncIOMotorClient
 from parser import parse_tasks
 
 # ⬇️ МЕНЯЙ ПРИ ОБНОВЛЕНИИ
-VERSION = "1.50"
+VERSION = "1.0.6"
 
 # ⬇️ ПАРОЛЬ ДЛЯ ВХОДА В АДМИНКУ
 ADMIN_PASSWORD = "gdz2024admin"

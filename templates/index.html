@@ -48,13 +48,10 @@
         </footer>
     </div>
 
-    <!-- Модалка техподдержки -->
     <div id="supportModal" class="modal hidden">
         <div class="modal-content">
             <h3>💬 Техподдержка</h3>
-            <p class="modal-text">
-                Нашли ошибку или есть вопрос? Напишите — мы ответим.
-            </p>
+            <p class="modal-text">Нашли ошибку или есть вопрос? Напишите — мы ответим.</p>
 
             <form id="feedbackForm">
                 <label class="form-label">
@@ -62,15 +59,12 @@
                     <textarea id="fbMessage" rows="4"
                         placeholder="Опишите проблему или вопрос..."></textarea>
                 </label>
-
                 <label class="form-label">
                     Контакт для связи <span class="hint">(необязательно)</span>
                     <input type="text" id="fbContact"
                         placeholder="Telegram, email или телефон">
                 </label>
-
                 <div id="fbStatus" class="fb-status"></div>
-
                 <div class="modal-actions">
                     <button type="button" id="closeSupport" class="btn-secondary">Отмена</button>
                     <button type="submit" id="fbSubmit" class="btn-primary">Отправить</button>
@@ -81,21 +75,12 @@
 
     <script>
         const SUBJECTS = [
-            {
-                id: 'algebra',
-                subject: 'Алгебра',
-                url: 'https://gdz.ru/class-7/algebra/makarichev-18/',
-            },
-            {
-                id: 'russian',
-                subject: 'Русский язык',
-                url: 'https://gdz.ru/class-7/russkii_yazik/baranova/',
-            },
-            {
-                id: 'geometry',
-                subject: 'Геометрия',
-                url: 'https://gdz.ru/class-7/geometria/merzljak/',
-            },
+            { id: 'algebra', subject: 'Алгебра',
+              url: 'https://gdz.ru/class-7/algebra/makarichev-18/' },
+            { id: 'russian', subject: 'Русский язык',
+              url: 'https://gdz.ru/class-7/russkii_yazik/baranova/' },
+            { id: 'geometry', subject: 'Геометрия',
+              url: 'https://gdz.ru/class-7/geometria/merzljak/' },
         ];
 
         const btn = document.getElementById('btn');
@@ -130,7 +115,6 @@
                 fbStatus.className = 'fb-status error';
                 return;
             }
-
             fbSubmit.disabled = true;
             fbStatus.textContent = '⏳ Отправляем...';
             fbStatus.className = 'fb-status loading';
@@ -145,18 +129,15 @@
                     }),
                 });
                 const data = await resp.json();
-
                 if (!resp.ok) {
                     fbStatus.textContent = '❌ ' + (data.detail || 'Ошибка');
                     fbStatus.className = 'fb-status error';
                     return;
                 }
-
                 fbStatus.textContent = '✅ Отправлено! Спасибо, ответим скоро.';
                 fbStatus.className = 'fb-status success';
                 fbMessage.value = '';
                 fbContact.value = '';
-
                 setTimeout(() => supportModal.classList.add('hidden'), 2000);
             } catch (err) {
                 fbStatus.textContent = '❌ Ошибка: ' + err.message;
@@ -221,12 +202,29 @@
                             <h3>№${r.number}</h3>
                             ${r.found ? '' : '<span class="badge">не найдено</span>'}
                         </div>`;
+
                         if (r.found) {
-                            r.images.forEach(imgUrl => {
+                            r.images.forEach((imgUrl) => {
                                 const img = document.createElement('img');
+                                // Загружаем через прокси на нашем сервере
                                 img.src = '/api/image?url=' + encodeURIComponent(imgUrl);
                                 img.loading = 'lazy';
                                 img.className = 'solution-img';
+                                img.alt = 'Решение №' + r.number;
+
+                                // Если не загрузилось — показываем ссылку
+                                img.addEventListener('error', () => {
+                                    const err = document.createElement('div');
+                                    err.className = 'img-error';
+                                    err.innerHTML = `
+                                        ⚠️ Не удалось загрузить картинку<br><br>
+                                        <a href="${imgUrl}" target="_blank" class="img-error-link">
+                                            Открыть напрямую с gdz.ru →
+                                        </a>
+                                    `;
+                                    img.replaceWith(err);
+                                }, { once: true });
+
                                 img.addEventListener('click',
                                     () => window.open(img.src, '_blank'));
                                 card.appendChild(img);
