@@ -47,7 +47,7 @@ def _get_images(url: str) -> list[str]:
             if full not in seen:
                 seen.add(full)
                 out.append(full)
-    return out
+    return out[:1]        # ← берём только первую картинку
 
 
 async def parse_tasks(jobs: list[dict]) -> list[dict]:
