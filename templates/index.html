@@ -9,75 +9,222 @@
 <body>
     <div class="container">
         <h1>📚 GDZ Парсер</h1>
-        <p class="subtitle">Вставь ссылку на задание с gdz.ru</p>
+        <p class="subtitle">Введи номера по каждому предмету</p>
 
-        <form id="form">
-            <input type="text" id="url"
-                placeholder="https://gdz.ru/class-7/algebra/makarichev-18/1-task/"
-                required>
-            <button type="submit" id="btn">Найти решение</button>
-        </form>
+        <section class="card">
+            <div class="section-header">
+                <h2>📖 Мои учебники</h2>
+                <button id="addBookBtn" class="btn-small">+ Добавить</button>
+            </div>
+            <div id="booksList" class="books-list"></div>
+            <p id="booksEmpty" class="empty">Учебники не добавлены. Нажми «+ Добавить».</p>
+        </section>
+
+        <section class="card" id="homeworkCard" style="display:none;">
+            <h2>📝 Домашка</h2>
+            <div id="inputsList" class="inputs-list"></div>
+            <button id="btn" class="btn-primary">🔍 Найти решения</button>
+        </section>
 
         <div id="status" class="status"></div>
         <div id="result" class="result"></div>
     </div>
 
+    <div id="modal" class="modal hidden">
+        <div class="modal-content">
+            <h3>Добавить учебник</h3>
+            <label>Название предмета
+                <input type="text" id="mSubject" placeholder="Алгебра">
+            </label>
+            <label>Тип заданий
+                <select id="mType">
+                    <option value="numbers">Номера заданий</option>
+                    <option value="pages">Страницы</option>
+                </select>
+            </label>
+            <label>Ссылка на учебник
+                <input type="text" id="mUrl"
+                    placeholder="https://gdz.ru/class-7/algebra/makarichev-18/">
+            </label>
+            <div class="modal-actions">
+                <button id="mCancel" class="btn-secondary">Отмена</button>
+                <button id="mSave" class="btn-primary">Сохранить</button>
+            </div>
+        </div>
+    </div>
+
     <script>
-        const form = document.getElementById('form');
-        const urlInput = document.getElementById('url');
+        const booksList = document.getElementById('booksList');
+        const booksEmpty = document.getElementById('booksEmpty');
+        const inputsList = document.getElementById('inputsList');
+        const homeworkCard = document.getElementById('homeworkCard');
+        const addBookBtn = document.getElementById('addBookBtn');
+        const modal = document.getElementById('modal');
+        const mSubject = document.getElementById('mSubject');
+        const mType = document.getElementById('mType');
+        const mUrl = document.getElementById('mUrl');
+        const mCancel = document.getElementById('mCancel');
+        const mSave = document.getElementById('mSave');
         const btn = document.getElementById('btn');
         const status = document.getElementById('status');
         const result = document.getElementById('result');
 
-        form.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const url = urlInput.value.trim();
-            if (!url) return;
+        let textbooks = JSON.parse(localStorage.getItem('gdz_textbooks') || '[]');
+        let inputsState = {};
+
+        function saveTextbooks() {
+            localStorage.setItem('gdz_textbooks', JSON.stringify(textbooks));
+        }
+
+        function renderBooks() {
+            booksList.innerHTML = '';
+            if (textbooks.length === 0) {
+                booksEmpty.style.display = 'block';
+                homeworkCard.style.display = 'none';
+                return;
+            }
+            booksEmpty.style.display = 'none';
+            homeworkCard.style.display = 'block';
+
+            textbooks.forEach((tb, i) => {
+                const row = document.createElement('div');
+                row.className = 'book-row';
+                row.innerHTML = `
+                    <div class="book-info">
+                        <strong>${tb.subject}</strong>
+                        <span class="book-url">${tb.url}</span>
+                    </div>
+                    <button class="btn-remove" data-i="${i}">🗑</button>
+                `;
+                booksList.appendChild(row);
+            });
+            document.querySelectorAll('.btn-remove').forEach(b => {
+                b.addEventListener('click', () => {
+                    textbooks.splice(parseInt(b.dataset.i), 1);
+                    saveTextbooks();
+                    renderBooks();
+                    renderInputs();
+                });
+            });
+        }
+
+        function renderInputs() {
+            inputsList.innerHTML = '';
+            textbooks.forEach((tb, i) => {
+                const placeholder = tb.type === 'pages'
+                    ? 'Страницы, например: 8, 10, 12'
+                    : 'Номера, например: 447, 449, 451(a,в,д), 455';
+                const row = document.createElement('div');
+                row.className = 'input-row';
+                row.innerHTML = `
+                    <label class="input-label">${tb.subject}</label>
+                    <input type="text" class="num-input" data-i="${i}"
+                        placeholder="${placeholder}"
+                        value="${inputsState[i] || ''}">
+                `;
+                inputsList.appendChild(row);
+            });
+            document.querySelectorAll('.num-input').forEach(inp => {
+                inp.addEventListener('input', e => {
+                    inputsState[e.target.dataset.i] = e.target.value;
+                });
+            });
+        }
+
+        renderBooks();
+        renderInputs();
+
+        addBookBtn.addEventListener('click', () => {
+            mSubject.value = '';
+            mUrl.value = '';
+            mType.value = 'numbers';
+            modal.classList.remove('hidden');
+        });
+        mCancel.addEventListener('click', () => modal.classList.add('hidden'));
+        mSave.addEventListener('click', () => {
+            const subject = mSubject.value.trim();
+            const url = mUrl.value.trim();
+            const type = mType.value;
+            if (!subject || !url) return alert('Заполни название и ссылку');
+            textbooks.push({subject, url, type});
+            saveTextbooks();
+            renderBooks();
+            renderInputs();
+            modal.classList.add('hidden');
+        });
+
+        btn.addEventListener('click', async () => {
+            const jobs = [];
+            textbooks.forEach((tb, i) => {
+                const numbers = (inputsState[i] || '').trim();
+                if (numbers) {
+                    jobs.push({subject: tb.subject, url: tb.url, numbers});
+                }
+            });
+
+            if (jobs.length === 0) {
+                return showStatus('⚠️ Введи номера хотя бы для одного предмета', 'error');
+            }
 
             btn.disabled = true;
-            status.textContent = '⏳ Загружаем страницу и ищем решения... (10-15 сек)';
-            status.className = 'status loading';
+            showStatus('⏳ Ищу решения... 20-60 секунд', 'loading');
             result.innerHTML = '';
 
             try {
                 const resp = await fetch('/api/parse', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({url})
+                    body: JSON.stringify({jobs})
                 });
                 const data = await resp.json();
 
-                if (!resp.ok) {
-                    status.textContent = '❌ ' + (data.detail || 'Ошибка');
-                    status.className = 'status error';
-                    return;
-                }
-                if (data.count === 0) {
-                    status.textContent = '🤷 Решения не найдены';
-                    status.className = 'status error';
-                    return;
-                }
+                if (!resp.ok) return showStatus('❌ ' + (data.detail || 'Ошибка'), 'error');
+                if (data.total === 0) return showStatus('🤷 Ничего не найдено', 'error');
 
-                status.textContent = `✅ Найдено решений: ${data.count}`;
-                status.className = 'status success';
+                const found = data.results.filter(r => r.found).length;
+                showStatus(`✅ Найдено ${found} из ${data.total}`, found > 0 ? 'success' : 'error');
 
-                data.images.forEach((imgUrl, i) => {
-                    const wrap = document.createElement('div');
-                    wrap.className = 'solution';
-                    wrap.innerHTML = `<h3>Решение ${i+1}</h3>`;
-                    const img = document.createElement('img');
-                    img.src = '/api/image?url=' + encodeURIComponent(imgUrl);
-                    img.loading = 'lazy';
-                    wrap.appendChild(img);
-                    result.appendChild(wrap);
+                const bySubject = {};
+                data.results.forEach(r => {
+                    (bySubject[r.subject] = bySubject[r.subject] || []).push(r);
+                });
+
+                Object.entries(bySubject).forEach(([subject, items]) => {
+                    const sec = document.createElement('section');
+                    sec.className = 'subject-block';
+                    sec.innerHTML = `<h2>${subject}</h2>`;
+                    items.forEach(r => {
+                        const card = document.createElement('div');
+                        card.className = 'task-card' + (r.found ? '' : ' not-found');
+                        card.innerHTML = `<div class="task-header">
+                            <h3>№${r.number}</h3>
+                            ${r.found ? '' : '<span class="badge">не найдено</span>'}
+                        </div>`;
+                        if (r.found) {
+                            r.images.forEach(imgUrl => {
+                                const img = document.createElement('img');
+                                img.src = '/api/image?url=' + encodeURIComponent(imgUrl);
+                                img.loading = 'lazy';
+                                img.className = 'solution-img';
+                                img.addEventListener('click', () => window.open(img.src, '_blank'));
+                                card.appendChild(img);
+                            });
+                        }
+                        sec.appendChild(card);
+                    });
+                    result.appendChild(sec);
                 });
             } catch (err) {
-                status.textContent = '❌ Ошибка: ' + err.message;
-                status.className = 'status error';
+                showStatus('❌ Ошибка: ' + err.message, 'error');
             } finally {
                 btn.disabled = false;
             }
         });
+
+        function showStatus(text, type) {
+            status.textContent = text;
+            status.className = 'status ' + type;
+        }
     </script>
 </body>
 </html>

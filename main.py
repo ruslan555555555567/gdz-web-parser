@@ -1,4 +1,5 @@
 from io import BytesIO
+from typing import List
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import HTMLResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
@@ -6,31 +7,40 @@ from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
 import httpx
 
-from parser import get_solution_images
+from parser import parse_tasks
 
-app = FastAPI(title="GDZ Parser")
+app = FastAPI(title="GDZ Парсер")
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
 
-class ParseRequest(BaseModel):
+class Job(BaseModel):
+    subject: str
     url: str
+    numbers: str = ""
+
+
+class ParseRequest(BaseModel):
+    jobs: List[Job]
 
 
 @app.get("/", response_class=HTMLResponse)
 async def index(request: Request):
-    return templates.TemplateResponse("index.html", {"request": request})
+    return templates.TemplateResponse(request, "index.html")
 
 
 @app.post("/api/parse")
 async def parse(req: ParseRequest):
-    if not req.url.startswith("https://gdz.ru/"):
-        raise HTTPException(400, "URL должен начинаться с https://gdz.ru/")
+    jobs = [j for j in req.jobs if j.numbers.strip()]
+    if not jobs:
+        raise HTTPException(400, "Введи номера хотя бы для одного предмета")
+
     try:
-        images = await get_solution_images(req.url)
+        results = await parse_tasks([j.dict() for j in jobs])
     except Exception as e:
         raise HTTPException(500, f"Ошибка парсинга: {e}")
-    return {"images": images, "count": len(images)}
+
+    return {"results": results, "total": len(results)}
 
 
 @app.get("/api/image")

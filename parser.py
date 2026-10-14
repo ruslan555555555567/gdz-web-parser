@@ -1,10 +1,47 @@
+import re
 from playwright.async_api import async_playwright
 from bs4 import BeautifulSoup
 from urllib.parse import urljoin
 
 
-async def get_solution_images(page_url: str) -> list[str]:
-    """Открывает страницу задания и возвращает ссылки на картинки с решением."""
+def extract_numbers(text: str) -> list[str]:
+    """Вытаскивает все числа из строки, убирает дубли."""
+    if not text:
+        return []
+    numbers = re.findall(r'\d{1,4}', text)
+    seen, result = set(), []
+    for n in numbers:
+        if n not in seen:
+            seen.add(n)
+            result.append(n)
+    return result
+
+
+async def _get_images(page, url: str) -> list[str]:
+    """Открывает страницу и достаёт картинки с решением."""
+    try:
+        await page.goto(url, wait_until="domcontentloaded", timeout=60000)
+        await page.wait_for_timeout(4000)
+        html = await page.content()
+    except Exception:
+        return []
+
+    soup = BeautifulSoup(html, "lxml")
+    out, seen = [], set()
+    for img in soup.find_all("img"):
+        src = img.get("src")
+        if src and "/attachments/images/tasks/" in src:
+            full = urljoin(url, src)
+            if full not in seen:
+                seen.add(full)
+                out.append(full)
+    return out
+
+
+async def parse_tasks(jobs: list[dict]) -> list[dict]:
+    """jobs = [{"subject": "Алгебра", "url": "...", "numbers": "447,449"}]"""
+    results = []
+
     async with async_playwright() as p:
         browser = await p.chromium.launch(
             headless=True,
@@ -16,21 +53,36 @@ async def get_solution_images(page_url: str) -> list[str]:
             locale='ru-RU',
         )
         page = await context.new_page()
-        try:
-            await page.goto(page_url, wait_until="domcontentloaded", timeout=60000)
-            await page.wait_for_timeout(8000)
-            html = await page.content()
-        finally:
-            await browser.close()
 
-    soup = BeautifulSoup(html, "lxml")
-    solutions = []
-    seen = set()
-    for img in soup.find_all("img"):
-        src = img.get("src")
-        if src and "/attachments/images/tasks/" in src:
-            full = urljoin(page_url, src)
-            if full not in seen:
-                seen.add(full)
-                solutions.append(full)
-    return solutions
+        for job in jobs:
+            subject = job["subject"]
+            base = job["url"]
+            if not base.endswith("/"):
+                base += "/"
+
+            numbers = extract_numbers(job.get("numbers", ""))
+            for num in numbers:
+                candidates = [
+                    urljoin(base, f"{num}-task/"),
+                    urljoin(base, f"{num}-s/"),
+                    urljoin(base, f"{num}-nom/"),
+                    urljoin(base, f"task-{num}/"),
+                ]
+                images, used = [], candidates[0]
+                for url in candidates:
+                    images = await _get_images(page, url)
+                    if images:
+                        used = url
+                        break
+
+                results.append({
+                    "subject": subject,
+                    "number": num,
+                    "url": used,
+                    "images": images,
+                    "found": len(images) > 0,
+                })
+
+        await browser.close()
+
+    return results
