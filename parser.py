@@ -3,7 +3,6 @@ from curl_cffi import requests
 from bs4 import BeautifulSoup
 from urllib.parse import urljoin
 
-# Заголовки как у настоящего Chrome
 HEADERS = {
     "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
     "Accept-Language": "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7",
@@ -12,7 +11,6 @@ HEADERS = {
 
 
 def extract_numbers(text: str) -> list[str]:
-    """Вытаскивает все числа из строки, убирает дубли."""
     if not text:
         return []
     numbers = re.findall(r'\d{1,4}', text)
@@ -25,9 +23,7 @@ def extract_numbers(text: str) -> list[str]:
 
 
 def _get_images(url: str) -> list[str]:
-    """Открывает страницу через curl_cffi и достаёт картинки с решением."""
     try:
-        # impersonate="chrome" — эмулируем TLS-отпечаток Chrome
         r = requests.get(
             url,
             headers=HEADERS,
@@ -35,7 +31,7 @@ def _get_images(url: str) -> list[str]:
             timeout=30,
         )
         if r.status_code != 200:
-            print(f"[parser] {url} → HTTP {r.status_code}")
+            print(f"[parser] {url} -> HTTP {r.status_code}")
             return []
         html = r.text
     except Exception as e:
@@ -55,11 +51,6 @@ def _get_images(url: str) -> list[str]:
 
 
 async def parse_tasks(jobs: list[dict]) -> list[dict]:
-    """
-    jobs = [
-        {"subject": "Алгебра", "url": "https://gdz.ru/.../", "numbers": "447,449"},
-    ]
-    """
     import asyncio
 
     results = []
@@ -79,7 +70,6 @@ async def parse_tasks(jobs: list[dict]) -> list[dict]:
             ]
             images, used = [], candidates[0]
             for url in candidates:
-                # Выполняем синхронный запрос в отдельном потоке, чтобы не блокировать event loop
                 images = await asyncio.to_thread(_get_images, url)
                 if images:
                     used = url
