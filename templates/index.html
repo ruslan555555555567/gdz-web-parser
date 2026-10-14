@@ -3,26 +3,29 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GDZ Парсер</title>
+    <title>GDZ Парсер — 7 класс</title>
     <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
     <div class="container">
         <h1>📚 GDZ Парсер</h1>
-        <p class="subtitle">Введи номера по каждому предмету</p>
+        <p class="subtitle">7 класс · Введи номера заданий</p>
 
         <section class="card">
-            <div class="section-header">
-                <h2>📖 Мои учебники</h2>
-                <button id="addBookBtn" class="btn-small">+ Добавить</button>
-            </div>
-            <div id="booksList" class="books-list"></div>
-            <p id="booksEmpty" class="empty">Учебники не добавлены. Нажми «+ Добавить».</p>
-        </section>
-
-        <section class="card" id="homeworkCard" style="display:none;">
             <h2>📝 Домашка</h2>
-            <div id="inputsList" class="inputs-list"></div>
+
+            <div class="input-row">
+                <label class="input-label">📐 Алгебра <span class="hint">(Макарычев)</span></label>
+                <input type="text" class="num-input" id="algebra"
+                    placeholder="447, 449, 451(а,в,д), 455, 459">
+            </div>
+
+            <div class="input-row">
+                <label class="input-label">📖 Русский язык <span class="hint">(Баранов)</span></label>
+                <input type="text" class="num-input" id="russian"
+                    placeholder="1, 5, 10 или стр. 8, 12">
+            </div>
+
             <button id="btn" class="btn-primary">🔍 Найти решения</button>
         </section>
 
@@ -30,144 +33,46 @@
         <div id="result" class="result"></div>
     </div>
 
-    <div id="modal" class="modal hidden">
-        <div class="modal-content">
-            <h3>Добавить учебник</h3>
-            <label>Название предмета
-                <input type="text" id="mSubject" placeholder="Алгебра">
-            </label>
-            <label>Тип заданий
-                <select id="mType">
-                    <option value="numbers">Номера заданий</option>
-                    <option value="pages">Страницы</option>
-                </select>
-            </label>
-            <label>Ссылка на учебник
-                <input type="text" id="mUrl"
-                    placeholder="https://gdz.ru/class-7/algebra/makarichev-18/">
-            </label>
-            <div class="modal-actions">
-                <button id="mCancel" class="btn-secondary">Отмена</button>
-                <button id="mSave" class="btn-primary">Сохранить</button>
-            </div>
-        </div>
-    </div>
-
     <script>
-        const booksList = document.getElementById('booksList');
-        const booksEmpty = document.getElementById('booksEmpty');
-        const inputsList = document.getElementById('inputsList');
-        const homeworkCard = document.getElementById('homeworkCard');
-        const addBookBtn = document.getElementById('addBookBtn');
-        const modal = document.getElementById('modal');
-        const mSubject = document.getElementById('mSubject');
-        const mType = document.getElementById('mType');
-        const mUrl = document.getElementById('mUrl');
-        const mCancel = document.getElementById('mCancel');
-        const mSave = document.getElementById('mSave');
+        // Предметы "зашиты" в приложение
+        const SUBJECTS = [
+            {
+                id: 'algebra',
+                subject: 'Алгебра',
+                url: 'https://gdz.ru/class-7/algebra/makarichev-18/',
+            },
+            {
+                id: 'russian',
+                subject: 'Русский язык',
+                url: 'https://gdz.ru/class-7/russkii_yazik/baranova/',
+            },
+        ];
+
         const btn = document.getElementById('btn');
         const status = document.getElementById('status');
         const result = document.getElementById('result');
 
-        let textbooks = JSON.parse(localStorage.getItem('gdz_textbooks') || '[]');
-        let inputsState = {};
-
-        function saveTextbooks() {
-            localStorage.setItem('gdz_textbooks', JSON.stringify(textbooks));
-        }
-
-        function renderBooks() {
-            booksList.innerHTML = '';
-            if (textbooks.length === 0) {
-                booksEmpty.style.display = 'block';
-                homeworkCard.style.display = 'none';
-                return;
-            }
-            booksEmpty.style.display = 'none';
-            homeworkCard.style.display = 'block';
-
-            textbooks.forEach((tb, i) => {
-                const row = document.createElement('div');
-                row.className = 'book-row';
-                row.innerHTML = `
-                    <div class="book-info">
-                        <strong>${tb.subject}</strong>
-                        <span class="book-url">${tb.url}</span>
-                    </div>
-                    <button class="btn-remove" data-i="${i}">🗑</button>
-                `;
-                booksList.appendChild(row);
-            });
-            document.querySelectorAll('.btn-remove').forEach(b => {
-                b.addEventListener('click', () => {
-                    textbooks.splice(parseInt(b.dataset.i), 1);
-                    saveTextbooks();
-                    renderBooks();
-                    renderInputs();
-                });
-            });
-        }
-
-        function renderInputs() {
-            inputsList.innerHTML = '';
-            textbooks.forEach((tb, i) => {
-                const placeholder = tb.type === 'pages'
-                    ? 'Страницы, например: 8, 10, 12'
-                    : 'Номера, например: 447, 449, 451(a,в,д), 455';
-                const row = document.createElement('div');
-                row.className = 'input-row';
-                row.innerHTML = `
-                    <label class="input-label">${tb.subject}</label>
-                    <input type="text" class="num-input" data-i="${i}"
-                        placeholder="${placeholder}"
-                        value="${inputsState[i] || ''}">
-                `;
-                inputsList.appendChild(row);
-            });
-            document.querySelectorAll('.num-input').forEach(inp => {
-                inp.addEventListener('input', e => {
-                    inputsState[e.target.dataset.i] = e.target.value;
-                });
-            });
-        }
-
-        renderBooks();
-        renderInputs();
-
-        addBookBtn.addEventListener('click', () => {
-            mSubject.value = '';
-            mUrl.value = '';
-            mType.value = 'numbers';
-            modal.classList.remove('hidden');
-        });
-        mCancel.addEventListener('click', () => modal.classList.add('hidden'));
-        mSave.addEventListener('click', () => {
-            const subject = mSubject.value.trim();
-            const url = mUrl.value.trim();
-            const type = mType.value;
-            if (!subject || !url) return alert('Заполни название и ссылку');
-            textbooks.push({subject, url, type});
-            saveTextbooks();
-            renderBooks();
-            renderInputs();
-            modal.classList.add('hidden');
-        });
-
         btn.addEventListener('click', async () => {
+            // Собираем задачи только из заполненных полей
             const jobs = [];
-            textbooks.forEach((tb, i) => {
-                const numbers = (inputsState[i] || '').trim();
+            SUBJECTS.forEach(s => {
+                const input = document.getElementById(s.id);
+                const numbers = input.value.trim();
                 if (numbers) {
-                    jobs.push({subject: tb.subject, url: tb.url, numbers});
+                    jobs.push({
+                        subject: s.subject,
+                        url: s.url,
+                        numbers: numbers,
+                    });
                 }
             });
 
             if (jobs.length === 0) {
-                return showStatus('⚠️ Введи номера хотя бы для одного предмета', 'error');
+                return showStatus('⚠️ Введи номера хотя бы в одном поле', 'error');
             }
 
             btn.disabled = true;
-            showStatus('⏳ Ищу решения... 20-60 секунд', 'loading');
+            showStatus('⏳ Ищу решения... Это займёт 10–60 секунд', 'loading');
             result.innerHTML = '';
 
             try {
@@ -178,12 +83,20 @@
                 });
                 const data = await resp.json();
 
-                if (!resp.ok) return showStatus('❌ ' + (data.detail || 'Ошибка'), 'error');
-                if (data.total === 0) return showStatus('🤷 Ничего не найдено', 'error');
+                if (!resp.ok) {
+                    return showStatus('❌ ' + (data.detail || 'Ошибка'), 'error');
+                }
+                if (data.total === 0) {
+                    return showStatus('🤷 Ничего не найдено', 'error');
+                }
 
                 const found = data.results.filter(r => r.found).length;
-                showStatus(`✅ Найдено ${found} из ${data.total}`, found > 0 ? 'success' : 'error');
+                showStatus(
+                    `✅ Найдено ${found} из ${data.total}`,
+                    found > 0 ? 'success' : 'error'
+                );
 
+                // Группируем по предмету
                 const bySubject = {};
                 data.results.forEach(r => {
                     (bySubject[r.subject] = bySubject[r.subject] || []).push(r);
@@ -206,7 +119,8 @@
                                 img.src = '/api/image?url=' + encodeURIComponent(imgUrl);
                                 img.loading = 'lazy';
                                 img.className = 'solution-img';
-                                img.addEventListener('click', () => window.open(img.src, '_blank'));
+                                img.addEventListener('click',
+                                    () => window.open(img.src, '_blank'));
                                 card.appendChild(img);
                             });
                         }
