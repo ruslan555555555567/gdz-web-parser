@@ -10,7 +10,9 @@ body {
 
 .container { max-width: 900px; margin: 0 auto; }
 
-/* Верхняя панель с версией и поддержкой */
+/* ═══════════════════════════════════════
+   ВЕРХНЯЯ ПАНЕЛЬ — версия + кнопка поддержки
+   ═══════════════════════════════════════ */
 .topbar {
     display: flex;
     justify-content: space-between;
@@ -38,12 +40,17 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
+    text-decoration: none;
+    color: inherit;
 }
 .support-btn:hover {
     border-color: #4299e1;
     background: #ebf8ff;
 }
 
+/* ═══════════════════════════════════════
+   ЗАГОЛОВКИ
+   ═══════════════════════════════════════ */
 h1 { font-size: 28px; margin-bottom: 8px; text-align: center; }
 h2 { font-size: 18px; color: #2d3748; margin-bottom: 12px; }
 .subtitle {
@@ -53,6 +60,9 @@ h2 { font-size: 18px; color: #2d3748; margin-bottom: 12px; }
     font-size: 15px;
 }
 
+/* ═══════════════════════════════════════
+   КАРТОЧКИ (блоки)
+   ═══════════════════════════════════════ */
 .card {
     background: white;
     border-radius: 12px;
@@ -61,25 +71,25 @@ h2 { font-size: 18px; color: #2d3748; margin-bottom: 12px; }
     box-shadow: 0 2px 8px rgba(0,0,0,0.06);
 }
 
+/* ═══════════════════════════════════════
+   ФОРМА ДОМАШКИ (поля ввода)
+   ═══════════════════════════════════════ */
 .input-row {
     display: flex;
     flex-direction: column;
     gap: 6px;
     margin-bottom: 16px;
 }
-
 .input-label {
     font-size: 15px;
     font-weight: 600;
     color: #2d3748;
 }
-
 .hint {
     font-size: 13px;
     font-weight: 400;
     color: #a0aec0;
 }
-
 .num-input {
     width: 100%;
     padding: 12px 14px;
@@ -91,6 +101,9 @@ h2 { font-size: 18px; color: #2d3748; margin-bottom: 12px; }
 }
 .num-input:focus { border-color: #4299e1; }
 
+/* ═══════════════════════════════════════
+   КНОПКИ
+   ═══════════════════════════════════════ */
 .btn-primary {
     width: 100%;
     padding: 14px;
@@ -117,6 +130,21 @@ h2 { font-size: 18px; color: #2d3748; margin-bottom: 12px; }
 }
 .btn-secondary:hover { background: #cbd5e0; }
 
+.btn-small {
+    padding: 8px 14px;
+    background: #4299e1;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+}
+.btn-small:hover { background: #3182ce; }
+
+/* ═══════════════════════════════════════
+   СТАТУС (сообщения загрузки/ошибки)
+   ═══════════════════════════════════════ */
 .status {
     padding: 12px 16px;
     border-radius: 10px;
@@ -129,6 +157,9 @@ h2 { font-size: 18px; color: #2d3748; margin-bottom: 12px; }
 .status.success { background: #f0fff4; color: #276749; }
 .status.error   { background: #fff5f5; color: #c53030; }
 
+/* ═══════════════════════════════════════
+   РЕЗУЛЬТАТЫ (решения по предметам)
+   ═══════════════════════════════════════ */
 .subject-block {
     background: white;
     border-radius: 12px;
@@ -168,7 +199,6 @@ h2 { font-size: 18px; color: #2d3748; margin-bottom: 12px; }
     font-size: 12px;
     font-weight: 600;
 }
-
 .solution-img {
     width: 100%;
     height: auto;
@@ -180,6 +210,9 @@ h2 { font-size: 18px; color: #2d3748; margin-bottom: 12px; }
 }
 .solution-img:hover { opacity: 0.92; }
 
+/* ═══════════════════════════════════════
+   ПОДВАЛ
+   ═══════════════════════════════════════ */
 .footer {
     text-align: center;
     padding: 20px 0;
@@ -188,7 +221,9 @@ h2 { font-size: 18px; color: #2d3748; margin-bottom: 12px; }
     font-family: monospace;
 }
 
-/* Модалка */
+/* ═══════════════════════════════════════
+   МОДАЛКА (всплывающее окно)
+   ═══════════════════════════════════════ */
 .modal {
     position: fixed;
     inset: 0;
@@ -204,7 +239,7 @@ h2 { font-size: 18px; color: #2d3748; margin-bottom: 12px; }
     background: white;
     border-radius: 12px;
     padding: 24px;
-    max-width: 400px;
+    max-width: 450px;
     width: 100%;
 }
 .modal-content h3 { margin-bottom: 12px; }
@@ -213,29 +248,117 @@ h2 { font-size: 18px; color: #2d3748; margin-bottom: 12px; }
     color: #4a5568;
     margin-bottom: 16px;
 }
-.support-links {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    margin-bottom: 16px;
-}
-.support-link {
-    display: block;
-    padding: 12px 16px;
-    border-radius: 10px;
-    text-decoration: none;
-    font-weight: 600;
-    text-align: center;
-    transition: opacity 0.2s;
-}
-.support-link.tg { background: #0088cc; color: white; }
-.support-link.mail { background: #edf2f7; color: #2d3748; }
-.support-link:hover { opacity: 0.9; }
 .modal-actions {
     display: flex;
+    gap: 10px;
     justify-content: flex-end;
+    margin-top: 16px;
 }
 
+/* ═══════════════════════════════════════
+   ФОРМА ТЕХПОДДЕРЖКИ (внутри модалки)
+   ═══════════════════════════════════════ */
+.form-label {
+    display: block;
+    margin-bottom: 14px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #4a5568;
+}
+.form-label .required { color: #e53e3e; }
+.form-label .hint {
+    font-weight: 400;
+    color: #a0aec0;
+    font-size: 12px;
+}
+.form-label textarea,
+.form-label input[type="text"] {
+    width: 100%;
+    padding: 10px 12px;
+    margin-top: 6px;
+    border: 2px solid #e2e8f0;
+    border-radius: 8px;
+    font-size: 14px;
+    font-family: inherit;
+    outline: none;
+    resize: vertical;
+}
+.form-label textarea:focus,
+.form-label input[type="text"]:focus {
+    border-color: #4299e1;
+}
+
+.fb-status {
+    font-size: 13px;
+    padding: 8px 12px;
+    border-radius: 8px;
+    margin-bottom: 12px;
+    display: none;
+}
+.fb-status:not(:empty) { display: block; }
+.fb-status.loading { background: #ebf8ff; color: #2b6cb0; }
+.fb-status.success { background: #f0fff4; color: #276749; }
+.fb-status.error   { background: #fff5f5; color: #c53030; }
+
+/* ═══════════════════════════════════════
+   АДМИНКА (/admin)
+   ═══════════════════════════════════════ */
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.message-card {
+    background: #f7fafc;
+    border-left: 4px solid #4299e1;
+    border-radius: 8px;
+    padding: 12px 14px;
+    margin-bottom: 10px;
+}
+.msg-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+    font-size: 12px;
+}
+.msg-date { color: #718096; }
+.msg-ver {
+    background: #edf2f7;
+    padding: 2px 8px;
+    border-radius: 4px;
+    color: #4a5568;
+    font-family: monospace;
+}
+.msg-body {
+    color: #2d3748;
+    font-size: 15px;
+    line-height: 1.5;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+.msg-contact {
+    margin-top: 8px;
+    font-size: 13px;
+    color: #4a5568;
+    padding-top: 8px;
+    border-top: 1px solid #e2e8f0;
+}
+
+.empty {
+    color: #a0aec0;
+    text-align: center;
+    padding: 30px 20px;
+    font-size: 14px;
+}
+
+.hidden { display: none !important; }
+
+/* ═══════════════════════════════════════
+   МОБИЛЬНАЯ ВЕРСИЯ
+   ═══════════════════════════════════════ */
 @media (max-width: 600px) {
     h1 { font-size: 22px; }
     body { padding: 12px; }

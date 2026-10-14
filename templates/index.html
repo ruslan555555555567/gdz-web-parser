@@ -31,6 +31,12 @@
                     placeholder="1, 5, 10 или стр. 8, 12">
             </div>
 
+            <div class="input-row">
+                <label class="input-label">📐 Геометрия <span class="hint">(Мерзляк)</span></label>
+                <input type="text" class="num-input" id="geometry"
+                    placeholder="1, 5, 10, 15">
+            </div>
+
             <button id="btn" class="btn-primary">🔍 Найти решения</button>
         </section>
 
@@ -46,18 +52,30 @@
     <div id="supportModal" class="modal hidden">
         <div class="modal-content">
             <h3>💬 Техподдержка</h3>
-            <p class="modal-text">Нашли ошибку или есть предложение? Напишите нам:</p>
-            <div class="support-links">
-                <a href="{{ telegram }}" target="_blank" class="support-link tg">
-                    ✈️ Telegram
-                </a>
-                <a href="mailto:{{ email }}" class="support-link mail">
-                    ✉️ Email
-                </a>
-            </div>
-            <div class="modal-actions">
-                <button id="closeSupport" class="btn-secondary">Закрыть</button>
-            </div>
+            <p class="modal-text">
+                Нашли ошибку или есть вопрос? Напишите — мы ответим.
+            </p>
+
+            <form id="feedbackForm">
+                <label class="form-label">
+                    Сообщение <span class="required">*</span>
+                    <textarea id="fbMessage" rows="4"
+                        placeholder="Опишите проблему или вопрос..."></textarea>
+                </label>
+
+                <label class="form-label">
+                    Контакт для связи <span class="hint">(необязательно)</span>
+                    <input type="text" id="fbContact"
+                        placeholder="Telegram, email или телефон">
+                </label>
+
+                <div id="fbStatus" class="fb-status"></div>
+
+                <div class="modal-actions">
+                    <button type="button" id="closeSupport" class="btn-secondary">Отмена</button>
+                    <button type="submit" id="fbSubmit" class="btn-primary">Отправить</button>
+                </div>
+            </form>
         </div>
     </div>
 
@@ -73,6 +91,11 @@
                 subject: 'Русский язык',
                 url: 'https://gdz.ru/class-7/russkii_yazik/baranova/',
             },
+            {
+                id: 'geometry',
+                subject: 'Геометрия',
+                url: 'https://gdz.ru/class-7/geometria/merzljak/',
+            },
         ];
 
         const btn = document.getElementById('btn');
@@ -81,11 +104,66 @@
         const supportBtn = document.getElementById('supportBtn');
         const supportModal = document.getElementById('supportModal');
         const closeSupport = document.getElementById('closeSupport');
+        const feedbackForm = document.getElementById('feedbackForm');
+        const fbMessage = document.getElementById('fbMessage');
+        const fbContact = document.getElementById('fbContact');
+        const fbSubmit = document.getElementById('fbSubmit');
+        const fbStatus = document.getElementById('fbStatus');
 
-        supportBtn.addEventListener('click', () => supportModal.classList.remove('hidden'));
-        closeSupport.addEventListener('click', () => supportModal.classList.add('hidden'));
+        supportBtn.addEventListener('click', () => {
+            supportModal.classList.remove('hidden');
+            fbStatus.textContent = '';
+            fbStatus.className = 'fb-status';
+        });
+        closeSupport.addEventListener('click', () => {
+            supportModal.classList.add('hidden');
+        });
         supportModal.addEventListener('click', (e) => {
             if (e.target === supportModal) supportModal.classList.add('hidden');
+        });
+
+        feedbackForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const message = fbMessage.value.trim();
+            if (!message) {
+                fbStatus.textContent = '⚠️ Напиши сообщение';
+                fbStatus.className = 'fb-status error';
+                return;
+            }
+
+            fbSubmit.disabled = true;
+            fbStatus.textContent = '⏳ Отправляем...';
+            fbStatus.className = 'fb-status loading';
+
+            try {
+                const resp = await fetch('/api/feedback', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        message: message,
+                        contact: fbContact.value.trim(),
+                    }),
+                });
+                const data = await resp.json();
+
+                if (!resp.ok) {
+                    fbStatus.textContent = '❌ ' + (data.detail || 'Ошибка');
+                    fbStatus.className = 'fb-status error';
+                    return;
+                }
+
+                fbStatus.textContent = '✅ Отправлено! Спасибо, ответим скоро.';
+                fbStatus.className = 'fb-status success';
+                fbMessage.value = '';
+                fbContact.value = '';
+
+                setTimeout(() => supportModal.classList.add('hidden'), 2000);
+            } catch (err) {
+                fbStatus.textContent = '❌ Ошибка: ' + err.message;
+                fbStatus.className = 'fb-status error';
+            } finally {
+                fbSubmit.disabled = false;
+            }
         });
 
         btn.addEventListener('click', async () => {

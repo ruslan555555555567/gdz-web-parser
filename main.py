@@ -1,3 +1,5 @@
+import os
+from datetime import datetime
 from io import BytesIO
 from typing import List
 from fastapi import FastAPI, HTTPException, Request
@@ -7,15 +9,21 @@ from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
 from curl_cffi import requests as cffi_requests
 import asyncio
+from motor.motor_asyncio import AsyncIOMotorClient
 
 from parser import parse_tasks
 
-# ⬇️ МЕНЯЙ ЭТО ЧИСЛО, КОГДА ЧТО-ТО ОБНОВЛЯЕШЬ
-VERSION = "1.0.0"
+# ⬇️ МЕНЯЙ ПРИ ОБНОВЛЕНИИ
+VERSION = "1.3.0"
 
-# ⬇️ ТВОИ КОНТАКТЫ ДЛЯ ТЕХПОДДЕРЖКИ (замени на свои)
-SUPPORT_TELEGRAM = "https://t.me/Ruslan5242"
-SUPPORT_EMAIL = "Ruslanlhalin1234gmail.com"
+# ⬇️ ПАРОЛЬ ДЛЯ ВХОДА В АДМИНКУ
+ADMIN_PASSWORD = "gdz2024admin"
+
+# ⬇️ ПОДКЛЮЧЕНИЕ К MONGODB (переменная окружения MONGO_URL на Render)
+MONGO_URL = os.getenv("MONGO_URL")
+client = AsyncIOMotorClient(MONGO_URL)
+db = client.gdz_parser
+feedback_collection = db.feedback
 
 app = FastAPI(title="GDZ Парсер")
 app.mount("/static", StaticFiles(directory="static"), name="static")
@@ -32,16 +40,26 @@ class ParseRequest(BaseModel):
     jobs: List[Job]
 
 
+class FeedbackRequest(BaseModel):
+    message: str
+    contact: str = ""
+
+
 @app.get("/", response_class=HTMLResponse)
 async def index(request: Request):
     return templates.TemplateResponse(
         request,
         "index.html",
-        {
-            "version": VERSION,
-            "telegram": SUPPORT_TELEGRAM,
-            "email": SUPPORT_EMAIL,
-        },
+        {"version": VERSION},
+    )
+
+
+@app.get("/admin", response_class=HTMLResponse)
+async def admin_page(request: Request):
+    return templates.TemplateResponse(
+        request,
+        "admin.html",
+        {"version": VERSION},
     )
 
 
@@ -62,6 +80,45 @@ async def parse(req: ParseRequest):
         raise HTTPException(500, f"Ошибка парсинга: {e}")
 
     return {"results": results, "total": len(results)}
+
+
+@app.post("/api/feedback")
+async def feedback(req: FeedbackRequest):
+    if not req.message.strip():
+        raise HTTPException(400, "Сообщение пустое")
+
+    doc = {
+        "date": datetime.now().strftime("%d.%m.%Y %H:%M"),
+        "message": req.message.strip(),
+        "contact": req.contact.strip(),
+        "version": VERSION,
+    }
+    await feedback_collection.insert_one(doc)
+    return {"ok": True}
+
+
+@app.post("/api/admin/messages")
+async def admin_messages(data: dict):
+    password = (data or {}).get("password", "")
+    if password != ADMIN_PASSWORD:
+        raise HTTPException(401, "Неверный пароль")
+
+    cursor = feedback_collection.find().sort("_id", -1)
+    messages = []
+    async for doc in cursor:
+        doc["_id"] = str(doc["_id"])
+        messages.append(doc)
+    return {"messages": messages, "total": len(messages)}
+
+
+@app.post("/api/admin/clear")
+async def admin_clear(data: dict):
+    password = (data or {}).get("password", "")
+    if password != ADMIN_PASSWORD:
+        raise HTTPException(401, "Неверный пароль")
+
+    await feedback_collection.delete_many({})
+    return {"ok": True}
 
 
 @app.get("/api/image")

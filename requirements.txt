@@ -6,3 +6,5 @@ curl_cffi
 beautifulsoup4
 lxml
 pydantic
+pillow
+motor
