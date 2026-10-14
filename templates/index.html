@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GDZ Парсер</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>📚 GDZ Парсер</h1>
+        <p class="subtitle">Вставь ссылку на задание с gdz.ru</p>
+
+        <form id="form">
+            <input type="text" id="url"
+                placeholder="https://gdz.ru/class-7/algebra/makarichev-18/1-task/"
+                required>
+            <button type="submit" id="btn">Найти решение</button>
+        </form>
+
+        <div id="status" class="status"></div>
+        <div id="result" class="result"></div>
+    </div>
+
+    <script>
+        const form = document.getElementById('form');
+        const urlInput = document.getElementById('url');
+        const btn = document.getElementById('btn');
+        const status = document.getElementById('status');
+        const result = document.getElementById('result');
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const url = urlInput.value.trim();
+            if (!url) return;
+
+            btn.disabled = true;
+            status.textContent = '⏳ Загружаем страницу и ищем решения... (10-15 сек)';
+            status.className = 'status loading';
+            result.innerHTML = '';
+
+            try {
+                const resp = await fetch('/api/parse', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({url})
+                });
+                const data = await resp.json();
+
+                if (!resp.ok) {
+                    status.textContent = '❌ ' + (data.detail || 'Ошибка');
+                    status.className = 'status error';
+                    return;
+                }
+                if (data.count === 0) {
+                    status.textContent = '🤷 Решения не найдены';
+                    status.className = 'status error';
+                    return;
+                }
+
+                status.textContent = `✅ Найдено решений: ${data.count}`;
+                status.className = 'status success';
+
+                data.images.forEach((imgUrl, i) => {
+                    const wrap = document.createElement('div');
+                    wrap.className = 'solution';
+                    wrap.innerHTML = `<h3>Решение ${i+1}</h3>`;
+                    const img = document.createElement('img');
+                    img.src = '/api/image?url=' + encodeURIComponent(imgUrl);
+                    img.loading = 'lazy';
+                    wrap.appendChild(img);
+                    result.appendChild(wrap);
+                });
+            } catch (err) {
+                status.textContent = '❌ Ошибка: ' + err.message;
+                status.className = 'status error';
+            } finally {
+                btn.disabled = false;
+            }
+        });
+    </script>
+</body>
+</html>
