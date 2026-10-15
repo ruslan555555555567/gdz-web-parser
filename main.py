@@ -14,12 +14,12 @@ import asyncio
 from parser import parse_tasks
 
 # ⬇️ МЕНЯЙ ПРИ ОБНОВЛЕНИИ
-VERSION = "1.8.0"
+VERSION = "1.9.0"
 
-# ⬇️ ПАРОЛЬ ДЛЯ ВХОДА В АДМИНКУ
+# ⬇️ ПАРОЛЬ ДЛЯ АДМИНКИ
 ADMIN_PASSWORD = "gdz2024admin"
 
-# ⬇️ ПОДКЛЮЧЕНИЕ К MONGODB
+# ⬇️ MONGODB
 MONGO_URL = os.getenv("MONGO_URL")
 
 feedback_collection = None
@@ -101,7 +101,7 @@ async def feedback(req: FeedbackRequest):
         try:
             await feedback_collection.insert_one(doc)
         except Exception as e:
-            print(f"[main] Ошибка сохранения в MongoDB: {e}")
+            print(f"[main] Ошибка MongoDB: {e}")
 
     return {"ok": True}
 
@@ -135,13 +135,18 @@ async def admin_clear(data: dict):
 
 
 @app.get("/api/image")
-async def proxy_image(url: str):
-    """Скачивает картинку с gdz.ru и сжимает её для быстрой отдачи."""
+async def proxy_image(url: str, w: int = 1000):
+    """
+    Скачивает картинку, сжимает до w пикселей и отдаёт с кэшем.
+    w — желаемая ширина (по умолчанию 1000px).
+    """
     if not url.startswith("https://gdz.ru/"):
         raise HTTPException(400, "Недопустимый URL")
 
+    # Ограничим ширину разумными пределами
+    w = max(400, min(w, 2000))
+
     def fetch_and_compress():
-        # 1. Скачиваем картинку
         r = cffi_requests.get(
             url,
             impersonate="chrome",
@@ -151,32 +156,34 @@ async def proxy_image(url: str):
         if r.status_code != 200:
             return None, f"HTTP {r.status_code}", None
 
-        content_type = r.headers.get("content-type", "image/jpeg")
-
-        # 2. Пробуем сжать через Pillow
+        # Пробуем сжать
         try:
             img = Image.open(BytesIO(r.content))
 
-            # Уменьшаем до 1200px по ширине
-            if img.width > 1200:
-                ratio = 1200 / img.width
-                new_h = int(img.height * ratio)
-                img = img.resize((1200, new_h), Image.LANCZOS)
+            # Уменьшаем, если картинка больше заданной ширины
+            if img.width > w:
+                ratio = w / img.width
+                img = img.resize(
+                    (w, int(img.height * ratio)),
+                    Image.LANCZOS
+                )
 
-            # Конвертируем в RGB (если PNG с прозрачностью)
+            # Конвертируем в RGB (для PNG с альфа-каналом)
             if img.mode in ("RGBA", "P", "LA"):
                 bg = Image.new("RGB", img.size, (255, 255, 255))
-                bg.paste(img, mask=img.split()[-1] if img.mode in ("RGBA", "LA") else None)
+                if img.mode in ("RGBA", "LA"):
+                    bg.paste(img, mask=img.split()[-1])
+                else:
+                    bg.paste(img)
                 img = bg
 
             buf = BytesIO()
-            img.save(buf, format="JPEG", quality=82, optimize=True)
+            img.save(buf, format="JPEG", quality=80, optimize=True)
             buf.seek(0)
             return buf.read(), None, "image/jpeg"
         except Exception as e:
-            # Если не получилось сжать — отдаём оригинал
-            print(f"[main] Не удалось сжать: {e}")
-            return r.content, None, content_type
+            print(f"[main] Сжатие упало: {e}")
+            return r.content, None, r.headers.get("content-type", "image/jpeg")
 
     try:
         data, err, content_type = await asyncio.to_thread(fetch_and_compress)
@@ -189,5 +196,6 @@ async def proxy_image(url: str):
     return Response(
         content=data,
         media_type=content_type or "image/jpeg",
+        # Кэш на сутки — повторные заходы грузятся мгновенно
         headers={"Cache-Control": "public, max-age=86400"},
     )

@@ -146,17 +146,36 @@
             }
         });
 
-        // ─── ЗАГРУЗКА КАРТИНОК ЧЕРЕЗ ОЧЕРЕДЬ ─────────────
-        // Не более 1 картинки одновременно — чтобы Render не задыхался
-        let imageQueue = Promise.resolve();
+        // ─── ЗАГРУЗКА КАРТИНОК (по 2 одновременно) ──────
+        let activeLoads = 0;
+        const MAX_PARALLEL = 2;
+        const pendingQueue = [];
+
+        function scheduleLoad(fn) {
+            return new Promise((resolve) => {
+                pendingQueue.push({ fn, resolve });
+                processQueue();
+            });
+        }
+
+        function processQueue() {
+            while (activeLoads < MAX_PARALLEL && pendingQueue.length > 0) {
+                const { fn, resolve } = pendingQueue.shift();
+                activeLoads++;
+                fn().then(resolve).finally(() => {
+                    activeLoads--;
+                    processQueue();
+                });
+            }
+        }
 
         function loadImage(img, imgUrl, retries = 3) {
-            imageQueue = imageQueue.then(() => new Promise((resolve) => {
+            scheduleLoad(() => new Promise((resolve) => {
                 let attempt = 0;
 
                 function tryLoad() {
                     img.src = '/api/image?url=' + encodeURIComponent(imgUrl)
-                        + '&t=' + Date.now();
+                        + '&w=1000&t=' + Date.now();
                 }
 
                 function onErr() {
@@ -167,7 +186,7 @@
                         setTimeout(() => {
                             img.addEventListener('error', onErr, { once: true });
                             tryLoad();
-                        }, 2000);
+                        }, 1500);
                     } else {
                         const err = document.createElement('div');
                         err.className = 'img-error';
@@ -210,7 +229,6 @@
             btn.disabled = true;
             result.innerHTML = '';
 
-            // Таймер прогресса
             let seconds = 0;
             showStatus('⏳ Ищу решения... 0 сек', 'loading');
             const timer = setInterval(() => {
