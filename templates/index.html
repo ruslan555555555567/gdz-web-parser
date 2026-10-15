@@ -95,14 +95,13 @@
         const fbSubmit = document.getElementById('fbSubmit');
         const fbStatus = document.getElementById('fbStatus');
 
+        // ─── ТЕХПОДДЕРЖКА ────────────────────────────────
         supportBtn.addEventListener('click', () => {
             supportModal.classList.remove('hidden');
             fbStatus.textContent = '';
             fbStatus.className = 'fb-status';
         });
-        closeSupport.addEventListener('click', () => {
-            supportModal.classList.add('hidden');
-        });
+        closeSupport.addEventListener('click', () => supportModal.classList.add('hidden'));
         supportModal.addEventListener('click', (e) => {
             if (e.target === supportModal) supportModal.classList.add('hidden');
         });
@@ -134,7 +133,7 @@
                     fbStatus.className = 'fb-status error';
                     return;
                 }
-                fbStatus.textContent = '✅ Отправлено! Спасибо, ответим скоро.';
+                fbStatus.textContent = '✅ Отправлено! Спасибо.';
                 fbStatus.className = 'fb-status success';
                 fbMessage.value = '';
                 fbContact.value = '';
@@ -147,6 +146,47 @@
             }
         });
 
+        // ─── ЗАГРУЗКА КАРТИНКИ С АВТО-ПОВТОРОМ ───────────
+        function loadImage(img, imgUrl, retries = 3) {
+            let attempt = 0;
+            img.src = '/api/image?url=' + encodeURIComponent(imgUrl) + '&t=' + Date.now();
+            img.addEventListener('error', function onErr() {
+                img.removeEventListener('error', onErr);
+                attempt++;
+                if (attempt < retries) {
+                    console.log(`Повтор загрузки ${attempt}/${retries}: ${imgUrl}`);
+                    setTimeout(() => {
+                        img.src = '/api/image?url=' + encodeURIComponent(imgUrl)
+                            + '&t=' + Date.now();
+                        img.addEventListener('error', onErr);
+                    }, 2000);
+                } else {
+                    // Все попытки кончились — показываем ошибку
+                    const err = document.createElement('div');
+                    err.className = 'img-error';
+                    err.innerHTML = `
+                        ⚠️ Не удалось загрузить картинку после ${retries} попыток<br><br>
+                        <a href="${imgUrl}" target="_blank" class="img-error-link">
+                            Открыть напрямую с gdz.ru →
+                        </a>
+                        <br><br>
+                        <button class="btn-retry" onclick="
+                            this.parentElement.replaceWith(this.closest('.task-card')
+                            .querySelector('img')||document.createElement('img'))">
+                            🔄 Попробовать снова
+                        </button>
+                    `;
+                    img.replaceWith(err);
+                }
+            }, { once: true });
+
+            // Если загрузилось — снимаем класс "loading"
+            img.addEventListener('load', () => {
+                img.classList.remove('img-loading');
+            }, { once: true });
+        }
+
+        // ─── ОСНОВНОЙ ПОИСК С ТАЙМЕРОМ ───────────────────
         btn.addEventListener('click', async () => {
             const jobs = [];
             SUBJECTS.forEach(s => {
@@ -162,8 +202,20 @@
             }
 
             btn.disabled = true;
-            showStatus('⏳ Ищу решения... Это займёт 10–60 секунд', 'loading');
             result.innerHTML = '';
+
+            // Таймер прогресса
+            let seconds = 0;
+            showStatus('⏳ Ищу решения... 0 сек', 'loading');
+            const timer = setInterval(() => {
+                seconds++;
+                let hint = '';
+                if (seconds < 5) hint = 'Проверяем задания...';
+                else if (seconds < 15) hint = 'Загружаем страницы...';
+                else if (seconds < 30) hint = 'Обрабатываем решения...';
+                else hint = 'Осталось немного...';
+                showStatus(`⏳ Ищу решения... ${seconds} сек (${hint})`, 'loading');
+            }, 1000);
 
             try {
                 const resp = await fetch('/api/parse', {
@@ -172,6 +224,7 @@
                     body: JSON.stringify({jobs})
                 });
                 const data = await resp.json();
+                clearInterval(timer);
 
                 if (!resp.ok) {
                     return showStatus('❌ ' + (data.detail || 'Ошибка'), 'error');
@@ -182,7 +235,7 @@
 
                 const found = data.results.filter(r => r.found).length;
                 showStatus(
-                    `✅ Найдено ${found} из ${data.total}`,
+                    `✅ Найдено ${found} из ${data.total} за ${seconds} сек`,
                     found > 0 ? 'success' : 'error'
                 );
 
@@ -206,27 +259,11 @@
                         if (r.found) {
                             r.images.forEach((imgUrl) => {
                                 const img = document.createElement('img');
-                                // Загружаем через прокси на нашем сервере
-                                img.src = '/api/image?url=' + encodeURIComponent(imgUrl);
-                                img.loading = 'lazy';
-                                img.className = 'solution-img';
+                                img.className = 'solution-img img-loading';
                                 img.alt = 'Решение №' + r.number;
-
-                                // Если не загрузилось — показываем ссылку
-                                img.addEventListener('error', () => {
-                                    const err = document.createElement('div');
-                                    err.className = 'img-error';
-                                    err.innerHTML = `
-                                        ⚠️ Не удалось загрузить картинку<br><br>
-                                        <a href="${imgUrl}" target="_blank" class="img-error-link">
-                                            Открыть напрямую с gdz.ru →
-                                        </a>
-                                    `;
-                                    img.replaceWith(err);
-                                }, { once: true });
-
                                 img.addEventListener('click',
                                     () => window.open(img.src, '_blank'));
+                                loadImage(img, imgUrl);
                                 card.appendChild(img);
                             });
                         }
@@ -235,7 +272,9 @@
                     result.appendChild(sec);
                 });
             } catch (err) {
-                showStatus('❌ Ошибка: ' + err.message, 'error');
+                clearInterval(timer);
+                showStatus('❌ Ошибка: ' + err.message
+                    + '. Попробуй ещё раз — сервер мог засыпать.', 'error');
             } finally {
                 btn.disabled = false;
             }
