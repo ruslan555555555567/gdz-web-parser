@@ -222,9 +222,54 @@ h2 { font-size: 18px; color: #2d3748; margin-bottom: 12px; }
     animation: shimmer 1.5s infinite;
     min-height: 120px;
 }
+
+/* Картинка в процессе повтора (после заглушки) */
+.img-retrying {
+    background: linear-gradient(90deg, #fef3c7 0%, #fde68a 50%, #fef3c7 100%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+    min-height: 120px;
+    position: relative;
+}
+.img-retrying::after {
+    content: '⏳ Пробуем снова...';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: #92400e;
+    font-size: 14px;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
 @keyframes shimmer {
     0% { background-position: -200% 0; }
     100% { background-position: 200% 0; }
+}
+
+/* Длинная картинка — ограничиваем ширину */
+.solution-img.img-tall {
+    max-width: 500px;
+    margin: 8px auto;
+    border: 2px solid #fed7d7;
+    cursor: zoom-in;
+}
+
+/* Плашка над длинной картинкой */
+.img-tall-notice {
+    background: #fef3c7;
+    color: #92400e;
+    padding: 8px 12px;
+    border-radius: 8px;
+    font-size: 13px;
+    margin: 8px 0;
+    text-align: center;
+}
+.img-tall-open {
+    color: #92400e;
+    font-weight: 700;
+    text-decoration: underline;
 }
 
 /* Блок ошибки картинки */
@@ -257,7 +302,7 @@ h2 { font-size: 18px; color: #2d3748; margin-bottom: 12px; }
 }
 
 /* ═══════════════════════════════════════
-   МОДАЛКА
+   МОДАЛКА (общая)
    ═══════════════════════════════════════ */
 .modal {
     position: fixed;
@@ -289,6 +334,41 @@ h2 { font-size: 18px; color: #2d3748; margin-bottom: 12px; }
     justify-content: flex-end;
     margin-top: 16px;
 }
+
+/* ═══════════════════════════════════════
+   МОДАЛКА ДЛЯ ПРОСМОТРА КАРТИНКИ
+   ═══════════════════════════════════════ */
+.image-modal-content {
+    position: relative;
+    max-width: 95vw;
+    max-height: 95vh;
+    overflow: auto;
+    background: #1a202c;
+    border-radius: 12px;
+    padding: 20px;
+}
+.image-modal-content img {
+    display: block;
+    max-width: 100%;
+    height: auto;
+    margin: 0 auto;
+}
+.image-modal-close {
+    position: sticky;
+    top: 0;
+    float: right;
+    background: #e53e3e;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 36px;
+    height: 36px;
+    font-size: 18px;
+    cursor: pointer;
+    z-index: 10;
+    margin-bottom: 10px;
+}
+.image-modal-close:hover { background: #c53030; }
 
 /* ═══════════════════════════════════════
    ФОРМА ТЕХПОДДЕРЖКИ
@@ -398,4 +478,6 @@ h2 { font-size: 18px; color: #2d3748; margin-bottom: 12px; }
     h1 { font-size: 22px; }
     body { padding: 12px; }
     .card { padding: 16px; }
+    .solution-img.img-tall { max-width: 100%; }
+    .image-modal-content { padding: 12px; }
 }

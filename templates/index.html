@@ -73,6 +73,14 @@
         </div>
     </div>
 
+    <!-- Модалка для просмотра картинки -->
+    <div id="imageModal" class="modal hidden">
+        <div class="image-modal-content">
+            <button id="closeImageModal" class="image-modal-close">✕</button>
+            <img id="imageModalImg" src="" alt="">
+        </div>
+    </div>
+
     <script>
         const SUBJECTS = [
             { id: 'algebra', subject: 'Алгебра',
@@ -94,6 +102,29 @@
         const fbContact = document.getElementById('fbContact');
         const fbSubmit = document.getElementById('fbSubmit');
         const fbStatus = document.getElementById('fbStatus');
+
+        const imageModal = document.getElementById('imageModal');
+        const imageModalImg = document.getElementById('imageModalImg');
+        const closeImageModal = document.getElementById('closeImageModal');
+
+        // ─── МОДАЛКА ДЛЯ КАРТИНКИ ────────────────────────
+        function openImageModal(src) {
+            imageModalImg.src = src;
+            imageModal.classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+        }
+        function closeModal() {
+            imageModal.classList.add('hidden');
+            imageModalImg.src = '';
+            document.body.style.overflow = '';
+        }
+        closeImageModal.addEventListener('click', closeModal);
+        imageModal.addEventListener('click', (e) => {
+            if (e.target === imageModal) closeModal();
+        });
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') closeModal();
+        });
 
         // ─── ТЕХПОДДЕРЖКА ────────────────────────────────
         supportBtn.addEventListener('click', () => {
@@ -146,20 +177,19 @@
             }
         });
 
-        // ─── ЗАГРУЗКА КАРТИНОК (по 3 параллельно) ───────
+        // ─── ЗАГРУЗКА КАРТИНОК ───────────────────────────
         let activeLoads = 0;
         const MAX_PARALLEL = 3;
         const pendingQueue = [];
 
-        // Сколько раз повторять, если пришла заглушка
         const PLACEHOLDER_RETRIES = 4;
-        // Пауза между повторами (мс), растёт с каждой попыткой
         const RETRY_DELAYS = [500, 1000, 2000, 3000];
-        // Картинка считается заглушкой, если меньше этого размера
         const MIN_REAL_WIDTH = 200;
         const MIN_REAL_HEIGHT = 150;
-        // Жёсткий таймаут на одну попытку загрузки (мс)
         const LOAD_TIMEOUT = 15000;
+
+        // Порог "длинной" картинки (высота > 3x ширины)
+        const TALL_RATIO = 3.0;
 
         function scheduleLoad(fn) {
             return new Promise((resolve) => {
@@ -179,7 +209,6 @@
             }
         }
 
-        // Отрисовка блока ошибки (когда все попытки исчерпаны)
         function showImageError(img, imgUrl) {
             const err = document.createElement('div');
             err.className = 'img-error';
@@ -192,12 +221,9 @@
             img.replaceWith(err);
         }
 
-        // Обновить текст «пробуем снова N/M»
         function showRetryLabel(img, attempt) {
             img.classList.remove('img-loading');
             img.classList.add('img-retrying');
-            // Временно ставим текст через псевдоэлемент нельзя,
-            // поэтому показываем через title и alt
             img.alt = `⏳ Пробуем снова (${attempt}/${PLACEHOLDER_RETRIES})...`;
         }
 
@@ -208,15 +234,13 @@
                 function tryOnce() {
                     let timeoutId = null;
 
-                    // Сбрасываем предыдущие обработчики
-                    img.classList.remove('img-retrying');
+                    img.classList.remove('img-retrying', 'img-tall');
                     img.classList.add('img-loading');
                     img.alt = 'Загрузка решения...';
 
-                    // Жёсткий таймаут — если сервер молчит 15 сек
                     timeoutId = setTimeout(() => {
                         timeoutId = null;
-                        console.log(`Timeout на попытке ${placeholderAttempt + 1}: ${imgUrl}`);
+                        console.log(`Timeout: ${imgUrl}`);
                         onFail('Превышено время ожидания');
                     }, LOAD_TIMEOUT);
 
@@ -231,30 +255,57 @@
 
                         const w = img.naturalWidth;
                         const h = img.naturalHeight;
-                        console.log(`Загружено: ${w}×${h} (попытка ${placeholderAttempt + 1}): ${imgUrl}`);
+                        console.log(`Загружено: ${w}×${h}: ${imgUrl}`);
 
-                        // Проверяем, не заглушка ли
+                        // Заглушка?
                         if (w < MIN_REAL_WIDTH || h < MIN_REAL_HEIGHT) {
                             placeholderAttempt++;
-
                             if (placeholderAttempt <= PLACEHOLDER_RETRIES) {
-                                // Ждём и пробуем снова
                                 const delay = RETRY_DELAYS[placeholderAttempt - 1] || 3000;
-                                console.log(`Заглушка! Повтор через ${delay}мс (${placeholderAttempt}/${PLACEHOLDER_RETRIES})`);
                                 showRetryLabel(img, placeholderAttempt);
                                 setTimeout(tryOnce, delay);
                                 return;
                             }
-
-                            // Все попытки исчерпаны — показываем ошибку
                             showImageError(img, imgUrl);
                             resolve();
                             return;
                         }
 
-                        // Реальная картинка — готово!
+                        // ─── РЕАЛЬНАЯ КАРТИНКА ───
                         img.classList.remove('img-loading', 'img-retrying');
-                        img.alt = 'Решение';
+
+                        // Проверяем — длинная?
+                        const ratio = h / w;
+                        if (ratio >= TALL_RATIO) {
+                            // Длинная картинка — узкая + метка
+                            img.classList.add('img-tall');
+                            img.alt = `Длинное решение (${h}px)`;
+
+                            // Добавляем предупреждение над картинкой
+                            const wrap = img.parentElement;
+                            if (wrap && !wrap.querySelector('.img-tall-notice')) {
+                                const notice = document.createElement('div');
+                                notice.className = 'img-tall-notice';
+                                notice.innerHTML = `
+                                    📏 <b>Большое решение</b>
+                                    (${Math.round(h / w * 10) / 10}× длиннее ширины) —
+                                    <a href="#" class="img-tall-open">открыть полностью</a>
+                                `;
+                                wrap.insertBefore(notice, img);
+                                notice.querySelector('.img-tall-open')
+                                    .addEventListener('click', (e) => {
+                                        e.preventDefault();
+                                        openImageModal(img.src);
+                                    });
+                            }
+
+                            // Клик по картинке — открываем в модалке
+                            img.addEventListener('click', () => openImageModal(img.src));
+                        } else {
+                            // Обычная картинка — открываем в модалке
+                            img.addEventListener('click', () => openImageModal(img.src));
+                        }
+
                         resolve();
                     }
 
@@ -266,23 +317,19 @@
                     img.addEventListener('load', onLoad, { once: true });
                     img.addEventListener('error', onError, { once: true });
 
-                    // Параметр t=Date.now() — обход кэша браузера
                     img.src = '/api/image?url=' + encodeURIComponent(imgUrl)
                         + '&w=1000&t=' + Date.now();
                 }
 
                 function onFail(reason) {
                     placeholderAttempt++;
-
                     if (placeholderAttempt <= PLACEHOLDER_RETRIES) {
                         const delay = RETRY_DELAYS[placeholderAttempt - 1] || 3000;
-                        console.log(`${reason} — повтор через ${delay}мс (${placeholderAttempt}/${PLACEHOLDER_RETRIES})`);
+                        console.log(`${reason} — повтор ${delay}мс`);
                         showRetryLabel(img, placeholderAttempt);
                         setTimeout(tryOnce, delay);
                         return;
                     }
-
-                    console.log(`Все попытки исчерпаны: ${imgUrl}`);
                     showImageError(img, imgUrl);
                     resolve();
                 }
@@ -313,11 +360,10 @@
             showStatus('⏳ Ищу решения... 0 сек', 'loading');
             const timer = setInterval(() => {
                 seconds++;
-                let hint = '';
-                if (seconds < 5) hint = 'Проверяем задания...';
-                else if (seconds < 15) hint = 'Загружаем страницы...';
-                else if (seconds < 30) hint = 'Обрабатываем решения...';
-                else hint = 'Осталось немного...';
+                let hint = seconds < 5 ? 'Проверяем задания...'
+                         : seconds < 15 ? 'Загружаем страницы...'
+                         : seconds < 30 ? 'Обрабатываем решения...'
+                         : 'Осталось немного...';
                 showStatus(`⏳ Ищу решения... ${seconds} сек (${hint})`, 'loading');
             }, 1000);
 
@@ -365,8 +411,6 @@
                                 const img = document.createElement('img');
                                 img.className = 'solution-img img-loading';
                                 img.alt = 'Загрузка...';
-                                img.addEventListener('click',
-                                    () => window.open(img.src, '_blank'));
                                 loadImage(img, imgUrl);
                                 card.appendChild(img);
                             });
