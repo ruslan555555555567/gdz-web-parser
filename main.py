@@ -10,29 +10,53 @@ from pydantic import BaseModel
 from curl_cffi import requests as cffi_requests
 from PIL import Image
 import asyncio
+import asyncpg
 
 from parser import parse_tasks
 
-VERSION = "2.3.0"
-ADMIN_PASSWORD = "gdz2024admin"
-MONGO_URL = os.getenv("MONGO_URL")
+# ⬇️ МЕНЯЙ ПРИ ОБНОВЛЕНИИ
+VERSION = "4.0.0"
 
-feedback_collection = None
-if MONGO_URL:
+# ⬇️ ПАРОЛЬ ДЛЯ АДМИНКИ (ОБЯЗАТЕЛЬНО СМЕНИ!)
+ADMIN_PASSWORD = "gdz2024admin"
+
+# ⬇️ ПОДКЛЮЧЕНИЕ К ONREZA (PostgreSQL)
+DATABASE_URL = os.getenv("DATABASE_URL")
+
+db_pool = None
+
+
+async def init_db():
+    """Создаёт пул соединений и таблицу feedback, если её нет."""
+    global db_pool
+    if not DATABASE_URL:
+        print("[main] DATABASE_URL не задан — работа без БД")
+        return
     try:
-        from motor.motor_asyncio import AsyncIOMotorClient
-        client = AsyncIOMotorClient(MONGO_URL)
-        db = client.gdz_parser
-        feedback_collection = db.feedback
+        db_pool = await asyncpg.create_pool(
+            DATABASE_URL, min_size=1, max_size=5, ssl="require"
+        )
+        async with db_pool.acquire() as conn:
+            await conn.execute("""
+                CREATE TABLE IF NOT EXISTS feedback (
+                    id SERIAL PRIMARY KEY,
+                    date TEXT,
+                    message TEXT,
+                    contact TEXT,
+                    version TEXT
+                )
+            """)
+        print("[main] PostgreSQL подключена, таблица feedback готова")
     except Exception as e:
-        print(f"[main] MongoDB не подключилась: {e}")
+        print(f"[main] Ошибка подключения к PostgreSQL: {e}")
+        db_pool = None
+
 
 app = FastAPI(title="GDZ Парсер")
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
-
-# Заглушка 1x1 белая — отдаём при ошибке, чтобы img не ломался
+# Заглушка-картинка 1x1 (белая) — возвращаем вместо ошибки
 PLACEHOLDER_JPEG = bytes.fromhex(
     "ffd8ffe000104a46494600010100000100010000ffdb004300ffffffffffffff"
     "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
@@ -64,6 +88,11 @@ class FeedbackRequest(BaseModel):
     contact: str = ""
 
 
+@app.on_event("startup")
+async def startup():
+    await init_db()
+
+
 @app.get("/", response_class=HTMLResponse)
 async def index(request: Request):
     return templates.TemplateResponse(
@@ -88,12 +117,10 @@ async def parse(req: ParseRequest):
     jobs = [j for j in req.jobs if j.numbers.strip()]
     if not jobs:
         raise HTTPException(400, "Введи номера хотя бы для одного предмета")
-
     try:
         results = await parse_tasks([j.dict() for j in jobs])
     except Exception as e:
         raise HTTPException(500, f"Ошибка парсинга: {e}")
-
     return {"results": results, "total": len(results)}
 
 
@@ -102,17 +129,20 @@ async def feedback(req: FeedbackRequest):
     if not req.message.strip():
         raise HTTPException(400, "Сообщение пустое")
 
-    doc = {
-        "date": datetime.now().strftime("%d.%m.%Y %H:%M"),
-        "message": req.message.strip(),
-        "contact": req.contact.strip(),
-        "version": VERSION,
-    }
-    if feedback_collection is not None:
+    if db_pool is not None:
         try:
-            await feedback_collection.insert_one(doc)
+            async with db_pool.acquire() as conn:
+                await conn.execute(
+                    "INSERT INTO feedback (date, message, contact, version) "
+                    "VALUES ($1, $2, $3, $4)",
+                    datetime.now().strftime("%d.%m.%Y %H:%M"),
+                    req.message.strip(),
+                    req.contact.strip(),
+                    VERSION,
+                )
         except Exception as e:
-            print(f"[main] Ошибка MongoDB: {e}")
+            print(f"[main] Ошибка записи в БД: {e}")
+
     return {"ok": True}
 
 
@@ -121,13 +151,26 @@ async def admin_messages(data: dict):
     password = (data or {}).get("password", "")
     if password != ADMIN_PASSWORD:
         raise HTTPException(401, "Неверный пароль")
-    if feedback_collection is None:
+
+    if db_pool is None:
         return {"messages": [], "total": 0}
-    cursor = feedback_collection.find().sort("_id", -1)
-    messages = []
-    async for doc in cursor:
-        doc["_id"] = str(doc["_id"])
-        messages.append(doc)
+
+    async with db_pool.acquire() as conn:
+        rows = await conn.fetch(
+            "SELECT id, date, message, contact, version "
+            "FROM feedback ORDER BY id DESC"
+        )
+
+    messages = [
+        {
+            "id": r["id"],
+            "date": r["date"],
+            "message": r["message"],
+            "contact": r["contact"],
+            "version": r["version"],
+        }
+        for r in rows
+    ]
     return {"messages": messages, "total": len(messages)}
 
 
@@ -136,17 +179,15 @@ async def admin_clear(data: dict):
     password = (data or {}).get("password", "")
     if password != ADMIN_PASSWORD:
         raise HTTPException(401, "Неверный пароль")
-    if feedback_collection is not None:
-        await feedback_collection.delete_many({})
+
+    if db_pool is not None:
+        async with db_pool.acquire() as conn:
+            await conn.execute("DELETE FROM feedback")
     return {"ok": True}
 
 
 @app.get("/api/image")
 async def proxy_image(url: str, w: int = 1000):
-    """
-    Скачивает картинку с gdz.ru и сжимает её.
-    ОДНА попытка, timeout 8 сек. При ошибке — заглушка.
-    """
     if not url.startswith("https://gdz.ru/"):
         raise HTTPException(400, "Недопустимый URL")
 
@@ -156,7 +197,7 @@ async def proxy_image(url: str, w: int = 1000):
         r = cffi_requests.get(
             url,
             impersonate="chrome",
-            timeout=8,                            # одна попытка, быстро
+            timeout=8,
             headers={"Referer": "https://gdz.ru/"},
         )
         if r.status_code != 200:
