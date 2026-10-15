@@ -146,10 +146,20 @@
             }
         });
 
-        // ─── ЗАГРУЗКА КАРТИНОК (по 3 одновременно) ──────
+        // ─── ЗАГРУЗКА КАРТИНОК (по 3 параллельно) ───────
         let activeLoads = 0;
         const MAX_PARALLEL = 3;
         const pendingQueue = [];
+
+        // Сколько раз повторять, если пришла заглушка
+        const PLACEHOLDER_RETRIES = 4;
+        // Пауза между повторами (мс), растёт с каждой попыткой
+        const RETRY_DELAYS = [500, 1000, 2000, 3000];
+        // Картинка считается заглушкой, если меньше этого размера
+        const MIN_REAL_WIDTH = 200;
+        const MIN_REAL_HEIGHT = 150;
+        // Жёсткий таймаут на одну попытку загрузки (мс)
+        const LOAD_TIMEOUT = 15000;
 
         function scheduleLoad(fn) {
             return new Promise((resolve) => {
@@ -169,45 +179,115 @@
             }
         }
 
-        function loadImage(img, imgUrl, retries = 2) {
-            scheduleLoad(() => new Promise((resolve) => {
-                let attempt = 0;
+        // Отрисовка блока ошибки (когда все попытки исчерпаны)
+        function showImageError(img, imgUrl) {
+            const err = document.createElement('div');
+            err.className = 'img-error';
+            err.innerHTML = `
+                ⚠️ Не удалось получить решение после ${PLACEHOLDER_RETRIES + 1} попыток<br><br>
+                <a href="${imgUrl}" target="_blank" class="img-error-link">
+                    Открыть напрямую с gdz.ru →
+                </a>
+            `;
+            img.replaceWith(err);
+        }
 
-                function tryLoad() {
+        // Обновить текст «пробуем снова N/M»
+        function showRetryLabel(img, attempt) {
+            img.classList.remove('img-loading');
+            img.classList.add('img-retrying');
+            // Временно ставим текст через псевдоэлемент нельзя,
+            // поэтому показываем через title и alt
+            img.alt = `⏳ Пробуем снова (${attempt}/${PLACEHOLDER_RETRIES})...`;
+        }
+
+        function loadImage(img, imgUrl) {
+            scheduleLoad(() => new Promise((resolve) => {
+                let placeholderAttempt = 0;
+
+                function tryOnce() {
+                    let timeoutId = null;
+
+                    // Сбрасываем предыдущие обработчики
+                    img.classList.remove('img-retrying');
+                    img.classList.add('img-loading');
+                    img.alt = 'Загрузка решения...';
+
+                    // Жёсткий таймаут — если сервер молчит 15 сек
+                    timeoutId = setTimeout(() => {
+                        timeoutId = null;
+                        console.log(`Timeout на попытке ${placeholderAttempt + 1}: ${imgUrl}`);
+                        onFail('Превышено время ожидания');
+                    }, LOAD_TIMEOUT);
+
+                    function cleanup() {
+                        if (timeoutId) { clearTimeout(timeoutId); timeoutId = null; }
+                        img.removeEventListener('load', onLoad);
+                        img.removeEventListener('error', onError);
+                    }
+
+                    function onLoad() {
+                        cleanup();
+
+                        const w = img.naturalWidth;
+                        const h = img.naturalHeight;
+                        console.log(`Загружено: ${w}×${h} (попытка ${placeholderAttempt + 1}): ${imgUrl}`);
+
+                        // Проверяем, не заглушка ли
+                        if (w < MIN_REAL_WIDTH || h < MIN_REAL_HEIGHT) {
+                            placeholderAttempt++;
+
+                            if (placeholderAttempt <= PLACEHOLDER_RETRIES) {
+                                // Ждём и пробуем снова
+                                const delay = RETRY_DELAYS[placeholderAttempt - 1] || 3000;
+                                console.log(`Заглушка! Повтор через ${delay}мс (${placeholderAttempt}/${PLACEHOLDER_RETRIES})`);
+                                showRetryLabel(img, placeholderAttempt);
+                                setTimeout(tryOnce, delay);
+                                return;
+                            }
+
+                            // Все попытки исчерпаны — показываем ошибку
+                            showImageError(img, imgUrl);
+                            resolve();
+                            return;
+                        }
+
+                        // Реальная картинка — готово!
+                        img.classList.remove('img-loading', 'img-retrying');
+                        img.alt = 'Решение';
+                        resolve();
+                    }
+
+                    function onError() {
+                        cleanup();
+                        onFail('Ошибка загрузки');
+                    }
+
+                    img.addEventListener('load', onLoad, { once: true });
+                    img.addEventListener('error', onError, { once: true });
+
+                    // Параметр t=Date.now() — обход кэша браузера
                     img.src = '/api/image?url=' + encodeURIComponent(imgUrl)
                         + '&w=1000&t=' + Date.now();
                 }
 
-                function onErr() {
-                    img.removeEventListener('error', onErr);
-                    attempt++;
-                    if (attempt < retries) {
-                        console.log(`Повтор ${attempt}/${retries}: ${imgUrl}`);
-                        setTimeout(() => {
-                            img.addEventListener('error', onErr, { once: true });
-                            tryLoad();
-                        }, 1500);
-                    } else {
-                        const err = document.createElement('div');
-                        err.className = 'img-error';
-                        err.innerHTML = `
-                            ⚠️ Не удалось загрузить картинку<br><br>
-                            <a href="${imgUrl}" target="_blank" class="img-error-link">
-                                Открыть напрямую с gdz.ru →
-                            </a>
-                        `;
-                        img.replaceWith(err);
-                        resolve();
+                function onFail(reason) {
+                    placeholderAttempt++;
+
+                    if (placeholderAttempt <= PLACEHOLDER_RETRIES) {
+                        const delay = RETRY_DELAYS[placeholderAttempt - 1] || 3000;
+                        console.log(`${reason} — повтор через ${delay}мс (${placeholderAttempt}/${PLACEHOLDER_RETRIES})`);
+                        showRetryLabel(img, placeholderAttempt);
+                        setTimeout(tryOnce, delay);
+                        return;
                     }
+
+                    console.log(`Все попытки исчерпаны: ${imgUrl}`);
+                    showImageError(img, imgUrl);
+                    resolve();
                 }
 
-                img.addEventListener('error', onErr, { once: true });
-                img.addEventListener('load', () => {
-                    img.classList.remove('img-loading');
-                    resolve();
-                }, { once: true });
-
-                tryLoad();
+                tryOnce();
             }));
         }
 
@@ -284,7 +364,7 @@
                             r.images.forEach((imgUrl) => {
                                 const img = document.createElement('img');
                                 img.className = 'solution-img img-loading';
-                                img.alt = 'Решение №' + r.number;
+                                img.alt = 'Загрузка...';
                                 img.addEventListener('click',
                                     () => window.open(img.src, '_blank'));
                                 loadImage(img, imgUrl);
