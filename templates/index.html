@@ -146,47 +146,53 @@
             }
         });
 
-        // ─── ЗАГРУЗКА КАРТИНКИ С АВТО-ПОВТОРОМ ───────────
-        function loadImage(img, imgUrl, retries = 3) {
-            let attempt = 0;
-            img.src = '/api/image?url=' + encodeURIComponent(imgUrl) + '&t=' + Date.now();
-            img.addEventListener('error', function onErr() {
-                img.removeEventListener('error', onErr);
-                attempt++;
-                if (attempt < retries) {
-                    console.log(`Повтор загрузки ${attempt}/${retries}: ${imgUrl}`);
-                    setTimeout(() => {
-                        img.src = '/api/image?url=' + encodeURIComponent(imgUrl)
-                            + '&t=' + Date.now();
-                        img.addEventListener('error', onErr);
-                    }, 2000);
-                } else {
-                    // Все попытки кончились — показываем ошибку
-                    const err = document.createElement('div');
-                    err.className = 'img-error';
-                    err.innerHTML = `
-                        ⚠️ Не удалось загрузить картинку после ${retries} попыток<br><br>
-                        <a href="${imgUrl}" target="_blank" class="img-error-link">
-                            Открыть напрямую с gdz.ru →
-                        </a>
-                        <br><br>
-                        <button class="btn-retry" onclick="
-                            this.parentElement.replaceWith(this.closest('.task-card')
-                            .querySelector('img')||document.createElement('img'))">
-                            🔄 Попробовать снова
-                        </button>
-                    `;
-                    img.replaceWith(err);
-                }
-            }, { once: true });
+        // ─── ЗАГРУЗКА КАРТИНОК ЧЕРЕЗ ОЧЕРЕДЬ ─────────────
+        // Не более 1 картинки одновременно — чтобы Render не задыхался
+        let imageQueue = Promise.resolve();
 
-            // Если загрузилось — снимаем класс "loading"
-            img.addEventListener('load', () => {
-                img.classList.remove('img-loading');
-            }, { once: true });
+        function loadImage(img, imgUrl, retries = 3) {
+            imageQueue = imageQueue.then(() => new Promise((resolve) => {
+                let attempt = 0;
+
+                function tryLoad() {
+                    img.src = '/api/image?url=' + encodeURIComponent(imgUrl)
+                        + '&t=' + Date.now();
+                }
+
+                function onErr() {
+                    img.removeEventListener('error', onErr);
+                    attempt++;
+                    if (attempt < retries) {
+                        console.log(`Повтор ${attempt}/${retries}: ${imgUrl}`);
+                        setTimeout(() => {
+                            img.addEventListener('error', onErr, { once: true });
+                            tryLoad();
+                        }, 2000);
+                    } else {
+                        const err = document.createElement('div');
+                        err.className = 'img-error';
+                        err.innerHTML = `
+                            ⚠️ Не удалось загрузить картинку<br><br>
+                            <a href="${imgUrl}" target="_blank" class="img-error-link">
+                                Открыть напрямую с gdz.ru →
+                            </a>
+                        `;
+                        img.replaceWith(err);
+                        resolve();
+                    }
+                }
+
+                img.addEventListener('error', onErr, { once: true });
+                img.addEventListener('load', () => {
+                    img.classList.remove('img-loading');
+                    resolve();
+                }, { once: true });
+
+                tryLoad();
+            }));
         }
 
-        // ─── ОСНОВНОЙ ПОИСК С ТАЙМЕРОМ ───────────────────
+        // ─── ОСНОВНОЙ ПОИСК ──────────────────────────────
         btn.addEventListener('click', async () => {
             const jobs = [];
             SUBJECTS.forEach(s => {

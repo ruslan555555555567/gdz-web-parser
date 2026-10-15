@@ -14,7 +14,7 @@ import asyncio
 from parser import parse_tasks
 
 # ⬇️ МЕНЯЙ ПРИ ОБНОВЛЕНИИ
-VERSION = "1.7.0"
+VERSION = "1.8.0"
 
 # ⬇️ ПАРОЛЬ ДЛЯ ВХОДА В АДМИНКУ
 ADMIN_PASSWORD = "gdz2024admin"
