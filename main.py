@@ -13,7 +13,7 @@ import asyncio
 
 from parser import parse_tasks
 
-VERSION = "2.1.0"
+VERSION = "2.2.0"
 ADMIN_PASSWORD = "gdz2024admin"
 MONGO_URL = os.getenv("MONGO_URL")
 
