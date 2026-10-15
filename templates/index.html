@@ -10,7 +10,7 @@
     <div class="container">
         <div class="topbar">
             <span class="version">v{{ version }}</span>
-            <button id="supportBtn" class="support-btn" title="Техподдержка">💬</button>
+            <div class="topbar-right" id="topbarRight"></div>
         </div>
 
         <h1>📚 GDZ Парсер</h1>
@@ -48,21 +48,85 @@
         </footer>
     </div>
 
+    <!-- ═══════ ПРИВЕТСТВЕННОЕ МЕНЮ ═══════ -->
+    <div id="welcomeModal" class="modal hidden">
+        <div class="modal-content welcome-content">
+            <h2>Добро пожаловать! 👋</h2>
+            <p class="modal-text">Как будем заходить?</p>
+            <button id="guestBtn" class="welcome-btn guest">
+                <span class="wb-icon">👤</span>
+                <div class="wb-text">
+                    <strong>Гость</strong>
+                    <small>История не сохраняется</small>
+                </div>
+            </button>
+            <button id="authBtn" class="welcome-btn auth">
+                <span class="wb-icon">🔑</span>
+                <div class="wb-text">
+                    <strong>Войти / Регистрация</strong>
+                    <small>История поисков сохраняется</small>
+                </div>
+            </button>
+        </div>
+    </div>
+
+    <!-- ═══════ ВХОД / РЕГИСТРАЦИЯ ═══════ -->
+    <div id="authModal" class="modal hidden">
+        <div class="modal-content">
+            <h3 id="authTitle">Вход</h3>
+
+            <div class="auth-tabs">
+                <button class="auth-tab active" data-tab="login">Вход</button>
+                <button class="auth-tab" data-tab="register">Регистрация</button>
+            </div>
+
+            <form id="authForm">
+                <label class="form-label" id="nameField" style="display:none;">
+                    Имя
+                    <input type="text" id="authName" placeholder="Как тебя зовут">
+                </label>
+                <label class="form-label">
+                    Email
+                    <input type="email" id="authEmail" placeholder="you@example.com" required>
+                </label>
+                <label class="form-label">
+                    Пароль
+                    <input type="password" id="authPwd" placeholder="минимум 6 символов" required>
+                </label>
+                <div id="authStatus" class="fb-status"></div>
+                <div class="modal-actions">
+                    <button type="button" id="authCancel" class="btn-secondary">Отмена</button>
+                    <button type="submit" id="authSubmit" class="btn-primary">Войти</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ═══════ ИСТОРИЯ ═══════ -->
+    <div id="historyModal" class="modal hidden">
+        <div class="modal-content">
+            <h3>📜 История поисков</h3>
+            <div id="historyList"></div>
+            <div class="modal-actions">
+                <button id="clearHistoryBtn" class="btn-secondary">🗑 Очистить</button>
+                <button id="closeHistoryBtn" class="btn-primary">Закрыть</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══════ ТЕХПОДДЕРЖКА ═══════ -->
     <div id="supportModal" class="modal hidden">
         <div class="modal-content">
             <h3>💬 Техподдержка</h3>
             <p class="modal-text">Нашли ошибку или есть вопрос? Напишите — мы ответим.</p>
-
             <form id="feedbackForm">
                 <label class="form-label">
                     Сообщение <span class="required">*</span>
-                    <textarea id="fbMessage" rows="4"
-                        placeholder="Опишите проблему или вопрос..."></textarea>
+                    <textarea id="fbMessage" rows="4" placeholder="Опишите проблему..."></textarea>
                 </label>
                 <label class="form-label">
-                    Контакт для связи <span class="hint">(необязательно)</span>
-                    <input type="text" id="fbContact"
-                        placeholder="Telegram, email или телефон">
+                    Контакт <span class="hint">(необязательно)</span>
+                    <input type="text" id="fbContact" placeholder="Telegram, email">
                 </label>
                 <div id="fbStatus" class="fb-status"></div>
                 <div class="modal-actions">
@@ -73,7 +137,7 @@
         </div>
     </div>
 
-    <!-- Модалка для просмотра картинки -->
+    <!-- ═══════ МОДАЛКА КАРТИНКИ ═══════ -->
     <div id="imageModal" class="modal hidden">
         <div class="image-modal-content">
             <button id="closeImageModal" class="image-modal-close">✕</button>
@@ -83,31 +147,292 @@
 
     <script>
         const SUBJECTS = [
-            { id: 'algebra', subject: 'Алгебра',
-              url: 'https://gdz.ru/class-7/algebra/makarichev-18/' },
-            { id: 'russian', subject: 'Русский язык',
-              url: 'https://gdz.ru/class-7/russkii_yazik/baranova/' },
-            { id: 'geometry', subject: 'Геометрия',
-              url: 'https://gdz.ru/class-7/geometria/merzljak/' },
+            { id: 'algebra', subject: 'Алгебра', url: 'https://gdz.ru/class-7/algebra/makarichev-18/' },
+            { id: 'russian', subject: 'Русский язык', url: 'https://gdz.ru/class-7/russkii_yazik/baranova/' },
+            { id: 'geometry', subject: 'Геометрия', url: 'https://gdz.ru/class-7/geometria/merzljak/' },
         ];
 
-        const btn = document.getElementById('btn');
-        const status = document.getElementById('status');
-        const result = document.getElementById('result');
-        const supportBtn = document.getElementById('supportBtn');
-        const supportModal = document.getElementById('supportModal');
-        const closeSupport = document.getElementById('closeSupport');
-        const feedbackForm = document.getElementById('feedbackForm');
-        const fbMessage = document.getElementById('fbMessage');
-        const fbContact = document.getElementById('fbContact');
-        const fbSubmit = document.getElementById('fbSubmit');
-        const fbStatus = document.getElementById('fbStatus');
+        // ─── СОСТОЯНИЕ ──────────────────────────────────
+        let authToken = localStorage.getItem('gdz_token') || '';
+        let authUser = null;
+        let isGuest = localStorage.getItem('gdz_guest') === '1';
 
-        const imageModal = document.getElementById('imageModal');
-        const imageModalImg = document.getElementById('imageModalImg');
-        const closeImageModal = document.getElementById('closeImageModal');
+        // ─── ЭЛЕМЕНТЫ ───────────────────────────────────
+        const $ = id => document.getElementById(id);
+        const btn = $('btn'), status = $('status'), result = $('result');
+        const welcomeModal = $('welcomeModal');
+        const authModal = $('authModal');
+        const historyModal = $('historyModal');
+        const supportModal = $('supportModal');
+        const imageModal = $('imageModal');
+        const imageModalImg = $('imageModalImg');
+        const topbarRight = $('topbarRight');
 
-        // ─── МОДАЛКА ДЛЯ КАРТИНКИ ────────────────────────
+        // ─── СТАРТ ──────────────────────────────────────
+        async function init() {
+            if (authToken) {
+                try {
+                    const r = await fetch('/api/auth/me?token=' + encodeURIComponent(authToken));
+                    if (r.ok) {
+                        const d = await r.json();
+                        authUser = d.user;
+                    } else {
+                        authToken = '';
+                        localStorage.removeItem('gdz_token');
+                    }
+                } catch {}
+            }
+            if (!authToken && !isGuest) {
+                welcomeModal.classList.remove('hidden');
+            } else {
+                renderTopbar();
+            }
+        }
+
+        function renderTopbar() {
+            topbarRight.innerHTML = '';
+
+            if (authUser) {
+                const name = authUser.name || authUser.email.split('@')[0];
+                const greet = document.createElement('span');
+                greet.className = 'topbar-user';
+                greet.textContent = '👤 ' + name;
+                topbarRight.appendChild(greet);
+
+                // История
+                const histBtn = document.createElement('button');
+                histBtn.className = 'icon-btn';
+                histBtn.title = 'История поисков';
+                histBtn.textContent = '📜';
+                histBtn.onclick = openHistory;
+                topbarRight.appendChild(histBtn);
+
+                // Админ — кнопка сообщений
+                if (authUser.is_admin) {
+                    const adminBtn = document.createElement('button');
+                    adminBtn.className = 'icon-btn admin-icon';
+                    adminBtn.title = 'Сообщения (админ)';
+                    adminBtn.textContent = '💬';
+                    adminBtn.onclick = () => window.location.href = '/admin';
+                    topbarRight.appendChild(adminBtn);
+                }
+
+                // Выход
+                const outBtn = document.createElement('button');
+                outBtn.className = 'icon-btn';
+                outBtn.title = 'Выйти';
+                outBtn.textContent = '🚪';
+                outBtn.onclick = logout;
+                topbarRight.appendChild(outBtn);
+            } else {
+                // Гость
+                const guestLabel = document.createElement('span');
+                guestLabel.className = 'topbar-user';
+                guestLabel.textContent = '👤 Гость';
+                topbarRight.appendChild(guestLabel);
+
+                const loginBtn = document.createElement('button');
+                loginBtn.className = 'icon-btn';
+                loginBtn.title = 'Войти';
+                loginBtn.textContent = '🔑';
+                loginBtn.onclick = openAuth;
+                topbarRight.appendChild(loginBtn);
+            }
+
+            // Поддержка — всегда
+            const supBtn = document.createElement('button');
+            supBtn.className = 'icon-btn';
+            supBtn.title = 'Техподдержка';
+            supBtn.textContent = '❓';
+            supBtn.onclick = () => supportModal.classList.remove('hidden');
+            topbarRight.appendChild(supBtn);
+        }
+
+        // ─── ПРИВЕТСТВИЕ ────────────────────────────────
+        $('guestBtn').onclick = () => {
+            isGuest = true;
+            localStorage.setItem('gdz_guest', '1');
+            welcomeModal.classList.add('hidden');
+            renderTopbar();
+        };
+
+        $('authBtn').onclick = () => {
+            welcomeModal.classList.add('hidden');
+            openAuth();
+        };
+
+        // ─── ВХОД / РЕГИСТРАЦИЯ ────────────────────────
+        let authMode = 'login';
+
+        function openAuth() {
+            authModal.classList.remove('hidden');
+            authMode = 'login';
+            switchTab('login');
+        }
+
+        function switchTab(mode) {
+            authMode = mode;
+            document.querySelectorAll('.auth-tab').forEach(t => {
+                t.classList.toggle('active', t.dataset.tab === mode);
+            });
+            $('authTitle').textContent = mode === 'login' ? 'Вход' : 'Регистрация';
+            $('authSubmit').textContent = mode === 'login' ? 'Войти' : 'Создать аккаунт';
+            $('nameField').style.display = mode === 'register' ? 'block' : 'none';
+        }
+
+        document.querySelectorAll('.auth-tab').forEach(t => {
+            t.onclick = () => switchTab(t.dataset.tab);
+        });
+
+        $('authCancel').onclick = () => {
+            authModal.classList.add('hidden');
+            if (!authToken && !isGuest) welcomeModal.classList.remove('hidden');
+        };
+
+        $('authForm').onsubmit = async (e) => {
+            e.preventDefault();
+            const email = $('authEmail').value.trim();
+            const password = $('authPwd').value;
+            const name = $('authName').value.trim();
+            const st = $('authStatus');
+
+            st.textContent = '⏳ Подождите...';
+            st.className = 'fb-status loading';
+
+            const url = authMode === 'login' ? '/api/auth/login' : '/api/auth/register';
+            const body = authMode === 'login'
+                ? {email, password}
+                : {email, password, name};
+
+            try {
+                const r = await fetch(url, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(body)
+                });
+                const d = await r.json();
+                if (!r.ok) {
+                    st.textContent = '❌ ' + (d.detail || 'Ошибка');
+                    st.className = 'fb-status error';
+                    return;
+                }
+                authToken = d.token;
+                authUser = d.user;
+                localStorage.setItem('gdz_token', authToken);
+                localStorage.removeItem('gdz_guest');
+                isGuest = false;
+                authModal.classList.add('hidden');
+                renderTopbar();
+            } catch (err) {
+                st.textContent = '❌ ' + err.message;
+                st.className = 'fb-status error';
+            }
+        };
+
+        async function logout() {
+            if (!confirm('Выйти из аккаунта?')) return;
+            try {
+                await fetch('/api/auth/logout', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({token: authToken})
+                });
+            } catch {}
+            authToken = '';
+            authUser = null;
+            isGuest = false;
+            localStorage.removeItem('gdz_token');
+            localStorage.removeItem('gdz_guest');
+            topbarRight.innerHTML = '';
+            welcomeModal.classList.remove('hidden');
+        }
+
+        // ─── ИСТОРИЯ ────────────────────────────────────
+        async function openHistory() {
+            historyModal.classList.remove('hidden');
+            const list = $('historyList');
+            list.innerHTML = '<p class="empty">Загрузка...</p>';
+            try {
+                const r = await fetch('/api/history/list?token=' + encodeURIComponent(authToken));
+                const d = await r.json();
+                if (!r.ok) throw new Error(d.detail || 'Ошибка');
+                if (!d.items.length) {
+                    list.innerHTML = '<p class="empty">История пуста</p>';
+                    return;
+                }
+                list.innerHTML = '';
+                d.items.forEach(it => {
+                    const row = document.createElement('div');
+                    row.className = 'history-row';
+                    row.innerHTML = `
+                        <div class="history-info">
+                            <strong>${escapeHtml(it.subject)}</strong>
+                            <span>${escapeHtml(it.numbers)}</span>
+                        </div>
+                        <span class="history-date">${escapeHtml(it.created)}</span>
+                    `;
+                    row.onclick = () => {
+                        const input = document.getElementById(
+                            it.subject === 'Алгебра' ? 'algebra'
+                            : it.subject === 'Русский язык' ? 'russian'
+                            : 'geometry'
+                        );
+                        if (input) {
+                            input.value = it.numbers;
+                            historyModal.classList.add('hidden');
+                        }
+                    };
+                    list.appendChild(row);
+                });
+            } catch (e) {
+                list.innerHTML = '<p class="empty">Ошибка: ' + e.message + '</p>';
+            }
+        }
+
+        $('closeHistoryBtn').onclick = () => historyModal.classList.add('hidden');
+
+        $('clearHistoryBtn').onclick = async () => {
+            if (!confirm('Очистить всю историю?')) return;
+            try {
+                await fetch('/api/history/clear', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({token: authToken})
+                });
+                $('historyList').innerHTML = '<p class="empty">История пуста</p>';
+            } catch {}
+        };
+
+        // ─── ТЕХПОДДЕРЖКА ───────────────────────────────
+        $('closeSupport').onclick = () => supportModal.classList.add('hidden');
+        supportModal.onclick = (e) => { if (e.target === supportModal) supportModal.classList.add('hidden'); };
+
+        $('feedbackForm').onsubmit = async (e) => {
+            e.preventDefault();
+            const msg = $('fbMessage').value.trim();
+            if (!msg) return;
+            const st = $('fbStatus');
+            st.textContent = '⏳ Отправляем...';
+            st.className = 'fb-status loading';
+            try {
+                const r = await fetch('/api/feedback', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({message: msg, contact: $('fbContact').value.trim()})
+                });
+                if (!r.ok) throw new Error('Ошибка');
+                st.textContent = '✅ Отправлено! Спасибо.';
+                st.className = 'fb-status success';
+                $('fbMessage').value = '';
+                $('fbContact').value = '';
+                setTimeout(() => supportModal.classList.add('hidden'), 2000);
+            } catch (err) {
+                st.textContent = '❌ ' + err.message;
+                st.className = 'fb-status error';
+            }
+        };
+
+        // ─── МОДАЛКА КАРТИНКИ ───────────────────────────
         function openImageModal(src) {
             imageModalImg.src = src;
             imageModal.classList.remove('hidden');
@@ -118,77 +443,19 @@
             imageModalImg.src = '';
             document.body.style.overflow = '';
         }
-        closeImageModal.addEventListener('click', closeModal);
-        imageModal.addEventListener('click', (e) => {
-            if (e.target === imageModal) closeModal();
-        });
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape') closeModal();
-        });
+        $('closeImageModal').onclick = closeModal;
+        imageModal.onclick = (e) => { if (e.target === imageModal) closeModal(); };
+        document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeModal(); });
 
-        // ─── ТЕХПОДДЕРЖКА ────────────────────────────────
-        supportBtn.addEventListener('click', () => {
-            supportModal.classList.remove('hidden');
-            fbStatus.textContent = '';
-            fbStatus.className = 'fb-status';
-        });
-        closeSupport.addEventListener('click', () => supportModal.classList.add('hidden'));
-        supportModal.addEventListener('click', (e) => {
-            if (e.target === supportModal) supportModal.classList.add('hidden');
-        });
-
-        feedbackForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const message = fbMessage.value.trim();
-            if (!message) {
-                fbStatus.textContent = '⚠️ Напиши сообщение';
-                fbStatus.className = 'fb-status error';
-                return;
-            }
-            fbSubmit.disabled = true;
-            fbStatus.textContent = '⏳ Отправляем...';
-            fbStatus.className = 'fb-status loading';
-
-            try {
-                const resp = await fetch('/api/feedback', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({
-                        message: message,
-                        contact: fbContact.value.trim(),
-                    }),
-                });
-                const data = await resp.json();
-                if (!resp.ok) {
-                    fbStatus.textContent = '❌ ' + (data.detail || 'Ошибка');
-                    fbStatus.className = 'fb-status error';
-                    return;
-                }
-                fbStatus.textContent = '✅ Отправлено! Спасибо.';
-                fbStatus.className = 'fb-status success';
-                fbMessage.value = '';
-                fbContact.value = '';
-                setTimeout(() => supportModal.classList.add('hidden'), 2000);
-            } catch (err) {
-                fbStatus.textContent = '❌ Ошибка: ' + err.message;
-                fbStatus.className = 'fb-status error';
-            } finally {
-                fbSubmit.disabled = false;
-            }
-        });
-
-        // ─── ЗАГРУЗКА КАРТИНОК ───────────────────────────
+        // ─── ЗАГРУЗКА КАРТИНОК ─────────────────────────
         let activeLoads = 0;
         const MAX_PARALLEL = 3;
         const pendingQueue = [];
-
         const PLACEHOLDER_RETRIES = 4;
         const RETRY_DELAYS = [500, 1000, 2000, 3000];
         const MIN_REAL_WIDTH = 200;
         const MIN_REAL_HEIGHT = 150;
         const LOAD_TIMEOUT = 15000;
-
-        // Порог "длинной" картинки (высота > 3x ширины)
         const TALL_RATIO = 3.0;
 
         function scheduleLoad(fn) {
@@ -212,57 +479,35 @@
         function showImageError(img, imgUrl) {
             const err = document.createElement('div');
             err.className = 'img-error';
-            err.innerHTML = `
-                ⚠️ Не удалось получить решение после ${PLACEHOLDER_RETRIES + 1} попыток<br><br>
-                <a href="${imgUrl}" target="_blank" class="img-error-link">
-                    Открыть напрямую с gdz.ru →
-                </a>
-            `;
+            err.innerHTML = `⚠️ Не удалось получить решение<br><br>
+                <a href="${imgUrl}" target="_blank" class="img-error-link">Открыть напрямую с gdz.ru →</a>`;
             img.replaceWith(err);
-        }
-
-        function showRetryLabel(img, attempt) {
-            img.classList.remove('img-loading');
-            img.classList.add('img-retrying');
-            img.alt = `⏳ Пробуем снова (${attempt}/${PLACEHOLDER_RETRIES})...`;
         }
 
         function loadImage(img, imgUrl) {
             scheduleLoad(() => new Promise((resolve) => {
-                let placeholderAttempt = 0;
-
+                let attempt = 0;
                 function tryOnce() {
-                    let timeoutId = null;
-
+                    let tid = null;
                     img.classList.remove('img-retrying', 'img-tall');
                     img.classList.add('img-loading');
-                    img.alt = 'Загрузка решения...';
-
-                    timeoutId = setTimeout(() => {
-                        timeoutId = null;
-                        console.log(`Timeout: ${imgUrl}`);
-                        onFail('Превышено время ожидания');
-                    }, LOAD_TIMEOUT);
+                    img.alt = 'Загрузка...';
+                    tid = setTimeout(() => onFail('Timeout'), LOAD_TIMEOUT);
 
                     function cleanup() {
-                        if (timeoutId) { clearTimeout(timeoutId); timeoutId = null; }
+                        if (tid) { clearTimeout(tid); tid = null; }
                         img.removeEventListener('load', onLoad);
                         img.removeEventListener('error', onError);
                     }
-
                     function onLoad() {
                         cleanup();
-
-                        const w = img.naturalWidth;
-                        const h = img.naturalHeight;
-                        console.log(`Загружено: ${w}×${h}: ${imgUrl}`);
-
-                        // Заглушка?
+                        const w = img.naturalWidth, h = img.naturalHeight;
                         if (w < MIN_REAL_WIDTH || h < MIN_REAL_HEIGHT) {
-                            placeholderAttempt++;
-                            if (placeholderAttempt <= PLACEHOLDER_RETRIES) {
-                                const delay = RETRY_DELAYS[placeholderAttempt - 1] || 3000;
-                                showRetryLabel(img, placeholderAttempt);
+                            attempt++;
+                            if (attempt <= PLACEHOLDER_RETRIES) {
+                                const delay = RETRY_DELAYS[attempt-1] || 3000;
+                                img.classList.remove('img-loading');
+                                img.classList.add('img-retrying');
                                 setTimeout(tryOnce, delay);
                                 return;
                             }
@@ -270,101 +515,48 @@
                             resolve();
                             return;
                         }
-
-                        // ─── РЕАЛЬНАЯ КАРТИНКА ───
                         img.classList.remove('img-loading', 'img-retrying');
-
-                        // Проверяем — длинная?
-                        const ratio = h / w;
-                        if (ratio >= TALL_RATIO) {
-                            // Длинная картинка — узкая + метка
-                            img.classList.add('img-tall');
-                            img.alt = `Длинное решение (${h}px)`;
-
-                            // Добавляем предупреждение над картинкой
-                            const wrap = img.parentElement;
-                            if (wrap && !wrap.querySelector('.img-tall-notice')) {
-                                const notice = document.createElement('div');
-                                notice.className = 'img-tall-notice';
-                                notice.innerHTML = `
-                                    📏 <b>Большое решение</b>
-                                    (${Math.round(h / w * 10) / 10}× длиннее ширины) —
-                                    <a href="#" class="img-tall-open">открыть полностью</a>
-                                `;
-                                wrap.insertBefore(notice, img);
-                                notice.querySelector('.img-tall-open')
-                                    .addEventListener('click', (e) => {
-                                        e.preventDefault();
-                                        openImageModal(img.src);
-                                    });
-                            }
-
-                            // Клик по картинке — открываем в модалке
-                            img.addEventListener('click', () => openImageModal(img.src));
-                        } else {
-                            // Обычная картинка — открываем в модалке
-                            img.addEventListener('click', () => openImageModal(img.src));
-                        }
-
+                        if (h / w >= TALL_RATIO) img.classList.add('img-tall');
+                        img.onclick = () => openImageModal(img.src);
                         resolve();
                     }
-
-                    function onError() {
-                        cleanup();
-                        onFail('Ошибка загрузки');
-                    }
-
-                    img.addEventListener('load', onLoad, { once: true });
-                    img.addEventListener('error', onError, { once: true });
-
-                    img.src = '/api/image?url=' + encodeURIComponent(imgUrl)
-                        + '&w=1000&t=' + Date.now();
+                    function onError() { cleanup(); onFail('Error'); }
+                    img.addEventListener('load', onLoad, {once: true});
+                    img.addEventListener('error', onError, {once: true});
+                    img.src = '/api/image?url=' + encodeURIComponent(imgUrl) + '&w=1000&t=' + Date.now();
                 }
-
                 function onFail(reason) {
-                    placeholderAttempt++;
-                    if (placeholderAttempt <= PLACEHOLDER_RETRIES) {
-                        const delay = RETRY_DELAYS[placeholderAttempt - 1] || 3000;
-                        console.log(`${reason} — повтор ${delay}мс`);
-                        showRetryLabel(img, placeholderAttempt);
+                    attempt++;
+                    if (attempt <= PLACEHOLDER_RETRIES) {
+                        const delay = RETRY_DELAYS[attempt-1] || 3000;
+                        img.classList.remove('img-loading');
+                        img.classList.add('img-retrying');
                         setTimeout(tryOnce, delay);
                         return;
                     }
                     showImageError(img, imgUrl);
                     resolve();
                 }
-
                 tryOnce();
             }));
         }
 
-        // ─── ОСНОВНОЙ ПОИСК ──────────────────────────────
+        // ─── ПОИСК ──────────────────────────────────────
         btn.addEventListener('click', async () => {
             const jobs = [];
             SUBJECTS.forEach(s => {
-                const input = document.getElementById(s.id);
-                const numbers = input.value.trim();
-                if (numbers) {
-                    jobs.push({ subject: s.subject, url: s.url, numbers: numbers });
-                }
+                const v = document.getElementById(s.id).value.trim();
+                if (v) jobs.push({ subject: s.subject, url: s.url, numbers: v });
             });
-
-            if (jobs.length === 0) {
-                return showStatus('⚠️ Введи номера хотя бы в одном поле', 'error');
-            }
+            if (!jobs.length) return showStatus('⚠️ Введи номера хотя бы в одном поле', 'error');
 
             btn.disabled = true;
             result.innerHTML = '';
-
             let seconds = 0;
             showStatus('⏳ Ищу решения... 0 сек', 'loading');
             const timer = setInterval(() => {
                 seconds++;
-                let hint = seconds < 5 ? 'Проверяем задания...'
-                         : seconds < 15 ? 'Загружаем страницы...'
-                         : seconds < 30 ? 'Обрабатываем решения...'
-                         : 'Осталось немного...';
-                showStatus(`⏳ Ищу решения... ${seconds} сек (${hint})`, 'loading');
+                showStatus(`⏳ Ищу решения... ${seconds} сек`, 'loading');
             }, 1000);
 
             try {
@@ -376,18 +568,23 @@
                 const data = await resp.json();
                 clearInterval(timer);
 
-                if (!resp.ok) {
-                    return showStatus('❌ ' + (data.detail || 'Ошибка'), 'error');
-                }
-                if (data.total === 0) {
-                    return showStatus('🤷 Ничего не найдено', 'error');
-                }
+                if (!resp.ok) return showStatus('❌ ' + (data.detail || 'Ошибка'), 'error');
+                if (data.total === 0) return showStatus('🤷 Ничего не найдено', 'error');
 
                 const found = data.results.filter(r => r.found).length;
-                showStatus(
-                    `✅ Найдено ${found} из ${data.total} за ${seconds} сек`,
-                    found > 0 ? 'success' : 'error'
-                );
+                showStatus(`✅ Найдено ${found} из ${data.total} за ${seconds} сек`,
+                    found > 0 ? 'success' : 'error');
+
+                // Сохранить в историю (только для авторизованных)
+                if (authToken) {
+                    for (const j of jobs) {
+                        fetch('/api/history/save', {
+                            method: 'POST',
+                            headers: {'Content-Type': 'application/json'},
+                            body: JSON.stringify({token: authToken, subject: j.subject, numbers: j.numbers})
+                        }).catch(() => {});
+                    }
+                }
 
                 const bySubject = {};
                 data.results.forEach(r => {
@@ -405,13 +602,12 @@
                             <h3>№${r.number}</h3>
                             ${r.found ? '' : '<span class="badge">не найдено</span>'}
                         </div>`;
-
                         if (r.found) {
-                            r.images.forEach((imgUrl) => {
+                            r.images.forEach(u => {
                                 const img = document.createElement('img');
                                 img.className = 'solution-img img-loading';
                                 img.alt = 'Загрузка...';
-                                loadImage(img, imgUrl);
+                                loadImage(img, u);
                                 card.appendChild(img);
                             });
                         }
@@ -421,8 +617,7 @@
                 });
             } catch (err) {
                 clearInterval(timer);
-                showStatus('❌ Ошибка: ' + err.message
-                    + '. Попробуй ещё раз — сервер мог засыпать.', 'error');
+                showStatus('❌ Ошибка: ' + err.message, 'error');
             } finally {
                 btn.disabled = false;
             }
@@ -432,6 +627,14 @@
             status.textContent = text;
             status.className = 'status ' + type;
         }
+
+        function escapeHtml(t) {
+            const d = document.createElement('div');
+            d.textContent = t;
+            return d.innerHTML;
+        }
+
+        init();
     </script>
 </body>
 </html>

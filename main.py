@@ -1,4 +1,6 @@
 import os
+import hashlib
+import secrets
 from datetime import datetime
 from io import BytesIO
 from typing import List
@@ -14,49 +16,100 @@ import asyncpg
 
 from parser import parse_tasks
 
-# ⬇️ МЕНЯЙ ПРИ ОБНОВЛЕНИИ
-VERSION = "4.0.0"
-
-# ⬇️ ПАРОЛЬ ДЛЯ АДМИНКИ (ОБЯЗАТЕЛЬНО СМЕНИ!)
+VERSION = "7.0.0"
 ADMIN_PASSWORD = "gdz2024admin"
-
-# ⬇️ ПОДКЛЮЧЕНИЕ К ONREZA (PostgreSQL)
+ADMIN_EMAIL = os.getenv("ADMIN_EMAIL", "admin@gdz.ru").lower().strip()
 DATABASE_URL = os.getenv("DATABASE_URL")
 
 db_pool = None
 
 
 async def init_db():
-    """Создаёт пул соединений и таблицу feedback, если её нет."""
     global db_pool
     if not DATABASE_URL:
         print("[main] DATABASE_URL не задан — работа без БД")
         return
     try:
-        db_pool = await asyncpg.create_pool(
-            DATABASE_URL, min_size=1, max_size=5, ssl="require"
-        )
+        db_pool = await asyncpg.create_pool(DATABASE_URL, min_size=1, max_size=5, ssl="require")
         async with db_pool.acquire() as conn:
             await conn.execute("""
                 CREATE TABLE IF NOT EXISTS feedback (
-                    id SERIAL PRIMARY KEY,
-                    date TEXT,
-                    message TEXT,
-                    contact TEXT,
-                    version TEXT
+                    id SERIAL PRIMARY KEY, date TEXT, message TEXT,
+                    contact TEXT, version TEXT
                 )
             """)
-        print("[main] PostgreSQL подключена, таблица feedback готова")
+            await conn.execute("""
+                CREATE TABLE IF NOT EXISTS users (
+                    id SERIAL PRIMARY KEY, email TEXT UNIQUE NOT NULL,
+                    password_hash TEXT NOT NULL, name TEXT,
+                    is_admin BOOLEAN DEFAULT FALSE,
+                    created_at TIMESTAMP DEFAULT NOW()
+                )
+            """)
+            await conn.execute("""
+                CREATE TABLE IF NOT EXISTS sessions (
+                    token TEXT PRIMARY KEY,
+                    user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+                    created_at TIMESTAMP DEFAULT NOW()
+                )
+            """)
+            await conn.execute("""
+                CREATE TABLE IF NOT EXISTS history (
+                    id SERIAL PRIMARY KEY,
+                    user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+                    subject TEXT, numbers TEXT,
+                    created_at TIMESTAMP DEFAULT NOW()
+                )
+            """)
+        print("[main] PostgreSQL подключена, таблицы готовы")
     except Exception as e:
-        print(f"[main] Ошибка подключения к PostgreSQL: {e}")
+        print(f"[main] Ошибка PostgreSQL: {e}")
         db_pool = None
+
+
+def hash_password(password: str) -> str:
+    salt = secrets.token_hex(16)
+    h = hashlib.pbkdf2_hmac('sha256', password.encode(), salt.encode(), 100000)
+    return f"{salt}${h.hex()}"
+
+
+def verify_password(password: str, stored: str) -> bool:
+    try:
+        salt, h = stored.split('$')
+        check = hashlib.pbkdf2_hmac('sha256', password.encode(), salt.encode(), 100000)
+        return check.hex() == h
+    except Exception:
+        return False
+
+
+async def get_user_by_token(token: str):
+    if not db_pool or not token:
+        return None
+    async with db_pool.acquire() as conn:
+        row = await conn.fetchrow("""
+            SELECT u.id, u.email, u.name, u.is_admin
+            FROM sessions s JOIN users u ON u.id = s.user_id
+            WHERE s.token = $1
+        """, token)
+    return dict(row) if row else None
+
+
+async def check_admin(data: dict):
+    password = (data or {}).get("password", "")
+    token = (data or {}).get("token", "")
+    if password and password == ADMIN_PASSWORD:
+        return True
+    if token:
+        user = await get_user_by_token(token)
+        if user and user.get("is_admin"):
+            return True
+    return False
 
 
 app = FastAPI(title="GDZ Парсер")
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
-# Заглушка-картинка 1x1 (белая) — возвращаем вместо ошибки
 PLACEHOLDER_JPEG = bytes.fromhex(
     "ffd8ffe000104a46494600010100000100010000ffdb004300ffffffffffffff"
     "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
@@ -88,6 +141,27 @@ class FeedbackRequest(BaseModel):
     contact: str = ""
 
 
+class RegisterRequest(BaseModel):
+    email: str
+    password: str
+    name: str = ""
+
+
+class LoginRequest(BaseModel):
+    email: str
+    password: str
+
+
+class TokenRequest(BaseModel):
+    token: str
+
+
+class HistorySaveRequest(BaseModel):
+    token: str
+    subject: str
+    numbers: str
+
+
 @app.on_event("startup")
 async def startup():
     await init_db()
@@ -95,22 +169,205 @@ async def startup():
 
 @app.get("/", response_class=HTMLResponse)
 async def index(request: Request):
-    return templates.TemplateResponse(
-        request, "index.html", {"version": VERSION}
-    )
+    return templates.TemplateResponse(request, "index.html", {"version": VERSION})
 
 
 @app.get("/admin", response_class=HTMLResponse)
 async def admin_page(request: Request):
-    return templates.TemplateResponse(
-        request, "admin.html", {"version": VERSION}
-    )
+    return templates.TemplateResponse(request, "admin.html", {"version": VERSION})
 
 
 @app.get("/api/version")
 async def get_version():
     return {"version": VERSION}
 
+
+# ═══════ АВТОРИЗАЦИЯ ═══════
+
+@app.post("/api/auth/register")
+async def register(req: RegisterRequest):
+    if db_pool is None:
+        raise HTTPException(500, "БД не подключена")
+    email = req.email.lower().strip()
+    if not email or "@" not in email:
+        raise HTTPException(400, "Некорректный email")
+    if len(req.password) < 6:
+        raise HTTPException(400, "Пароль минимум 6 символов")
+
+    async with db_pool.acquire() as conn:
+        existing = await conn.fetchrow("SELECT id FROM users WHERE email = $1", email)
+        if existing:
+            raise HTTPException(400, "Такой email уже зарегистрирован")
+
+        is_admin = (email == ADMIN_EMAIL)
+        user_id = await conn.fetchval(
+            "INSERT INTO users (email, password_hash, name, is_admin) "
+            "VALUES ($1, $2, $3, $4) RETURNING id",
+            email, hash_password(req.password), req.name.strip(), is_admin
+        )
+        token = secrets.token_urlsafe(32)
+        await conn.execute(
+            "INSERT INTO sessions (token, user_id) VALUES ($1, $2)",
+            token, user_id
+        )
+
+    return {"ok": True, "token": token, "user": {
+        "id": user_id, "email": email, "name": req.name.strip(), "is_admin": is_admin
+    }}
+
+
+@app.post("/api/auth/login")
+async def login(req: LoginRequest):
+    if db_pool is None:
+        raise HTTPException(500, "БД не подключена")
+    email = req.email.lower().strip()
+
+    async with db_pool.acquire() as conn:
+        row = await conn.fetchrow(
+            "SELECT id, email, password_hash, name, is_admin FROM users WHERE email = $1",
+            email
+        )
+        if not row or not verify_password(req.password, row["password_hash"]):
+            raise HTTPException(401, "Неверный email или пароль")
+        token = secrets.token_urlsafe(32)
+        await conn.execute(
+            "INSERT INTO sessions (token, user_id) VALUES ($1, $2)",
+            token, row["id"]
+        )
+
+    return {"ok": True, "token": token, "user": {
+        "id": row["id"], "email": row["email"],
+        "name": row["name"], "is_admin": row["is_admin"]
+    }}
+
+
+@app.post("/api/auth/logout")
+async def logout(req: TokenRequest):
+    if db_pool is not None and req.token:
+        async with db_pool.acquire() as conn:
+            await conn.execute("DELETE FROM sessions WHERE token = $1", req.token)
+    return {"ok": True}
+
+
+@app.get("/api/auth/me")
+async def me(token: str = ""):
+    user = await get_user_by_token(token)
+    if not user:
+        raise HTTPException(401, "Не авторизован")
+    return {"user": user}
+
+
+# ═══════ ИСТОРИЯ ═══════
+
+@app.post("/api/history/save")
+async def history_save(req: HistorySaveRequest):
+    user = await get_user_by_token(req.token)
+    if not user:
+        return {"ok": False, "reason": "not_authorized"}
+    if db_pool is None:
+        return {"ok": False}
+
+    async with db_pool.acquire() as conn:
+        await conn.execute(
+            "INSERT INTO history (user_id, subject, numbers) VALUES ($1, $2, $3)",
+            user["id"], req.subject, req.numbers
+        )
+        # Держим только последние 20 записей
+        await conn.execute("""
+            DELETE FROM history WHERE user_id = $1 AND id NOT IN (
+                SELECT id FROM history WHERE user_id = $1
+                ORDER BY id DESC LIMIT 20
+            )
+        """, user["id"])
+    return {"ok": True}
+
+
+@app.get("/api/history/list")
+async def history_list(token: str = ""):
+    user = await get_user_by_token(token)
+    if not user:
+        raise HTTPException(401, "Не авторизован")
+    if db_pool is None:
+        return {"items": []}
+
+    async with db_pool.acquire() as conn:
+        rows = await conn.fetch("""
+            SELECT id, subject, numbers,
+                   to_char(created_at, 'DD.MM HH24:MI') AS created
+            FROM history WHERE user_id = $1 ORDER BY id DESC LIMIT 20
+        """, user["id"])
+
+    return {"items": [dict(r) for r in rows]}
+
+
+@app.post("/api/history/clear")
+async def history_clear(req: TokenRequest):
+    user = await get_user_by_token(req.token)
+    if not user:
+        raise HTTPException(401, "Не авторизован")
+    if db_pool is not None:
+        async with db_pool.acquire() as conn:
+            await conn.execute("DELETE FROM history WHERE user_id = $1", user["id"])
+    return {"ok": True}
+
+
+# ═══════ ОБРАТНАЯ СВЯЗЬ ═══════
+
+@app.post("/api/feedback")
+async def feedback(req: FeedbackRequest):
+    if not req.message.strip():
+        raise HTTPException(400, "Сообщение пустое")
+    if db_pool is not None:
+        try:
+            async with db_pool.acquire() as conn:
+                await conn.execute(
+                    "INSERT INTO feedback (date, message, contact, version) "
+                    "VALUES ($1, $2, $3, $4)",
+                    datetime.now().strftime("%d.%m.%Y %H:%M"),
+                    req.message.strip(), req.contact.strip(), VERSION
+                )
+        except Exception as e:
+            print(f"[main] Ошибка записи feedback: {e}")
+    return {"ok": True}
+
+
+# ═══════ АДМИНКА ═══════
+
+@app.post("/api/admin/messages")
+async def admin_messages(data: dict):
+    if not await check_admin(data):
+        raise HTTPException(401, "Неверный пароль")
+    if db_pool is None:
+        return {"messages": [], "total": 0}
+    async with db_pool.acquire() as conn:
+        rows = await conn.fetch(
+            "SELECT id, date, message, contact, version FROM feedback ORDER BY id DESC"
+        )
+    messages = [dict(r) for r in rows]
+    return {"messages": messages, "total": len(messages)}
+
+
+@app.post("/api/admin/delete/{msg_id}")
+async def admin_delete(msg_id: int, data: dict):
+    if not await check_admin(data):
+        raise HTTPException(401, "Неверный пароль")
+    if db_pool is not None:
+        async with db_pool.acquire() as conn:
+            await conn.execute("DELETE FROM feedback WHERE id = $1", msg_id)
+    return {"ok": True}
+
+
+@app.post("/api/admin/clear")
+async def admin_clear(data: dict):
+    if not await check_admin(data):
+        raise HTTPException(401, "Неверный пароль")
+    if db_pool is not None:
+        async with db_pool.acquire() as conn:
+            await conn.execute("DELETE FROM feedback")
+    return {"ok": True}
+
+
+# ═══════ ПАРСИНГ ═══════
 
 @app.post("/api/parse")
 async def parse(req: ParseRequest):
@@ -124,85 +381,19 @@ async def parse(req: ParseRequest):
     return {"results": results, "total": len(results)}
 
 
-@app.post("/api/feedback")
-async def feedback(req: FeedbackRequest):
-    if not req.message.strip():
-        raise HTTPException(400, "Сообщение пустое")
-
-    if db_pool is not None:
-        try:
-            async with db_pool.acquire() as conn:
-                await conn.execute(
-                    "INSERT INTO feedback (date, message, contact, version) "
-                    "VALUES ($1, $2, $3, $4)",
-                    datetime.now().strftime("%d.%m.%Y %H:%M"),
-                    req.message.strip(),
-                    req.contact.strip(),
-                    VERSION,
-                )
-        except Exception as e:
-            print(f"[main] Ошибка записи в БД: {e}")
-
-    return {"ok": True}
-
-
-@app.post("/api/admin/messages")
-async def admin_messages(data: dict):
-    password = (data or {}).get("password", "")
-    if password != ADMIN_PASSWORD:
-        raise HTTPException(401, "Неверный пароль")
-
-    if db_pool is None:
-        return {"messages": [], "total": 0}
-
-    async with db_pool.acquire() as conn:
-        rows = await conn.fetch(
-            "SELECT id, date, message, contact, version "
-            "FROM feedback ORDER BY id DESC"
-        )
-
-    messages = [
-        {
-            "id": r["id"],
-            "date": r["date"],
-            "message": r["message"],
-            "contact": r["contact"],
-            "version": r["version"],
-        }
-        for r in rows
-    ]
-    return {"messages": messages, "total": len(messages)}
-
-
-@app.post("/api/admin/clear")
-async def admin_clear(data: dict):
-    password = (data or {}).get("password", "")
-    if password != ADMIN_PASSWORD:
-        raise HTTPException(401, "Неверный пароль")
-
-    if db_pool is not None:
-        async with db_pool.acquire() as conn:
-            await conn.execute("DELETE FROM feedback")
-    return {"ok": True}
-
+# ═══════ ПРОКСИ КАРТИНОК ═══════
 
 @app.get("/api/image")
 async def proxy_image(url: str, w: int = 1000):
     if not url.startswith("https://gdz.ru/"):
         raise HTTPException(400, "Недопустимый URL")
-
     w = max(400, min(w, 2000))
 
     def fetch_and_compress():
-        r = cffi_requests.get(
-            url,
-            impersonate="chrome",
-            timeout=8,
-            headers={"Referer": "https://gdz.ru/"},
-        )
+        r = cffi_requests.get(url, impersonate="chrome", timeout=8,
+                              headers={"Referer": "https://gdz.ru/"})
         if r.status_code != 200:
             raise Exception(f"HTTP {r.status_code}")
-
         try:
             img = Image.open(BytesIO(r.content))
             if img.width > w:
@@ -225,14 +416,8 @@ async def proxy_image(url: str, w: int = 1000):
         data, content_type = await asyncio.to_thread(fetch_and_compress)
     except Exception as e:
         print(f"[main] Ошибка {url}: {e}")
-        return Response(
-            content=PLACEHOLDER_JPEG,
-            media_type="image/jpeg",
-            headers={"Cache-Control": "no-cache", "X-Error": str(e)[:100]},
-        )
+        return Response(content=PLACEHOLDER_JPEG, media_type="image/jpeg",
+                        headers={"Cache-Control": "no-cache"})
 
-    return Response(
-        content=data,
-        media_type=content_type or "image/jpeg",
-        headers={"Cache-Control": "public, max-age=86400"},
-    )
+    return Response(content=data, media_type=content_type or "image/jpeg",
+                    headers={"Cache-Control": "public, max-age=86400"})

@@ -11,13 +11,14 @@ body {
 .container { max-width: 900px; margin: 0 auto; }
 
 /* ═══════════════════════════════════════
-   ВЕРХНЯЯ ПАНЕЛЬ — версия + кнопка поддержки
+   ВЕРХНЯЯ ПАНЕЛЬ — версия + кнопки справа
    ═══════════════════════════════════════ */
 .topbar {
     display: flex;
     justify-content: space-between;
     align-items: center;
     margin-bottom: 8px;
+    gap: 12px;
 }
 .version {
     background: #edf2f7;
@@ -27,6 +28,7 @@ body {
     font-size: 12px;
     font-weight: 600;
     font-family: monospace;
+    flex-shrink: 0;
 }
 .support-btn {
     background: white;
@@ -47,6 +49,39 @@ body {
     border-color: #4299e1;
     background: #ebf8ff;
 }
+
+/* Топбар справа — пользователь и иконки */
+.topbar-right {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+.topbar-user {
+    background: #edf2f7;
+    padding: 6px 12px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #4a5568;
+    white-space: nowrap;
+}
+.icon-btn {
+    background: white;
+    border: 2px solid #e2e8f0;
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 16px;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+}
+.icon-btn:hover { border-color: #4299e1; background: #ebf8ff; }
+.icon-btn.admin-icon { border-color: #4299e1; background: #ebf8ff; }
 
 /* ═══════════════════════════════════════
    ЗАГОЛОВКИ
@@ -98,6 +133,7 @@ h2 { font-size: 18px; color: #2d3748; margin-bottom: 12px; }
     font-size: 15px;
     outline: none;
     transition: border-color 0.2s;
+    font-family: inherit;
 }
 .num-input:focus { border-color: #4299e1; }
 
@@ -141,6 +177,19 @@ h2 { font-size: 18px; color: #2d3748; margin-bottom: 12px; }
     cursor: pointer;
 }
 .btn-small:hover { background: #3182ce; }
+
+.btn-retry {
+    padding: 10px 18px;
+    background: #4299e1;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    margin-top: 8px;
+}
+.btn-retry:hover { background: #3182ce; }
 
 /* ═══════════════════════════════════════
    СТАТУС
@@ -215,7 +264,7 @@ h2 { font-size: 18px; color: #2d3748; margin-bottom: 12px; }
 }
 .solution-img:hover { opacity: 0.92; }
 
-/* Картинка в процессе загрузки — shimmer-анимация */
+/* Картинка в процессе загрузки — shimmer */
 .img-loading {
     background: linear-gradient(90deg, #f7fafc 0%, #edf2f7 50%, #f7fafc 100%);
     background-size: 200% 100%;
@@ -290,6 +339,24 @@ h2 { font-size: 18px; color: #2d3748; margin-bottom: 12px; }
     font-weight: 600;
 }
 
+/* Старые варианты картинок (несколько решений) */
+.img-block {
+    margin-bottom: 16px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid #edf2f7;
+}
+.img-block:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+    padding-bottom: 0;
+}
+.img-label {
+    font-size: 13px;
+    color: #718096;
+    margin-bottom: 8px;
+    font-weight: 600;
+}
+
 /* ═══════════════════════════════════════
    ПОДВАЛ
    ═══════════════════════════════════════ */
@@ -321,6 +388,8 @@ h2 { font-size: 18px; color: #2d3748; margin-bottom: 12px; }
     padding: 24px;
     max-width: 450px;
     width: 100%;
+    max-height: 90vh;
+    overflow-y: auto;
 }
 .modal-content h3 { margin-bottom: 12px; }
 .modal-text {
@@ -333,6 +402,97 @@ h2 { font-size: 18px; color: #2d3748; margin-bottom: 12px; }
     gap: 10px;
     justify-content: flex-end;
     margin-top: 16px;
+}
+
+/* ═══════════════════════════════════════
+   ПРИВЕТСТВЕННОЕ МЕНЮ (Гость / Войти)
+   ═══════════════════════════════════════ */
+.welcome-content { max-width: 400px; }
+.welcome-btn {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    width: 100%;
+    padding: 16px 20px;
+    margin-top: 12px;
+    border: 2px solid #e2e8f0;
+    border-radius: 12px;
+    background: white;
+    cursor: pointer;
+    text-align: left;
+    transition: all 0.2s;
+    font-family: inherit;
+}
+.welcome-btn:hover { border-color: #4299e1; background: #ebf8ff; }
+.welcome-btn .wb-icon { font-size: 28px; }
+.welcome-btn .wb-text { display: flex; flex-direction: column; gap: 2px; }
+.welcome-btn strong { font-size: 15px; color: #2d3748; }
+.welcome-btn small { font-size: 12px; color: #718096; }
+
+/* ═══════════════════════════════════════
+   ВКЛАДКИ АВТОРИЗАЦИИ
+   ═══════════════════════════════════════ */
+.auth-tabs {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 16px;
+    background: #f7fafc;
+    padding: 4px;
+    border-radius: 10px;
+}
+.auth-tab {
+    flex: 1;
+    padding: 10px;
+    border: none;
+    background: transparent;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    color: #718096;
+    font-size: 14px;
+    font-family: inherit;
+}
+.auth-tab.active {
+    background: white;
+    color: #2d3748;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+/* ═══════════════════════════════════════
+   ИСТОРИЯ ПОИСКОВ
+   ═══════════════════════════════════════ */
+.history-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 14px;
+    border-radius: 8px;
+    background: #f7fafc;
+    margin-bottom: 8px;
+    cursor: pointer;
+    transition: background 0.15s;
+    gap: 12px;
+}
+.history-row:hover { background: #ebf8ff; }
+.history-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+    flex: 1;
+}
+.history-info strong { font-size: 14px; color: #2d3748; }
+.history-info span {
+    font-size: 13px;
+    color: #718096;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.history-date {
+    font-size: 12px;
+    color: #a0aec0;
+    flex-shrink: 0;
 }
 
 /* ═══════════════════════════════════════
@@ -387,7 +547,9 @@ h2 { font-size: 18px; color: #2d3748; margin-bottom: 12px; }
     font-size: 12px;
 }
 .form-label textarea,
-.form-label input[type="text"] {
+.form-label input[type="text"],
+.form-label input[type="email"],
+.form-label input[type="password"] {
     width: 100%;
     padding: 10px 12px;
     margin-top: 6px;
@@ -399,7 +561,7 @@ h2 { font-size: 18px; color: #2d3748; margin-bottom: 12px; }
     resize: vertical;
 }
 .form-label textarea:focus,
-.form-label input[type="text"]:focus {
+.form-label input:focus {
     border-color: #4299e1;
 }
 
@@ -438,8 +600,14 @@ h2 { font-size: 18px; color: #2d3748; margin-bottom: 12px; }
     align-items: center;
     margin-bottom: 8px;
     font-size: 12px;
+    gap: 12px;
 }
 .msg-date { color: #718096; }
+.msg-actions {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
 .msg-ver {
     background: #edf2f7;
     padding: 2px 8px;
@@ -447,6 +615,18 @@ h2 { font-size: 18px; color: #2d3748; margin-bottom: 12px; }
     color: #4a5568;
     font-family: monospace;
 }
+.msg-delete {
+    background: transparent;
+    border: 1px solid #fed7d7;
+    border-radius: 6px;
+    padding: 4px 8px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.2s;
+}
+.msg-delete:hover:not(:disabled) { background: #fed7d7; }
+.msg-delete:disabled { opacity: 0.5; cursor: not-allowed; }
+
 .msg-body {
     color: #2d3748;
     font-size: 15px;
@@ -480,4 +660,6 @@ h2 { font-size: 18px; color: #2d3748; margin-bottom: 12px; }
     .card { padding: 16px; }
     .solution-img.img-tall { max-width: 100%; }
     .image-modal-content { padding: 12px; }
+    .topbar-user { font-size: 12px; padding: 5px 9px; }
+    .icon-btn { width: 34px; height: 34px; font-size: 14px; }
 }
