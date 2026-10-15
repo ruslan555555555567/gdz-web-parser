@@ -4,6 +4,22 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>GDZ Парсер — 7 класс</title>
+    <script>
+        // ─── МГНОВЕННОЕ ПРИМЕНЕНИЕ ТЕМЫ (без мерцания) ───
+        (function() {
+            try {
+                const theme = localStorage.getItem('gdz_theme') || 'light';
+                const bg = localStorage.getItem('gdz_bg');
+                const root = document.documentElement;
+                if (theme === 'dark') {
+                    root.classList.add('theme-dark');
+                } else if (theme === 'custom' && bg) {
+                    root.classList.add('theme-custom');
+                    root.style.backgroundImage = 'url("' + bg + '")';
+                }
+            } catch (e) {}
+        })();
+    </script>
     <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
@@ -48,7 +64,7 @@
         </footer>
     </div>
 
-    <!-- ═══════ ПРИВЕТСТВЕННОЕ МЕНЮ ═══════ -->
+    <!-- Приветствие -->
     <div id="welcomeModal" class="modal hidden">
         <div class="modal-content welcome-content">
             <h2>Добро пожаловать! 👋</h2>
@@ -70,7 +86,7 @@
         </div>
     </div>
 
-    <!-- ═══════ ВХОД / РЕГИСТРАЦИЯ ═══════ -->
+    <!-- Вход -->
     <div id="authModal" class="modal hidden">
         <div class="modal-content">
             <h3 id="authTitle">Вход</h3>
@@ -100,7 +116,7 @@
         </div>
     </div>
 
-    <!-- ═══════ ИСТОРИЯ ═══════ -->
+    <!-- История -->
     <div id="historyModal" class="modal hidden">
         <div class="modal-content">
             <h3>📜 История поисков</h3>
@@ -112,12 +128,11 @@
         </div>
     </div>
 
-    <!-- ═══════ НАСТРОЙКИ АККАУНТА ═══════ -->
+    <!-- Настройки -->
     <div id="settingsModal" class="modal hidden">
         <div class="modal-content">
             <h3>⚙️ Настройки аккаунта</h3>
 
-            <!-- Имя -->
             <div class="settings-section">
                 <label class="form-label">
                     Имя
@@ -125,7 +140,6 @@
                 </label>
             </div>
 
-            <!-- Тема -->
             <div class="settings-section">
                 <label class="form-label">Оформление</label>
                 <div class="theme-options">
@@ -154,13 +168,19 @@
                 </div>
             </div>
 
-            <!-- Смена пароля -->
-            <div class="settings-section">
+            <div class="settings-section" id="passwordSection">
                 <label class="form-label">Смена пароля</label>
                 <input type="password" id="setOldPwd" class="num-input"
                     placeholder="Текущий пароль" style="margin-bottom:8px;">
                 <input type="password" id="setNewPwd" class="num-input"
                     placeholder="Новый пароль (мин. 6 символов)">
+            </div>
+
+            <div class="settings-section" id="logoutSection" style="display:none;">
+                <label class="form-label">Сессия</label>
+                <button type="button" id="logoutBtn" class="btn-logout">
+                    🚪 Выйти из аккаунта
+                </button>
             </div>
 
             <div id="settingsStatus" class="fb-status"></div>
@@ -179,7 +199,7 @@
         </div>
     </div>
 
-    <!-- ═══════ ТЕХПОДДЕРЖКА ═══════ -->
+    <!-- Техподдержка -->
     <div id="supportModal" class="modal hidden">
         <div class="modal-content">
             <h3>💬 Техподдержка</h3>
@@ -202,7 +222,7 @@
         </div>
     </div>
 
-    <!-- ═══════ МОДАЛКА КАРТИНКИ ═══════ -->
+    <!-- Картинка -->
     <div id="imageModal" class="modal hidden">
         <div class="image-modal-content">
             <button id="closeImageModal" class="image-modal-close">✕</button>
@@ -217,14 +237,12 @@
             { id: 'geometry', subject: 'Геометрия', url: 'https://gdz.ru/class-7/geometria/merzljak/' },
         ];
 
-        // ─── СОСТОЯНИЕ ──────────────────────────────────
         let authToken = localStorage.getItem('gdz_token') || '';
         let authUser = null;
         let isGuest = localStorage.getItem('gdz_guest') === '1';
-        let currentTheme = 'light';
-        let currentBgUrl = null;
+        let currentTheme = localStorage.getItem('gdz_theme') || 'light';
+        let currentBgUrl = localStorage.getItem('gdz_bg') || null;
 
-        // ─── ЭЛЕМЕНТЫ ───────────────────────────────────
         const $ = id => document.getElementById(id);
         const btn = $('btn'), status = $('status'), result = $('result');
         const welcomeModal = $('welcomeModal');
@@ -236,7 +254,6 @@
         const imageModalImg = $('imageModalImg');
         const topbarRight = $('topbarRight');
 
-        // ─── DEVICE INFO ────────────────────────────────
         function getDeviceInfo() {
             const ua = navigator.userAgent;
             let device = '💻 Компьютер';
@@ -267,20 +284,25 @@
             currentTheme = theme;
             currentBgUrl = bgUrl;
 
-            document.body.classList.remove('theme-dark', 'theme-custom');
+            const root = document.documentElement;
+            root.classList.remove('theme-dark', 'theme-custom');
+            root.style.backgroundImage = '';
 
             if (theme === 'dark') {
-                document.body.classList.add('theme-dark');
-                document.body.style.backgroundImage = '';
+                root.classList.add('theme-dark');
+                localStorage.setItem('gdz_theme', 'dark');
+                localStorage.removeItem('gdz_bg');
             } else if (theme === 'custom' && bgUrl) {
-                document.body.classList.add('theme-custom');
-                document.body.style.backgroundImage = `url("${bgUrl}")`;
+                root.classList.add('theme-custom');
+                root.style.backgroundImage = 'url("' + bgUrl + '")';
+                localStorage.setItem('gdz_theme', 'custom');
+                localStorage.setItem('gdz_bg', bgUrl);
             } else {
-                document.body.style.backgroundImage = '';
+                localStorage.setItem('gdz_theme', 'light');
+                localStorage.removeItem('gdz_bg');
             }
         }
 
-        // ─── СТАРТ ──────────────────────────────────────
         async function init() {
             if (authToken) {
                 try {
@@ -294,13 +316,6 @@
                         localStorage.removeItem('gdz_token');
                     }
                 } catch {}
-            }
-
-            // Применяем тему даже для гостя из localStorage
-            if (!authUser) {
-                const savedTheme = localStorage.getItem('gdz_theme') || 'light';
-                const savedBg = localStorage.getItem('gdz_bg') || null;
-                applyTheme(savedTheme, savedBg);
             }
 
             if (!authToken && !isGuest) {
@@ -320,7 +335,6 @@
                 greet.textContent = '👤 ' + name;
                 topbarRight.appendChild(greet);
 
-                // История
                 const histBtn = document.createElement('button');
                 histBtn.className = 'icon-btn';
                 histBtn.title = 'История поисков';
@@ -328,7 +342,6 @@
                 histBtn.onclick = openHistory;
                 topbarRight.appendChild(histBtn);
 
-                // Настройки
                 const setBtn = document.createElement('button');
                 setBtn.className = 'icon-btn';
                 setBtn.title = 'Настройки аккаунта';
@@ -336,7 +349,6 @@
                 setBtn.onclick = openSettings;
                 topbarRight.appendChild(setBtn);
 
-                // Админ
                 if (authUser.is_admin) {
                     const adminBtn = document.createElement('button');
                     adminBtn.className = 'icon-btn admin-icon';
@@ -345,21 +357,13 @@
                     adminBtn.onclick = () => window.location.href = '/admin';
                     topbarRight.appendChild(adminBtn);
                 }
-
-                // Выход
-                const outBtn = document.createElement('button');
-                outBtn.className = 'icon-btn';
-                outBtn.title = 'Выйти';
-                outBtn.textContent = '🚪';
-                outBtn.onclick = logout;
-                topbarRight.appendChild(outBtn);
+                // Выход из аккаунта убран — он теперь в настройках ⚙️
             } else {
                 const guestLabel = document.createElement('span');
                 guestLabel.className = 'topbar-user';
                 guestLabel.textContent = '👤 Гость';
                 topbarRight.appendChild(guestLabel);
 
-                // Настройки для гостя — только тема
                 const setBtn = document.createElement('button');
                 setBtn.className = 'icon-btn';
                 setBtn.title = 'Настройки оформления';
@@ -375,7 +379,6 @@
                 topbarRight.appendChild(loginBtn);
             }
 
-            // Поддержка
             const supBtn = document.createElement('button');
             supBtn.className = 'icon-btn';
             supBtn.title = 'Техподдержка';
@@ -384,7 +387,6 @@
             topbarRight.appendChild(supBtn);
         }
 
-        // ─── ПРИВЕТСТВИЕ ────────────────────────────────
         $('guestBtn').onclick = () => {
             isGuest = true;
             localStorage.setItem('gdz_guest', '1');
@@ -397,7 +399,7 @@
             openAuth();
         };
 
-        // ─── ВХОД / РЕГИСТРАЦИЯ ────────────────────────
+        // ─── ВХОД ───────────────────────────────────────
         let authMode = 'login';
 
         function openAuth() {
@@ -548,26 +550,21 @@
             $('settingsStatus').textContent = '';
             $('settingsStatus').className = 'fb-status';
 
-            // Заполняем поля
             $('setName').value = authUser?.name || '';
             $('setBgUrl').value = currentBgUrl || '';
             $('setOldPwd').value = '';
             $('setNewPwd').value = '';
 
-            // Если гость — скрываем смену пароля и удаление
             if (!authUser) {
-                $('setOldPwd').style.display = 'none';
-                $('setNewPwd').style.display = 'none';
-                $('setOldPwd').previousElementSibling.style.display = 'none';
+                $('passwordSection').style.display = 'none';
+                $('logoutSection').style.display = 'none';
                 $('deleteAccountBtn').style.display = 'none';
             } else {
-                $('setOldPwd').style.display = 'block';
-                $('setNewPwd').style.display = 'block';
-                $('setOldPwd').previousElementSibling.style.display = 'block';
+                $('passwordSection').style.display = 'block';
+                $('logoutSection').style.display = 'block';
                 $('deleteAccountBtn').style.display = 'block';
             }
 
-            // Активируем нужную тему
             document.querySelectorAll('.theme-btn').forEach(t => {
                 t.classList.toggle('active', t.dataset.theme === currentTheme);
             });
@@ -579,27 +576,23 @@
             if (e.target === settingsModal) settingsModal.classList.add('hidden');
         };
 
-        // Клик по теме
         document.querySelectorAll('.theme-btn').forEach(t => {
             t.onclick = () => {
                 const theme = t.dataset.theme;
                 document.querySelectorAll('.theme-btn').forEach(x =>
                     x.classList.toggle('active', x === t));
                 $('customBgBlock').style.display = theme === 'custom' ? 'block' : 'none';
-                // Предпросмотр сразу
                 const bg = theme === 'custom' ? $('setBgUrl').value.trim() : null;
                 applyTheme(theme, bg);
             };
         });
 
-        // Предпросмотр фона при вводе URL
         $('setBgUrl').oninput = () => {
             if (currentTheme === 'custom') {
                 applyTheme('custom', $('setBgUrl').value.trim());
             }
         };
 
-        // Сохранить настройки
         $('saveSettingsBtn').onclick = async () => {
             const st = $('settingsStatus');
             const newName = $('setName').value.trim();
@@ -611,24 +604,15 @@
             st.textContent = '⏳ Сохраняем...';
             st.className = 'fb-status loading';
 
-            // Для гостя — только локально
             if (!authUser) {
                 applyTheme(newTheme, newTheme === 'custom' ? newBg : null);
-                localStorage.setItem('gdz_theme', newTheme);
-                if (newTheme === 'custom' && newBg) {
-                    localStorage.setItem('gdz_bg', newBg);
-                } else {
-                    localStorage.removeItem('gdz_bg');
-                }
                 st.textContent = '✅ Настройки сохранены';
                 st.className = 'fb-status success';
                 setTimeout(() => settingsModal.classList.add('hidden'), 1500);
                 return;
             }
 
-            // Для залогиненного
             try {
-                // Обновляем профиль
                 const r1 = await fetch('/api/auth/update', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
@@ -649,7 +633,6 @@
                 applyTheme(authUser.theme, authUser.bg_url);
                 renderTopbar();
 
-                // Если пароль введён — меняем
                 if (oldPwd && newPwd) {
                     const r2 = await fetch('/api/auth/change-password', {
                         method: 'POST',
@@ -662,7 +645,7 @@
                     });
                     const d2 = await r2.json();
                     if (!r2.ok) {
-                        st.textContent = '⚠️ Профиль обновлён, но пароль: ' + (d2.detail || 'Ошибка');
+                        st.textContent = '⚠️ Профиль сохранён, пароль: ' + (d2.detail || 'Ошибка');
                         st.className = 'fb-status error';
                         return;
                     }
@@ -676,6 +659,12 @@
                 st.textContent = '❌ ' + e.message;
                 st.className = 'fb-status error';
             }
+        };
+
+        // Выход из аккаунта (в настройках)
+        $('logoutBtn').onclick = () => {
+            settingsModal.classList.add('hidden');
+            logout();
         };
 
         // Удалить аккаунт
@@ -695,12 +684,13 @@
                 });
                 if (!r.ok) throw new Error('Ошибка удаления');
 
-                // Очищаем всё локально
                 authToken = '';
                 authUser = null;
                 isGuest = false;
                 localStorage.removeItem('gdz_token');
                 localStorage.removeItem('gdz_guest');
+                localStorage.removeItem('gdz_theme');
+                localStorage.removeItem('gdz_bg');
                 applyTheme('light', null);
                 topbarRight.innerHTML = '';
                 settingsModal.classList.add('hidden');
@@ -745,7 +735,7 @@
             }
         };
 
-        // ─── МОДАЛКА КАРТИНКИ ───────────────────────────
+        // ─── КАРТИНКА ───────────────────────────────────
         function openImageModal(src) {
             imageModalImg.src = src;
             imageModal.classList.remove('hidden');
@@ -836,10 +826,7 @@
                         resolve();
                     }
 
-                    function onError() {
-                        cleanup();
-                        onFail('Error');
-                    }
+                    function onError() { cleanup(); onFail('Error'); }
 
                     img.addEventListener('load', onLoad, { once: true });
                     img.addEventListener('error', onError, { once: true });
