@@ -14,7 +14,7 @@ import asyncio
 from parser import parse_tasks
 
 # ⬇️ МЕНЯЙ ПРИ ОБНОВЛЕНИИ
-VERSION = "1.9.0"
+VERSION = "2.0.0"
 
 # ⬇️ ПАРОЛЬ ДЛЯ АДМИНКИ
 ADMIN_PASSWORD = "gdz2024admin"
@@ -35,6 +35,24 @@ if MONGO_URL:
 app = FastAPI(title="GDZ Парсер")
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
+
+
+# Заглушка-картинка 1x1 белая — возвращаем вместо ошибки,
+# чтобы img не ломался и не показывал alt-текст
+PLACEHOLDER_JPEG = bytes.fromhex(
+    "ffd8ffe000104a46494600010100000100010000ffdb004300ffffffffffffff"
+    "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+    "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+    "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+    "ffc00011080001000103012200021101031101ffc4001f000001050101010101"
+    "010000000000000000000102030405060708090a0bffc400b51000020103030204"
+    "03050504040000017d01020300041105122131410613516107227114328191a108"
+    "2342b1c11552d1f02433627282090a161718191a25262728292a3435363738393a"
+    "434445464748494a535455565758595a636465666768696a737475767778797a83"
+    "8485868788898a92939495969798999aa2a3a4a5a6a7a8a9aab2b3b4b5b6b7b8"
+    "b9bac2c3c4c5c6c7c8c9cad2d3d4d5d6d7d8d9dae1e2e3e4e5e6e7e8e9eaf1"
+    "f2f3f4f5f6f7f8f9faffda000c03010002110311003f00fefa28a2803fffd9"
+)
 
 
 class Job(BaseModel):
@@ -137,38 +155,31 @@ async def admin_clear(data: dict):
 @app.get("/api/image")
 async def proxy_image(url: str, w: int = 1000):
     """
-    Скачивает картинку, сжимает до w пикселей и отдаёт с кэшем.
-    w — желаемая ширина (по умолчанию 1000px).
+    Скачивает картинку с gdz.ru, сжимает и отдаёт.
+    При ошибке — возвращает заглушку с 200 OK,
+    чтобы браузер не показывал alt-текст.
     """
     if not url.startswith("https://gdz.ru/"):
         raise HTTPException(400, "Недопустимый URL")
 
-    # Ограничим ширину разумными пределами
     w = max(400, min(w, 2000))
 
-    def fetch_and_compress():
+    def fetch_once():
+        """Одна попытка: скачать + сжать."""
         r = cffi_requests.get(
             url,
             impersonate="chrome",
-            timeout=25,
+            timeout=10,                       # быстро, чтобы не висеть
             headers={"Referer": "https://gdz.ru/"},
         )
         if r.status_code != 200:
-            return None, f"HTTP {r.status_code}", None
+            raise Exception(f"HTTP {r.status_code}")
 
-        # Пробуем сжать
         try:
             img = Image.open(BytesIO(r.content))
-
-            # Уменьшаем, если картинка больше заданной ширины
             if img.width > w:
                 ratio = w / img.width
-                img = img.resize(
-                    (w, int(img.height * ratio)),
-                    Image.LANCZOS
-                )
-
-            # Конвертируем в RGB (для PNG с альфа-каналом)
+                img = img.resize((w, int(img.height * ratio)), Image.LANCZOS)
             if img.mode in ("RGBA", "P", "LA"):
                 bg = Image.new("RGB", img.size, (255, 255, 255))
                 if img.mode in ("RGBA", "LA"):
@@ -176,26 +187,43 @@ async def proxy_image(url: str, w: int = 1000):
                 else:
                     bg.paste(img)
                 img = bg
-
             buf = BytesIO()
             img.save(buf, format="JPEG", quality=80, optimize=True)
-            buf.seek(0)
-            return buf.read(), None, "image/jpeg"
-        except Exception as e:
-            print(f"[main] Сжатие упало: {e}")
-            return r.content, None, r.headers.get("content-type", "image/jpeg")
+            return buf.getvalue(), "image/jpeg"
+        except Exception:
+            # Если сжать не вышло — отдаём оригинал
+            return r.content, r.headers.get("content-type", "image/jpeg")
+
+    def fetch_with_retry():
+        """2 попытки: если первая упала — ждём 1 сек, пробуем снова."""
+        last_err = None
+        for attempt in range(2):
+            try:
+                return fetch_once()
+            except Exception as e:
+                last_err = e
+                print(f"[main] Попытка {attempt + 1} для {url}: {e}")
+                if attempt == 0:
+                    import time
+                    time.sleep(1)
+        raise last_err
 
     try:
-        data, err, content_type = await asyncio.to_thread(fetch_and_compress)
+        data, content_type = await asyncio.to_thread(fetch_with_retry)
     except Exception as e:
-        raise HTTPException(500, f"Ошибка загрузки: {e}")
-
-    if err:
-        raise HTTPException(500, err)
+        print(f"[main] Не удалось скачать {url}: {e}")
+        # Заглушка с 200 — img не сломается
+        return Response(
+            content=PLACEHOLDER_JPEG,
+            media_type="image/jpeg",
+            headers={
+                "Cache-Control": "no-cache",
+                "X-Error": str(e)[:100],
+            },
+        )
 
     return Response(
         content=data,
         media_type=content_type or "image/jpeg",
-        # Кэш на сутки — повторные заходы грузятся мгновенно
         headers={"Cache-Control": "public, max-age=86400"},
     )
