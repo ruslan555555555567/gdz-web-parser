@@ -16,7 +16,7 @@ import asyncpg
 
 from parser import parse_tasks
 
-VERSION = "6.0.0"
+VERSION = "7.0.0"
 ADMIN_PASSWORD = "gdz2024admin"
 ADMIN_EMAIL = os.getenv("ADMIN_EMAIL", "admin@gdz.ru").lower().strip()
 DATABASE_URL = os.getenv("DATABASE_URL")
@@ -46,9 +46,10 @@ async def init_db():
                     created_at TIMESTAMP DEFAULT NOW()
                 )
             """)
-            # Добавляем колонки, если их нет
             await conn.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS device TEXT")
             await conn.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS last_seen TIMESTAMP DEFAULT NOW()")
+            await conn.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS theme TEXT DEFAULT 'light'")
+            await conn.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS bg_url TEXT")
             await conn.execute("""
                 CREATE TABLE IF NOT EXISTS sessions (
                     token TEXT PRIMARY KEY,
@@ -90,7 +91,7 @@ async def get_user_by_token(token: str):
         return None
     async with db_pool.acquire() as conn:
         row = await conn.fetchrow("""
-            SELECT u.id, u.email, u.name, u.is_admin
+            SELECT u.id, u.email, u.name, u.is_admin, u.theme, u.bg_url
             FROM sessions s JOIN users u ON u.id = s.user_id
             WHERE s.token = $1
         """, token)
@@ -98,15 +99,12 @@ async def get_user_by_token(token: str):
 
 
 async def check_admin(data: dict):
-    """Проверяет админа: сначала по token, потом по паролю."""
     password = (data or {}).get("password", "")
     token = (data or {}).get("token", "")
-    # 1. Через token (если пользователь залогинен и он админ)
     if token:
         user = await get_user_by_token(token)
         if user and user.get("is_admin"):
             return True
-    # 2. Через пароль (резервный доступ)
     if password and password == ADMIN_PASSWORD:
         return True
     return False
@@ -170,6 +168,19 @@ class HistorySaveRequest(BaseModel):
     numbers: str
 
 
+class UpdateProfileRequest(BaseModel):
+    token: str
+    name: str = ""
+    theme: str = ""
+    bg_url: str = ""
+
+
+class ChangePasswordRequest(BaseModel):
+    token: str
+    old_password: str
+    new_password: str
+
+
 @app.on_event("startup")
 async def startup():
     await init_db()
@@ -209,8 +220,8 @@ async def register(req: RegisterRequest):
 
         is_admin = (email == ADMIN_EMAIL)
         user_id = await conn.fetchval(
-            "INSERT INTO users (email, password_hash, name, is_admin, device) "
-            "VALUES ($1, $2, $3, $4, $5) RETURNING id",
+            "INSERT INTO users (email, password_hash, name, is_admin, device, theme) "
+            "VALUES ($1, $2, $3, $4, $5, 'light') RETURNING id",
             email, hash_password(req.password), req.name.strip(),
             is_admin, req.device.strip()
         )
@@ -221,7 +232,8 @@ async def register(req: RegisterRequest):
         )
 
     return {"ok": True, "token": token, "user": {
-        "id": user_id, "email": email, "name": req.name.strip(), "is_admin": is_admin
+        "id": user_id, "email": email, "name": req.name.strip(),
+        "is_admin": is_admin, "theme": "light", "bg_url": None
     }}
 
 
@@ -233,13 +245,12 @@ async def login(req: LoginRequest):
 
     async with db_pool.acquire() as conn:
         row = await conn.fetchrow(
-            "SELECT id, email, password_hash, name, is_admin FROM users WHERE email = $1",
-            email
+            "SELECT id, email, password_hash, name, is_admin, theme, bg_url "
+            "FROM users WHERE email = $1", email
         )
         if not row or not verify_password(req.password, row["password_hash"]):
             raise HTTPException(401, "Неверный email или пароль")
 
-        # Обновляем device и last_seen при входе
         if req.device.strip():
             await conn.execute(
                 "UPDATE users SET device = $1, last_seen = NOW() WHERE id = $2",
@@ -255,8 +266,9 @@ async def login(req: LoginRequest):
         )
 
     return {"ok": True, "token": token, "user": {
-        "id": row["id"], "email": row["email"],
-        "name": row["name"], "is_admin": row["is_admin"]
+        "id": row["id"], "email": row["email"], "name": row["name"],
+        "is_admin": row["is_admin"], "theme": row["theme"] or "light",
+        "bg_url": row["bg_url"]
     }}
 
 
@@ -274,6 +286,83 @@ async def me(token: str = ""):
     if not user:
         raise HTTPException(401, "Не авторизован")
     return {"user": user}
+
+
+@app.post("/api/auth/update")
+async def update_profile(req: UpdateProfileRequest):
+    """Обновление имени, темы, фона."""
+    user = await get_user_by_token(req.token)
+    if not user:
+        raise HTTPException(401, "Не авторизован")
+    if db_pool is None:
+        raise HTTPException(500, "БД недоступна")
+
+    updates = []
+    params = []
+    idx = 1
+
+    if req.name.strip():
+        updates.append(f"name = ${idx}")
+        params.append(req.name.strip())
+        idx += 1
+    if req.theme in ('light', 'dark', 'custom'):
+        updates.append(f"theme = ${idx}")
+        params.append(req.theme)
+        idx += 1
+        # Если переключились с custom — очистим bg_url
+        if req.theme != 'custom':
+            updates.append(f"bg_url = NULL")
+    if req.theme == 'custom' and req.bg_url:
+        updates.append(f"bg_url = ${idx}")
+        params.append(req.bg_url)
+        idx += 1
+
+    if not updates:
+        return {"ok": True, "user": user}
+
+    params.append(user["id"])
+    sql = f"UPDATE users SET {', '.join(updates)} WHERE id = ${idx}"
+
+    async with db_pool.acquire() as conn:
+        await conn.execute(sql, *params)
+        row = await conn.fetchrow(
+            "SELECT id, email, name, is_admin, theme, bg_url FROM users WHERE id = $1",
+            user["id"]
+        )
+    return {"ok": True, "user": dict(row)}
+
+
+@app.post("/api/auth/change-password")
+async def change_password(req: ChangePasswordRequest):
+    user = await get_user_by_token(req.token)
+    if not user:
+        raise HTTPException(401, "Не авторизован")
+    if len(req.new_password) < 6:
+        raise HTTPException(400, "Новый пароль минимум 6 символов")
+
+    async with db_pool.acquire() as conn:
+        row = await conn.fetchrow("SELECT password_hash FROM users WHERE id = $1", user["id"])
+        if not verify_password(req.old_password, row["password_hash"]):
+            raise HTTPException(401, "Старый пароль неверный")
+        await conn.execute(
+            "UPDATE users SET password_hash = $1 WHERE id = $2",
+            hash_password(req.new_password), user["id"]
+        )
+    return {"ok": True}
+
+
+@app.post("/api/auth/delete")
+async def delete_account(req: TokenRequest):
+    """Удаление аккаунта (все сессии, история — через CASCADE)."""
+    user = await get_user_by_token(req.token)
+    if not user:
+        raise HTTPException(401, "Не авторизован")
+    if db_pool is None:
+        raise HTTPException(500, "БД недоступна")
+
+    async with db_pool.acquire() as conn:
+        await conn.execute("DELETE FROM users WHERE id = $1", user["id"])
+    return {"ok": True}
 
 
 # ═══════ ИСТОРИЯ ═══════
@@ -350,7 +439,6 @@ async def feedback(req: FeedbackRequest):
 
 @app.post("/api/admin/check")
 async def admin_check(data: dict):
-    """Проверяет, является ли текущий token админом."""
     if await check_admin(data):
         return {"ok": True, "is_admin": True}
     raise HTTPException(401, "Не админ")
@@ -372,7 +460,6 @@ async def admin_messages(data: dict):
 
 @app.post("/api/admin/users")
 async def admin_users(data: dict):
-    """Список зарегистрированных пользователей."""
     if not await check_admin(data):
         raise HTTPException(401, "Нет доступа")
     if db_pool is None:

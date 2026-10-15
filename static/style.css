@@ -6,9 +6,134 @@ body {
     color: #1a202c;
     min-height: 100vh;
     padding: 20px;
+    background-size: cover;
+    background-attachment: fixed;
+    background-position: center;
+    transition: background 0.3s, color 0.3s;
 }
 
 .container { max-width: 900px; margin: 0 auto; }
+
+/* ═══════════════════════════════════════
+   ТЁМНАЯ ТЕМА
+   ═══════════════════════════════════════ */
+body.theme-dark {
+    background: #1a202c;
+    color: #e2e8f0;
+}
+body.theme-dark .card,
+body.theme-dark .subject-block,
+body.theme-dark .modal-content,
+body.theme-dark .image-modal-content {
+    background: #2d3748;
+    color: #e2e8f0;
+}
+body.theme-dark h1,
+body.theme-dark h2,
+body.theme-dark h3 { color: #f7fafc; }
+body.theme-dark .subtitle { color: #a0aec0; }
+body.theme-dark .hint { color: #718096; }
+body.theme-dark .version {
+    background: #4a5568;
+    color: #cbd5e0;
+}
+body.theme-dark .num-input,
+body.theme-dark .form-label input,
+body.theme-dark .form-label textarea {
+    background: #1a202c;
+    border-color: #4a5568;
+    color: #e2e8f0;
+}
+body.theme-dark .num-input:focus,
+body.theme-dark .form-label input:focus { border-color: #4299e1; }
+body.theme-dark .num-input::placeholder,
+body.theme-dark .form-label input::placeholder,
+body.theme-dark .form-label textarea::placeholder { color: #718096; }
+body.theme-dark .form-label { color: #cbd5e0; }
+body.theme-dark .topbar-user {
+    background: #4a5568;
+    color: #e2e8f0;
+}
+body.theme-dark .icon-btn,
+body.theme-dark .support-btn {
+    background: #2d3748;
+    border-color: #4a5568;
+    color: #e2e8f0;
+}
+body.theme-dark .icon-btn:hover,
+body.theme-dark .support-btn:hover {
+    background: #4a5568;
+    border-color: #4299e1;
+}
+body.theme-dark .footer { color: #718096; }
+body.theme-dark .subject-block h2 { color: #63b3ed; }
+body.theme-dark .task-card { border-bottom-color: #4a5568; }
+body.theme-dark .task-header h3 { color: #e2e8f0; }
+body.theme-dark .history-row,
+body.theme-dark .message-card,
+body.theme-dark .user-card {
+    background: #1a202c;
+    color: #e2e8f0;
+}
+body.theme-dark .history-row:hover { background: #2d3748; }
+body.theme-dark .history-info strong { color: #e2e8f0; }
+body.theme-dark .history-info span { color: #a0aec0; }
+body.theme-dark .btn-secondary {
+    background: #4a5568;
+    color: #e2e8f0;
+}
+body.theme-dark .btn-secondary:hover { background: #718096; }
+body.theme-dark .welcome-btn {
+    background: #2d3748;
+    border-color: #4a5568;
+    color: #e2e8f0;
+}
+body.theme-dark .welcome-btn:hover {
+    background: #4a5568;
+    border-color: #4299e1;
+}
+body.theme-dark .welcome-btn strong { color: #f7fafc; }
+body.theme-dark .welcome-btn small { color: #a0aec0; }
+body.theme-dark .auth-tabs,
+body.theme-dark .admin-tabs {
+    background: #1a202c;
+}
+body.theme-dark .auth-tab,
+body.theme-dark .admin-tab { color: #a0aec0; }
+body.theme-dark .auth-tab.active,
+body.theme-dark .admin-tab.active {
+    background: #2d3748;
+    color: #f7fafc;
+}
+body.theme-dark .empty { color: #718096; }
+body.theme-dark .modal-content h3 { color: #f7fafc; }
+body.theme-dark .modal-text { color: #cbd5e0; }
+body.theme-dark .settings-section { border-color: #4a5568; }
+
+/* ═══════════════════════════════════════
+   СВОЯ КАРТИНКА ФОНА
+   ═══════════════════════════════════════ */
+body.theme-custom {
+    background-color: #1a202c;
+}
+body.theme-custom::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.4);
+    z-index: -1;
+}
+body.theme-custom .card,
+body.theme-custom .subject-block,
+body.theme-custom .modal-content,
+body.theme-custom .image-modal-content {
+    background: rgba(255,255,255,0.95);
+    backdrop-filter: blur(10px);
+}
+body.theme-custom h1,
+body.theme-custom h2 { color: #1a202c; text-shadow: 0 1px 2px rgba(255,255,255,0.5); }
+body.theme-custom .subtitle { color: #2d3748; font-weight: 500; }
+body.theme-custom .footer { color: #cbd5e0; }
 
 /* ═══════════════════════════════════════
    ВЕРХНЯЯ ПАНЕЛЬ
@@ -50,7 +175,6 @@ body {
     background: #ebf8ff;
 }
 
-/* Топбар справа — пользователь и иконки */
 .topbar-right {
     display: flex;
     gap: 6px;
@@ -178,6 +302,18 @@ h2 { font-size: 18px; color: #2d3748; margin-bottom: 12px; }
 }
 .btn-small:hover { background: #3182ce; }
 
+.btn-danger {
+    padding: 12px 20px;
+    background: #fff5f5;
+    color: #c53030;
+    border: 2px solid #fed7d7;
+    border-radius: 8px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+}
+.btn-danger:hover { background: #fed7d7; }
+
 .btn-retry {
     padding: 10px 18px;
     background: #4299e1;
@@ -264,7 +400,6 @@ h2 { font-size: 18px; color: #2d3748; margin-bottom: 12px; }
 }
 .solution-img:hover { opacity: 0.92; }
 
-/* Картинка в процессе загрузки */
 .img-loading {
     background: linear-gradient(90deg, #f7fafc 0%, #edf2f7 50%, #f7fafc 100%);
     background-size: 200% 100%;
@@ -272,7 +407,6 @@ h2 { font-size: 18px; color: #2d3748; margin-bottom: 12px; }
     min-height: 120px;
 }
 
-/* Картинка в процессе повтора (после заглушки) */
 .img-retrying {
     background: linear-gradient(90deg, #fef3c7 0%, #fde68a 50%, #fef3c7 100%);
     background-size: 200% 100%;
@@ -297,7 +431,6 @@ h2 { font-size: 18px; color: #2d3748; margin-bottom: 12px; }
     100% { background-position: 200% 0; }
 }
 
-/* Длинная картинка */
 .solution-img.img-tall {
     max-width: 500px;
     margin: 8px auto;
@@ -305,7 +438,6 @@ h2 { font-size: 18px; color: #2d3748; margin-bottom: 12px; }
     cursor: zoom-in;
 }
 
-/* Плашка над длинной картинкой */
 .img-tall-notice {
     background: #fef3c7;
     color: #92400e;
@@ -321,7 +453,6 @@ h2 { font-size: 18px; color: #2d3748; margin-bottom: 12px; }
     text-decoration: underline;
 }
 
-/* Блок ошибки картинки */
 .img-error {
     background: #fff5f5;
     border: 2px solid #fed7d7;
@@ -339,7 +470,6 @@ h2 { font-size: 18px; color: #2d3748; margin-bottom: 12px; }
     font-weight: 600;
 }
 
-/* Варианты картинок */
 .img-block {
     margin-bottom: 16px;
     padding-bottom: 16px;
@@ -496,6 +626,69 @@ h2 { font-size: 18px; color: #2d3748; margin-bottom: 12px; }
 }
 
 /* ═══════════════════════════════════════
+   НАСТРОЙКИ АККАУНТА
+   ═══════════════════════════════════════ */
+.settings-section {
+    padding: 14px 0;
+    border-bottom: 1px solid #edf2f7;
+}
+.settings-section:last-of-type { border-bottom: none; }
+
+.theme-options {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 8px;
+    margin-top: 8px;
+}
+.theme-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    padding: 12px 8px;
+    border: 2px solid #e2e8f0;
+    border-radius: 10px;
+    background: white;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 600;
+    font-family: inherit;
+    color: #4a5568;
+    transition: all 0.2s;
+}
+.theme-btn:hover { border-color: #4299e1; }
+.theme-btn.active {
+    border-color: #4299e1;
+    background: #ebf8ff;
+    color: #2b6cb0;
+}
+.theme-preview {
+    display: block;
+    width: 44px;
+    height: 32px;
+    border-radius: 6px;
+    border: 1px solid #cbd5e0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+}
+.light-preview { background: linear-gradient(135deg, #ffffff 50%, #f5f7fa 50%); }
+.dark-preview  { background: linear-gradient(135deg, #2d3748 50%, #1a202c 50%); }
+.custom-preview { background: linear-gradient(135deg, #e2e8f0 50%, #a0aec0 50%); }
+
+body.theme-dark .theme-btn {
+    background: #2d3748;
+    border-color: #4a5568;
+    color: #cbd5e0;
+}
+body.theme-dark .theme-btn.active {
+    background: #4a5568;
+    border-color: #4299e1;
+    color: #f7fafc;
+}
+
+/* ═══════════════════════════════════════
    МОДАЛКА КАРТИНКИ
    ═══════════════════════════════════════ */
 .image-modal-content {
@@ -531,7 +724,7 @@ h2 { font-size: 18px; color: #2d3748; margin-bottom: 12px; }
 .image-modal-close:hover { background: #c53030; }
 
 /* ═══════════════════════════════════════
-   ФОРМЫ (техподдержка, авторизация)
+   ФОРМЫ
    ═══════════════════════════════════════ */
 .form-label {
     display: block;
@@ -578,7 +771,7 @@ h2 { font-size: 18px; color: #2d3748; margin-bottom: 12px; }
 .fb-status.error   { background: #fff5f5; color: #c53030; }
 
 /* ═══════════════════════════════════════
-   АДМИНКА (/admin)
+   АДМИНКА
    ═══════════════════════════════════════ */
 .section-header {
     display: flex;
@@ -588,7 +781,6 @@ h2 { font-size: 18px; color: #2d3748; margin-bottom: 12px; }
     gap: 12px;
 }
 
-/* Вкладки админки */
 .admin-tabs {
     display: flex;
     gap: 8px;
@@ -615,7 +807,6 @@ h2 { font-size: 18px; color: #2d3748; margin-bottom: 12px; }
     box-shadow: 0 2px 4px rgba(0,0,0,0.05);
 }
 
-/* Карточка сообщения */
 .message-card {
     background: #f7fafc;
     border-left: 4px solid #4299e1;
@@ -671,7 +862,6 @@ h2 { font-size: 18px; color: #2d3748; margin-bottom: 12px; }
     border-top: 1px solid #e2e8f0;
 }
 
-/* Карточка пользователя */
 .user-card {
     background: #f7fafc;
     border-left: 4px solid #48bb78;
@@ -728,4 +918,10 @@ h2 { font-size: 18px; color: #2d3748; margin-bottom: 12px; }
     .icon-btn { width: 34px; height: 34px; font-size: 14px; }
     .admin-tabs { flex-direction: column; }
     .admin-tab { padding: 10px; }
+    .theme-options { grid-template-columns: 1fr; }
+    .theme-btn {
+        flex-direction: row;
+        justify-content: flex-start;
+        padding: 10px 14px;
+    }
 }
