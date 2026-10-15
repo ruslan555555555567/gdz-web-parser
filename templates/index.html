@@ -76,8 +76,8 @@
             <h3 id="authTitle">Вход</h3>
 
             <div class="auth-tabs">
-                <button class="auth-tab active" data-tab="login">Вход</button>
-                <button class="auth-tab" data-tab="register">Регистрация</button>
+                <button type="button" class="auth-tab active" data-tab="login">Вход</button>
+                <button type="button" class="auth-tab" data-tab="register">Регистрация</button>
             </div>
 
             <form id="authForm">
@@ -168,6 +168,33 @@
         const imageModalImg = $('imageModalImg');
         const topbarRight = $('topbarRight');
 
+        // ─── DEVICE INFO ────────────────────────────────
+        function getDeviceInfo() {
+            const ua = navigator.userAgent;
+            let device = 'Unknown';
+            if (/mobile/i.test(ua)) device = '📱 Телефон';
+            else if (/tablet|ipad/i.test(ua)) device = '📱 Планшет';
+            else device = '💻 Компьютер';
+
+            let browser = 'Unknown';
+            if (/chrome/i.test(ua) && !/edg/i.test(ua)) browser = 'Chrome';
+            else if (/edg/i.test(ua)) browser = 'Edge';
+            else if (/firefox/i.test(ua)) browser = 'Firefox';
+            else if (/safari/i.test(ua)) browser = 'Safari';
+            else if (/yabrowser/i.test(ua)) browser = 'Yandex';
+
+            let os = 'Unknown';
+            if (/windows/i.test(ua)) os = 'Windows';
+            else if (/mac/i.test(ua)) os = 'macOS';
+            else if (/linux/i.test(ua)) os = 'Linux';
+            else if (/android/i.test(ua)) os = 'Android';
+            else if (/iphone|ipad|ios/i.test(ua)) os = 'iOS';
+
+            const scr = `${window.screen.width}×${window.screen.height}`;
+            const lang = navigator.language || 'unknown';
+            return `${device} · ${os} · ${browser} · ${scr} · ${lang}`;
+        }
+
         // ─── СТАРТ ──────────────────────────────────────
         async function init() {
             if (authToken) {
@@ -211,7 +238,7 @@
                 if (authUser.is_admin) {
                     const adminBtn = document.createElement('button');
                     adminBtn.className = 'icon-btn admin-icon';
-                    adminBtn.title = 'Сообщения (админ)';
+                    adminBtn.title = 'Админка';
                     adminBtn.textContent = '💬';
                     adminBtn.onclick = () => window.location.href = '/admin';
                     topbarRight.appendChild(adminBtn);
@@ -225,7 +252,6 @@
                 outBtn.onclick = logout;
                 topbarRight.appendChild(outBtn);
             } else {
-                // Гость
                 const guestLabel = document.createElement('span');
                 guestLabel.className = 'topbar-user';
                 guestLabel.textContent = '👤 Гость';
@@ -295,14 +321,15 @@
             const password = $('authPwd').value;
             const name = $('authName').value.trim();
             const st = $('authStatus');
+            const device = getDeviceInfo();
 
             st.textContent = '⏳ Подождите...';
             st.className = 'fb-status loading';
 
             const url = authMode === 'login' ? '/api/auth/login' : '/api/auth/register';
             const body = authMode === 'login'
-                ? {email, password}
-                : {email, password, name};
+                ? {email, password, device}
+                : {email, password, name, device};
 
             try {
                 const r = await fetch(url, {
@@ -405,7 +432,9 @@
 
         // ─── ТЕХПОДДЕРЖКА ───────────────────────────────
         $('closeSupport').onclick = () => supportModal.classList.add('hidden');
-        supportModal.onclick = (e) => { if (e.target === supportModal) supportModal.classList.add('hidden'); };
+        supportModal.onclick = (e) => {
+            if (e.target === supportModal) supportModal.classList.add('hidden');
+        };
 
         $('feedbackForm').onsubmit = async (e) => {
             e.preventDefault();
@@ -418,7 +447,10 @@
                 const r = await fetch('/api/feedback', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({message: msg, contact: $('fbContact').value.trim()})
+                    body: JSON.stringify({
+                        message: msg,
+                        contact: $('fbContact').value.trim()
+                    })
                 });
                 if (!r.ok) throw new Error('Ошибка');
                 st.textContent = '✅ Отправлено! Спасибо.';
@@ -487,6 +519,7 @@
         function loadImage(img, imgUrl) {
             scheduleLoad(() => new Promise((resolve) => {
                 let attempt = 0;
+
                 function tryOnce() {
                     let tid = null;
                     img.classList.remove('img-retrying', 'img-tall');
@@ -499,13 +532,14 @@
                         img.removeEventListener('load', onLoad);
                         img.removeEventListener('error', onError);
                     }
+
                     function onLoad() {
                         cleanup();
                         const w = img.naturalWidth, h = img.naturalHeight;
                         if (w < MIN_REAL_WIDTH || h < MIN_REAL_HEIGHT) {
                             attempt++;
                             if (attempt <= PLACEHOLDER_RETRIES) {
-                                const delay = RETRY_DELAYS[attempt-1] || 3000;
+                                const delay = RETRY_DELAYS[attempt - 1] || 3000;
                                 img.classList.remove('img-loading');
                                 img.classList.add('img-retrying');
                                 setTimeout(tryOnce, delay);
@@ -520,15 +554,22 @@
                         img.onclick = () => openImageModal(img.src);
                         resolve();
                     }
-                    function onError() { cleanup(); onFail('Error'); }
-                    img.addEventListener('load', onLoad, {once: true});
-                    img.addEventListener('error', onError, {once: true});
-                    img.src = '/api/image?url=' + encodeURIComponent(imgUrl) + '&w=1000&t=' + Date.now();
+
+                    function onError() {
+                        cleanup();
+                        onFail('Error');
+                    }
+
+                    img.addEventListener('load', onLoad, { once: true });
+                    img.addEventListener('error', onError, { once: true });
+                    img.src = '/api/image?url=' + encodeURIComponent(imgUrl)
+                        + '&w=1000&t=' + Date.now();
                 }
+
                 function onFail(reason) {
                     attempt++;
                     if (attempt <= PLACEHOLDER_RETRIES) {
-                        const delay = RETRY_DELAYS[attempt-1] || 3000;
+                        const delay = RETRY_DELAYS[attempt - 1] || 3000;
                         img.classList.remove('img-loading');
                         img.classList.add('img-retrying');
                         setTimeout(tryOnce, delay);
@@ -537,6 +578,7 @@
                     showImageError(img, imgUrl);
                     resolve();
                 }
+
                 tryOnce();
             }));
         }
@@ -575,13 +617,17 @@
                 showStatus(`✅ Найдено ${found} из ${data.total} за ${seconds} сек`,
                     found > 0 ? 'success' : 'error');
 
-                // Сохранить в историю (только для авторизованных)
+                // Сохраняем историю (только авторизованным)
                 if (authToken) {
                     for (const j of jobs) {
                         fetch('/api/history/save', {
                             method: 'POST',
                             headers: {'Content-Type': 'application/json'},
-                            body: JSON.stringify({token: authToken, subject: j.subject, numbers: j.numbers})
+                            body: JSON.stringify({
+                                token: authToken,
+                                subject: j.subject,
+                                numbers: j.numbers
+                            })
                         }).catch(() => {});
                     }
                 }
@@ -630,7 +676,7 @@
 
         function escapeHtml(t) {
             const d = document.createElement('div');
-            d.textContent = t;
+            d.textContent = t || '';
             return d.innerHTML;
         }
 

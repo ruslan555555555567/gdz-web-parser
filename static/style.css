@@ -11,7 +11,7 @@ body {
 .container { max-width: 900px; margin: 0 auto; }
 
 /* ═══════════════════════════════════════
-   ВЕРХНЯЯ ПАНЕЛЬ — версия + кнопки справа
+   ВЕРХНЯЯ ПАНЕЛЬ
    ═══════════════════════════════════════ */
 .topbar {
     display: flex;
@@ -264,7 +264,7 @@ h2 { font-size: 18px; color: #2d3748; margin-bottom: 12px; }
 }
 .solution-img:hover { opacity: 0.92; }
 
-/* Картинка в процессе загрузки — shimmer */
+/* Картинка в процессе загрузки */
 .img-loading {
     background: linear-gradient(90deg, #f7fafc 0%, #edf2f7 50%, #f7fafc 100%);
     background-size: 200% 100%;
@@ -297,7 +297,7 @@ h2 { font-size: 18px; color: #2d3748; margin-bottom: 12px; }
     100% { background-position: 200% 0; }
 }
 
-/* Длинная картинка — ограничиваем ширину */
+/* Длинная картинка */
 .solution-img.img-tall {
     max-width: 500px;
     margin: 8px auto;
@@ -339,7 +339,7 @@ h2 { font-size: 18px; color: #2d3748; margin-bottom: 12px; }
     font-weight: 600;
 }
 
-/* Старые варианты картинок (несколько решений) */
+/* Варианты картинок */
 .img-block {
     margin-bottom: 16px;
     padding-bottom: 16px;
@@ -405,7 +405,7 @@ h2 { font-size: 18px; color: #2d3748; margin-bottom: 12px; }
 }
 
 /* ═══════════════════════════════════════
-   ПРИВЕТСТВЕННОЕ МЕНЮ (Гость / Войти)
+   ПРИВЕТСТВЕННОЕ МЕНЮ
    ═══════════════════════════════════════ */
 .welcome-content { max-width: 400px; }
 .welcome-btn {
@@ -496,7 +496,7 @@ h2 { font-size: 18px; color: #2d3748; margin-bottom: 12px; }
 }
 
 /* ═══════════════════════════════════════
-   МОДАЛКА ДЛЯ ПРОСМОТРА КАРТИНКИ
+   МОДАЛКА КАРТИНКИ
    ═══════════════════════════════════════ */
 .image-modal-content {
     position: relative;
@@ -531,7 +531,7 @@ h2 { font-size: 18px; color: #2d3748; margin-bottom: 12px; }
 .image-modal-close:hover { background: #c53030; }
 
 /* ═══════════════════════════════════════
-   ФОРМА ТЕХПОДДЕРЖКИ
+   ФОРМЫ (техподдержка, авторизация)
    ═══════════════════════════════════════ */
 .form-label {
     display: block;
@@ -585,8 +585,37 @@ h2 { font-size: 18px; color: #2d3748; margin-bottom: 12px; }
     justify-content: space-between;
     align-items: center;
     margin-bottom: 12px;
+    gap: 12px;
 }
 
+/* Вкладки админки */
+.admin-tabs {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 20px;
+    background: #f7fafc;
+    padding: 4px;
+    border-radius: 10px;
+}
+.admin-tab {
+    flex: 1;
+    padding: 12px;
+    border: none;
+    background: transparent;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    color: #718096;
+    font-size: 14px;
+    font-family: inherit;
+}
+.admin-tab.active {
+    background: white;
+    color: #2d3748;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+/* Карточка сообщения */
 .message-card {
     background: #f7fafc;
     border-left: 4px solid #4299e1;
@@ -642,6 +671,41 @@ h2 { font-size: 18px; color: #2d3748; margin-bottom: 12px; }
     border-top: 1px solid #e2e8f0;
 }
 
+/* Карточка пользователя */
+.user-card {
+    background: #f7fafc;
+    border-left: 4px solid #48bb78;
+    border-radius: 8px;
+    padding: 12px 14px;
+    margin-bottom: 10px;
+}
+.user-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 8px;
+    flex-wrap: wrap;
+}
+.user-head strong { font-size: 15px; color: #2d3748; flex: 1; }
+.admin-badge {
+    background: #fed7d7;
+    color: #c53030;
+    padding: 3px 8px;
+    border-radius: 5px;
+    font-size: 11px;
+    font-weight: 700;
+    flex-shrink: 0;
+}
+.user-row {
+    font-size: 13px;
+    color: #4a5568;
+    margin-bottom: 4px;
+    word-break: break-all;
+    line-height: 1.5;
+}
+.user-row.small { font-size: 12px; color: #718096; }
+
 .empty {
     color: #a0aec0;
     text-align: center;
@@ -662,4 +726,6 @@ h2 { font-size: 18px; color: #2d3748; margin-bottom: 12px; }
     .image-modal-content { padding: 12px; }
     .topbar-user { font-size: 12px; padding: 5px 9px; }
     .icon-btn { width: 34px; height: 34px; font-size: 14px; }
+    .admin-tabs { flex-direction: column; }
+    .admin-tab { padding: 10px; }
 }

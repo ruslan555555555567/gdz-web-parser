@@ -16,7 +16,7 @@ import asyncpg
 
 from parser import parse_tasks
 
-VERSION = "7.0.0"
+VERSION = "6.0.0"
 ADMIN_PASSWORD = "gdz2024admin"
 ADMIN_EMAIL = os.getenv("ADMIN_EMAIL", "admin@gdz.ru").lower().strip()
 DATABASE_URL = os.getenv("DATABASE_URL")
@@ -27,7 +27,7 @@ db_pool = None
 async def init_db():
     global db_pool
     if not DATABASE_URL:
-        print("[main] DATABASE_URL не задан — работа без БД")
+        print("[main] DATABASE_URL не задан")
         return
     try:
         db_pool = await asyncpg.create_pool(DATABASE_URL, min_size=1, max_size=5, ssl="require")
@@ -46,6 +46,9 @@ async def init_db():
                     created_at TIMESTAMP DEFAULT NOW()
                 )
             """)
+            # Добавляем колонки, если их нет
+            await conn.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS device TEXT")
+            await conn.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS last_seen TIMESTAMP DEFAULT NOW()")
             await conn.execute("""
                 CREATE TABLE IF NOT EXISTS sessions (
                     token TEXT PRIMARY KEY,
@@ -61,7 +64,7 @@ async def init_db():
                     created_at TIMESTAMP DEFAULT NOW()
                 )
             """)
-        print("[main] PostgreSQL подключена, таблицы готовы")
+        print("[main] PostgreSQL подключена")
     except Exception as e:
         print(f"[main] Ошибка PostgreSQL: {e}")
         db_pool = None
@@ -95,14 +98,17 @@ async def get_user_by_token(token: str):
 
 
 async def check_admin(data: dict):
+    """Проверяет админа: сначала по token, потом по паролю."""
     password = (data or {}).get("password", "")
     token = (data or {}).get("token", "")
-    if password and password == ADMIN_PASSWORD:
-        return True
+    # 1. Через token (если пользователь залогинен и он админ)
     if token:
         user = await get_user_by_token(token)
         if user and user.get("is_admin"):
             return True
+    # 2. Через пароль (резервный доступ)
+    if password and password == ADMIN_PASSWORD:
+        return True
     return False
 
 
@@ -145,11 +151,13 @@ class RegisterRequest(BaseModel):
     email: str
     password: str
     name: str = ""
+    device: str = ""
 
 
 class LoginRequest(BaseModel):
     email: str
     password: str
+    device: str = ""
 
 
 class TokenRequest(BaseModel):
@@ -201,9 +209,10 @@ async def register(req: RegisterRequest):
 
         is_admin = (email == ADMIN_EMAIL)
         user_id = await conn.fetchval(
-            "INSERT INTO users (email, password_hash, name, is_admin) "
-            "VALUES ($1, $2, $3, $4) RETURNING id",
-            email, hash_password(req.password), req.name.strip(), is_admin
+            "INSERT INTO users (email, password_hash, name, is_admin, device) "
+            "VALUES ($1, $2, $3, $4, $5) RETURNING id",
+            email, hash_password(req.password), req.name.strip(),
+            is_admin, req.device.strip()
         )
         token = secrets.token_urlsafe(32)
         await conn.execute(
@@ -229,6 +238,16 @@ async def login(req: LoginRequest):
         )
         if not row or not verify_password(req.password, row["password_hash"]):
             raise HTTPException(401, "Неверный email или пароль")
+
+        # Обновляем device и last_seen при входе
+        if req.device.strip():
+            await conn.execute(
+                "UPDATE users SET device = $1, last_seen = NOW() WHERE id = $2",
+                req.device.strip(), row["id"]
+            )
+        else:
+            await conn.execute("UPDATE users SET last_seen = NOW() WHERE id = $1", row["id"])
+
         token = secrets.token_urlsafe(32)
         await conn.execute(
             "INSERT INTO sessions (token, user_id) VALUES ($1, $2)",
@@ -266,13 +285,11 @@ async def history_save(req: HistorySaveRequest):
         return {"ok": False, "reason": "not_authorized"}
     if db_pool is None:
         return {"ok": False}
-
     async with db_pool.acquire() as conn:
         await conn.execute(
             "INSERT INTO history (user_id, subject, numbers) VALUES ($1, $2, $3)",
             user["id"], req.subject, req.numbers
         )
-        # Держим только последние 20 записей
         await conn.execute("""
             DELETE FROM history WHERE user_id = $1 AND id NOT IN (
                 SELECT id FROM history WHERE user_id = $1
@@ -289,14 +306,12 @@ async def history_list(token: str = ""):
         raise HTTPException(401, "Не авторизован")
     if db_pool is None:
         return {"items": []}
-
     async with db_pool.acquire() as conn:
         rows = await conn.fetch("""
             SELECT id, subject, numbers,
                    to_char(created_at, 'DD.MM HH24:MI') AS created
             FROM history WHERE user_id = $1 ORDER BY id DESC LIMIT 20
         """, user["id"])
-
     return {"items": [dict(r) for r in rows]}
 
 
@@ -327,16 +342,24 @@ async def feedback(req: FeedbackRequest):
                     req.message.strip(), req.contact.strip(), VERSION
                 )
         except Exception as e:
-            print(f"[main] Ошибка записи feedback: {e}")
+            print(f"[main] Ошибка feedback: {e}")
     return {"ok": True}
 
 
 # ═══════ АДМИНКА ═══════
 
+@app.post("/api/admin/check")
+async def admin_check(data: dict):
+    """Проверяет, является ли текущий token админом."""
+    if await check_admin(data):
+        return {"ok": True, "is_admin": True}
+    raise HTTPException(401, "Не админ")
+
+
 @app.post("/api/admin/messages")
 async def admin_messages(data: dict):
     if not await check_admin(data):
-        raise HTTPException(401, "Неверный пароль")
+        raise HTTPException(401, "Нет доступа")
     if db_pool is None:
         return {"messages": [], "total": 0}
     async with db_pool.acquire() as conn:
@@ -347,20 +370,47 @@ async def admin_messages(data: dict):
     return {"messages": messages, "total": len(messages)}
 
 
+@app.post("/api/admin/users")
+async def admin_users(data: dict):
+    """Список зарегистрированных пользователей."""
+    if not await check_admin(data):
+        raise HTTPException(401, "Нет доступа")
+    if db_pool is None:
+        return {"users": []}
+    async with db_pool.acquire() as conn:
+        rows = await conn.fetch("""
+            SELECT id, email, name, device, is_admin,
+                   to_char(created_at, 'DD.MM.YY HH24:MI') AS created,
+                   to_char(last_seen, 'DD.MM.YY HH24:MI') AS last_seen
+            FROM users ORDER BY id DESC
+        """)
+    return {"users": [dict(r) for r in rows]}
+
+
 @app.post("/api/admin/delete/{msg_id}")
 async def admin_delete(msg_id: int, data: dict):
     if not await check_admin(data):
-        raise HTTPException(401, "Неверный пароль")
+        raise HTTPException(401, "Нет доступа")
     if db_pool is not None:
         async with db_pool.acquire() as conn:
             await conn.execute("DELETE FROM feedback WHERE id = $1", msg_id)
     return {"ok": True}
 
 
+@app.post("/api/admin/delete-user/{user_id}")
+async def admin_delete_user(user_id: int, data: dict):
+    if not await check_admin(data):
+        raise HTTPException(401, "Нет доступа")
+    if db_pool is not None:
+        async with db_pool.acquire() as conn:
+            await conn.execute("DELETE FROM users WHERE id = $1", user_id)
+    return {"ok": True}
+
+
 @app.post("/api/admin/clear")
 async def admin_clear(data: dict):
     if not await check_admin(data):
-        raise HTTPException(401, "Неверный пароль")
+        raise HTTPException(401, "Нет доступа")
     if db_pool is not None:
         async with db_pool.acquire() as conn:
             await conn.execute("DELETE FROM feedback")
@@ -415,7 +465,6 @@ async def proxy_image(url: str, w: int = 1000):
     try:
         data, content_type = await asyncio.to_thread(fetch_and_compress)
     except Exception as e:
-        print(f"[main] Ошибка {url}: {e}")
         return Response(content=PLACEHOLDER_JPEG, media_type="image/jpeg",
                         headers={"Cache-Control": "no-cache"})
 

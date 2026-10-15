@@ -14,11 +14,14 @@
         </div>
 
         <h1>🔐 Админка</h1>
-        <p class="subtitle">Сообщения от пользователей</p>
+        <p class="subtitle">Сообщения и пользователи</p>
 
-        <!-- Форма входа -->
+        <!-- Форма входа по паролю (если не залогинен как админ) -->
         <section class="card" id="loginCard">
             <h2>Введите пароль</h2>
+            <p class="hint" style="margin-bottom:12px;">
+                Если вы вошли в аккаунт администратора — пароль не нужен.
+            </p>
             <form id="loginForm">
                 <input type="password" id="pwd" class="num-input"
                     placeholder="Пароль" autocomplete="current-password">
@@ -29,38 +32,76 @@
             </form>
         </section>
 
-        <!-- Список сообщений -->
-        <section class="card hidden" id="messagesCard">
-            <div class="section-header">
-                <h2>📬 Сообщения (<span id="count">0</span>)</h2>
-                <button id="refreshBtn" class="btn-small">🔄 Обновить</button>
+        <!-- Контент админки -->
+        <section class="card hidden" id="adminContent">
+            <div class="admin-tabs">
+                <button class="admin-tab active" data-tab="messages">📬 Сообщения</button>
+                <button class="admin-tab" data-tab="users">👥 Пользователи</button>
             </div>
-            <div id="messagesList"></div>
-            <div id="emptyMsg" class="empty">Пока сообщений нет</div>
-        </section>
 
-        <!-- Кнопка очистки -->
-        <div id="footerActions" class="hidden" style="text-align:center; margin-top:20px;">
-            <button id="clearBtn" class="btn-secondary">🗑 Удалить все сообщения</button>
-        </div>
+            <!-- Вкладка: Сообщения -->
+            <div id="tabMessages">
+                <div class="section-header">
+                    <h2>Сообщения (<span id="count">0</span>)</h2>
+                    <button id="refreshBtn" class="btn-small">🔄 Обновить</button>
+                </div>
+                <div id="messagesList"></div>
+                <div id="emptyMsg" class="empty">Пока сообщений нет</div>
+                <div style="text-align:center; margin-top:20px;">
+                    <button id="clearBtn" class="btn-secondary">🗑 Удалить все сообщения</button>
+                </div>
+            </div>
+
+            <!-- Вкладка: Пользователи -->
+            <div id="tabUsers" class="hidden">
+                <div class="section-header">
+                    <h2>Пользователи (<span id="usersCount">0</span>)</h2>
+                    <button id="refreshUsersBtn" class="btn-small">🔄 Обновить</button>
+                </div>
+                <div id="usersList"></div>
+                <div id="emptyUsers" class="empty">Пока нет зарегистрированных</div>
+            </div>
+        </section>
     </div>
 
     <script>
-        let currentPassword = '';
-
+        let authData = { token: '', password: '' };
         const loginCard = document.getElementById('loginCard');
-        const messagesCard = document.getElementById('messagesCard');
+        const adminContent = document.getElementById('adminContent');
         const loginForm = document.getElementById('loginForm');
         const pwd = document.getElementById('pwd');
         const loginStatus = document.getElementById('loginStatus');
-        const messagesList = document.getElementById('messagesList');
-        const emptyMsg = document.getElementById('emptyMsg');
-        const countEl = document.getElementById('count');
-        const refreshBtn = document.getElementById('refreshBtn');
-        const clearBtn = document.getElementById('clearBtn');
-        const footerActions = document.getElementById('footerActions');
 
-        // ─── ВХОД ПО ПАРОЛЮ ─────────────────────────────
+        // ─── ИНИЦИАЛИЗАЦИЯ ─────────────────────────────
+        async function init() {
+            const token = localStorage.getItem('gdz_token') || '';
+            if (token) {
+                // Проверяем, админ ли
+                try {
+                    const r = await fetch('/api/admin/check', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({token})
+                    });
+                    if (r.ok) {
+                        authData.token = token;
+                        openAdmin();
+                        return;
+                    }
+                } catch {}
+            }
+            // Не админ — показываем форму пароля
+            loginCard.classList.remove('hidden');
+        }
+
+        function openAdmin() {
+            loginCard.classList.add('hidden');
+            adminContent.classList.remove('hidden');
+            loadMessages();
+            loadUsers();
+        }
+
+        // ─── ВХОД ПО ПАРОЛЮ ────────────────────────────
         loginForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             const password = pwd.value;
@@ -70,98 +111,197 @@
             loginStatus.className = 'fb-status loading';
 
             try {
-                const resp = await fetch('/api/admin/messages', {
+                const r = await fetch('/api/admin/check', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify({password})
                 });
-                if (!resp.ok) {
+                if (!r.ok) {
                     loginStatus.textContent = '❌ Неверный пароль';
                     loginStatus.className = 'fb-status error';
                     return;
                 }
-                const data = await resp.json();
-                currentPassword = password;
-                loginCard.classList.add('hidden');
-                messagesCard.classList.remove('hidden');
-                footerActions.classList.remove('hidden');
-                renderMessages(data.messages);
+                authData.password = password;
+                openAdmin();
             } catch (err) {
                 loginStatus.textContent = '❌ ' + err.message;
                 loginStatus.className = 'fb-status error';
             }
         });
 
-        // ─── ОБНОВИТЬ СПИСОК ────────────────────────────
-        refreshBtn.addEventListener('click', loadMessages);
+        // ─── ВКЛАДКИ ───────────────────────────────────
+        document.querySelectorAll('.admin-tab').forEach(t => {
+            t.addEventListener('click', () => {
+                document.querySelectorAll('.admin-tab').forEach(x =>
+                    x.classList.toggle('active', x === t));
+                const tab = t.dataset.tab;
+                document.getElementById('tabMessages').classList.toggle('hidden', tab !== 'messages');
+                document.getElementById('tabUsers').classList.toggle('hidden', tab !== 'users');
+            });
+        });
+
+        function getAuthPayload() {
+            return authData.token
+                ? {token: authData.token}
+                : {password: authData.password};
+        }
+
+        // ─── СООБЩЕНИЯ ─────────────────────────────────
+        document.getElementById('refreshBtn').onclick = loadMessages;
+        document.getElementById('refreshUsersBtn').onclick = loadUsers;
 
         async function loadMessages() {
+            const list = document.getElementById('messagesList');
+            const empty = document.getElementById('emptyMsg');
+            const countEl = document.getElementById('count');
             try {
-                const resp = await fetch('/api/admin/messages', {
+                const r = await fetch('/api/admin/messages', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({password: currentPassword})
+                    body: JSON.stringify(getAuthPayload())
                 });
-                if (!resp.ok) {
-                    alert('Сессия истекла. Обновите страницу.');
+                if (!r.ok) throw new Error('Нет доступа');
+                const d = await r.json();
+                countEl.textContent = d.total;
+                list.innerHTML = '';
+                if (!d.messages.length) {
+                    empty.style.display = 'block';
                     return;
                 }
-                const data = await resp.json();
-                renderMessages(data.messages);
-            } catch (err) {
-                alert('Ошибка: ' + err.message);
+                empty.style.display = 'none';
+                d.messages.forEach(m => {
+                    const div = document.createElement('div');
+                    div.className = 'message-card';
+                    div.innerHTML = `
+                        <div class="msg-head">
+                            <span class="msg-date">📅 ${escapeHtml(m.date || '')}</span>
+                            <div class="msg-actions">
+                                <span class="msg-ver">v${escapeHtml(m.version || '?')}</span>
+                                <button class="msg-delete" data-id="${m.id}">🗑</button>
+                            </div>
+                        </div>
+                        <div class="msg-body">${escapeHtml(m.message || '')}</div>
+                        ${m.contact ? `<div class="msg-contact">📞 ${escapeHtml(m.contact)}</div>` : ''}
+                    `;
+                    list.appendChild(div);
+                });
+            } catch (e) {
+                list.innerHTML = '<p class="empty">Ошибка: ' + e.message + '</p>';
             }
         }
 
-        // ─── ОЧИСТИТЬ ВСЁ ───────────────────────────────
-        clearBtn.addEventListener('click', async () => {
-            if (!confirm('Удалить ВСЕ сообщения? Это нельзя отменить.')) return;
+        // Удаление одного сообщения
+        document.getElementById('messagesList').addEventListener('click', async (e) => {
+            const btn = e.target.closest('.msg-delete');
+            if (!btn) return;
+            if (!confirm('Удалить это сообщение?')) return;
+            btn.disabled = true;
             try {
-                const resp = await fetch('/api/admin/clear', {
+                const r = await fetch('/api/admin/delete/' + btn.dataset.id, {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({password: currentPassword})
+                    body: JSON.stringify(getAuthPayload())
                 });
-                if (!resp.ok) throw new Error('Ошибка');
-                renderMessages([]);
+                if (!r.ok) throw new Error('Ошибка');
+                btn.closest('.message-card').remove();
+                const remaining = document.querySelectorAll('.message-card').length;
+                document.getElementById('count').textContent = remaining;
+                if (!remaining) document.getElementById('emptyMsg').style.display = 'block';
             } catch (err) {
+                btn.disabled = false;
                 alert('Не удалось удалить: ' + err.message);
             }
         });
 
-        // ─── ОТРИСОВКА ──────────────────────────────────
-        function renderMessages(messages) {
-            countEl.textContent = messages.length;
-            messagesList.innerHTML = '';
+        // Очистить всё
+        document.getElementById('clearBtn').onclick = async () => {
+            if (!confirm('Удалить ВСЕ сообщения?')) return;
+            try {
+                const r = await fetch('/api/admin/clear', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(getAuthPayload())
+                });
+                if (!r.ok) throw new Error('Ошибка');
+                loadMessages();
+            } catch (err) { alert('Ошибка: ' + err.message); }
+        };
 
-            if (messages.length === 0) {
-                emptyMsg.style.display = 'block';
-                return;
+        // ─── ПОЛЬЗОВАТЕЛИ ──────────────────────────────
+        async function loadUsers() {
+            const list = document.getElementById('usersList');
+            const empty = document.getElementById('emptyUsers');
+            const countEl = document.getElementById('usersCount');
+            try {
+                const r = await fetch('/api/admin/users', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(getAuthPayload())
+                });
+                if (!r.ok) throw new Error('Нет доступа');
+                const d = await r.json();
+                countEl.textContent = d.users.length;
+                list.innerHTML = '';
+                if (!d.users.length) {
+                    empty.style.display = 'block';
+                    return;
+                }
+                empty.style.display = 'none';
+                d.users.forEach(u => {
+                    const div = document.createElement('div');
+                    div.className = 'user-card';
+                    const badge = u.is_admin ? '<span class="admin-badge">👑 АДМИН</span>' : '';
+                    div.innerHTML = `
+                        <div class="user-head">
+                            <strong>${escapeHtml(u.name || 'Без имени')}</strong>
+                            ${badge}
+                            <button class="msg-delete user-del" data-id="${u.id}">🗑</button>
+                        </div>
+                        <div class="user-row">📧 ${escapeHtml(u.email)}</div>
+                        <div class="user-row">💻 ${escapeHtml(u.device || '—')}</div>
+                        <div class="user-row small">
+                            📅 Зарегистрирован: ${escapeHtml(u.created || '—')}
+                            &nbsp;·&nbsp;
+                            🕐 Последний вход: ${escapeHtml(u.last_seen || '—')}
+                        </div>
+                    `;
+                    list.appendChild(div);
+                });
+            } catch (e) {
+                list.innerHTML = '<p class="empty">Ошибка: ' + e.message + '</p>';
             }
-            emptyMsg.style.display = 'none';
-
-            messages.forEach(m => {
-                const div = document.createElement('div');
-                div.className = 'message-card';
-                div.innerHTML = `
-                    <div class="msg-head">
-                        <span class="msg-date">📅 ${escapeHtml(m.date || '')}</span>
-                        <span class="msg-ver">v${escapeHtml(m.version || '?')}</span>
-                    </div>
-                    <div class="msg-body">${escapeHtml(m.message || '')}</div>
-                    ${m.contact
-                        ? `<div class="msg-contact">📞 ${escapeHtml(m.contact)}</div>`
-                        : ''}
-                `;
-                messagesList.appendChild(div);
-            });
         }
 
-        function escapeHtml(text) {
-            const div = document.createElement('div');
-            div.textContent = text;
-            return div.innerHTML;
+        // Удаление пользователя
+        document.getElementById('usersList').addEventListener('click', async (e) => {
+            const btn = e.target.closest('.user-del');
+            if (!btn) return;
+            if (!confirm('Удалить этого пользователя? Все его данные тоже удалятся.')) return;
+            btn.disabled = true;
+            try {
+                const r = await fetch('/api/admin/delete-user/' + btn.dataset.id, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(getAuthPayload())
+                });
+                if (!r.ok) throw new Error('Ошибка');
+                btn.closest('.user-card').remove();
+                const remaining = document.querySelectorAll('.user-card').length;
+                document.getElementById('usersCount').textContent = remaining;
+                if (!remaining) document.getElementById('emptyUsers').style.display = 'block';
+            } catch (err) {
+                btn.disabled = false;
+                alert('Ошибка: ' + err.message);
+            }
+        });
+
+        function escapeHtml(t) {
+            const d = document.createElement('div');
+            d.textContent = t || '';
+            return d.innerHTML;
         }
+
+        init();
     </script>
 </body>
 </html>
