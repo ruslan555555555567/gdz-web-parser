@@ -13,13 +13,8 @@ import asyncio
 
 from parser import parse_tasks
 
-# ⬇️ МЕНЯЙ ПРИ ОБНОВЛЕНИИ
-VERSION = "2.0.0"
-
-# ⬇️ ПАРОЛЬ ДЛЯ АДМИНКИ
+VERSION = "2.1.0"
 ADMIN_PASSWORD = "gdz2024admin"
-
-# ⬇️ MONGODB
 MONGO_URL = os.getenv("MONGO_URL")
 
 feedback_collection = None
@@ -37,8 +32,7 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
 
-# Заглушка-картинка 1x1 белая — возвращаем вместо ошибки,
-# чтобы img не ломался и не показывал alt-текст
+# Заглушка 1x1 белая — отдаём при ошибке, чтобы img не ломался
 PLACEHOLDER_JPEG = bytes.fromhex(
     "ffd8ffe000104a46494600010100000100010000ffdb004300ffffffffffffff"
     "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
@@ -114,13 +108,11 @@ async def feedback(req: FeedbackRequest):
         "contact": req.contact.strip(),
         "version": VERSION,
     }
-
     if feedback_collection is not None:
         try:
             await feedback_collection.insert_one(doc)
         except Exception as e:
             print(f"[main] Ошибка MongoDB: {e}")
-
     return {"ok": True}
 
 
@@ -129,10 +121,8 @@ async def admin_messages(data: dict):
     password = (data or {}).get("password", "")
     if password != ADMIN_PASSWORD:
         raise HTTPException(401, "Неверный пароль")
-
     if feedback_collection is None:
         return {"messages": [], "total": 0}
-
     cursor = feedback_collection.find().sort("_id", -1)
     messages = []
     async for doc in cursor:
@@ -146,7 +136,6 @@ async def admin_clear(data: dict):
     password = (data or {}).get("password", "")
     if password != ADMIN_PASSWORD:
         raise HTTPException(401, "Неверный пароль")
-
     if feedback_collection is not None:
         await feedback_collection.delete_many({})
     return {"ok": True}
@@ -155,21 +144,19 @@ async def admin_clear(data: dict):
 @app.get("/api/image")
 async def proxy_image(url: str, w: int = 1000):
     """
-    Скачивает картинку с gdz.ru, сжимает и отдаёт.
-    При ошибке — возвращает заглушку с 200 OK,
-    чтобы браузер не показывал alt-текст.
+    Скачивает картинку с gdz.ru и сжимает её.
+    ОДНА попытка, timeout 8 сек. При ошибке — заглушка.
     """
     if not url.startswith("https://gdz.ru/"):
         raise HTTPException(400, "Недопустимый URL")
 
     w = max(400, min(w, 2000))
 
-    def fetch_once():
-        """Одна попытка: скачать + сжать."""
+    def fetch_and_compress():
         r = cffi_requests.get(
             url,
             impersonate="chrome",
-            timeout=10,                       # быстро, чтобы не висеть
+            timeout=8,                            # одна попытка, быстро
             headers={"Referer": "https://gdz.ru/"},
         )
         if r.status_code != 200:
@@ -191,35 +178,16 @@ async def proxy_image(url: str, w: int = 1000):
             img.save(buf, format="JPEG", quality=80, optimize=True)
             return buf.getvalue(), "image/jpeg"
         except Exception:
-            # Если сжать не вышло — отдаём оригинал
             return r.content, r.headers.get("content-type", "image/jpeg")
 
-    def fetch_with_retry():
-        """2 попытки: если первая упала — ждём 1 сек, пробуем снова."""
-        last_err = None
-        for attempt in range(2):
-            try:
-                return fetch_once()
-            except Exception as e:
-                last_err = e
-                print(f"[main] Попытка {attempt + 1} для {url}: {e}")
-                if attempt == 0:
-                    import time
-                    time.sleep(1)
-        raise last_err
-
     try:
-        data, content_type = await asyncio.to_thread(fetch_with_retry)
+        data, content_type = await asyncio.to_thread(fetch_and_compress)
     except Exception as e:
-        print(f"[main] Не удалось скачать {url}: {e}")
-        # Заглушка с 200 — img не сломается
+        print(f"[main] Ошибка {url}: {e}")
         return Response(
             content=PLACEHOLDER_JPEG,
             media_type="image/jpeg",
-            headers={
-                "Cache-Control": "no-cache",
-                "X-Error": str(e)[:100],
-            },
+            headers={"Cache-Control": "no-cache", "X-Error": str(e)[:100]},
         )
 
     return Response(

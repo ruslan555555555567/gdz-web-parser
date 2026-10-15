@@ -146,9 +146,9 @@
             }
         });
 
-        // ─── ЗАГРУЗКА КАРТИНОК (по 2 одновременно) ──────
+        // ─── ЗАГРУЗКА КАРТИНОК (по 3 одновременно) ──────
         let activeLoads = 0;
-        const MAX_PARALLEL = 2;
+        const MAX_PARALLEL = 3;
         const pendingQueue = [];
 
         function scheduleLoad(fn) {
@@ -169,7 +169,7 @@
             }
         }
 
-        function loadImage(img, imgUrl, retries = 3) {
+        function loadImage(img, imgUrl, retries = 2) {
             scheduleLoad(() => new Promise((resolve) => {
                 let attempt = 0;
 
