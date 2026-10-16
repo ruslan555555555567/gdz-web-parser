@@ -10,9 +10,8 @@
                 const theme = localStorage.getItem('gdz_theme') || 'light';
                 const bg = localStorage.getItem('gdz_bg');
                 const root = document.documentElement;
-                if (theme === 'dark') {
-                    root.classList.add('theme-dark');
-                } else if (theme === 'custom' && bg) {
+                if (theme === 'dark') root.classList.add('theme-dark');
+                else if (theme === 'custom' && bg) {
                     root.classList.add('theme-custom');
                     root.style.backgroundImage = 'url("' + bg + '")';
                 }
@@ -40,9 +39,7 @@
                 <input type="password" id="pwd" class="num-input"
                     placeholder="Пароль" autocomplete="current-password">
                 <div id="loginStatus" class="fb-status"></div>
-                <button type="submit" class="btn-primary" style="margin-top: 12px;">
-                    Войти
-                </button>
+                <button type="submit" class="btn-primary" style="margin-top: 12px;">Войти</button>
             </form>
         </section>
 
@@ -58,47 +55,19 @@
             <div id="tabSubjects">
                 <div class="section-header">
                     <h2>📚 Предметы (<span id="subjectsCount">0</span>)</h2>
-                    <button id="refreshSubjectsBtn" class="btn-small">🔄 Обновить</button>
+                    <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                        <button id="resetSubjectsBtn" class="btn-small reset-btn">🔄 Сброс</button>
+                        <button id="addSubjectBtn" class="btn-small">➕ Добавить</button>
+                        <button id="refreshSubjectsBtn" class="btn-small">🔄 Обновить</button>
+                    </div>
                 </div>
+
+                <p class="hint" style="margin-bottom:12px;">
+                    💡 Перетаскивай карточки мышкой за <b>⠿</b>, чтобы изменить порядок.
+                </p>
 
                 <div id="subjectsList"></div>
                 <div id="emptySubjects" class="empty">Пока нет предметов</div>
-
-                <h3 style="margin-top:24px; margin-bottom:12px;">➕ Добавить предмет</h3>
-                <div class="subject-form">
-                    <div class="input-row">
-                        <label class="input-label">Название</label>
-                        <input type="text" id="newSubjName" class="num-input"
-                            placeholder="Алгебра">
-                    </div>
-                    <div class="input-row">
-                        <label class="input-label">Ссылка на gdz.ru</label>
-                        <input type="text" id="newSubjUrl" class="num-input"
-                            placeholder="https://gdz.ru/class-7/algebra/makarichev-18/">
-                    </div>
-                    <div class="input-row">
-                        <label class="input-label">Тип</label>
-                        <select id="newSubjType" class="num-input">
-                            <option value="numbers">🔍 Поиск номеров</option>
-                            <option value="text">📝 Текстовые задания</option>
-                        </select>
-                    </div>
-                    <div class="input-row">
-                        <label class="input-label">Группа</label>
-                        <select id="newSubjGroup" class="num-input">
-                            <option value="🧮 Точные науки">🧮 Точные науки</option>
-                            <option value="🌿 Естественные науки">🌿 Естественные науки</option>
-                            <option value="📖 Гуманитарные науки">📖 Гуманитарные науки</option>
-                            <option value="🎨 Остальные предметы">🎨 Остальные предметы</option>
-                        </select>
-                    </div>
-                    <div class="input-row">
-                        <label class="input-label">Порядок (чем меньше, тем выше)</label>
-                        <input type="number" id="newSubjOrder" class="num-input" value="100">
-                    </div>
-                    <div id="addSubjStatus" class="fb-status"></div>
-                    <button id="addSubjBtn" class="btn-primary">➕ Добавить предмет</button>
-                </div>
             </div>
 
             <!-- ОНЛАЙН -->
@@ -107,7 +76,7 @@
                     <h2>🟢 Онлайн (<span id="onlineCount">0</span>)</h2>
                     <button id="refreshOnlineBtn" class="btn-small">🔄 Обновить</button>
                 </div>
-                <p class="hint" style="margin-bottom:12px;">Активны за последние 5 минут. Автообновление раз в 30 сек.</p>
+                <p class="hint" style="margin-bottom:12px;">Активны за последние 5 минут.</p>
                 <div id="onlineList"></div>
                 <div id="emptyOnline" class="empty">Сейчас никого нет</div>
             </div>
@@ -137,9 +106,68 @@
         </section>
     </div>
 
+    <!-- МОДАЛКА РЕДАКТИРОВАНИЯ ПРЕДМЕТА -->
+    <div id="editModal" class="modal hidden">
+        <div class="modal-content">
+            <h3 id="editModalTitle">✏️ Редактировать предмет</h3>
+
+            <label class="form-label">
+                Название
+                <input type="text" id="editName" placeholder="Алгебра">
+            </label>
+
+            <label class="form-label">
+                Ссылка на gdz.ru
+                <input type="text" id="editUrl" placeholder="https://gdz.ru/class-7/algebra/makarichev-18/">
+            </label>
+
+            <label class="form-label">
+                Тип
+                <select id="editType" class="num-input">
+                    <option value="numbers">🔍 Поиск номеров</option>
+                    <option value="text">📝 Текстовые задания</option>
+                </select>
+            </label>
+
+            <label class="form-label">
+                Группа
+                <select id="editGroup" class="num-input">
+                    <option value="🧮 Точные науки">🧮 Точные науки</option>
+                    <option value="🌿 Естественные науки">🌿 Естественные науки</option>
+                    <option value="📖 Гуманитарные науки">📖 Гуманитарные науки</option>
+                    <option value="🎨 Остальные предметы">🎨 Остальные предметы</option>
+                </select>
+            </label>
+
+            <label class="form-label">
+                Всего номеров в учебнике (0 = не знаем)
+                <input type="number" id="editMaxNum" placeholder="560" min="0">
+            </label>
+
+            <label class="form-label">
+                Порядок
+                <input type="number" id="editSort" placeholder="1" min="0">
+            </label>
+
+            <label class="form-label">
+                Заметка (необязательно)
+                <textarea id="editNote" rows="2" placeholder="Например: Мерзляк, 2023 год"></textarea>
+            </label>
+
+            <div id="editStatus" class="fb-status"></div>
+
+            <div class="modal-actions">
+                <button type="button" id="editCancelBtn" class="btn-secondary">Отмена</button>
+                <button type="button" id="editSaveBtn" class="btn-primary" style="width:auto;">💾 Сохранить</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         let authData = { token: '', password: '' };
         let onlineTimer = null;
+        let subjectsCache = [];
+        let draggedId = null;
 
         const loginCard = document.getElementById('loginCard');
         const adminContent = document.getElementById('adminContent');
@@ -220,6 +248,23 @@
 
         // ═══════ ПРЕДМЕТЫ ═══════
         document.getElementById('refreshSubjectsBtn').onclick = loadSubjects;
+        document.getElementById('resetSubjectsBtn').onclick = async () => {
+            if (!confirm('Восстановить список по умолчанию? ВСЕ текущие предметы будут удалены.')) return;
+            if (!confirm('Точно? Это нельзя отменить.')) return;
+            try {
+                const r = await fetch('/api/admin/subjects/reset', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(getAuthPayload())
+                });
+                if (!r.ok) throw new Error('Ошибка');
+                await loadSubjects();
+                alert('✅ Список восстановлен!');
+            } catch (e) {
+                alert('Ошибка: ' + e.message);
+            }
+        };
+        document.getElementById('addSubjectBtn').onclick = () => openEditModal(null);
 
         async function loadSubjects() {
             const list = document.getElementById('subjectsList');
@@ -227,6 +272,7 @@
             try {
                 const r = await fetch('/api/subjects');
                 const d = await r.json();
+                subjectsCache = d.subjects;
                 document.getElementById('subjectsCount').textContent = d.subjects.length;
                 list.innerHTML = '';
                 if (!d.subjects.length) {
@@ -237,22 +283,111 @@
                 d.subjects.forEach(s => {
                     const div = document.createElement('div');
                     div.className = 'subject-card';
+                    div.draggable = true;
+                    div.dataset.id = s.id;
                     const typeLabel = s.type === 'text'
                         ? '<span class="type-badge type-text">📝 текст</span>'
                         : '<span class="type-badge type-num">🔍 номера</span>';
+                    const maxNum = s.max_number ? `${s.max_number}` : '—';
                     div.innerHTML = `
                         <div class="subj-head">
+                            <span class="drag-handle" title="Перетащи">⠿</span>
                             <strong>${escapeHtml(s.name)}</strong>
                             ${typeLabel}
                         </div>
                         <div class="subj-row">📁 ${escapeHtml(s.group_name || '—')}</div>
                         <div class="subj-row">🔗 ${escapeHtml(s.url || '—')}</div>
-                        <div class="subj-row small">#${s.sort_order}</div>
+                        <div class="subj-row">
+                            <span class="stat-pill">📊 Макс: <b>${maxNum}</b></span>
+                            <span class="stat-pill">📍 Порядок: <b>${s.sort_order}</b></span>
+                        </div>
+                        ${s.note ? `<div class="subj-row small">📝 ${escapeHtml(s.note)}</div>` : ''}
                         <div class="subj-actions">
-                            <button class="btn-small subj-edit" data-id="${s.id}">✏️ Изменить</button>
-                            <button class="msg-delete subj-del" data-id="${s.id}">🗑</button>
+                            <button class="btn-small subj-edit">✏️ Изменить</button>
+                            <button class="msg-delete subj-del">🗑</button>
                         </div>
                     `;
+
+                    // Drag & drop
+                    div.addEventListener('dragstart', (e) => {
+                        draggedId = s.id;
+                        div.classList.add('dragging');
+                        e.dataTransfer.effectAllowed = 'move';
+                    });
+                    div.addEventListener('dragend', () => {
+                        div.classList.remove('dragging');
+                        document.querySelectorAll('.subject-card').forEach(c =>
+                            c.classList.remove('drag-over'));
+                    });
+                    div.addEventListener('dragover', (e) => {
+                        e.preventDefault();
+                        e.dataTransfer.dropEffect = 'move';
+                        if (draggedId !== s.id) div.classList.add('drag-over');
+                    });
+                    div.addEventListener('dragleave', () => {
+                        div.classList.remove('drag-over');
+                    });
+                    div.addEventListener('drop', async (e) => {
+                        e.preventDefault();
+                        div.classList.remove('drag-over');
+                        if (!draggedId || draggedId === s.id) return;
+
+                        // Меняем порядок в DOM
+                        const draggedEl = document.querySelector(`.subject-card[data-id="${draggedId}"]`);
+                        if (!draggedEl) return;
+
+                        const allCards = Array.from(document.querySelectorAll('.subject-card'));
+                        const draggedIdx = allCards.indexOf(draggedEl);
+                        const targetIdx = allCards.indexOf(div);
+
+                        if (draggedIdx < targetIdx) {
+                            div.parentNode.insertBefore(draggedEl, div.nextSibling);
+                        } else {
+                            div.parentNode.insertBefore(draggedEl, div);
+                        }
+
+                        // Собираем новый порядок и отправляем на сервер
+                        const newOrder = Array.from(document.querySelectorAll('.subject-card'))
+                            .map(c => parseInt(c.dataset.id));
+
+                        try {
+                            const r = await fetch('/api/admin/subjects/reorder', {
+                                method: 'POST',
+                                headers: {'Content-Type': 'application/json'},
+                                body: JSON.stringify({...getAuthPayload(), ids: newOrder})
+                            });
+                            if (!r.ok) throw new Error('Ошибка сохранения');
+                            // Обновляем нумерацию
+                            newOrder.forEach((id, i) => {
+                                const el = document.querySelector(`.subject-card[data-id="${id}"]`);
+                                if (el) {
+                                    const pill = el.querySelectorAll('.stat-pill b');
+                                    if (pill[1]) pill[1].textContent = i + 1;
+                                }
+                            });
+                        } catch (err) {
+                            alert('Не удалось сохранить порядок: ' + err.message);
+                            loadSubjects();
+                        }
+                    });
+
+                    // Кнопки
+                    div.querySelector('.subj-edit').onclick = () => openEditModal(s);
+                    div.querySelector('.subj-del').onclick = async () => {
+                        if (!confirm(`Удалить «${s.name}»?`)) return;
+                        try {
+                            const r = await fetch('/api/admin/subjects/delete', {
+                                method: 'POST',
+                                headers: {'Content-Type': 'application/json'},
+                                body: JSON.stringify({...getAuthPayload(), id: s.id})
+                            });
+                            if (!r.ok) throw new Error('Ошибка');
+                            loadSubjects();
+                        } catch (err) {
+                            alert('Ошибка: ' + err.message);
+                        }
+                    };
+
                     list.appendChild(div);
                 });
             } catch (e) {
@@ -260,16 +395,45 @@
             }
         }
 
-        document.getElementById('addSubjBtn').onclick = async () => {
-            const st = document.getElementById('addSubjStatus');
-            const name = document.getElementById('newSubjName').value.trim();
-            const url = document.getElementById('newSubjUrl').value.trim();
-            const type = document.getElementById('newSubjType').value;
-            const group_name = document.getElementById('newSubjGroup').value;
-            const sort_order = parseInt(document.getElementById('newSubjOrder').value) || 100;
+        // ═══════ МОДАЛКА РЕДАКТИРОВАНИЯ ═══════
+        const editModal = document.getElementById('editModal');
+        let editingId = null;
+
+        function openEditModal(subject) {
+            editModal.classList.remove('hidden');
+            editingId = subject ? subject.id : null;
+            document.getElementById('editModalTitle').textContent =
+                subject ? '✏️ Редактировать: ' + subject.name : '➕ Новый предмет';
+            document.getElementById('editName').value = subject ? subject.name : '';
+            document.getElementById('editUrl').value = subject ? (subject.url || '') : '';
+            document.getElementById('editType').value = subject ? (subject.type || 'numbers') : 'numbers';
+            document.getElementById('editGroup').value = subject ? (subject.group_name || '🧮 Точные науки') : '🧮 Точные науки';
+            document.getElementById('editMaxNum').value = subject ? (subject.max_number || 0) : 0;
+            document.getElementById('editSort').value = subject ? subject.sort_order : (subjectsCache.length + 1);
+            document.getElementById('editNote').value = subject ? (subject.note || '') : '';
+            document.getElementById('editStatus').textContent = '';
+            document.getElementById('editStatus').className = 'fb-status';
+        }
+
+        document.getElementById('editCancelBtn').onclick = () => {
+            editModal.classList.add('hidden');
+        };
+        editModal.onclick = (e) => {
+            if (e.target === editModal) editModal.classList.add('hidden');
+        };
+
+        document.getElementById('editSaveBtn').onclick = async () => {
+            const st = document.getElementById('editStatus');
+            const name = document.getElementById('editName').value.trim();
+            const url = document.getElementById('editUrl').value.trim();
+            const type = document.getElementById('editType').value;
+            const group_name = document.getElementById('editGroup').value;
+            const max_number = parseInt(document.getElementById('editMaxNum').value) || 0;
+            const sort_order = parseInt(document.getElementById('editSort').value) || 999;
+            const note = document.getElementById('editNote').value.trim();
 
             if (!name) {
-                st.textContent = '⚠️ Введи название';
+                st.textContent = '⚠️ Нужно название';
                 st.className = 'fb-status error';
                 return;
             }
@@ -279,96 +443,48 @@
                 return;
             }
 
-            st.textContent = '⏳ Добавляем...';
+            st.textContent = '⏳ Сохраняем...';
             st.className = 'fb-status loading';
 
+            const payload = {
+                ...getAuthPayload(),
+                name, url, type, group_name,
+                max_number, sort_order, note
+            };
+
             try {
-                const r = await fetch('/api/admin/subjects/add', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({
-                        ...getAuthPayload(),
-                        name, url, type, group_name, sort_order
-                    })
-                });
+                let r;
+                if (editingId) {
+                    payload.id = editingId;
+                    r = await fetch('/api/admin/subjects/update', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify(payload)
+                    });
+                } else {
+                    r = await fetch('/api/admin/subjects/add', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify(payload)
+                    });
+                }
                 const d = await r.json();
                 if (!r.ok) {
                     st.textContent = '❌ ' + (d.detail || 'Ошибка');
                     st.className = 'fb-status error';
                     return;
                 }
-                st.textContent = '✅ Предмет добавлен';
+                st.textContent = '✅ Сохранено';
                 st.className = 'fb-status success';
-                document.getElementById('newSubjName').value = '';
-                document.getElementById('newSubjUrl').value = '';
-                loadSubjects();
-                setTimeout(() => st.textContent = '', 2000);
+                setTimeout(() => {
+                    editModal.classList.add('hidden');
+                    loadSubjects();
+                }, 500);
             } catch (e) {
                 st.textContent = '❌ ' + e.message;
                 st.className = 'fb-status error';
             }
         };
-
-        // Изменение предмета
-        document.getElementById('subjectsList').addEventListener('click', async (e) => {
-            const editBtn = e.target.closest('.subj-edit');
-            const delBtn = e.target.closest('.subj-del');
-
-            if (editBtn) {
-                const id = editBtn.dataset.id;
-                // Получаем текущие данные
-                const r = await fetch('/api/subjects');
-                const d = await r.json();
-                const subj = d.subjects.find(s => s.id == id);
-                if (!subj) return;
-
-                const newName = prompt('Название:', subj.name);
-                if (newName === null) return;
-                const newUrl = prompt('Ссылка:', subj.url || '');
-                if (newUrl === null) return;
-                const newGroup = prompt('Группа:', subj.group_name || '');
-                if (newGroup === null) return;
-                const newOrder = prompt('Порядок:', subj.sort_order);
-                if (newOrder === null) return;
-
-                try {
-                    const r2 = await fetch('/api/admin/subjects/update', {
-                        method: 'POST',
-                        headers: {'Content-Type': 'application/json'},
-                        body: JSON.stringify({
-                            ...getAuthPayload(),
-                            id: parseInt(id),
-                            name: newName,
-                            url: newUrl,
-                            group_name: newGroup,
-                            sort_order: parseInt(newOrder) || 100
-                        })
-                    });
-                    if (!r2.ok) throw new Error('Ошибка обновления');
-                    loadSubjects();
-                } catch (err) {
-                    alert('Ошибка: ' + err.message);
-                }
-            }
-
-            if (delBtn) {
-                const id = delBtn.dataset.id;
-                if (!confirm('Удалить этот предмет?')) return;
-                delBtn.disabled = true;
-                try {
-                    const r = await fetch('/api/admin/subjects/delete', {
-                        method: 'POST',
-                        headers: {'Content-Type': 'application/json'},
-                        body: JSON.stringify({...getAuthPayload(), id: parseInt(id)})
-                    });
-                    if (!r.ok) throw new Error('Ошибка');
-                    loadSubjects();
-                } catch (err) {
-                    delBtn.disabled = false;
-                    alert('Ошибка: ' + err.message);
-                }
-            }
-        });
 
         // ═══════ ОНЛАЙН ═══════
         document.getElementById('refreshOnlineBtn').onclick = loadOnline;

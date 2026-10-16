@@ -16,31 +16,28 @@ import asyncpg
 
 from parser import parse_tasks
 
-VERSION = "11.0.0"
+VERSION = "12.0.0"
 ADMIN_PASSWORD = "gdz2024admin"
 ADMIN_EMAIL = os.getenv("ADMIN_EMAIL", "admin@gdz.ru").lower().strip()
 DATABASE_URL = os.getenv("DATABASE_URL")
 
 db_pool = None
 
-# Начальный список предметов (заполнится в БД, если таблица пустая)
 DEFAULT_SUBJECTS = [
-    # Активные — ищем номера
-    {"name": "Алгебра", "url": "https://gdz.ru/class-7/algebra/makarichev-18/", "type": "numbers", "group_name": "🧮 Точные науки", "sort_order": 1},
-    {"name": "Геометрия", "url": "https://gdz.ru/class-7/geometria/merzljak/", "type": "numbers", "group_name": "🧮 Точные науки", "sort_order": 2},
-    {"name": "Вероятность и статистика", "url": "https://gdz.ru/class-7/matematika/vysockij-yashenko-bazovij-uroven/", "type": "numbers", "group_name": "🧮 Точные науки", "sort_order": 3},
-    {"name": "Физика", "url": "https://gdz.ru/class-7/fizika/peryshkin-7/", "type": "numbers", "group_name": "🧮 Точные науки", "sort_order": 4},
-    {"name": "Информатика", "url": "https://gdz.ru/class-7/informatika/reshebnik-bosova-l-l-7/", "type": "numbers", "group_name": "🧮 Точные науки", "sort_order": 5},
-    {"name": "Биология", "url": "https://gdz.ru/class-7/biologiya/pasechnik-shvecov-bazovij-uroven/", "type": "numbers", "group_name": "🌿 Естественные науки", "sort_order": 6},
-    {"name": "Русский язык", "url": "https://gdz.ru/class-7/russkii_yazik/baranova/", "type": "numbers", "group_name": "📖 Гуманитарные науки", "sort_order": 7},
-    {"name": "Английский язык", "url": "https://gdz.ru/class-7/english/spotlight-7/", "type": "numbers", "group_name": "📖 Гуманитарные науки", "sort_order": 8},
-    # Текстовые — просто показываем текст
-    {"name": "География", "url": "", "type": "text", "group_name": "🌿 Естественные науки", "sort_order": 9},
-    {"name": "Литература", "url": "", "type": "text", "group_name": "📖 Гуманитарные науки", "sort_order": 10},
-    {"name": "История", "url": "", "type": "text", "group_name": "📖 Гуманитарные науки", "sort_order": 11},
-    {"name": "Музыка", "url": "", "type": "text", "group_name": "🎨 Остальные предметы", "sort_order": 12},
-    {"name": "Труд (технология)", "url": "", "type": "text", "group_name": "🎨 Остальные предметы", "sort_order": 13},
-    {"name": "Изобразительное искусство", "url": "", "type": "text", "group_name": "🎨 Остальные предметы", "sort_order": 14},
+    {"name": "Алгебра", "url": "https://gdz.ru/class-7/algebra/makarichev-18/", "type": "numbers", "group_name": "🧮 Точные науки", "sort_order": 1, "max_number": 1000, "note": ""},
+    {"name": "Геометрия", "url": "https://gdz.ru/class-7/geometria/merzljak/", "type": "numbers", "group_name": "🧮 Точные науки", "sort_order": 2, "max_number": 1000, "note": ""},
+    {"name": "Вероятность и статистика", "url": "https://gdz.ru/class-7/matematika/vysockij-yashenko-bazovij-uroven/", "type": "numbers", "group_name": "🧮 Точные науки", "sort_order": 3, "max_number": 500, "note": ""},
+    {"name": "Физика", "url": "https://gdz.ru/class-7/fizika/peryshkin-7/", "type": "numbers", "group_name": "🧮 Точные науки", "sort_order": 4, "max_number": 1000, "note": ""},
+    {"name": "Информатика", "url": "https://gdz.ru/class-7/informatika/reshebnik-bosova-l-l-7/", "type": "numbers", "group_name": "🧮 Точные науки", "sort_order": 5, "max_number": 500, "note": ""},
+    {"name": "Биология", "url": "https://gdz.ru/class-7/biologiya/pasechnik-shvecov-bazovij-uroven/", "type": "numbers", "group_name": "🌿 Естественные науки", "sort_order": 6, "max_number": 500, "note": ""},
+    {"name": "Русский язык", "url": "https://gdz.ru/class-7/russkii_yazik/baranova/", "type": "numbers", "group_name": "📖 Гуманитарные науки", "sort_order": 7, "max_number": 560, "note": ""},
+    {"name": "Английский язык", "url": "https://gdz.ru/class-7/english/spotlight-7/", "type": "numbers", "group_name": "📖 Гуманитарные науки", "sort_order": 8, "max_number": 500, "note": ""},
+    {"name": "География", "url": "", "type": "text", "group_name": "🌿 Естественные науки", "sort_order": 9, "max_number": 0, "note": ""},
+    {"name": "Литература", "url": "", "type": "text", "group_name": "📖 Гуманитарные науки", "sort_order": 10, "max_number": 0, "note": ""},
+    {"name": "История", "url": "", "type": "text", "group_name": "📖 Гуманитарные науки", "sort_order": 11, "max_number": 0, "note": ""},
+    {"name": "Музыка", "url": "", "type": "text", "group_name": "🎨 Остальные предметы", "sort_order": 12, "max_number": 0, "note": ""},
+    {"name": "Труд (технология)", "url": "", "type": "text", "group_name": "🎨 Остальные предметы", "sort_order": 13, "max_number": 0, "note": ""},
+    {"name": "Изобразительное искусство", "url": "", "type": "text", "group_name": "🎨 Остальные предметы", "sort_order": 14, "max_number": 0, "note": ""},
 ]
 
 
@@ -52,12 +49,7 @@ async def init_db():
     try:
         db_pool = await asyncpg.create_pool(DATABASE_URL, min_size=1, max_size=5, ssl="require")
         async with db_pool.acquire() as conn:
-            await conn.execute("""
-                CREATE TABLE IF NOT EXISTS feedback (
-                    id SERIAL PRIMARY KEY, date TEXT, message TEXT,
-                    contact TEXT, version TEXT
-                )
-            """)
+            # Пользователи
             await conn.execute("""
                 CREATE TABLE IF NOT EXISTS users (
                     id SERIAL PRIMARY KEY, email TEXT UNIQUE NOT NULL,
@@ -70,6 +62,8 @@ async def init_db():
             await conn.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS last_seen TIMESTAMP DEFAULT NOW()")
             await conn.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS theme TEXT DEFAULT 'light'")
             await conn.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS bg_url TEXT")
+
+            # Сессии
             await conn.execute("""
                 CREATE TABLE IF NOT EXISTS sessions (
                     token TEXT PRIMARY KEY,
@@ -77,6 +71,8 @@ async def init_db():
                     created_at TIMESTAMP DEFAULT NOW()
                 )
             """)
+
+            # История
             await conn.execute("""
                 CREATE TABLE IF NOT EXISTS history (
                     id SERIAL PRIMARY KEY,
@@ -85,6 +81,16 @@ async def init_db():
                     created_at TIMESTAMP DEFAULT NOW()
                 )
             """)
+
+            # Обратная связь
+            await conn.execute("""
+                CREATE TABLE IF NOT EXISTS feedback (
+                    id SERIAL PRIMARY KEY, date TEXT, message TEXT,
+                    contact TEXT, version TEXT
+                )
+            """)
+
+            # Предметы
             await conn.execute("""
                 CREATE TABLE IF NOT EXISTS subjects (
                     id SERIAL PRIMARY KEY,
@@ -96,17 +102,19 @@ async def init_db():
                     created_at TIMESTAMP DEFAULT NOW()
                 )
             """)
+            await conn.execute("ALTER TABLE subjects ADD COLUMN IF NOT EXISTS max_number INTEGER DEFAULT 0")
+            await conn.execute("ALTER TABLE subjects ADD COLUMN IF NOT EXISTS note TEXT DEFAULT ''")
 
-            # Заполняем начальными предметами, если таблица пуста
             count = await conn.fetchval("SELECT COUNT(*) FROM subjects")
             if count == 0:
                 for s in DEFAULT_SUBJECTS:
                     await conn.execute("""
-                        INSERT INTO subjects (name, url, type, group_name, sort_order)
-                        VALUES ($1, $2, $3, $4, $5)
+                        INSERT INTO subjects (name, url, type, group_name, sort_order, max_number, note)
+                        VALUES ($1, $2, $3, $4, $5, $6, $7)
                         ON CONFLICT (name) DO NOTHING
-                    """, s["name"], s["url"], s["type"], s["group_name"], s["sort_order"])
-                print(f"[main] Добавлено {len(DEFAULT_SUBJECTS)} начальных предметов")
+                    """, s["name"], s["url"], s["type"], s["group_name"],
+                        s["sort_order"], s["max_number"], s["note"])
+                print(f"[main] Добавлено {len(DEFAULT_SUBJECTS)} предметов")
 
         print("[main] PostgreSQL подключена")
     except Exception as e:
@@ -252,12 +260,11 @@ async def get_version():
 
 @app.get("/api/subjects")
 async def get_subjects():
-    """Публичный список предметов для главной страницы."""
     if db_pool is None:
         return {"subjects": DEFAULT_SUBJECTS}
     async with db_pool.acquire() as conn:
         rows = await conn.fetch("""
-            SELECT id, name, url, type, group_name, sort_order
+            SELECT id, name, url, type, group_name, sort_order, max_number, note
             FROM subjects ORDER BY sort_order, id
         """)
     return {"subjects": [dict(r) for r in rows]}
@@ -275,6 +282,8 @@ async def admin_add_subject(data: dict):
     s_type = (data.get("type") or "numbers").strip()
     group_name = (data.get("group_name") or "").strip()
     sort_order = int(data.get("sort_order") or 999)
+    max_number = int(data.get("max_number") or 0)
+    note = (data.get("note") or "").strip()
 
     if not name:
         raise HTTPException(400, "Нужно название")
@@ -286,9 +295,9 @@ async def admin_add_subject(data: dict):
     async with db_pool.acquire() as conn:
         try:
             new_id = await conn.fetchval("""
-                INSERT INTO subjects (name, url, type, group_name, sort_order)
-                VALUES ($1, $2, $3, $4, $5) RETURNING id
-            """, name, url, s_type, group_name, sort_order)
+                INSERT INTO subjects (name, url, type, group_name, sort_order, max_number, note)
+                VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id
+            """, name, url, s_type, group_name, sort_order, max_number, note)
         except asyncpg.UniqueViolationError:
             raise HTTPException(400, "Такой предмет уже есть")
     return {"ok": True, "id": new_id}
@@ -305,18 +314,20 @@ async def admin_update_subject(data: dict):
     if not subj_id:
         raise HTTPException(400, "Нужен id")
 
-    fields = []
-    params = []
-    idx = 1
-    for key in ("name", "url", "type", "group_name"):
+    fields, params, idx = [], [], 1
+    for key in ("name", "url", "type", "group_name", "note"):
         if key in data and data[key] is not None:
             fields.append(f"{key} = ${idx}")
             params.append(str(data[key]).strip())
             idx += 1
-    if "sort_order" in data:
-        fields.append(f"sort_order = ${idx}")
-        params.append(int(data["sort_order"]))
-        idx += 1
+    for key in ("sort_order", "max_number"):
+        if key in data and data[key] is not None:
+            try:
+                fields.append(f"{key} = ${idx}")
+                params.append(int(data[key]))
+                idx += 1
+            except (ValueError, TypeError):
+                pass
 
     if not fields:
         raise HTTPException(400, "Нечего обновлять")
@@ -342,6 +353,49 @@ async def admin_delete_subject(data: dict):
     return {"ok": True}
 
 
+@app.post("/api/admin/subjects/reorder")
+async def admin_reorder_subjects(data: dict):
+    """Принимает список id в новом порядке, обновляет sort_order."""
+    if not await check_admin(data):
+        raise HTTPException(401, "Нет доступа")
+    ids = data.get("ids", [])
+    if not ids:
+        raise HTTPException(400, "Нужен список ids")
+    if db_pool is None:
+        raise HTTPException(500, "БД недоступна")
+
+    async with db_pool.acquire() as conn:
+        for index, subj_id in enumerate(ids, start=1):
+            try:
+                await conn.execute(
+                    "UPDATE subjects SET sort_order = $1 WHERE id = $2",
+                    index, int(subj_id)
+                )
+            except (ValueError, TypeError):
+                continue
+    return {"ok": True, "updated": len(ids)}
+
+
+@app.post("/api/admin/subjects/reset")
+async def admin_reset_subjects(data: dict):
+    """Удаляет все предметы и восстанавливает 14 по умолчанию."""
+    if not await check_admin(data):
+        raise HTTPException(401, "Нет доступа")
+    if db_pool is None:
+        raise HTTPException(500, "БД недоступна")
+
+    async with db_pool.acquire() as conn:
+        await conn.execute("DELETE FROM subjects")
+        for s in DEFAULT_SUBJECTS:
+            await conn.execute("""
+                INSERT INTO subjects (name, url, type, group_name, sort_order, max_number, note)
+                VALUES ($1, $2, $3, $4, $5, $6, $7)
+                ON CONFLICT (name) DO NOTHING
+            """, s["name"], s["url"], s["type"], s["group_name"],
+                s["sort_order"], s["max_number"], s["note"])
+    return {"ok": True, "count": len(DEFAULT_SUBJECTS)}
+
+
 # ═══════ АВТОРИЗАЦИЯ ═══════
 
 @app.post("/api/auth/register")
@@ -358,7 +412,6 @@ async def register(req: RegisterRequest):
         existing = await conn.fetchrow("SELECT id FROM users WHERE email = $1", email)
         if existing:
             raise HTTPException(400, "Такой email уже зарегистрирован")
-
         is_admin = (email == ADMIN_EMAIL)
         user_id = await conn.fetchval(
             "INSERT INTO users (email, password_hash, name, is_admin, device, theme) "

@@ -22,7 +22,7 @@
     <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
-    <!-- ═══════ ЭКРАН ВХОДА ═══════ -->
+    <!-- ЭКРАН ВХОДА -->
     <div id="authScreen" class="auth-screen">
         <div class="auth-screen-box">
             <div class="auth-logo">📚</div>
@@ -53,7 +53,7 @@
         </div>
     </div>
 
-    <!-- ═══════ ГЛАВНЫЙ ЭКРАН ═══════ -->
+    <!-- ГЛАВНЫЙ ЭКРАН -->
     <div id="mainScreen" class="container hidden">
         <div class="topbar">
             <span class="version">v{{ version }}</span>
@@ -61,7 +61,7 @@
         </div>
 
         <h1>📚 GDZ Парсер</h1>
-        <p class="subtitle">7 класс · Введи номера заданий</p>
+        <p class="subtitle">7 класс · Введи номера или текст задания</p>
 
         <section class="card">
             <h2>📝 Домашка</h2>
@@ -309,15 +309,6 @@
                 title.textContent = groupName;
                 groupDiv.appendChild(title);
 
-                // Подсказка для текстовой группы
-                const hasText = items.some(s => s.type === 'text');
-                if (hasText) {
-                    const hint = document.createElement('p');
-                    hint.className = 'group-hint';
-                    hint.textContent = 'Задания из этих предметов можно вставлять текстом.';
-                    groupDiv.appendChild(hint);
-                }
-
                 items.forEach(s => {
                     const row = document.createElement('div');
                     row.className = 'input-row';
@@ -327,30 +318,22 @@
                     label.textContent = s.name;
                     row.appendChild(label);
 
-                    const inputId = 'subj_' + s.id;
+                    // ВСЕ поля — textarea (можно и номера, и текст)
+                    const ta = document.createElement('textarea');
+                    ta.className = 'text-input';
+                    ta.id = 'subj_' + s.id;
+                    ta.rows = 2;
+                    ta.dataset.subject = s.name;
+                    ta.dataset.type = s.type || 'numbers';
+                    ta.dataset.url = s.url || '';
+                    ta.dataset.maxNumber = s.max_number || 0;
 
                     if (s.type === 'text') {
-                        const ta = document.createElement('textarea');
-                        ta.className = 'text-input';
-                        ta.id = inputId;
-                        ta.rows = 2;
                         ta.placeholder = 'Вставь текст задания...';
-                        ta.dataset.subject = s.name;
-                        ta.dataset.type = 'text';
-                        ta.dataset.url = s.url || '';
-                        row.appendChild(ta);
                     } else {
-                        const inp = document.createElement('input');
-                        inp.type = 'text';
-                        inp.className = 'num-input';
-                        inp.id = inputId;
-                        inp.placeholder = '1, 5, 10';
-                        inp.dataset.subject = s.name;
-                        inp.dataset.type = 'numbers';
-                        inp.dataset.url = s.url || '';
-                        row.appendChild(inp);
+                        ta.placeholder = '447, 449, 451 — или текст задания';
                     }
-
+                    row.appendChild(ta);
                     groupDiv.appendChild(row);
                 });
 
@@ -802,7 +785,7 @@
                     subject: s.name,
                     url: s.url || '',
                     type: s.type || 'numbers',
-                    numbers: s.type === 'numbers' ? v : '',
+                    numbers: v,
                     raw_text: v
                 });
             });
@@ -854,12 +837,8 @@
                     sec.className = 'subject-block';
                     sec.innerHTML = `<h2>${escapeHtml(subject)}</h2>`;
 
-                    let lastRawText = '';
-
                     items.forEach(r => {
-                        if (r.raw_text) lastRawText = r.raw_text;
-
-                        // Если это текстовый предмет или не найдено — показываем текст
+                        // Если не найдено или текстовый — показываем текст внизу
                         if (r.is_text || !r.found) {
                             const textCard = document.createElement('div');
                             textCard.className = 'task-card text-task';
@@ -877,7 +856,7 @@
                             return;
                         }
 
-                        // Иначе — картинка
+                        // Иначе — картинка + текст внизу
                         const card = document.createElement('div');
                         card.className = 'task-card';
                         card.innerHTML = `<div class="task-header">
@@ -890,6 +869,14 @@
                             loadImage(img, u);
                             card.appendChild(img);
                         });
+                        // Текст в конце (если есть)
+                        if (r.raw_text) {
+                            const textDiv = document.createElement('div');
+                            textDiv.className = 'task-text';
+                            textDiv.style.marginTop = '10px';
+                            textDiv.textContent = r.raw_text;
+                            card.appendChild(textDiv);
+                        }
                         sec.appendChild(card);
                     });
 
