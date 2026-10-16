@@ -5,16 +5,29 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Админка — GDZ Парсер</title>
     <script>
+        // Тема и фон админки применяются ДО отрисовки — без мерцания
         (function() {
             try {
                 const theme = localStorage.getItem('gdz_theme') || 'light';
                 const bg = localStorage.getItem('gdz_bg');
+                const adminBg = localStorage.getItem('gdz_admin_bg');
+                const btnColor = localStorage.getItem('gdz_admin_btn_color') || '#4299e1';
                 const root = document.documentElement;
+
                 if (theme === 'dark') root.classList.add('theme-dark');
                 else if (theme === 'custom' && bg) {
                     root.classList.add('theme-custom');
                     root.style.backgroundImage = 'url("' + bg + '")';
                 }
+
+                // Фон админки — перекрывает основной
+                if (adminBg) {
+                    root.classList.add('theme-admin-bg');
+                    root.style.setProperty('--admin-bg-image', 'url("' + adminBg + '")');
+                }
+
+                // Цвет кнопок
+                root.style.setProperty('--admin-btn-color', btnColor);
             } catch (e) {}
         })();
     </script>
@@ -192,7 +205,6 @@
         const pwd = document.getElementById('pwd');
         const loginStatus = document.getElementById('loginStatus');
 
-        // Иконки для действий
         const ACTION_ICONS = {
             'register': '🆕',
             'login': '🔑',
@@ -218,7 +230,39 @@
             return '?';
         }
 
+        // Загружаем настройки админки (фон, цвет) с сервера
+        async function loadAdminSettings() {
+            const token = localStorage.getItem('gdz_token') || '';
+            if (!token) return;
+            try {
+                const r = await fetch('/api/auth/me?token=' + encodeURIComponent(token));
+                if (!r.ok) return;
+                const d = await r.json();
+                const u = d.user;
+                if (!u || !u.is_admin) return;
+
+                // Фон админки
+                if (u.admin_bg_url) {
+                    localStorage.setItem('gdz_admin_bg', u.admin_bg_url);
+                    document.documentElement.classList.add('theme-admin-bg');
+                    document.documentElement.style.setProperty('--admin-bg-image', 'url("' + u.admin_bg_url + '")');
+                } else {
+                    localStorage.removeItem('gdz_admin_bg');
+                    document.documentElement.classList.remove('theme-admin-bg');
+                    document.documentElement.style.removeProperty('--admin-bg-image');
+                }
+
+                // Цвет кнопок
+                const color = u.admin_btn_color || '#4299e1';
+                localStorage.setItem('gdz_admin_btn_color', color);
+                document.documentElement.style.setProperty('--admin-btn-color', color);
+            } catch {}
+        }
+
         async function init() {
+            // Сначала подтянем настройки админа (фон, цвет)
+            await loadAdminSettings();
+
             const token = localStorage.getItem('gdz_token') || '';
             if (token) {
                 try {

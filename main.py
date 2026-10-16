@@ -16,7 +16,7 @@ import asyncpg
 
 from parser import parse_tasks
 
-VERSION = "13.0.0"
+VERSION = "14.0.0"
 ADMIN_PASSWORD = "gdz2024admin"
 ADMIN_EMAIL = os.getenv("ADMIN_EMAIL", "admin@gdz.ru").lower().strip()
 DATABASE_URL = os.getenv("DATABASE_URL")
@@ -62,6 +62,9 @@ async def init_db():
             await conn.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS theme TEXT DEFAULT 'light'")
             await conn.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS bg_url TEXT")
             await conn.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar TEXT")
+            # НОВЫЕ поля для админ-панели
+            await conn.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS admin_bg_url TEXT")
+            await conn.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS admin_btn_color TEXT DEFAULT '#4299e1'")
 
             await conn.execute("""
                 CREATE TABLE IF NOT EXISTS sessions (
@@ -98,7 +101,6 @@ async def init_db():
             await conn.execute("ALTER TABLE subjects ADD COLUMN IF NOT EXISTS max_number INTEGER DEFAULT 0")
             await conn.execute("ALTER TABLE subjects ADD COLUMN IF NOT EXISTS note TEXT DEFAULT ''")
 
-            # Логи
             await conn.execute("""
                 CREATE TABLE IF NOT EXISTS logs (
                     id SERIAL PRIMARY KEY,
@@ -128,7 +130,6 @@ async def init_db():
 
 
 async def log_action(user_id, action: str, details: str = "", ip: str = ""):
-    """Пишет действие в таблицу logs."""
     if db_pool is None:
         return
     try:
@@ -137,7 +138,6 @@ async def log_action(user_id, action: str, details: str = "", ip: str = ""):
                 "INSERT INTO logs (user_id, action, details, ip) VALUES ($1, $2, $3, $4)",
                 user_id, action, details[:500], ip[:50]
             )
-            # Держим последние 5000 логов
             await conn.execute("""
                 DELETE FROM logs WHERE id NOT IN (
                     SELECT id FROM logs ORDER BY id DESC LIMIT 5000
@@ -167,7 +167,8 @@ async def get_user_by_token(token: str):
         return None
     async with db_pool.acquire() as conn:
         row = await conn.fetchrow("""
-            SELECT u.id, u.email, u.name, u.is_admin, u.theme, u.bg_url, u.avatar
+            SELECT u.id, u.email, u.name, u.is_admin, u.theme, u.bg_url, u.avatar,
+                   u.admin_bg_url, u.admin_btn_color
             FROM sessions s JOIN users u ON u.id = s.user_id
             WHERE s.token = $1
         """, token)
@@ -253,6 +254,8 @@ class UpdateProfileRequest(BaseModel):
     name: str = ""
     theme: str = ""
     bg_url: str = ""
+    admin_bg_url: str = ""
+    admin_btn_color: str = ""
 
 
 class ChangePasswordRequest(BaseModel):
@@ -461,7 +464,8 @@ async def register(req: RegisterRequest, request: Request):
 
     return {"ok": True, "token": token, "user": {
         "id": user_id, "email": email, "name": req.name.strip(),
-        "is_admin": is_admin, "theme": "light", "bg_url": None, "avatar": None
+        "is_admin": is_admin, "theme": "light", "bg_url": None, "avatar": None,
+        "admin_bg_url": None, "admin_btn_color": "#4299e1"
     }}
 
 
@@ -473,7 +477,8 @@ async def login(req: LoginRequest, request: Request):
 
     async with db_pool.acquire() as conn:
         row = await conn.fetchrow(
-            "SELECT id, email, password_hash, name, is_admin, theme, bg_url, avatar "
+            "SELECT id, email, password_hash, name, is_admin, theme, bg_url, avatar, "
+            "admin_bg_url, admin_btn_color "
             "FROM users WHERE email = $1", email
         )
         if not row or not verify_password(req.password, row["password_hash"]):
@@ -498,7 +503,9 @@ async def login(req: LoginRequest, request: Request):
     return {"ok": True, "token": token, "user": {
         "id": row["id"], "email": row["email"], "name": row["name"],
         "is_admin": row["is_admin"], "theme": row["theme"] or "light",
-        "bg_url": row["bg_url"], "avatar": row["avatar"]
+        "bg_url": row["bg_url"], "avatar": row["avatar"],
+        "admin_bg_url": row["admin_bg_url"],
+        "admin_btn_color": row["admin_btn_color"] or "#4299e1"
     }}
 
 
@@ -541,6 +548,23 @@ async def update_profile(req: UpdateProfileRequest):
             raise HTTPException(400, "Фон слишком большой (макс 5 МБ)")
         updates.append(f"bg_url = ${idx}"); params.append(req.bg_url); idx += 1
 
+    # Админ-настройки — только для админа
+    if user.get("is_admin"):
+        if req.admin_bg_url:
+            if len(req.admin_bg_url) > 5_000_000:
+                raise HTTPException(400, "Фон админки слишком большой")
+            updates.append(f"admin_bg_url = ${idx}"); params.append(req.admin_bg_url); idx += 1
+        elif req.admin_bg_url == '':
+            # Пустая строка = убрать фон
+            updates.append("admin_bg_url = NULL")
+
+        if req.admin_btn_color:
+            color = req.admin_btn_color.strip()
+            # Валидация hex-цвета
+            import re as _re
+            if _re.match(r'^#[0-9a-fA-F]{6}$', color):
+                updates.append(f"admin_btn_color = ${idx}"); params.append(color); idx += 1
+
     if not updates:
         return {"ok": True, "user": user}
 
@@ -548,7 +572,8 @@ async def update_profile(req: UpdateProfileRequest):
     async with db_pool.acquire() as conn:
         await conn.execute(f"UPDATE users SET {', '.join(updates)} WHERE id = ${idx}", *params)
         row = await conn.fetchrow(
-            "SELECT id, email, name, is_admin, theme, bg_url, avatar FROM users WHERE id = $1",
+            "SELECT id, email, name, is_admin, theme, bg_url, avatar, "
+            "admin_bg_url, admin_btn_color FROM users WHERE id = $1",
             user["id"]
         )
     await log_action(user["id"], "profile_update", req.theme)
@@ -562,6 +587,12 @@ async def set_avatar(req: AvatarRequest):
         raise HTTPException(401, "Не авторизован")
     if db_pool is None:
         raise HTTPException(500, "БД недоступна")
+    # Пустая строка = удалить аватар
+    if req.avatar == "":
+        async with db_pool.acquire() as conn:
+            await conn.execute("UPDATE users SET avatar = NULL WHERE id = $1", user["id"])
+        await log_action(user["id"], "avatar_update", "removed")
+        return {"ok": True, "avatar": None}
     if not req.avatar.startswith("data:image/"):
         raise HTTPException(400, "Неверный формат")
     if len(req.avatar) > 500_000:
@@ -801,7 +832,6 @@ async def parse(req: ParseRequest, request: Request):
     except Exception as e:
         raise HTTPException(500, f"Ошибка парсинга: {e}")
 
-    # Логируем поиск
     subjects = ", ".join(j.subject for j in jobs)[:200]
     ip = request.client.host if request.client else ""
     await log_action(None, "parse", subjects, ip)

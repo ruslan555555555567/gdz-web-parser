@@ -115,6 +115,7 @@
                 </div>
             </div>
 
+            <!-- ИМЯ -->
             <div class="settings-section">
                 <label class="form-label">
                     Имя
@@ -122,8 +123,9 @@
                 </label>
             </div>
 
+            <!-- ФОН -->
             <div class="settings-section">
-                <label class="form-label">Оформление</label>
+                <label class="form-label">Оформление главной</label>
                 <div class="theme-options">
                     <button type="button" class="theme-btn active" data-theme="light">
                         <span class="theme-preview light-preview"></span>
@@ -138,13 +140,8 @@
                         🎨 Своя картинка
                     </button>
                 </div>
-
                 <div id="customBgBlock" style="display:none; margin-top:12px;">
-                    <label class="form-label">
-                        URL картинки (или загрузи из галереи)
-                        <input type="text" id="setBgUrl" placeholder="https://example.com/image.jpg">
-                    </label>
-                    <div class="avatar-actions" style="margin-top:8px;">
+                    <div class="avatar-actions">
                         <label class="btn-small avatar-upload-btn">
                             🖼 Загрузить из галереи
                             <input type="file" id="bgInput" accept="image/*" hidden>
@@ -154,11 +151,39 @@
                         </button>
                     </div>
                     <p class="hint" style="margin-top:6px;">
-                        Загруженная картинка сохранится в аккаунте.
+                        Картинка сохранится в аккаунте.
                     </p>
                 </div>
             </div>
 
+            <!-- НАСТРОЙКИ АДМИНКИ (только для админов) -->
+            <div class="settings-section hidden" id="adminSettingsSection">
+                <label class="form-label">👑 Настройки админ-панели</label>
+
+                <div style="margin-top:8px;">
+                    <label class="form-label" style="font-size:13px;">Фон админки</label>
+                    <div class="avatar-actions">
+                        <label class="btn-small avatar-upload-btn">
+                            🖼 Загрузить из галереи
+                            <input type="file" id="adminBgInput" accept="image/*" hidden>
+                        </label>
+                        <button type="button" id="adminBgRemoveBtn" class="btn-small avatar-remove-btn">
+                            🗑 Убрать
+                        </button>
+                    </div>
+                </div>
+
+                <div style="margin-top:12px;">
+                    <label class="form-label" style="font-size:13px;">Цвет кнопок админки</label>
+                    <div class="color-picker-row">
+                        <input type="color" id="adminBtnColor" value="#4299e1" class="color-input">
+                        <span id="adminBtnColorLabel" class="hint">#4299e1</span>
+                        <button type="button" class="btn-small" id="adminBtnColorReset">Сбросить</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ПАРОЛЬ -->
             <div class="settings-section" id="passwordSection">
                 <label class="form-label">Смена пароля</label>
                 <input type="password" id="setOldPwd" class="num-input"
@@ -167,6 +192,7 @@
                     placeholder="Новый пароль (мин. 6 символов)">
             </div>
 
+            <!-- ВЫХОД -->
             <div class="settings-section" id="logoutSection">
                 <label class="form-label">Сессия</label>
                 <button type="button" id="logoutBtn" class="btn-logout">🚪 Выйти из аккаунта</button>
@@ -221,6 +247,8 @@
         let currentTheme = localStorage.getItem('gdz_theme') || 'light';
         let currentBgUrl = localStorage.getItem('gdz_bg') || null;
         let currentAvatar = null;
+        let currentAdminBg = null;
+        let currentAdminBtnColor = '#4299e1';
         let SUBJECTS = [];
 
         const $ = id => document.getElementById(id);
@@ -256,7 +284,6 @@
             return `${device} · ${os} · ${browser} · ${scr} · ${lang}`;
         }
 
-        // Читает файл как base64 с ограничением размера
         function fileToBase64(file, maxSizeMb = 5) {
             return new Promise((resolve, reject) => {
                 if (file.size > maxSizeMb * 1024 * 1024) {
@@ -270,7 +297,6 @@
             });
         }
 
-        // Уменьшает картинку через canvas — возвращает base64 (jpeg/webp)
         async function shrinkImage(file, maxW = 400, quality = 0.85) {
             const dataUrl = await fileToBase64(file, 20);
             return new Promise((resolve, reject) => {
@@ -329,6 +355,8 @@
                         const d = await r.json();
                         authUser = d.user;
                         currentAvatar = authUser.avatar || null;
+                        currentAdminBg = authUser.admin_bg_url || null;
+                        currentAdminBtnColor = authUser.admin_btn_color || '#4299e1';
                         applyTheme(authUser.theme || 'light', authUser.bg_url);
                         showMain();
                         return;
@@ -353,7 +381,6 @@
             await loadSubjects();
         }
 
-        // ─── ПРЕДМЕТЫ ──────────────────────────────────
         async function loadSubjects() {
             try {
                 const r = await fetch('/api/subjects');
@@ -369,32 +396,26 @@
         function renderSubjects() {
             const container = $('subjectsContainer');
             container.innerHTML = '';
-
             const groups = {};
             SUBJECTS.forEach(s => {
                 const g = s.group_name || 'Прочее';
                 if (!groups[g]) groups[g] = [];
                 groups[g].push(s);
             });
-
             Object.entries(groups).forEach(([groupName, items]) => {
                 const groupDiv = document.createElement('div');
                 groupDiv.className = 'subject-group';
-
                 const title = document.createElement('h3');
                 title.className = 'group-title';
                 title.textContent = groupName;
                 groupDiv.appendChild(title);
-
                 items.forEach(s => {
                     const row = document.createElement('div');
                     row.className = 'input-row';
-
                     const label = document.createElement('label');
                     label.className = 'input-label';
                     label.textContent = s.name;
                     row.appendChild(label);
-
                     const ta = document.createElement('textarea');
                     ta.className = 'text-input';
                     ta.id = 'subj_' + s.id;
@@ -403,45 +424,25 @@
                     ta.dataset.type = s.type || 'numbers';
                     ta.dataset.url = s.url || '';
                     ta.dataset.maxNumber = s.max_number || 0;
-
-                    if (s.type === 'text') {
-                        ta.placeholder = 'Вставь текст задания...';
-                    } else {
-                        ta.placeholder = '447, 449, 451 — или текст задания';
-                    }
+                    ta.placeholder = s.type === 'text'
+                        ? 'Вставь текст задания...'
+                        : '447, 449, 451 — или текст задания';
                     row.appendChild(ta);
                     groupDiv.appendChild(row);
                 });
-
                 container.appendChild(groupDiv);
             });
         }
 
-        // ─── ТОПБАР ────────────────────────────────────
+        // ─── ТОПБАР с шестерёнкой ──────────────────────
         function renderTopbar() {
             topbarRight.innerHTML = '';
 
-            const userBtn = document.createElement('button');
-            userBtn.className = 'topbar-user-btn';
-            userBtn.title = 'Настройки';
-            userBtn.onclick = openSettings;
-
-            const av = document.createElement('span');
-            av.className = 'topbar-avatar';
-            if (currentAvatar) {
-                av.style.backgroundImage = 'url("' + currentAvatar + '")';
-                av.textContent = '';
-            } else {
-                av.textContent = getInitial(authUser.name, authUser.email);
-            }
-            userBtn.appendChild(av);
-
-            const nameSpan = document.createElement('span');
-            nameSpan.className = 'topbar-username';
-            nameSpan.textContent = authUser.name || authUser.email.split('@')[0];
-            userBtn.appendChild(nameSpan);
-
-            topbarRight.appendChild(userBtn);
+            const name = authUser.name || authUser.email.split('@')[0];
+            const greet = document.createElement('span');
+            greet.className = 'topbar-user';
+            greet.textContent = '👤 ' + name;
+            topbarRight.appendChild(greet);
 
             const histBtn = document.createElement('button');
             histBtn.className = 'icon-btn';
@@ -449,6 +450,14 @@
             histBtn.textContent = '📜';
             histBtn.onclick = openHistory;
             topbarRight.appendChild(histBtn);
+
+            // ШЕСТЕРЁНКА ВЕРНУЛАСЬ
+            const setBtn = document.createElement('button');
+            setBtn.className = 'icon-btn';
+            setBtn.title = 'Настройки';
+            setBtn.textContent = '⚙️';
+            setBtn.onclick = openSettings;
+            topbarRight.appendChild(setBtn);
 
             if (authUser.is_admin) {
                 const adminBtn = document.createElement('button');
@@ -512,6 +521,8 @@
                 authToken = d.token;
                 authUser = d.user;
                 currentAvatar = d.user.avatar || null;
+                currentAdminBg = d.user.admin_bg_url || null;
+                currentAdminBtnColor = d.user.admin_btn_color || '#4299e1';
                 localStorage.setItem('gdz_token', authToken);
                 applyTheme(authUser.theme || 'light', authUser.bg_url);
                 showMain();
@@ -594,7 +605,6 @@
         // ─── НАСТРОЙКИ ─────────────────────────────────
         function updateAvatarPreview() {
             const preview = $('avatarPreview');
-            const initial = $('avatarInitial');
             if (currentAvatar) {
                 preview.style.backgroundImage = 'url("' + currentAvatar + '")';
                 preview.textContent = '';
@@ -602,11 +612,7 @@
                 preview.style.backgroundPosition = 'center';
             } else {
                 preview.style.backgroundImage = '';
-                preview.textContent = '';
-                if (initial) initial.remove();
-                const span = document.createElement('span');
-                span.textContent = getInitial(authUser?.name, authUser?.email);
-                preview.appendChild(span);
+                preview.textContent = getInitial(authUser?.name, authUser?.email);
             }
         }
 
@@ -615,14 +621,23 @@
             $('settingsStatus').textContent = '';
             $('settingsStatus').className = 'fb-status';
             $('setName').value = authUser?.name || '';
-            $('setBgUrl').value = (currentBgUrl && !currentBgUrl.startsWith('data:')) ? currentBgUrl : '';
             $('setOldPwd').value = '';
             $('setNewPwd').value = '';
             updateAvatarPreview();
+
             document.querySelectorAll('.theme-btn').forEach(t => {
                 t.classList.toggle('active', t.dataset.theme === currentTheme);
             });
             $('customBgBlock').style.display = currentTheme === 'custom' ? 'block' : 'none';
+
+            // Показываем настройки админки только админам
+            if (authUser?.is_admin) {
+                $('adminSettingsSection').classList.remove('hidden');
+                $('adminBtnColor').value = currentAdminBtnColor || '#4299e1';
+                $('adminBtnColorLabel').textContent = currentAdminBtnColor || '#4299e1';
+            } else {
+                $('adminSettingsSection').classList.add('hidden');
+            }
         }
 
         $('closeSettingsBtn').onclick = () => settingsModal.classList.add('hidden');
@@ -636,16 +651,10 @@
                 document.querySelectorAll('.theme-btn').forEach(x =>
                     x.classList.toggle('active', x === t));
                 $('customBgBlock').style.display = theme === 'custom' ? 'block' : 'none';
-                const bg = theme === 'custom' ? $('setBgUrl').value.trim() : null;
+                const bg = theme === 'custom' ? currentBgUrl : null;
                 applyTheme(theme, bg);
             };
         });
-
-        $('setBgUrl').oninput = () => {
-            if (currentTheme === 'custom') {
-                applyTheme('custom', $('setBgUrl').value.trim());
-            }
-        };
 
         // ─── АВАТАРКА ───────────────────────────────────
         $('avatarInput').onchange = async (e) => {
@@ -655,8 +664,6 @@
                 const b64 = await shrinkImage(file, 300, 0.85);
                 currentAvatar = b64;
                 updateAvatarPreview();
-                renderTopbar();
-                // Сразу сохраняем на сервер
                 const r = await fetch('/api/auth/avatar', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
@@ -673,7 +680,6 @@
             if (!confirm('Убрать аватарку?')) return;
             currentAvatar = null;
             updateAvatarPreview();
-            renderTopbar();
             try {
                 await fetch('/api/auth/avatar', {
                     method: 'POST',
@@ -683,17 +689,17 @@
             } catch {}
         };
 
-        // ─── ФОН ИЗ ГАЛЕРЕИ ────────────────────────────
+        // ─── ФОН ГЛАВНОЙ (только галерея) ──────────────
         $('bgInput').onchange = async (e) => {
             const file = e.target.files[0];
             if (!file) return;
             try {
                 const b64 = await shrinkImage(file, 1600, 0.82);
-                $('setBgUrl').value = '';
-                applyTheme('custom', b64);
                 currentBgUrl = b64;
+                applyTheme('custom', b64);
                 document.querySelectorAll('.theme-btn').forEach(x =>
                     x.classList.toggle('active', x.dataset.theme === 'custom'));
+                $('customBgBlock').style.display = 'block';
             } catch (err) {
                 alert('Ошибка: ' + err.message);
             }
@@ -701,7 +707,6 @@
         };
 
         $('bgRemoveBtn').onclick = () => {
-            $('setBgUrl').value = '';
             currentBgUrl = null;
             applyTheme('light', null);
             document.querySelectorAll('.theme-btn').forEach(x =>
@@ -709,27 +714,65 @@
             $('customBgBlock').style.display = 'none';
         };
 
+        // ─── АДМИН-ФОН И ЦВЕТ ──────────────────────────
+        $('adminBgInput').onchange = async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            try {
+                const b64 = await shrinkImage(file, 1600, 0.82);
+                currentAdminBg = b64;
+                alert('✅ Фон админки сохранён. Он появится когда откроешь админку.');
+            } catch (err) {
+                alert('Ошибка: ' + err.message);
+            }
+            e.target.value = '';
+        };
+
+        $('adminBgRemoveBtn').onclick = () => {
+            currentAdminBg = null;
+            alert('✅ Фон админки убран.');
+        };
+
+        $('adminBtnColor').oninput = (e) => {
+            currentAdminBtnColor = e.target.value;
+            $('adminBtnColorLabel').textContent = currentAdminBtnColor;
+        };
+
+        $('adminBtnColorReset').onclick = () => {
+            currentAdminBtnColor = '#4299e1';
+            $('adminBtnColor').value = '#4299e1';
+            $('adminBtnColorLabel').textContent = '#4299e1';
+        };
+
+        // ─── СОХРАНЕНИЕ НАСТРОЕК ───────────────────────
         $('saveSettingsBtn').onclick = async () => {
             const st = $('settingsStatus');
             const newName = $('setName').value.trim();
             const newTheme = document.querySelector('.theme-btn.active')?.dataset.theme || 'light';
-            const urlBg = $('setBgUrl').value.trim();
-            const bgToSave = newTheme === 'custom' ? (urlBg || currentBgUrl || '') : '';
+            const bgToSave = newTheme === 'custom' ? (currentBgUrl || '') : '';
             const oldPwd = $('setOldPwd').value;
             const newPwd = $('setNewPwd').value;
 
             st.textContent = '⏳ Сохраняем...';
             st.className = 'fb-status loading';
 
+            const payload = {
+                token: authToken, name: newName,
+                theme: newTheme,
+                bg_url: bgToSave
+            };
+
+            // Добавляем админ-настройки если админ
+            if (authUser?.is_admin) {
+                payload.admin_bg_url = currentAdminBg || '';
+                payload.admin_btn_color = currentAdminBtnColor || '';
+            }
+
             try {
                 const r1 = await fetch('/api/auth/update', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({
-                        token: authToken, name: newName,
-                        theme: newTheme,
-                        bg_url: bgToSave
-                    })
+                    body: JSON.stringify(payload)
                 });
                 const d1 = await r1.json();
                 if (!r1.ok) {
@@ -739,6 +782,8 @@
                 }
                 authUser = d1.user;
                 if (authUser.bg_url) currentBgUrl = authUser.bg_url;
+                currentAdminBg = authUser.admin_bg_url || null;
+                currentAdminBtnColor = authUser.admin_btn_color || '#4299e1';
                 applyTheme(authUser.theme, authUser.bg_url);
                 renderTopbar();
 
@@ -885,20 +930,17 @@
         function loadImage(img, imgUrl) {
             scheduleLoad(() => new Promise((resolve) => {
                 let attempt = 0;
-
                 function tryOnce() {
                     let tid = null;
                     img.classList.remove('img-retrying', 'img-tall');
                     img.classList.add('img-loading');
                     img.alt = 'Загрузка...';
                     tid = setTimeout(() => onFail('Timeout'), LOAD_TIMEOUT);
-
                     function cleanup() {
                         if (tid) { clearTimeout(tid); tid = null; }
                         img.removeEventListener('load', onLoad);
                         img.removeEventListener('error', onError);
                     }
-
                     function onLoad() {
                         cleanup();
                         const w = img.naturalWidth, h = img.naturalHeight;
@@ -920,14 +962,11 @@
                         img.onclick = () => openImageModal(img.src);
                         resolve();
                     }
-
                     function onError() { cleanup(); onFail('Error'); }
-
                     img.addEventListener('load', onLoad, { once: true });
                     img.addEventListener('error', onError, { once: true });
                     img.src = '/api/image?url=' + encodeURIComponent(imgUrl) + '&w=1000&t=' + Date.now();
                 }
-
                 function onFail(reason) {
                     attempt++;
                     if (attempt <= PLACEHOLDER_RETRIES) {
@@ -940,7 +979,6 @@
                     showImageError(img, imgUrl);
                     resolve();
                 }
-
                 tryOnce();
             }));
         }
@@ -961,7 +999,6 @@
                     raw_text: v
                 });
             });
-
             if (!jobs.length) return showStatus('⚠️ Заполни хотя бы одно поле', 'error');
 
             btn.disabled = true;
@@ -981,10 +1018,8 @@
                 });
                 const data = await resp.json();
                 clearInterval(timer);
-
                 if (!resp.ok) return showStatus('❌ ' + (data.detail || 'Ошибка'), 'error');
                 if (data.total === 0) return showStatus('🤷 Ничего не найдено', 'error');
-
                 const found = data.results.filter(r => r.found).length;
                 showStatus(`✅ Обработано ${data.total} заданий`, 'success');
 
@@ -1008,7 +1043,6 @@
                     const sec = document.createElement('section');
                     sec.className = 'subject-block';
                     sec.innerHTML = `<h2>${escapeHtml(subject)}</h2>`;
-
                     items.forEach(r => {
                         if (r.is_text || !r.found) {
                             const textCard = document.createElement('div');
@@ -1024,7 +1058,6 @@
                             sec.appendChild(textCard);
                             return;
                         }
-
                         const card = document.createElement('div');
                         card.className = 'task-card';
                         card.innerHTML = `<div class="task-header">
@@ -1046,7 +1079,6 @@
                         }
                         sec.appendChild(card);
                     });
-
                     result.appendChild(sec);
                 });
             } catch (err) {
