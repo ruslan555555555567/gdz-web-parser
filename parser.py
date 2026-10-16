@@ -9,45 +9,15 @@ HEADERS = {
     "Referer": "https://gdz.ru/",
 }
 
-# Предметы, где основной контент — ТЕКСТ (не ищем номера)
-TEXT_SUBJECTS = {
-    "Литература", "История", "Музыка", "Труд (технология)",
-    "Изобразительное искусство",
-}
-
-# Алиасы предметов (для "Разнообразие бактерий" → Биология)
-SUBJECT_ALIASES = {
-    "Биология": ["биология", "разнообразие бактерий", "бактерии", "грибы", "лишайники"],
-    "Алгебра": ["алгебра"],
-    "Геометрия": ["геометрия"],
-    "Вероятность и статистика": ["вероятность", "статистика"],
-    "Физика": ["физика"],
-    "Информатика": ["информатика"],
-    "География": ["география"],
-    "Русский язык": ["русский"],
-    "Английский язык": ["английский", "english", "иностранный"],
-    "Литература": ["литература"],
-    "История": ["история"],
-    "Музыка": ["музыка"],
-    "Труд (технология)": ["труд", "технология"],
-    "Изобразительное искусство": ["изо", "изобразительное"],
-}
-
 
 def extract_numbers(text: str) -> list[str]:
     """Вытаскивает номера заданий, отсекая параграфы, даты, страницы."""
     if not text:
         return []
-
-    # Параграфы: п.20, пункт 5, §7, "параграф 7"
     text = re.sub(r'(?:\bп\.|\bпункт|\b§|\bпараграф)\s*\d+', ' ', text, flags=re.IGNORECASE)
-    # Даты: 12.10, 12.10.2026, 12/10, 12-10
     text = re.sub(r'\b\d{1,2}[./-]\d{1,2}([./-]\d{2,4})?', ' ', text)
-    # Годы: 2020, 2015
     text = re.sub(r'\b(19|20)\d{2}\b', ' ', text)
-    # Страницы: "стр. 16-17", "страница 20"
     text = re.sub(r'(?:\bстр\.|\bстраниц[аы]?)\s*\d+(-\d+)?', ' ', text, flags=re.IGNORECASE)
-    # Листы/объём: "1,5 листа", "2 листа"
     text = re.sub(r'\d+[,.]?\d*\s*лист[аов]?', ' ', text, flags=re.IGNORECASE)
 
     numbers = re.findall(r'\d{1,4}', text)
@@ -62,12 +32,7 @@ def extract_numbers(text: str) -> list[str]:
 def _get_images(url: str) -> list[str]:
     """Возвращает картинку с самым свежим годом издания."""
     try:
-        r = requests.get(
-            url,
-            headers=HEADERS,
-            impersonate="chrome",
-            timeout=20,
-        )
+        r = requests.get(url, headers=HEADERS, impersonate="chrome", timeout=20)
         if r.status_code != 200:
             return []
         html = r.text
@@ -75,7 +40,6 @@ def _get_images(url: str) -> list[str]:
         return []
 
     soup = BeautifulSoup(html, "lxml")
-
     candidates = []
     seen = set()
 
@@ -110,16 +74,15 @@ def _get_images(url: str) -> list[str]:
 
     if not candidates:
         return []
-
     candidates.sort(key=lambda x: x[0])
-    _, best_url = candidates[-1]
-    return [best_url]
+    return [candidates[-1][1]]
 
 
 async def parse_tasks(jobs: list[dict]) -> list[dict]:
     """
     jobs = [
-        {"subject": "Алгебра", "url": "...", "numbers": "447,449", "raw_text": "текст задания"},
+        {"subject": "Алгебра", "url": "...", "numbers": "447,449",
+         "raw_text": "...", "type": "numbers"},
     ]
     """
     import asyncio
@@ -127,29 +90,30 @@ async def parse_tasks(jobs: list[dict]) -> list[dict]:
     results = []
     for job in jobs:
         subject = job["subject"]
-        base = job["url"]
+        base = (job.get("url") or "").strip()
+        raw_text = job.get("raw_text", "").strip()
+        s_type = job.get("type", "numbers")
+
+        # Текстовые предметы — сразу показываем текст
+        if s_type == "text" or not base:
+            results.append({
+                "subject": subject,
+                "number": None,
+                "url": None,
+                "images": [],
+                "found": False,
+                "raw_text": raw_text,
+                "is_text": True,
+            })
+            continue
+
         if not base.endswith("/"):
             base += "/"
 
-        raw_text = job.get("raw_text", "").strip()
-        is_text_subject = subject in TEXT_SUBJECTS
-
-        # Для текстовых предметов — сразу возвращаем текст
-        if is_text_subject:
-            results.append({
-                "subject": subject,
-                "number": None,
-                "url": None,
-                "images": [],
-                "found": False,
-                "raw_text": raw_text,
-            })
-            continue
-
         numbers = extract_numbers(job.get("numbers", ""))
 
-        # Если номеров нет, но есть текст — показываем текст
-        if not numbers and raw_text:
+        # Нет номеров, но есть текст
+        if not numbers:
             results.append({
                 "subject": subject,
                 "number": None,
@@ -157,9 +121,11 @@ async def parse_tasks(jobs: list[dict]) -> list[dict]:
                 "images": [],
                 "found": False,
                 "raw_text": raw_text,
+                "is_text": True,
             })
             continue
 
+        # Ищем каждый номер
         for num in numbers:
             candidates = [
                 urljoin(base, f"{num}-task/"),
@@ -185,6 +151,7 @@ async def parse_tasks(jobs: list[dict]) -> list[dict]:
                 "images": images,
                 "found": len(images) > 0,
                 "raw_text": raw_text,
+                "is_text": False,
             })
 
     return results

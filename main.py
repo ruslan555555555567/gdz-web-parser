@@ -16,12 +16,32 @@ import asyncpg
 
 from parser import parse_tasks
 
-VERSION = "9.0.0"
+VERSION = "10.0.0"
 ADMIN_PASSWORD = "gdz2024admin"
 ADMIN_EMAIL = os.getenv("ADMIN_EMAIL", "admin@gdz.ru").lower().strip()
 DATABASE_URL = os.getenv("DATABASE_URL")
 
 db_pool = None
+
+# Начальный список предметов (заполнится в БД, если таблица пустая)
+DEFAULT_SUBJECTS = [
+    # Активные — ищем номера
+    {"name": "Алгебра", "url": "https://gdz.ru/class-7/algebra/makarichev-18/", "type": "numbers", "group_name": "🧮 Точные науки", "sort_order": 1},
+    {"name": "Геометрия", "url": "https://gdz.ru/class-7/geometria/merzljak/", "type": "numbers", "group_name": "🧮 Точные науки", "sort_order": 2},
+    {"name": "Вероятность и статистика", "url": "https://gdz.ru/class-7/matematika/vysockij-yashenko-bazovij-uroven/", "type": "numbers", "group_name": "🧮 Точные науки", "sort_order": 3},
+    {"name": "Физика", "url": "https://gdz.ru/class-7/fizika/peryshkin-7/", "type": "numbers", "group_name": "🧮 Точные науки", "sort_order": 4},
+    {"name": "Информатика", "url": "https://gdz.ru/class-7/informatika/reshebnik-bosova-l-l-7/", "type": "numbers", "group_name": "🧮 Точные науки", "sort_order": 5},
+    {"name": "Биология", "url": "https://gdz.ru/class-7/biologiya/pasechnik-shvecov-bazovij-uroven/", "type": "numbers", "group_name": "🌿 Естественные науки", "sort_order": 6},
+    {"name": "Русский язык", "url": "https://gdz.ru/class-7/russkii_yazik/baranova/", "type": "numbers", "group_name": "📖 Гуманитарные науки", "sort_order": 7},
+    {"name": "Английский язык", "url": "https://gdz.ru/class-7/english/spotlight-7/", "type": "numbers", "group_name": "📖 Гуманитарные науки", "sort_order": 8},
+    # Текстовые — просто показываем текст
+    {"name": "География", "url": "", "type": "text", "group_name": "🌿 Естественные науки", "sort_order": 9},
+    {"name": "Литература", "url": "", "type": "text", "group_name": "📖 Гуманитарные науки", "sort_order": 10},
+    {"name": "История", "url": "", "type": "text", "group_name": "📖 Гуманитарные науки", "sort_order": 11},
+    {"name": "Музыка", "url": "", "type": "text", "group_name": "🎨 Остальные предметы", "sort_order": 12},
+    {"name": "Труд (технология)", "url": "", "type": "text", "group_name": "🎨 Остальные предметы", "sort_order": 13},
+    {"name": "Изобразительное искусство", "url": "", "type": "text", "group_name": "🎨 Остальные предметы", "sort_order": 14},
+]
 
 
 async def init_db():
@@ -66,12 +86,28 @@ async def init_db():
                 )
             """)
             await conn.execute("""
-                CREATE TABLE IF NOT EXISTS subjects_stats (
-                    subject TEXT PRIMARY KEY,
-                    max_number INTEGER,
-                    scanned_at TIMESTAMP DEFAULT NOW()
+                CREATE TABLE IF NOT EXISTS subjects (
+                    id SERIAL PRIMARY KEY,
+                    name TEXT UNIQUE NOT NULL,
+                    url TEXT DEFAULT '',
+                    type TEXT DEFAULT 'numbers',
+                    group_name TEXT DEFAULT '',
+                    sort_order INTEGER DEFAULT 0,
+                    created_at TIMESTAMP DEFAULT NOW()
                 )
             """)
+
+            # Заполняем начальными предметами, если таблица пуста
+            count = await conn.fetchval("SELECT COUNT(*) FROM subjects")
+            if count == 0:
+                for s in DEFAULT_SUBJECTS:
+                    await conn.execute("""
+                        INSERT INTO subjects (name, url, type, group_name, sort_order)
+                        VALUES ($1, $2, $3, $4, $5)
+                        ON CONFLICT (name) DO NOTHING
+                    """, s["name"], s["url"], s["type"], s["group_name"], s["sort_order"])
+                print(f"[main] Добавлено {len(DEFAULT_SUBJECTS)} начальных предметов")
+
         print("[main] PostgreSQL подключена")
     except Exception as e:
         print(f"[main] Ошибка PostgreSQL: {e}")
@@ -141,9 +177,10 @@ PLACEHOLDER_JPEG = bytes.fromhex(
 
 class Job(BaseModel):
     subject: str
-    url: str
+    url: str = ""
     numbers: str = ""
     raw_text: str = ""
+    type: str = "numbers"
 
 
 class ParseRequest(BaseModel):
@@ -211,6 +248,100 @@ async def get_version():
     return {"version": VERSION}
 
 
+# ═══════ ПРЕДМЕТЫ ═══════
+
+@app.get("/api/subjects")
+async def get_subjects():
+    """Публичный список предметов для главной страницы."""
+    if db_pool is None:
+        return {"subjects": DEFAULT_SUBJECTS}
+    async with db_pool.acquire() as conn:
+        rows = await conn.fetch("""
+            SELECT id, name, url, type, group_name, sort_order
+            FROM subjects ORDER BY sort_order, id
+        """)
+    return {"subjects": [dict(r) for r in rows]}
+
+
+@app.post("/api/admin/subjects/add")
+async def admin_add_subject(data: dict):
+    if not await check_admin(data):
+        raise HTTPException(401, "Нет доступа")
+    if db_pool is None:
+        raise HTTPException(500, "БД недоступна")
+
+    name = (data.get("name") or "").strip()
+    url = (data.get("url") or "").strip()
+    s_type = (data.get("type") or "numbers").strip()
+    group_name = (data.get("group_name") or "").strip()
+    sort_order = int(data.get("sort_order") or 999)
+
+    if not name:
+        raise HTTPException(400, "Нужно название")
+    if s_type not in ("numbers", "text"):
+        raise HTTPException(400, "type должен быть 'numbers' или 'text'")
+    if s_type == "numbers" and not url:
+        raise HTTPException(400, "Для типа 'numbers' нужна ссылка")
+
+    async with db_pool.acquire() as conn:
+        try:
+            new_id = await conn.fetchval("""
+                INSERT INTO subjects (name, url, type, group_name, sort_order)
+                VALUES ($1, $2, $3, $4, $5) RETURNING id
+            """, name, url, s_type, group_name, sort_order)
+        except asyncpg.UniqueViolationError:
+            raise HTTPException(400, "Такой предмет уже есть")
+    return {"ok": True, "id": new_id}
+
+
+@app.post("/api/admin/subjects/update")
+async def admin_update_subject(data: dict):
+    if not await check_admin(data):
+        raise HTTPException(401, "Нет доступа")
+    if db_pool is None:
+        raise HTTPException(500, "БД недоступна")
+
+    subj_id = data.get("id")
+    if not subj_id:
+        raise HTTPException(400, "Нужен id")
+
+    fields = []
+    params = []
+    idx = 1
+    for key in ("name", "url", "type", "group_name"):
+        if key in data and data[key] is not None:
+            fields.append(f"{key} = ${idx}")
+            params.append(str(data[key]).strip())
+            idx += 1
+    if "sort_order" in data:
+        fields.append(f"sort_order = ${idx}")
+        params.append(int(data["sort_order"]))
+        idx += 1
+
+    if not fields:
+        raise HTTPException(400, "Нечего обновлять")
+
+    params.append(int(subj_id))
+    sql = f"UPDATE subjects SET {', '.join(fields)} WHERE id = ${idx}"
+
+    async with db_pool.acquire() as conn:
+        await conn.execute(sql, *params)
+    return {"ok": True}
+
+
+@app.post("/api/admin/subjects/delete")
+async def admin_delete_subject(data: dict):
+    if not await check_admin(data):
+        raise HTTPException(401, "Нет доступа")
+    subj_id = data.get("id")
+    if not subj_id:
+        raise HTTPException(400, "Нужен id")
+    if db_pool is not None:
+        async with db_pool.acquire() as conn:
+            await conn.execute("DELETE FROM subjects WHERE id = $1", int(subj_id))
+    return {"ok": True}
+
+
 # ═══════ АВТОРИЗАЦИЯ ═══════
 
 @app.post("/api/auth/register")
@@ -236,10 +367,7 @@ async def register(req: RegisterRequest):
             is_admin, req.device.strip()
         )
         token = secrets.token_urlsafe(32)
-        await conn.execute(
-            "INSERT INTO sessions (token, user_id) VALUES ($1, $2)",
-            token, user_id
-        )
+        await conn.execute("INSERT INTO sessions (token, user_id) VALUES ($1, $2)", token, user_id)
 
     return {"ok": True, "token": token, "user": {
         "id": user_id, "email": email, "name": req.name.strip(),
@@ -270,10 +398,7 @@ async def login(req: LoginRequest):
             await conn.execute("UPDATE users SET last_seen = NOW() WHERE id = $1", row["id"])
 
         token = secrets.token_urlsafe(32)
-        await conn.execute(
-            "INSERT INTO sessions (token, user_id) VALUES ($1, $2)",
-            token, row["id"]
-        )
+        await conn.execute("INSERT INTO sessions (token, user_id) VALUES ($1, $2)", token, row["id"])
 
     return {"ok": True, "token": token, "user": {
         "id": row["id"], "email": row["email"], "name": row["name"],
@@ -306,33 +431,22 @@ async def update_profile(req: UpdateProfileRequest):
     if db_pool is None:
         raise HTTPException(500, "БД недоступна")
 
-    updates = []
-    params = []
-    idx = 1
-
+    updates, params, idx = [], [], 1
     if req.name.strip():
-        updates.append(f"name = ${idx}")
-        params.append(req.name.strip())
-        idx += 1
+        updates.append(f"name = ${idx}"); params.append(req.name.strip()); idx += 1
     if req.theme in ('light', 'dark', 'custom'):
-        updates.append(f"theme = ${idx}")
-        params.append(req.theme)
-        idx += 1
+        updates.append(f"theme = ${idx}"); params.append(req.theme); idx += 1
         if req.theme != 'custom':
             updates.append("bg_url = NULL")
     if req.theme == 'custom' and req.bg_url:
-        updates.append(f"bg_url = ${idx}")
-        params.append(req.bg_url)
-        idx += 1
+        updates.append(f"bg_url = ${idx}"); params.append(req.bg_url); idx += 1
 
     if not updates:
         return {"ok": True, "user": user}
 
     params.append(user["id"])
-    sql = f"UPDATE users SET {', '.join(updates)} WHERE id = ${idx}"
-
     async with db_pool.acquire() as conn:
-        await conn.execute(sql, *params)
+        await conn.execute(f"UPDATE users SET {', '.join(updates)} WHERE id = ${idx}", *params)
         row = await conn.fetchrow(
             "SELECT id, email, name, is_admin, theme, bg_url FROM users WHERE id = $1",
             user["id"]
@@ -347,7 +461,6 @@ async def change_password(req: ChangePasswordRequest):
         raise HTTPException(401, "Не авторизован")
     if len(req.new_password) < 6:
         raise HTTPException(400, "Новый пароль минимум 6 символов")
-
     async with db_pool.acquire() as conn:
         row = await conn.fetchrow("SELECT password_hash FROM users WHERE id = $1", user["id"])
         if not verify_password(req.old_password, row["password_hash"]):
@@ -366,7 +479,6 @@ async def delete_account(req: TokenRequest):
         raise HTTPException(401, "Не авторизован")
     if db_pool is None:
         raise HTTPException(500, "БД недоступна")
-
     async with db_pool.acquire() as conn:
         await conn.execute("DELETE FROM users WHERE id = $1", user["id"])
     return {"ok": True}
@@ -378,7 +490,7 @@ async def delete_account(req: TokenRequest):
 async def history_save(req: HistorySaveRequest):
     user = await get_user_by_token(req.token)
     if not user:
-        return {"ok": False, "reason": "not_authorized"}
+        return {"ok": False}
     if db_pool is None:
         return {"ok": False}
     async with db_pool.acquire() as conn:
@@ -388,8 +500,7 @@ async def history_save(req: HistorySaveRequest):
         )
         await conn.execute("""
             DELETE FROM history WHERE user_id = $1 AND id NOT IN (
-                SELECT id FROM history WHERE user_id = $1
-                ORDER BY id DESC LIMIT 20
+                SELECT id FROM history WHERE user_id = $1 ORDER BY id DESC LIMIT 20
             )
         """, user["id"])
     return {"ok": True}
@@ -461,8 +572,7 @@ async def admin_messages(data: dict):
         rows = await conn.fetch(
             "SELECT id, date, message, contact, version FROM feedback ORDER BY id DESC"
         )
-    messages = [dict(r) for r in rows]
-    return {"messages": messages, "total": len(messages)}
+    return {"messages": [dict(r) for r in rows], "total": len(rows)}
 
 
 @app.post("/api/admin/users")
@@ -483,7 +593,6 @@ async def admin_users(data: dict):
 
 @app.post("/api/admin/online")
 async def admin_online(data: dict):
-    """Пользователи онлайн (активны в последние 5 минут)."""
     if not await check_admin(data):
         raise HTTPException(401, "Нет доступа")
     if db_pool is None:
@@ -529,63 +638,6 @@ async def admin_clear(data: dict):
     return {"ok": True}
 
 
-@app.post("/api/admin/scan-subject")
-async def admin_scan_subject(data: dict):
-    """Сканирует предмет и находит максимальный номер. Долго (5-15 мин)."""
-    if not await check_admin(data):
-        raise HTTPException(401, "Нет доступа")
-
-    subject = (data or {}).get("subject", "")
-    url = (data or {}).get("url", "")
-    if not subject or not url:
-        raise HTTPException(400, "Нужны subject и url")
-    if not url.endswith("/"):
-        url += "/"
-
-    from parser import _get_images
-    from urllib.parse import urljoin
-
-    max_number = 0
-    # Сканируем с шагом 1, до 2000 (защита от бесконечного цикла)
-    for num in range(1, 2001):
-        found = False
-        for suffix in [f"{num}-task/", f"{num}-s/", f"{num}-nom/", f"task-{num}/"]:
-            test_url = urljoin(url, suffix)
-            images = await asyncio.to_thread(_get_images, test_url)
-            if images:
-                found = True
-                break
-        if found:
-            max_number = num
-
-    if db_pool is not None:
-        async with db_pool.acquire() as conn:
-            await conn.execute("""
-                INSERT INTO subjects_stats (subject, max_number, scanned_at)
-                VALUES ($1, $2, NOW())
-                ON CONFLICT (subject) DO UPDATE
-                SET max_number = $2, scanned_at = NOW()
-            """, subject, max_number)
-
-    return {"ok": True, "subject": subject, "max_number": max_number}
-
-
-@app.post("/api/admin/get-stats")
-async def admin_get_stats(data: dict):
-    """Возвращает статистику по всем предметам."""
-    if not await check_admin(data):
-        raise HTTPException(401, "Нет доступа")
-    if db_pool is None:
-        return {"stats": []}
-    async with db_pool.acquire() as conn:
-        rows = await conn.fetch("""
-            SELECT subject, max_number,
-                   to_char(scanned_at, 'DD.MM.YY HH24:MI') AS scanned
-            FROM subjects_stats ORDER BY subject
-        """)
-    return {"stats": [dict(r) for r in rows]}
-
-
 # ═══════ ПАРСИНГ ═══════
 
 @app.post("/api/parse")
@@ -593,12 +645,10 @@ async def parse(req: ParseRequest):
     jobs = [j for j in req.jobs if (j.numbers.strip() or j.raw_text.strip())]
     if not jobs:
         raise HTTPException(400, "Введи номера или текст хотя бы в одном поле")
-
     try:
         results = await parse_tasks([j.dict() for j in jobs])
     except Exception as e:
         raise HTTPException(500, f"Ошибка парсинга: {e}")
-
     return {"results": results, "total": len(results)}
 
 
@@ -635,7 +685,7 @@ async def proxy_image(url: str, w: int = 1000):
 
     try:
         data, content_type = await asyncio.to_thread(fetch_and_compress)
-    except Exception as e:
+    except Exception:
         return Response(content=PLACEHOLDER_JPEG, media_type="image/jpeg",
                         headers={"Cache-Control": "no-cache"})
 

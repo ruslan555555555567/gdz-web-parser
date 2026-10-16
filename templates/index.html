@@ -65,103 +65,9 @@
 
         <section class="card">
             <h2>📝 Домашка</h2>
-
-            <!-- Точные науки -->
-            <div class="subject-group">
-                <h3 class="group-title">🧮 Точные науки</h3>
-
-                <div class="input-row">
-                    <label class="input-label">📐 Алгебра <span class="hint">(Макарычев)</span></label>
-                    <input type="text" class="num-input" id="algebra" placeholder="447, 449, 451(а,в,д), 455">
-                </div>
-
-                <div class="input-row">
-                    <label class="input-label">📐 Геометрия <span class="hint">(Мерзляк)</span></label>
-                    <input type="text" class="num-input" id="geometry" placeholder="115, 117, 127">
-                </div>
-
-                <div class="input-row">
-                    <label class="input-label">🎲 Вероятность и статистика <span class="hint">(Высоцкий)</span></label>
-                    <input type="text" class="num-input" id="probability" placeholder="28, 33, 90">
-                </div>
-
-                <div class="input-row">
-                    <label class="input-label">⚛️ Физика <span class="hint">(Перышкин)</span></label>
-                    <input type="text" class="num-input" id="physics" placeholder="12, 15, 20">
-                </div>
-
-                <div class="input-row">
-                    <label class="input-label">💻 Информатика <span class="hint">(Босова)</span></label>
-                    <input type="text" class="num-input" id="informatika" placeholder="1, 5, 10">
-                </div>
+            <div id="subjectsContainer">
+                <p class="empty">Загрузка предметов...</p>
             </div>
-
-            <!-- Естественные науки -->
-            <div class="subject-group">
-                <h3 class="group-title">🌿 Естественные науки</h3>
-
-                <div class="input-row">
-                    <label class="input-label">🌱 Биология <span class="hint">(вкл. разнообразие бактерий)</span></label>
-                    <input type="text" class="num-input" id="biologiya" placeholder="1, 5, 10">
-                </div>
-
-                <div class="input-row">
-                    <label class="input-label">🌍 География <span class="hint">(Алексеев)</span></label>
-                    <input type="text" class="num-input" id="geografiya" placeholder="1, 5, 10">
-                </div>
-            </div>
-
-            <!-- Гуманитарные науки -->
-            <div class="subject-group">
-                <h3 class="group-title">📖 Гуманитарные науки</h3>
-
-                <div class="input-row">
-                    <label class="input-label">📖 Русский язык <span class="hint">(Баранов)</span></label>
-                    <input type="text" class="num-input" id="russian" placeholder="96, 119, 130">
-                </div>
-
-                <div class="input-row">
-                    <label class="input-label">🇬🇧 Английский язык <span class="hint">(Spotlight)</span></label>
-                    <input type="text" class="num-input" id="english" placeholder="1, 4, 8">
-                </div>
-            </div>
-
-            <!-- Текстовые предметы -->
-            <div class="subject-group">
-                <h3 class="group-title">📝 Текстовые предметы</h3>
-                <p class="group-hint">В этих предметах задания обычно текстовые — просто вставь текст.</p>
-
-                <div class="input-row">
-                    <label class="input-label">📚 Литература</label>
-                    <textarea class="text-input" id="literatura" rows="2"
-                        placeholder="Написать сочинение по поэме «Полтава»..."></textarea>
-                </div>
-
-                <div class="input-row">
-                    <label class="input-label">🏛 История</label>
-                    <textarea class="text-input" id="istoriya" rows="2"
-                        placeholder="Читать параграф 7, написать этапы войн..."></textarea>
-                </div>
-
-                <div class="input-row">
-                    <label class="input-label">🎵 Музыка</label>
-                    <textarea class="text-input" id="muzyka" rows="2"
-                        placeholder="Повторение изученного материала..."></textarea>
-                </div>
-
-                <div class="input-row">
-                    <label class="input-label">🛠 Труд (технология)</label>
-                    <textarea class="text-input" id="trud" rows="2"
-                        placeholder="Принести материалы для работы..."></textarea>
-                </div>
-
-                <div class="input-row">
-                    <label class="input-label">🎨 Изобразительное искусство</label>
-                    <textarea class="text-input" id="izo" rows="2"
-                        placeholder="Принести альбом и краски..."></textarea>
-                </div>
-            </div>
-
             <button id="btn" class="btn-primary">🔍 Найти решения</button>
         </section>
 
@@ -231,22 +137,16 @@
 
             <div class="settings-section" id="logoutSection">
                 <label class="form-label">Сессия</label>
-                <button type="button" id="logoutBtn" class="btn-logout">
-                    🚪 Выйти из аккаунта
-                </button>
+                <button type="button" id="logoutBtn" class="btn-logout">🚪 Выйти из аккаунта</button>
             </div>
 
             <div id="settingsStatus" class="fb-status"></div>
 
             <div class="modal-actions" style="justify-content:space-between;">
-                <button type="button" id="deleteAccountBtn" class="btn-danger">
-                    🗑 Удалить аккаунт
-                </button>
+                <button type="button" id="deleteAccountBtn" class="btn-danger">🗑 Удалить аккаунт</button>
                 <div style="display:flex; gap:10px;">
                     <button type="button" id="closeSettingsBtn" class="btn-secondary">Отмена</button>
-                    <button type="button" id="saveSettingsBtn" class="btn-primary" style="width:auto;">
-                        Сохранить
-                    </button>
+                    <button type="button" id="saveSettingsBtn" class="btn-primary" style="width:auto;">Сохранить</button>
                 </div>
             </div>
         </div>
@@ -284,27 +184,11 @@
     </div>
 
     <script>
-        const SUBJECTS = [
-            { id: 'algebra', subject: 'Алгебра', url: 'https://gdz.ru/class-7/algebra/makarichev-18/', type: 'numbers' },
-            { id: 'geometry', subject: 'Геометрия', url: 'https://gdz.ru/class-7/geometria/merzljak/', type: 'numbers' },
-            { id: 'probability', subject: 'Вероятность и статистика', url: 'https://gdz.ru/class-7/matematika/vysockij-yashenko-bazovij-uroven/', type: 'numbers' },
-            { id: 'physics', subject: 'Физика', url: 'https://gdz.ru/class-7/fizika/peryshkin-7/', type: 'numbers' },
-            { id: 'informatika', subject: 'Информатика', url: 'https://gdz.ru/class-7/informatika/bosova/', type: 'numbers' },
-            { id: 'biologiya', subject: 'Биология', url: 'https://gdz.ru/class-7/biologiya/pasechnik-mnogoobrazie/', type: 'numbers' },
-            { id: 'geografiya', subject: 'География', url: 'https://gdz.ru/class-7/geografiya/alekseev-nikolina/', type: 'numbers' },
-            { id: 'russian', subject: 'Русский язык', url: 'https://gdz.ru/class-7/russkii_yazik/baranova/', type: 'numbers' },
-            { id: 'english', subject: 'Английский язык', url: 'https://gdz.ru/class-7/english/spotlight-7/', type: 'numbers' },
-            { id: 'literatura', subject: 'Литература', url: 'https://gdz.ru/class-7/literatura/korovina/', type: 'text' },
-            { id: 'istoriya', subject: 'История', url: 'https://gdz.ru/class-7/istoriya/yudovskaya/', type: 'text' },
-            { id: 'muzyka', subject: 'Музыка', url: 'https://gdz.ru/class-7/muzyka/sergeeva/', type: 'text' },
-            { id: 'trud', subject: 'Труд (технология)', url: 'https://gdz.ru/class-7/tehnologiya/', type: 'text' },
-            { id: 'izo', subject: 'Изобразительное искусство', url: 'https://gdz.ru/class-7/izo/shpikalova/', type: 'text' },
-        ];
-
         let authToken = localStorage.getItem('gdz_token') || '';
         let authUser = null;
         let currentTheme = localStorage.getItem('gdz_theme') || 'light';
         let currentBgUrl = localStorage.getItem('gdz_bg') || null;
+        let SUBJECTS = [];
 
         const $ = id => document.getElementById(id);
         const authScreen = $('authScreen');
@@ -384,12 +268,97 @@
             mainScreen.classList.add('hidden');
         }
 
-        function showMain() {
+        async function showMain() {
             authScreen.classList.add('hidden');
             mainScreen.classList.remove('hidden');
             renderTopbar();
+            await loadSubjects();
         }
 
+        // ─── ЗАГРУЗКА ПРЕДМЕТОВ ────────────────────────
+        async function loadSubjects() {
+            try {
+                const r = await fetch('/api/subjects');
+                const d = await r.json();
+                SUBJECTS = d.subjects || [];
+                renderSubjects();
+            } catch (e) {
+                $('subjectsContainer').innerHTML =
+                    '<p class="empty">Не удалось загрузить предметы</p>';
+            }
+        }
+
+        function renderSubjects() {
+            const container = $('subjectsContainer');
+            container.innerHTML = '';
+
+            // Группируем по group_name
+            const groups = {};
+            SUBJECTS.forEach(s => {
+                const g = s.group_name || 'Прочее';
+                if (!groups[g]) groups[g] = [];
+                groups[g].push(s);
+            });
+
+            Object.entries(groups).forEach(([groupName, items]) => {
+                const groupDiv = document.createElement('div');
+                groupDiv.className = 'subject-group';
+
+                const title = document.createElement('h3');
+                title.className = 'group-title';
+                title.textContent = groupName;
+                groupDiv.appendChild(title);
+
+                // Подсказка для текстовой группы
+                const hasText = items.some(s => s.type === 'text');
+                if (hasText) {
+                    const hint = document.createElement('p');
+                    hint.className = 'group-hint';
+                    hint.textContent = 'Задания из этих предметов можно вставлять текстом.';
+                    groupDiv.appendChild(hint);
+                }
+
+                items.forEach(s => {
+                    const row = document.createElement('div');
+                    row.className = 'input-row';
+
+                    const label = document.createElement('label');
+                    label.className = 'input-label';
+                    label.textContent = s.name;
+                    row.appendChild(label);
+
+                    const inputId = 'subj_' + s.id;
+
+                    if (s.type === 'text') {
+                        const ta = document.createElement('textarea');
+                        ta.className = 'text-input';
+                        ta.id = inputId;
+                        ta.rows = 2;
+                        ta.placeholder = 'Вставь текст задания...';
+                        ta.dataset.subject = s.name;
+                        ta.dataset.type = 'text';
+                        ta.dataset.url = s.url || '';
+                        row.appendChild(ta);
+                    } else {
+                        const inp = document.createElement('input');
+                        inp.type = 'text';
+                        inp.className = 'num-input';
+                        inp.id = inputId;
+                        inp.placeholder = '1, 5, 10';
+                        inp.dataset.subject = s.name;
+                        inp.dataset.type = 'numbers';
+                        inp.dataset.url = s.url || '';
+                        row.appendChild(inp);
+                    }
+
+                    groupDiv.appendChild(row);
+                });
+
+                container.appendChild(groupDiv);
+            });
+        }
+
+        // ─── ВЕРХНЯЯ ПАНЕЛЬ ────────────────────────────
         function renderTopbar() {
             topbarRight.innerHTML = '';
             const name = authUser.name || authUser.email.split('@')[0];
@@ -429,6 +398,7 @@
             topbarRight.appendChild(supBtn);
         }
 
+        // ─── ВХОД ──────────────────────────────────────
         let authMode = 'login';
 
         function switchTab(mode) {
@@ -498,6 +468,7 @@
             showAuth();
         }
 
+        // ─── ИСТОРИЯ ───────────────────────────────────
         async function openHistory() {
             historyModal.classList.remove('hidden');
             const list = $('historyList');
@@ -522,11 +493,10 @@
                         <span class="history-date">${escapeHtml(it.created)}</span>
                     `;
                     row.onclick = () => {
-                        const el = document.getElementById(
-                            SUBJECTS.find(s => s.subject === it.subject)?.id || ''
-                        );
-                        if (el) {
-                            el.value = it.numbers;
+                        const subj = SUBJECTS.find(s => s.name === it.subject);
+                        if (subj) {
+                            const el = document.getElementById('subj_' + subj.id);
+                            if (el) el.value = it.numbers;
                             historyModal.classList.add('hidden');
                         }
                     };
@@ -550,6 +520,7 @@
             } catch {}
         };
 
+        // ─── НАСТРОЙКИ ─────────────────────────────────
         function openSettings() {
             settingsModal.classList.remove('hidden');
             $('settingsStatus').textContent = '';
@@ -673,6 +644,7 @@
             }
         };
 
+        // ─── ТЕХПОДДЕРЖКА ──────────────────────────────
         $('closeSupport').onclick = () => supportModal.classList.add('hidden');
         supportModal.onclick = (e) => {
             if (e.target === supportModal) supportModal.classList.add('hidden');
@@ -703,6 +675,7 @@
             }
         };
 
+        // ─── КАРТИНКА ──────────────────────────────────
         function openImageModal(src) {
             imageModalImg.src = src;
             imageModal.classList.remove('hidden');
@@ -717,6 +690,7 @@
         imageModal.onclick = (e) => { if (e.target === imageModal) closeModal(); };
         document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeModal(); });
 
+        // ─── ЗАГРУЗКА КАРТИНОК ─────────────────────────
         let activeLoads = 0;
         const MAX_PARALLEL = 3;
         const pendingQueue = [];
@@ -816,19 +790,23 @@
             }));
         }
 
+        // ─── ПОИСК ─────────────────────────────────────
         btn.addEventListener('click', async () => {
             const jobs = [];
             SUBJECTS.forEach(s => {
-                const el = document.getElementById(s.id);
+                const el = document.getElementById('subj_' + s.id);
+                if (!el) return;
                 const v = el.value.trim();
                 if (!v) return;
-
-                if (s.type === 'text') {
-                    jobs.push({ subject: s.subject, url: s.url, numbers: '', raw_text: v });
-                } else {
-                    jobs.push({ subject: s.subject, url: s.url, numbers: v, raw_text: '' });
-                }
+                jobs.push({
+                    subject: s.name,
+                    url: s.url || '',
+                    type: s.type || 'numbers',
+                    numbers: s.type === 'numbers' ? v : '',
+                    raw_text: v
+                });
             });
+
             if (!jobs.length) return showStatus('⚠️ Заполни хотя бы одно поле', 'error');
 
             btn.disabled = true;
@@ -874,39 +852,47 @@
                 Object.entries(bySubject).forEach(([subject, items]) => {
                     const sec = document.createElement('section');
                     sec.className = 'subject-block';
-                    sec.innerHTML = `<h2>${subject}</h2>`;
+                    sec.innerHTML = `<h2>${escapeHtml(subject)}</h2>`;
+
+                    let lastRawText = '';
+
                     items.forEach(r => {
-                        // Если есть текст — показываем текст
-                        if (r.raw_text && (!r.number || !r.found)) {
+                        if (r.raw_text) lastRawText = r.raw_text;
+
+                        // Если это текстовый предмет или не найдено — показываем текст
+                        if (r.is_text || !r.found) {
                             const textCard = document.createElement('div');
                             textCard.className = 'task-card text-task';
+                            let headerText = '📝 Задание';
+                            if (r.number) {
+                                headerText = `№${r.number} — не найдено`;
+                            }
                             textCard.innerHTML = `
                                 <div class="task-header">
-                                    <h3>📝 Задание</h3>
+                                    <h3>${escapeHtml(headerText)}</h3>
                                 </div>
-                                <div class="task-text">${escapeHtml(r.raw_text)}</div>
+                                <div class="task-text">${escapeHtml(r.raw_text || '')}</div>
                             `;
                             sec.appendChild(textCard);
                             return;
                         }
+
                         // Иначе — картинка
                         const card = document.createElement('div');
-                        card.className = 'task-card' + (r.found ? '' : ' not-found');
+                        card.className = 'task-card';
                         card.innerHTML = `<div class="task-header">
                             <h3>№${r.number}</h3>
-                            ${r.found ? '' : '<span class="badge">не найдено</span>'}
                         </div>`;
-                        if (r.found) {
-                            r.images.forEach(u => {
-                                const img = document.createElement('img');
-                                img.className = 'solution-img img-loading';
-                                img.alt = 'Загрузка...';
-                                loadImage(img, u);
-                                card.appendChild(img);
-                            });
-                        }
+                        r.images.forEach(u => {
+                            const img = document.createElement('img');
+                            img.className = 'solution-img img-loading';
+                            img.alt = 'Загрузка...';
+                            loadImage(img, u);
+                            card.appendChild(img);
+                        });
                         sec.appendChild(card);
                     });
+
                     result.appendChild(sec);
                 });
             } catch (err) {
