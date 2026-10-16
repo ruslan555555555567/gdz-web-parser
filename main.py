@@ -16,7 +16,7 @@ import asyncpg
 
 from parser import parse_tasks
 
-VERSION = "12.0.0"
+VERSION = "13.0.0"
 ADMIN_PASSWORD = "gdz2024admin"
 ADMIN_EMAIL = os.getenv("ADMIN_EMAIL", "admin@gdz.ru").lower().strip()
 DATABASE_URL = os.getenv("DATABASE_URL")
@@ -49,7 +49,6 @@ async def init_db():
     try:
         db_pool = await asyncpg.create_pool(DATABASE_URL, min_size=1, max_size=5, ssl="require")
         async with db_pool.acquire() as conn:
-            # Пользователи
             await conn.execute("""
                 CREATE TABLE IF NOT EXISTS users (
                     id SERIAL PRIMARY KEY, email TEXT UNIQUE NOT NULL,
@@ -62,8 +61,8 @@ async def init_db():
             await conn.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS last_seen TIMESTAMP DEFAULT NOW()")
             await conn.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS theme TEXT DEFAULT 'light'")
             await conn.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS bg_url TEXT")
+            await conn.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar TEXT")
 
-            # Сессии
             await conn.execute("""
                 CREATE TABLE IF NOT EXISTS sessions (
                     token TEXT PRIMARY KEY,
@@ -71,8 +70,6 @@ async def init_db():
                     created_at TIMESTAMP DEFAULT NOW()
                 )
             """)
-
-            # История
             await conn.execute("""
                 CREATE TABLE IF NOT EXISTS history (
                     id SERIAL PRIMARY KEY,
@@ -81,16 +78,12 @@ async def init_db():
                     created_at TIMESTAMP DEFAULT NOW()
                 )
             """)
-
-            # Обратная связь
             await conn.execute("""
                 CREATE TABLE IF NOT EXISTS feedback (
                     id SERIAL PRIMARY KEY, date TEXT, message TEXT,
                     contact TEXT, version TEXT
                 )
             """)
-
-            # Предметы
             await conn.execute("""
                 CREATE TABLE IF NOT EXISTS subjects (
                     id SERIAL PRIMARY KEY,
@@ -104,6 +97,18 @@ async def init_db():
             """)
             await conn.execute("ALTER TABLE subjects ADD COLUMN IF NOT EXISTS max_number INTEGER DEFAULT 0")
             await conn.execute("ALTER TABLE subjects ADD COLUMN IF NOT EXISTS note TEXT DEFAULT ''")
+
+            # Логи
+            await conn.execute("""
+                CREATE TABLE IF NOT EXISTS logs (
+                    id SERIAL PRIMARY KEY,
+                    user_id INTEGER,
+                    action TEXT,
+                    details TEXT,
+                    ip TEXT,
+                    created_at TIMESTAMP DEFAULT NOW()
+                )
+            """)
 
             count = await conn.fetchval("SELECT COUNT(*) FROM subjects")
             if count == 0:
@@ -120,6 +125,26 @@ async def init_db():
     except Exception as e:
         print(f"[main] Ошибка PostgreSQL: {e}")
         db_pool = None
+
+
+async def log_action(user_id, action: str, details: str = "", ip: str = ""):
+    """Пишет действие в таблицу logs."""
+    if db_pool is None:
+        return
+    try:
+        async with db_pool.acquire() as conn:
+            await conn.execute(
+                "INSERT INTO logs (user_id, action, details, ip) VALUES ($1, $2, $3, $4)",
+                user_id, action, details[:500], ip[:50]
+            )
+            # Держим последние 5000 логов
+            await conn.execute("""
+                DELETE FROM logs WHERE id NOT IN (
+                    SELECT id FROM logs ORDER BY id DESC LIMIT 5000
+                )
+            """)
+    except Exception as e:
+        print(f"[log] {e}")
 
 
 def hash_password(password: str) -> str:
@@ -142,7 +167,7 @@ async def get_user_by_token(token: str):
         return None
     async with db_pool.acquire() as conn:
         row = await conn.fetchrow("""
-            SELECT u.id, u.email, u.name, u.is_admin, u.theme, u.bg_url
+            SELECT u.id, u.email, u.name, u.is_admin, u.theme, u.bg_url, u.avatar
             FROM sessions s JOIN users u ON u.id = s.user_id
             WHERE s.token = $1
         """, token)
@@ -236,6 +261,11 @@ class ChangePasswordRequest(BaseModel):
     new_password: str
 
 
+class AvatarRequest(BaseModel):
+    token: str
+    avatar: str
+
+
 @app.on_event("startup")
 async def startup():
     await init_db()
@@ -300,6 +330,8 @@ async def admin_add_subject(data: dict):
             """, name, url, s_type, group_name, sort_order, max_number, note)
         except asyncpg.UniqueViolationError:
             raise HTTPException(400, "Такой предмет уже есть")
+
+    await log_action(None, "subject_add", name)
     return {"ok": True, "id": new_id}
 
 
@@ -337,6 +369,7 @@ async def admin_update_subject(data: dict):
 
     async with db_pool.acquire() as conn:
         await conn.execute(sql, *params)
+    await log_action(None, "subject_update", f"id={subj_id}")
     return {"ok": True}
 
 
@@ -350,12 +383,12 @@ async def admin_delete_subject(data: dict):
     if db_pool is not None:
         async with db_pool.acquire() as conn:
             await conn.execute("DELETE FROM subjects WHERE id = $1", int(subj_id))
+    await log_action(None, "subject_delete", f"id={subj_id}")
     return {"ok": True}
 
 
 @app.post("/api/admin/subjects/reorder")
 async def admin_reorder_subjects(data: dict):
-    """Принимает список id в новом порядке, обновляет sort_order."""
     if not await check_admin(data):
         raise HTTPException(401, "Нет доступа")
     ids = data.get("ids", [])
@@ -373,12 +406,12 @@ async def admin_reorder_subjects(data: dict):
                 )
             except (ValueError, TypeError):
                 continue
+    await log_action(None, "subject_reorder", f"count={len(ids)}")
     return {"ok": True, "updated": len(ids)}
 
 
 @app.post("/api/admin/subjects/reset")
 async def admin_reset_subjects(data: dict):
-    """Удаляет все предметы и восстанавливает 14 по умолчанию."""
     if not await check_admin(data):
         raise HTTPException(401, "Нет доступа")
     if db_pool is None:
@@ -393,13 +426,14 @@ async def admin_reset_subjects(data: dict):
                 ON CONFLICT (name) DO NOTHING
             """, s["name"], s["url"], s["type"], s["group_name"],
                 s["sort_order"], s["max_number"], s["note"])
+    await log_action(None, "subjects_reset")
     return {"ok": True, "count": len(DEFAULT_SUBJECTS)}
 
 
 # ═══════ АВТОРИЗАЦИЯ ═══════
 
 @app.post("/api/auth/register")
-async def register(req: RegisterRequest):
+async def register(req: RegisterRequest, request: Request):
     if db_pool is None:
         raise HTTPException(500, "БД не подключена")
     email = req.email.lower().strip()
@@ -422,24 +456,29 @@ async def register(req: RegisterRequest):
         token = secrets.token_urlsafe(32)
         await conn.execute("INSERT INTO sessions (token, user_id) VALUES ($1, $2)", token, user_id)
 
+    ip = request.client.host if request.client else ""
+    await log_action(user_id, "register", f"{email} · {req.device[:80]}", ip)
+
     return {"ok": True, "token": token, "user": {
         "id": user_id, "email": email, "name": req.name.strip(),
-        "is_admin": is_admin, "theme": "light", "bg_url": None
+        "is_admin": is_admin, "theme": "light", "bg_url": None, "avatar": None
     }}
 
 
 @app.post("/api/auth/login")
-async def login(req: LoginRequest):
+async def login(req: LoginRequest, request: Request):
     if db_pool is None:
         raise HTTPException(500, "БД не подключена")
     email = req.email.lower().strip()
 
     async with db_pool.acquire() as conn:
         row = await conn.fetchrow(
-            "SELECT id, email, password_hash, name, is_admin, theme, bg_url "
+            "SELECT id, email, password_hash, name, is_admin, theme, bg_url, avatar "
             "FROM users WHERE email = $1", email
         )
         if not row or not verify_password(req.password, row["password_hash"]):
+            ip = request.client.host if request.client else ""
+            await log_action(None, "login_fail", email, ip)
             raise HTTPException(401, "Неверный email или пароль")
 
         if req.device.strip():
@@ -453,15 +492,21 @@ async def login(req: LoginRequest):
         token = secrets.token_urlsafe(32)
         await conn.execute("INSERT INTO sessions (token, user_id) VALUES ($1, $2)", token, row["id"])
 
+    ip = request.client.host if request.client else ""
+    await log_action(row["id"], "login", f"{email} · {req.device[:80]}", ip)
+
     return {"ok": True, "token": token, "user": {
         "id": row["id"], "email": row["email"], "name": row["name"],
         "is_admin": row["is_admin"], "theme": row["theme"] or "light",
-        "bg_url": row["bg_url"]
+        "bg_url": row["bg_url"], "avatar": row["avatar"]
     }}
 
 
 @app.post("/api/auth/logout")
 async def logout(req: TokenRequest):
+    user = await get_user_by_token(req.token)
+    if user:
+        await log_action(user["id"], "logout")
     if db_pool is not None and req.token:
         async with db_pool.acquire() as conn:
             await conn.execute("DELETE FROM sessions WHERE token = $1", req.token)
@@ -492,6 +537,8 @@ async def update_profile(req: UpdateProfileRequest):
         if req.theme != 'custom':
             updates.append("bg_url = NULL")
     if req.theme == 'custom' and req.bg_url:
+        if len(req.bg_url) > 5_000_000:
+            raise HTTPException(400, "Фон слишком большой (макс 5 МБ)")
         updates.append(f"bg_url = ${idx}"); params.append(req.bg_url); idx += 1
 
     if not updates:
@@ -501,10 +548,29 @@ async def update_profile(req: UpdateProfileRequest):
     async with db_pool.acquire() as conn:
         await conn.execute(f"UPDATE users SET {', '.join(updates)} WHERE id = ${idx}", *params)
         row = await conn.fetchrow(
-            "SELECT id, email, name, is_admin, theme, bg_url FROM users WHERE id = $1",
+            "SELECT id, email, name, is_admin, theme, bg_url, avatar FROM users WHERE id = $1",
             user["id"]
         )
+    await log_action(user["id"], "profile_update", req.theme)
     return {"ok": True, "user": dict(row)}
+
+
+@app.post("/api/auth/avatar")
+async def set_avatar(req: AvatarRequest):
+    user = await get_user_by_token(req.token)
+    if not user:
+        raise HTTPException(401, "Не авторизован")
+    if db_pool is None:
+        raise HTTPException(500, "БД недоступна")
+    if not req.avatar.startswith("data:image/"):
+        raise HTTPException(400, "Неверный формат")
+    if len(req.avatar) > 500_000:
+        raise HTTPException(400, "Аватар слишком большой (макс 500 КБ)")
+
+    async with db_pool.acquire() as conn:
+        await conn.execute("UPDATE users SET avatar = $1 WHERE id = $2", req.avatar, user["id"])
+    await log_action(user["id"], "avatar_update")
+    return {"ok": True, "avatar": req.avatar}
 
 
 @app.post("/api/auth/change-password")
@@ -522,6 +588,7 @@ async def change_password(req: ChangePasswordRequest):
             "UPDATE users SET password_hash = $1 WHERE id = $2",
             hash_password(req.new_password), user["id"]
         )
+    await log_action(user["id"], "password_change")
     return {"ok": True}
 
 
@@ -532,6 +599,7 @@ async def delete_account(req: TokenRequest):
         raise HTTPException(401, "Не авторизован")
     if db_pool is None:
         raise HTTPException(500, "БД недоступна")
+    await log_action(user["id"], "account_delete", user["email"])
     async with db_pool.acquire() as conn:
         await conn.execute("DELETE FROM users WHERE id = $1", user["id"])
     return {"ok": True}
@@ -636,7 +704,7 @@ async def admin_users(data: dict):
         return {"users": []}
     async with db_pool.acquire() as conn:
         rows = await conn.fetch("""
-            SELECT id, email, name, device, is_admin,
+            SELECT id, email, name, device, is_admin, avatar,
                    to_char(created_at, 'DD.MM.YY HH24:MI') AS created,
                    to_char(last_seen, 'DD.MM.YY HH24:MI') AS last_seen
             FROM users ORDER BY id DESC
@@ -652,13 +720,41 @@ async def admin_online(data: dict):
         return {"users": []}
     async with db_pool.acquire() as conn:
         rows = await conn.fetch("""
-            SELECT id, email, name, device, is_admin,
+            SELECT id, email, name, device, is_admin, avatar,
                    to_char(last_seen, 'HH24:MI:SS') AS last_seen
             FROM users
             WHERE last_seen > NOW() - INTERVAL '5 minutes'
             ORDER BY last_seen DESC
         """)
     return {"users": [dict(r) for r in rows], "total": len(rows)}
+
+
+@app.post("/api/admin/logs")
+async def admin_logs(data: dict):
+    if not await check_admin(data):
+        raise HTTPException(401, "Нет доступа")
+    if db_pool is None:
+        return {"logs": []}
+    async with db_pool.acquire() as conn:
+        rows = await conn.fetch("""
+            SELECT l.id, l.action, l.details, l.ip,
+                   to_char(l.created_at, 'DD.MM HH24:MI:SS') AS created,
+                   u.email, u.name, u.avatar
+            FROM logs l
+            LEFT JOIN users u ON u.id = l.user_id
+            ORDER BY l.id DESC LIMIT 500
+        """)
+    return {"logs": [dict(r) for r in rows]}
+
+
+@app.post("/api/admin/logs/clear")
+async def admin_logs_clear(data: dict):
+    if not await check_admin(data):
+        raise HTTPException(401, "Нет доступа")
+    if db_pool is not None:
+        async with db_pool.acquire() as conn:
+            await conn.execute("DELETE FROM logs")
+    return {"ok": True}
 
 
 @app.post("/api/admin/delete/{msg_id}")
@@ -678,6 +774,7 @@ async def admin_delete_user(user_id: int, data: dict):
     if db_pool is not None:
         async with db_pool.acquire() as conn:
             await conn.execute("DELETE FROM users WHERE id = $1", user_id)
+    await log_action(None, "admin_delete_user", f"id={user_id}")
     return {"ok": True}
 
 
@@ -694,14 +791,21 @@ async def admin_clear(data: dict):
 # ═══════ ПАРСИНГ ═══════
 
 @app.post("/api/parse")
-async def parse(req: ParseRequest):
+async def parse(req: ParseRequest, request: Request):
     jobs = [j for j in req.jobs if (j.numbers.strip() or j.raw_text.strip())]
     if not jobs:
         raise HTTPException(400, "Введи номера или текст хотя бы в одном поле")
+
     try:
         results = await parse_tasks([j.dict() for j in jobs])
     except Exception as e:
         raise HTTPException(500, f"Ошибка парсинга: {e}")
+
+    # Логируем поиск
+    subjects = ", ".join(j.subject for j in jobs)[:200]
+    ip = request.client.host if request.client else ""
+    await log_action(None, "parse", subjects, ip)
+
     return {"results": results, "total": len(results)}
 
 

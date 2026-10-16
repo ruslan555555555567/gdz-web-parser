@@ -28,7 +28,7 @@
         </div>
 
         <h1>🔐 Админка</h1>
-        <p class="subtitle">Предметы · Онлайн · Пользователи · Сообщения</p>
+        <p class="subtitle">Предметы · Онлайн · Пользователи · Сообщения · Логи</p>
 
         <section class="card" id="loginCard">
             <h2>Введите пароль</h2>
@@ -49,6 +49,7 @@
                 <button class="admin-tab" data-tab="online">🟢 Онлайн</button>
                 <button class="admin-tab" data-tab="users">👥 Пользователи</button>
                 <button class="admin-tab" data-tab="messages">📬 Сообщения</button>
+                <button class="admin-tab" data-tab="logs">📋 Логи</button>
             </div>
 
             <!-- ПРЕДМЕТЫ -->
@@ -102,6 +103,22 @@
                 <div style="text-align:center; margin-top:20px;">
                     <button id="clearBtn" class="btn-secondary">🗑 Удалить все сообщения</button>
                 </div>
+            </div>
+
+            <!-- ЛОГИ -->
+            <div id="tabLogs" class="hidden">
+                <div class="section-header">
+                    <h2>📋 Логи (<span id="logsCount">0</span>)</h2>
+                    <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                        <button id="clearLogsBtn" class="btn-small reset-btn">🗑 Очистить</button>
+                        <button id="refreshLogsBtn" class="btn-small">🔄 Обновить</button>
+                    </div>
+                </div>
+                <p class="hint" style="margin-bottom:12px;">
+                    Последние 500 действий: входы, регистрации, поиски, изменения предметов.
+                </p>
+                <div id="logsList"></div>
+                <div id="emptyLogs" class="empty">Логов пока нет</div>
             </div>
         </section>
     </div>
@@ -175,6 +192,32 @@
         const pwd = document.getElementById('pwd');
         const loginStatus = document.getElementById('loginStatus');
 
+        // Иконки для действий
+        const ACTION_ICONS = {
+            'register': '🆕',
+            'login': '🔑',
+            'login_fail': '⚠️',
+            'logout': '🚪',
+            'parse': '🔍',
+            'profile_update': '⚙️',
+            'avatar_update': '🖼',
+            'password_change': '🔐',
+            'account_delete': '❌',
+            'subject_add': '➕',
+            'subject_update': '✏️',
+            'subject_delete': '🗑',
+            'subject_reorder': '↕️',
+            'subjects_reset': '🔄',
+            'admin_delete_user': '👤',
+        };
+
+        function getInitial(name, email) {
+            const n = (name || '').trim();
+            if (n) return n[0].toUpperCase();
+            if (email) return email[0].toUpperCase();
+            return '?';
+        }
+
         async function init() {
             const token = localStorage.getItem('gdz_token') || '';
             if (token) {
@@ -201,6 +244,7 @@
             loadOnline();
             loadUsers();
             loadMessages();
+            loadLogs();
             if (onlineTimer) clearInterval(onlineTimer);
             onlineTimer = setInterval(loadOnline, 30000);
         }
@@ -235,7 +279,7 @@
                 document.querySelectorAll('.admin-tab').forEach(x =>
                     x.classList.toggle('active', x === t));
                 const tab = t.dataset.tab;
-                ['subjects', 'online', 'users', 'messages'].forEach(name => {
+                ['subjects', 'online', 'users', 'messages', 'logs'].forEach(name => {
                     document.getElementById('tab' + name.charAt(0).toUpperCase() + name.slice(1))
                         .classList.toggle('hidden', name !== tab);
                 });
@@ -308,7 +352,6 @@
                         </div>
                     `;
 
-                    // Drag & drop
                     div.addEventListener('dragstart', (e) => {
                         draggedId = s.id;
                         div.classList.add('dragging');
@@ -324,15 +367,12 @@
                         e.dataTransfer.dropEffect = 'move';
                         if (draggedId !== s.id) div.classList.add('drag-over');
                     });
-                    div.addEventListener('dragleave', () => {
-                        div.classList.remove('drag-over');
-                    });
+                    div.addEventListener('dragleave', () => div.classList.remove('drag-over'));
                     div.addEventListener('drop', async (e) => {
                         e.preventDefault();
                         div.classList.remove('drag-over');
                         if (!draggedId || draggedId === s.id) return;
 
-                        // Меняем порядок в DOM
                         const draggedEl = document.querySelector(`.subject-card[data-id="${draggedId}"]`);
                         if (!draggedEl) return;
 
@@ -346,7 +386,6 @@
                             div.parentNode.insertBefore(draggedEl, div);
                         }
 
-                        // Собираем новый порядок и отправляем на сервер
                         const newOrder = Array.from(document.querySelectorAll('.subject-card'))
                             .map(c => parseInt(c.dataset.id));
 
@@ -357,7 +396,6 @@
                                 body: JSON.stringify({...getAuthPayload(), ids: newOrder})
                             });
                             if (!r.ok) throw new Error('Ошибка сохранения');
-                            // Обновляем нумерацию
                             newOrder.forEach((id, i) => {
                                 const el = document.querySelector(`.subject-card[data-id="${id}"]`);
                                 if (el) {
@@ -371,7 +409,6 @@
                         }
                     });
 
-                    // Кнопки
                     div.querySelector('.subj-edit').onclick = () => openEditModal(s);
                     div.querySelector('.subj-del').onclick = async () => {
                         if (!confirm(`Удалить «${s.name}»?`)) return;
@@ -395,7 +432,7 @@
             }
         }
 
-        // ═══════ МОДАЛКА РЕДАКТИРОВАНИЯ ═══════
+        // ═══════ МОДАЛКА ═══════
         const editModal = document.getElementById('editModal');
         let editingId = null;
 
@@ -415,12 +452,8 @@
             document.getElementById('editStatus').className = 'fb-status';
         }
 
-        document.getElementById('editCancelBtn').onclick = () => {
-            editModal.classList.add('hidden');
-        };
-        editModal.onclick = (e) => {
-            if (e.target === editModal) editModal.classList.add('hidden');
-        };
+        document.getElementById('editCancelBtn').onclick = () => editModal.classList.add('hidden');
+        editModal.onclick = (e) => { if (e.target === editModal) editModal.classList.add('hidden'); };
 
         document.getElementById('editSaveBtn').onclick = async () => {
             const st = document.getElementById('editStatus');
@@ -448,8 +481,7 @@
 
             const payload = {
                 ...getAuthPayload(),
-                name, url, type, group_name,
-                max_number, sort_order, note
+                name, url, type, group_name, max_number, sort_order, note
             };
 
             try {
@@ -511,8 +543,12 @@
                     const div = document.createElement('div');
                     div.className = 'user-card online-card';
                     const badge = u.is_admin ? '<span class="admin-badge">👑 АДМИН</span>' : '';
+                    const avatarHtml = u.avatar
+                        ? `<span class="user-avatar" style="background-image:url('${u.avatar}')"></span>`
+                        : `<span class="user-avatar">${getInitial(u.name, u.email)}</span>`;
                     div.innerHTML = `
                         <div class="user-head">
+                            ${avatarHtml}
                             <span class="online-dot"></span>
                             <strong>${escapeHtml(u.name || 'Без имени')}</strong>
                             ${badge}
@@ -551,8 +587,12 @@
                     const div = document.createElement('div');
                     div.className = 'user-card';
                     const badge = u.is_admin ? '<span class="admin-badge">👑 АДМИН</span>' : '';
+                    const avatarHtml = u.avatar
+                        ? `<span class="user-avatar" style="background-image:url('${u.avatar}')"></span>`
+                        : `<span class="user-avatar">${getInitial(u.name, u.email)}</span>`;
                     div.innerHTML = `
                         <div class="user-head">
+                            ${avatarHtml}
                             <strong>${escapeHtml(u.name || 'Без имени')}</strong>
                             ${badge}
                             <button class="msg-delete user-del" data-id="${u.id}">🗑</button>
@@ -660,6 +700,70 @@
                 });
                 if (!r.ok) throw new Error('Ошибка');
                 loadMessages();
+            } catch (err) { alert('Ошибка: ' + err.message); }
+        };
+
+        // ═══════ ЛОГИ ═══════
+        document.getElementById('refreshLogsBtn').onclick = loadLogs;
+
+        async function loadLogs() {
+            const list = document.getElementById('logsList');
+            const empty = document.getElementById('emptyLogs');
+            try {
+                const r = await fetch('/api/admin/logs', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(getAuthPayload())
+                });
+                if (!r.ok) return;
+                const d = await r.json();
+                document.getElementById('logsCount').textContent = d.logs.length;
+                list.innerHTML = '';
+                if (!d.logs.length) {
+                    empty.style.display = 'block';
+                    return;
+                }
+                empty.style.display = 'none';
+                d.logs.forEach(l => {
+                    const div = document.createElement('div');
+                    div.className = 'log-row';
+                    const icon = ACTION_ICONS[l.action] || '📌';
+                    const who = l.name || l.email || 'Гость';
+                    const avatarHtml = l.avatar
+                        ? `<span class="log-avatar" style="background-image:url('${l.avatar}')"></span>`
+                        : `<span class="log-avatar">${getInitial(l.name, l.email)}</span>`;
+                    div.innerHTML = `
+                        <span class="log-icon">${icon}</span>
+                        <div class="log-content">
+                            <div class="log-head">
+                                ${avatarHtml}
+                                <strong>${escapeHtml(who)}</strong>
+                                <span class="log-action">${escapeHtml(l.action)}</span>
+                            </div>
+                            ${l.details ? `<div class="log-details">${escapeHtml(l.details)}</div>` : ''}
+                            <div class="log-meta">
+                                🕐 ${escapeHtml(l.created || '')}
+                                ${l.ip ? ` · 🌐 ${escapeHtml(l.ip)}` : ''}
+                            </div>
+                        </div>
+                    `;
+                    list.appendChild(div);
+                });
+            } catch (e) {
+                list.innerHTML = '<p class="empty">Ошибка: ' + e.message + '</p>';
+            }
+        }
+
+        document.getElementById('clearLogsBtn').onclick = async () => {
+            if (!confirm('Удалить ВСЕ логи?')) return;
+            try {
+                const r = await fetch('/api/admin/logs/clear', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(getAuthPayload())
+                });
+                if (!r.ok) throw new Error('Ошибка');
+                loadLogs();
             } catch (err) { alert('Ошибка: ' + err.message); }
         };
 

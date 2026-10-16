@@ -96,6 +96,25 @@
         <div class="modal-content">
             <h3>⚙️ Настройки аккаунта</h3>
 
+            <!-- АВАТАРКА -->
+            <div class="settings-section">
+                <label class="form-label">Аватарка</label>
+                <div class="avatar-block">
+                    <div class="avatar-preview" id="avatarPreview">
+                        <span id="avatarInitial">?</span>
+                    </div>
+                    <div class="avatar-actions">
+                        <label class="btn-small avatar-upload-btn">
+                            🖼 Из галереи
+                            <input type="file" id="avatarInput" accept="image/*" hidden>
+                        </label>
+                        <button type="button" id="avatarRemoveBtn" class="btn-small avatar-remove-btn">
+                            🗑 Убрать
+                        </button>
+                    </div>
+                </div>
+            </div>
+
             <div class="settings-section">
                 <label class="form-label">
                     Имя
@@ -119,11 +138,24 @@
                         🎨 Своя картинка
                     </button>
                 </div>
+
                 <div id="customBgBlock" style="display:none; margin-top:12px;">
                     <label class="form-label">
-                        URL картинки для фона
+                        URL картинки (или загрузи из галереи)
                         <input type="text" id="setBgUrl" placeholder="https://example.com/image.jpg">
                     </label>
+                    <div class="avatar-actions" style="margin-top:8px;">
+                        <label class="btn-small avatar-upload-btn">
+                            🖼 Загрузить из галереи
+                            <input type="file" id="bgInput" accept="image/*" hidden>
+                        </label>
+                        <button type="button" id="bgRemoveBtn" class="btn-small avatar-remove-btn">
+                            🗑 Убрать фон
+                        </button>
+                    </div>
+                    <p class="hint" style="margin-top:6px;">
+                        Загруженная картинка сохранится в аккаунте.
+                    </p>
                 </div>
             </div>
 
@@ -188,6 +220,7 @@
         let authUser = null;
         let currentTheme = localStorage.getItem('gdz_theme') || 'light';
         let currentBgUrl = localStorage.getItem('gdz_bg') || null;
+        let currentAvatar = null;
         let SUBJECTS = [];
 
         const $ = id => document.getElementById(id);
@@ -223,6 +256,43 @@
             return `${device} · ${os} · ${browser} · ${scr} · ${lang}`;
         }
 
+        // Читает файл как base64 с ограничением размера
+        function fileToBase64(file, maxSizeMb = 5) {
+            return new Promise((resolve, reject) => {
+                if (file.size > maxSizeMb * 1024 * 1024) {
+                    reject(new Error(`Файл больше ${maxSizeMb} МБ`));
+                    return;
+                }
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = () => reject(new Error('Ошибка чтения файла'));
+                reader.readAsDataURL(file);
+            });
+        }
+
+        // Уменьшает картинку через canvas — возвращает base64 (jpeg/webp)
+        async function shrinkImage(file, maxW = 400, quality = 0.85) {
+            const dataUrl = await fileToBase64(file, 20);
+            return new Promise((resolve, reject) => {
+                const img = new Image();
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    let w = img.width, h = img.height;
+                    if (w > maxW) {
+                        h = Math.round(h * (maxW / w));
+                        w = maxW;
+                    }
+                    canvas.width = w;
+                    canvas.height = h;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, w, h);
+                    resolve(canvas.toDataURL('image/jpeg', quality));
+                };
+                img.onerror = () => reject(new Error('Не удалось загрузить картинку'));
+                img.src = dataUrl;
+            });
+        }
+
         function applyTheme(theme, bgUrl) {
             currentTheme = theme;
             currentBgUrl = bgUrl;
@@ -244,6 +314,13 @@
             }
         }
 
+        function getInitial(name, email) {
+            const n = (name || '').trim();
+            if (n) return n[0].toUpperCase();
+            if (email) return email[0].toUpperCase();
+            return '?';
+        }
+
         async function init() {
             if (authToken) {
                 try {
@@ -251,6 +328,7 @@
                     if (r.ok) {
                         const d = await r.json();
                         authUser = d.user;
+                        currentAvatar = authUser.avatar || null;
                         applyTheme(authUser.theme || 'light', authUser.bg_url);
                         showMain();
                         return;
@@ -275,7 +353,7 @@
             await loadSubjects();
         }
 
-        // ─── ЗАГРУЗКА ПРЕДМЕТОВ ────────────────────────
+        // ─── ПРЕДМЕТЫ ──────────────────────────────────
         async function loadSubjects() {
             try {
                 const r = await fetch('/api/subjects');
@@ -292,7 +370,6 @@
             const container = $('subjectsContainer');
             container.innerHTML = '';
 
-            // Группируем по group_name
             const groups = {};
             SUBJECTS.forEach(s => {
                 const g = s.group_name || 'Прочее';
@@ -318,7 +395,6 @@
                     label.textContent = s.name;
                     row.appendChild(label);
 
-                    // ВСЕ поля — textarea (можно и номера, и текст)
                     const ta = document.createElement('textarea');
                     ta.className = 'text-input';
                     ta.id = 'subj_' + s.id;
@@ -341,14 +417,31 @@
             });
         }
 
-        // ─── ВЕРХНЯЯ ПАНЕЛЬ ────────────────────────────
+        // ─── ТОПБАР ────────────────────────────────────
         function renderTopbar() {
             topbarRight.innerHTML = '';
-            const name = authUser.name || authUser.email.split('@')[0];
-            const greet = document.createElement('span');
-            greet.className = 'topbar-user';
-            greet.textContent = '👤 ' + name;
-            topbarRight.appendChild(greet);
+
+            const userBtn = document.createElement('button');
+            userBtn.className = 'topbar-user-btn';
+            userBtn.title = 'Настройки';
+            userBtn.onclick = openSettings;
+
+            const av = document.createElement('span');
+            av.className = 'topbar-avatar';
+            if (currentAvatar) {
+                av.style.backgroundImage = 'url("' + currentAvatar + '")';
+                av.textContent = '';
+            } else {
+                av.textContent = getInitial(authUser.name, authUser.email);
+            }
+            userBtn.appendChild(av);
+
+            const nameSpan = document.createElement('span');
+            nameSpan.className = 'topbar-username';
+            nameSpan.textContent = authUser.name || authUser.email.split('@')[0];
+            userBtn.appendChild(nameSpan);
+
+            topbarRight.appendChild(userBtn);
 
             const histBtn = document.createElement('button');
             histBtn.className = 'icon-btn';
@@ -356,13 +449,6 @@
             histBtn.textContent = '📜';
             histBtn.onclick = openHistory;
             topbarRight.appendChild(histBtn);
-
-            const setBtn = document.createElement('button');
-            setBtn.className = 'icon-btn';
-            setBtn.title = 'Настройки';
-            setBtn.textContent = '⚙️';
-            setBtn.onclick = openSettings;
-            topbarRight.appendChild(setBtn);
 
             if (authUser.is_admin) {
                 const adminBtn = document.createElement('button');
@@ -425,6 +511,7 @@
                 }
                 authToken = d.token;
                 authUser = d.user;
+                currentAvatar = d.user.avatar || null;
                 localStorage.setItem('gdz_token', authToken);
                 applyTheme(authUser.theme || 'light', authUser.bg_url);
                 showMain();
@@ -445,6 +532,7 @@
             } catch {}
             authToken = '';
             authUser = null;
+            currentAvatar = null;
             localStorage.removeItem('gdz_token');
             applyTheme('light', null);
             topbarRight.innerHTML = '';
@@ -504,14 +592,33 @@
         };
 
         // ─── НАСТРОЙКИ ─────────────────────────────────
+        function updateAvatarPreview() {
+            const preview = $('avatarPreview');
+            const initial = $('avatarInitial');
+            if (currentAvatar) {
+                preview.style.backgroundImage = 'url("' + currentAvatar + '")';
+                preview.textContent = '';
+                preview.style.backgroundSize = 'cover';
+                preview.style.backgroundPosition = 'center';
+            } else {
+                preview.style.backgroundImage = '';
+                preview.textContent = '';
+                if (initial) initial.remove();
+                const span = document.createElement('span');
+                span.textContent = getInitial(authUser?.name, authUser?.email);
+                preview.appendChild(span);
+            }
+        }
+
         function openSettings() {
             settingsModal.classList.remove('hidden');
             $('settingsStatus').textContent = '';
             $('settingsStatus').className = 'fb-status';
             $('setName').value = authUser?.name || '';
-            $('setBgUrl').value = currentBgUrl || '';
+            $('setBgUrl').value = (currentBgUrl && !currentBgUrl.startsWith('data:')) ? currentBgUrl : '';
             $('setOldPwd').value = '';
             $('setNewPwd').value = '';
+            updateAvatarPreview();
             document.querySelectorAll('.theme-btn').forEach(t => {
                 t.classList.toggle('active', t.dataset.theme === currentTheme);
             });
@@ -540,11 +647,74 @@
             }
         };
 
+        // ─── АВАТАРКА ───────────────────────────────────
+        $('avatarInput').onchange = async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            try {
+                const b64 = await shrinkImage(file, 300, 0.85);
+                currentAvatar = b64;
+                updateAvatarPreview();
+                renderTopbar();
+                // Сразу сохраняем на сервер
+                const r = await fetch('/api/auth/avatar', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({token: authToken, avatar: b64})
+                });
+                if (!r.ok) throw new Error('Не удалось сохранить аватар');
+            } catch (err) {
+                alert('Ошибка: ' + err.message);
+            }
+            e.target.value = '';
+        };
+
+        $('avatarRemoveBtn').onclick = async () => {
+            if (!confirm('Убрать аватарку?')) return;
+            currentAvatar = null;
+            updateAvatarPreview();
+            renderTopbar();
+            try {
+                await fetch('/api/auth/avatar', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({token: authToken, avatar: ''})
+                });
+            } catch {}
+        };
+
+        // ─── ФОН ИЗ ГАЛЕРЕИ ────────────────────────────
+        $('bgInput').onchange = async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            try {
+                const b64 = await shrinkImage(file, 1600, 0.82);
+                $('setBgUrl').value = '';
+                applyTheme('custom', b64);
+                currentBgUrl = b64;
+                document.querySelectorAll('.theme-btn').forEach(x =>
+                    x.classList.toggle('active', x.dataset.theme === 'custom'));
+            } catch (err) {
+                alert('Ошибка: ' + err.message);
+            }
+            e.target.value = '';
+        };
+
+        $('bgRemoveBtn').onclick = () => {
+            $('setBgUrl').value = '';
+            currentBgUrl = null;
+            applyTheme('light', null);
+            document.querySelectorAll('.theme-btn').forEach(x =>
+                x.classList.toggle('active', x.dataset.theme === 'light'));
+            $('customBgBlock').style.display = 'none';
+        };
+
         $('saveSettingsBtn').onclick = async () => {
             const st = $('settingsStatus');
             const newName = $('setName').value.trim();
             const newTheme = document.querySelector('.theme-btn.active')?.dataset.theme || 'light';
-            const newBg = $('setBgUrl').value.trim();
+            const urlBg = $('setBgUrl').value.trim();
+            const bgToSave = newTheme === 'custom' ? (urlBg || currentBgUrl || '') : '';
             const oldPwd = $('setOldPwd').value;
             const newPwd = $('setNewPwd').value;
 
@@ -558,7 +728,7 @@
                     body: JSON.stringify({
                         token: authToken, name: newName,
                         theme: newTheme,
-                        bg_url: newTheme === 'custom' ? newBg : ''
+                        bg_url: bgToSave
                     })
                 });
                 const d1 = await r1.json();
@@ -568,6 +738,7 @@
                     return;
                 }
                 authUser = d1.user;
+                if (authUser.bg_url) currentBgUrl = authUser.bg_url;
                 applyTheme(authUser.theme, authUser.bg_url);
                 renderTopbar();
 
@@ -615,6 +786,7 @@
                 if (!r.ok) throw new Error('Ошибка удаления');
                 authToken = '';
                 authUser = null;
+                currentAvatar = null;
                 localStorage.removeItem('gdz_token');
                 localStorage.removeItem('gdz_theme');
                 localStorage.removeItem('gdz_bg');
@@ -838,14 +1010,11 @@
                     sec.innerHTML = `<h2>${escapeHtml(subject)}</h2>`;
 
                     items.forEach(r => {
-                        // Если не найдено или текстовый — показываем текст внизу
                         if (r.is_text || !r.found) {
                             const textCard = document.createElement('div');
                             textCard.className = 'task-card text-task';
                             let headerText = '📝 Задание';
-                            if (r.number) {
-                                headerText = `№${r.number} — не найдено`;
-                            }
+                            if (r.number) headerText = `№${r.number} — не найдено`;
                             textCard.innerHTML = `
                                 <div class="task-header">
                                     <h3>${escapeHtml(headerText)}</h3>
@@ -856,7 +1025,6 @@
                             return;
                         }
 
-                        // Иначе — картинка + текст внизу
                         const card = document.createElement('div');
                         card.className = 'task-card';
                         card.innerHTML = `<div class="task-header">
@@ -869,7 +1037,6 @@
                             loadImage(img, u);
                             card.appendChild(img);
                         });
-                        // Текст в конце (если есть)
                         if (r.raw_text) {
                             const textDiv = document.createElement('div');
                             textDiv.className = 'task-text';
