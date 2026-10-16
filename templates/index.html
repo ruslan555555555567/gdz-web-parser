@@ -12,7 +12,7 @@
                 const token = localStorage.getItem('gdz_token');
                 const adminTheme = localStorage.getItem('gdz_admin_theme') || 'auto';
                 const adminBg = localStorage.getItem('gdz_admin_bg');
-                const btnStyle = localStorage.getItem('gdz_btn_style') || 'auto';
+                const btnStyle = localStorage.getItem('gdz_btn_style') || 'light';
                 const root = document.documentElement;
 
                 if (theme === 'dark') root.classList.add('theme-dark');
@@ -27,8 +27,11 @@
                     root.style.setProperty('--admin-bg-image', 'url("' + adminBg + '")');
                 }
 
-                if (btnStyle === 'dark') root.classList.add('btn-style-dark');
-                else if (btnStyle === 'light') root.classList.add('btn-style-light');
+                // Стиль кнопок только при custom теме
+                if (theme === 'custom') {
+                    if (btnStyle === 'dark') root.classList.add('btn-style-dark');
+                    else root.classList.add('btn-style-light');
+                }
 
                 if (token) root.classList.add('has-auth');
                 else root.classList.add('no-auth');
@@ -125,14 +128,11 @@
                 </div>
             </div>
 
-            <div class="settings-section">
-                <label class="form-label">🎨 Стиль кнопок</label>
-                <p class="hint" style="margin-bottom:8px;">Независимо от фона сайта</p>
+            <!-- Стиль кнопок и текста — только при своей картинке -->
+            <div class="settings-section hidden" id="btnStyleSection">
+                <label class="form-label">🎨 Стиль кнопок и текста</label>
+                <p class="hint" style="margin-bottom:8px;">Для своей картинки выбери светлый или тёмный вариант</p>
                 <div class="btn-style-options">
-                    <button type="button" class="btn-style-btn active" data-style="auto">
-                        <span class="btn-style-preview auto-preview">A</span>
-                        Авто
-                    </button>
                     <button type="button" class="btn-style-btn" data-style="light">
                         <span class="btn-style-preview light-btn-preview">☀️</span>
                         Светлые
@@ -229,7 +229,7 @@
         let currentAdminBg = null;
         let currentAdminBtnColor = '#4299e1';
         let currentAdminTheme = localStorage.getItem('gdz_admin_theme') || 'auto';
-        let currentBtnStyle = localStorage.getItem('gdz_btn_style') || 'auto';
+        let currentBtnStyle = localStorage.getItem('gdz_btn_style') || 'light';
         let SUBJECTS = [];
 
         const $ = id => document.getElementById(id);
@@ -294,7 +294,7 @@
             currentTheme = theme;
             currentBgUrl = bgUrl;
             const root = document.documentElement;
-            root.classList.remove('theme-dark', 'theme-custom');
+            root.classList.remove('theme-dark', 'theme-custom', 'btn-style-dark', 'btn-style-light');
             root.style.backgroundImage = '';
             if (theme === 'dark') {
                 root.classList.add('theme-dark');
@@ -305,6 +305,9 @@
                 root.style.backgroundImage = 'url("' + bgUrl + '")';
                 localStorage.setItem('gdz_theme', 'custom');
                 localStorage.setItem('gdz_bg', bgUrl);
+                // применяем стиль кнопок
+                if (currentBtnStyle === 'dark') root.classList.add('btn-style-dark');
+                else root.classList.add('btn-style-light');
             } else {
                 localStorage.setItem('gdz_theme', 'light');
                 localStorage.removeItem('gdz_bg');
@@ -335,8 +338,11 @@
             const root = document.documentElement;
             root.classList.remove('btn-style-dark', 'btn-style-light');
             localStorage.setItem('gdz_btn_style', style);
-            if (style === 'dark') root.classList.add('btn-style-dark');
-            else if (style === 'light') root.classList.add('btn-style-light');
+            // Применяем только если тема custom
+            if (currentTheme === 'custom') {
+                if (style === 'dark') root.classList.add('btn-style-dark');
+                else root.classList.add('btn-style-light');
+            }
         }
 
         function getInitial(name, email) {
@@ -363,10 +369,9 @@
                         currentAdminBg = authUser.admin_bg_url || null;
                         currentAdminBtnColor = authUser.admin_btn_color || '#4299e1';
                         currentAdminTheme = authUser.admin_theme || 'auto';
-                        currentBtnStyle = authUser.btn_style || 'auto';
+                        currentBtnStyle = authUser.btn_style || 'light';
                         applyTheme(authUser.theme || 'light', authUser.bg_url);
                         applyAdminTheme(currentAdminTheme, currentAdminBg);
-                        applyBtnStyle(currentBtnStyle);
                         setAuthState(true);
                         await showMain();
                         return;
@@ -512,11 +517,10 @@
                 currentAdminBg = d.user.admin_bg_url || null;
                 currentAdminBtnColor = d.user.admin_btn_color || '#4299e1';
                 currentAdminTheme = d.user.admin_theme || 'auto';
-                currentBtnStyle = d.user.btn_style || 'auto';
+                currentBtnStyle = d.user.btn_style || 'light';
                 localStorage.setItem('gdz_token', authToken);
                 applyTheme(authUser.theme || 'light', authUser.bg_url);
                 applyAdminTheme(currentAdminTheme, currentAdminBg);
-                applyBtnStyle(currentBtnStyle);
                 await showMain();
             } catch (err) { st.textContent = '❌ ' + err.message; st.className = 'fb-status error'; }
         };
@@ -528,7 +532,6 @@
             localStorage.removeItem('gdz_token');
             applyTheme('light', null);
             applyAdminTheme('auto', null);
-            applyBtnStyle('auto');
             topbarRight.innerHTML = '';
             showAuth();
         }
@@ -576,6 +579,15 @@
             }
         }
 
+        function updateBtnStyleVisibility() {
+            // Стиль кнопок виден только при теме custom
+            if (currentTheme === 'custom') {
+                $('btnStyleSection').classList.remove('hidden');
+            } else {
+                $('btnStyleSection').classList.add('hidden');
+            }
+        }
+
         function openSettings() {
             settingsModal.classList.remove('hidden');
             $('settingsStatus').textContent = '';
@@ -588,6 +600,7 @@
             document.querySelectorAll('.theme-btn').forEach(t => t.classList.toggle('active', t.dataset.theme === currentTheme));
             $('customBgBlock').style.display = currentTheme === 'custom' ? 'block' : 'none';
 
+            updateBtnStyleVisibility();
             document.querySelectorAll('.btn-style-btn').forEach(t => t.classList.toggle('active', t.dataset.style === currentBtnStyle));
 
             if (authUser?.is_admin) {
@@ -611,6 +624,7 @@
                 $('customBgBlock').style.display = theme === 'custom' ? 'block' : 'none';
                 const bg = theme === 'custom' ? currentBgUrl : null;
                 applyTheme(theme, bg);
+                updateBtnStyleVisibility();
             };
         });
 
@@ -658,6 +672,7 @@
                 applyTheme('custom', b64);
                 document.querySelectorAll('.theme-btn').forEach(x => x.classList.toggle('active', x.dataset.theme === 'custom'));
                 $('customBgBlock').style.display = 'block';
+                updateBtnStyleVisibility();
             } catch (err) { alert('Ошибка: ' + err.message); }
             e.target.value = '';
         };
@@ -667,6 +682,7 @@
             applyTheme('light', null);
             document.querySelectorAll('.theme-btn').forEach(x => x.classList.toggle('active', x.dataset.theme === 'light'));
             $('customBgBlock').style.display = 'none';
+            updateBtnStyleVisibility();
         };
 
         $('adminBgInput').onchange = async (e) => {
@@ -702,7 +718,7 @@
             st.className = 'fb-status loading';
             const payload = {
                 token: authToken, name: newName, theme: newTheme, bg_url: bgToSave,
-                btn_style: currentBtnStyle
+                btn_style: newTheme === 'custom' ? currentBtnStyle : 'light'
             };
             if (authUser?.is_admin) {
                 payload.admin_bg_url = currentAdminBg || '';
@@ -718,10 +734,9 @@
                 currentAdminBg = authUser.admin_bg_url || null;
                 currentAdminBtnColor = authUser.admin_btn_color || '#4299e1';
                 currentAdminTheme = authUser.admin_theme || 'auto';
-                currentBtnStyle = authUser.btn_style || 'auto';
+                currentBtnStyle = authUser.btn_style || 'light';
                 applyTheme(authUser.theme, authUser.bg_url);
                 applyAdminTheme(currentAdminTheme, currentAdminBg);
-                applyBtnStyle(currentBtnStyle);
                 renderTopbar();
                 if (oldPwd && newPwd) {
                     const r2 = await fetch('/api/auth/change-password', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({token: authToken, old_password: oldPwd, new_password: newPwd}) });
@@ -754,7 +769,6 @@
                 localStorage.removeItem('gdz_btn_style');
                 applyTheme('light', null);
                 applyAdminTheme('auto', null);
-                applyBtnStyle('auto');
                 settingsModal.classList.add('hidden');
                 showAuth();
             } catch (e) { st.textContent = '❌ ' + e.message; st.className = 'fb-status error'; }

@@ -16,7 +16,7 @@ import asyncpg
 
 from parser import parse_tasks
 
-VERSION = "19.0.0"
+VERSION = "20.0.0"
 ADMIN_PASSWORD = "gdz2024admin"
 ADMIN_EMAIL = os.getenv("ADMIN_EMAIL", "admin@gdz.ru").lower().strip()
 DATABASE_URL = os.getenv("DATABASE_URL")
@@ -64,9 +64,8 @@ async def init_db():
             await conn.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar TEXT")
             await conn.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS admin_bg_url TEXT")
             await conn.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS admin_btn_color TEXT DEFAULT '#4299e1'")
-            # НОВЫЕ поля
             await conn.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS admin_theme TEXT DEFAULT 'auto'")
-            await conn.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS btn_style TEXT DEFAULT 'auto'")
+            await conn.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS btn_style TEXT DEFAULT 'light'")
 
             await conn.execute("""
                 CREATE TABLE IF NOT EXISTS sessions (
@@ -456,7 +455,7 @@ async def register(req: RegisterRequest, request: Request):
         "id": user_id, "email": email, "name": req.name.strip(),
         "is_admin": is_admin, "theme": "light", "bg_url": None, "avatar": None,
         "admin_bg_url": None, "admin_btn_color": "#4299e1",
-        "admin_theme": "auto", "btn_style": "auto"
+        "admin_theme": "auto", "btn_style": "light"
     }}
 
 
@@ -493,7 +492,7 @@ async def login(req: LoginRequest, request: Request):
         "admin_bg_url": row["admin_bg_url"],
         "admin_btn_color": row["admin_btn_color"] or "#4299e1",
         "admin_theme": row["admin_theme"] or "auto",
-        "btn_style": row["btn_style"] or "auto"
+        "btn_style": row["btn_style"] or "light"
     }}
 
 
@@ -552,7 +551,7 @@ async def update_profile(req: UpdateProfileRequest):
         if req.admin_theme in ('auto', 'light', 'dark', 'custom'):
             updates.append(f"admin_theme = ${idx}"); params.append(req.admin_theme); idx += 1
 
-    if req.btn_style in ('auto', 'light', 'dark'):
+    if req.btn_style in ('light', 'dark'):
         updates.append(f"btn_style = ${idx}"); params.append(req.btn_style); idx += 1
 
     if not updates:
