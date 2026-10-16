@@ -114,23 +114,32 @@ body.theme-dark .group-hint { color: #a0aec0; }
 .theme-dark .log-action { background: rgba(74,85,104,0.6); color: #cbd5e0; }
 .theme-dark .log-details { color: #a0aec0; }
 .theme-dark .log-meta { color: #718096; }
-.theme-dark .log-avatar { background: rgba(74,85,104,0.6); color: #e2e8f0; }
+.theme-dark .log-avatar { background-color: rgba(74,85,104,0.6); color: #e2e8f0; }
 .theme-dark .topbar-user-btn { background: rgba(45,55,72,0.6); color: #e2e8f0; }
 .theme-dark .topbar-user-btn:hover { background: rgba(74,85,104,0.8); }
 .theme-dark .topbar-avatar { border-color: #4a5568; }
-.theme-dark .avatar-preview { background: rgba(74,85,104,0.5); color: #cbd5e0; }
+.theme-dark .avatar-preview { background-color: rgba(74,85,104,0.5); color: #cbd5e0; }
 
 /* ═══════════════════════════════════════
-   СВОЯ КАРТИНКА ФОНА — всё полупрозрачное
+   СВОЯ КАРТИНКА ФОНА — ФОН НА BODY!
    ═══════════════════════════════════════ */
 .theme-custom body,
-body.theme-custom { background-color: #1a202c; color: #ffffff; }
+body.theme-custom {
+    background-color: transparent;
+    color: #ffffff;
+    /* ВАЖНО: показываем картинку с html, а body должен быть прозрачным */
+    background-image: inherit;
+    background-size: inherit;
+    background-attachment: inherit;
+    background-position: inherit;
+}
+
 .theme-custom body::before,
 body.theme-custom::before {
     content: '';
     position: fixed;
     inset: 0;
-    background: rgba(0,0,0,0.45);
+    background: rgba(0,0,0,0.5);
     z-index: -1;
     pointer-events: none;
 }
@@ -143,7 +152,7 @@ body.theme-custom .subject-block {
     background: rgba(255,255,255,0.08);
     backdrop-filter: blur(6px);
     box-shadow: none;
-    border: 1px solid rgba(255,255,255,0.12);
+    border: 1px solid rgba(255,255,255,0.15);
 }
 
 /* Модалки чуть плотнее — чтобы удобно было читать */
@@ -151,7 +160,7 @@ body.theme-custom .subject-block {
 .theme-custom .image-modal-content,
 body.theme-custom .modal-content,
 body.theme-custom .image-modal-content {
-    background: rgba(30,35,45,0.92);
+    background: rgba(30,35,45,0.95);
     color: #e2e8f0;
 }
 
@@ -163,24 +172,26 @@ body.theme-custom h1,
 body.theme-custom h2,
 body.theme-custom h3 {
     color: #ffffff;
-    text-shadow: 0 2px 8px rgba(0,0,0,0.7);
+    text-shadow: 0 2px 8px rgba(0,0,0,0.85);
 }
 .theme-custom .input-label,
 body.theme-custom .input-label {
     color: #ffffff;
-    text-shadow: 0 1px 4px rgba(0,0,0,0.8);
+    text-shadow: 0 1px 4px rgba(0,0,0,0.9);
 }
 .theme-custom .group-title,
 body.theme-custom .group-title {
     color: #f0f4f8;
-    text-shadow: 0 1px 4px rgba(0,0,0,0.8);
+    text-shadow: 0 1px 4px rgba(0,0,0,0.9);
 }
 .theme-custom .group-hint,
-body.theme-custom .group-hint { color: #cbd5e0; text-shadow: 0 1px 4px rgba(0,0,0,0.7); }
+body.theme-custom .group-hint { color: #e2e8f0; text-shadow: 0 1px 4px rgba(0,0,0,0.85); }
 .theme-custom .subtitle,
-body.theme-custom .subtitle { color: #e2e8f0; text-shadow: 0 1px 4px rgba(0,0,0,0.8); }
+body.theme-custom .subtitle { color: #ffffff; text-shadow: 0 1px 4px rgba(0,0,0,0.9); }
 .theme-custom .footer,
-body.theme-custom .footer { color: #cbd5e0; text-shadow: 0 1px 4px rgba(0,0,0,0.7); }
+body.theme-custom .footer { color: #e2e8f0; text-shadow: 0 1px 4px rgba(0,0,0,0.85); }
+.theme-custom .version,
+body.theme-custom .version { background: rgba(0,0,0,0.5); color: #ffffff; }
 
 /* Поля ввода — полупрозрачные, чтобы видеть фон */
 .theme-custom .num-input,
@@ -191,8 +202,8 @@ body.theme-custom .num-input,
 body.theme-custom .text-input,
 body.theme-custom .form-label input,
 body.theme-custom .form-label textarea {
-    background: rgba(255,255,255,0.15);
-    border: 1px solid rgba(255,255,255,0.35);
+    background: rgba(0,0,0,0.35);
+    border: 1px solid rgba(255,255,255,0.4);
     color: #ffffff;
     backdrop-filter: blur(6px);
 }
@@ -200,37 +211,37 @@ body.theme-custom .form-label textarea {
 .theme-custom .text-input::placeholder,
 body.theme-custom .num-input::placeholder,
 body.theme-custom .text-input::placeholder {
-    color: rgba(255,255,255,0.6);
+    color: rgba(255,255,255,0.65);
 }
 .theme-custom .num-input:focus,
 .theme-custom .text-input:focus,
 body.theme-custom .num-input:focus,
 body.theme-custom .text-input:focus {
-    background: rgba(255,255,255,0.22);
+    background: rgba(0,0,0,0.5);
     border-color: #4299e1;
 }
 
 /* Кнопки */
 .theme-custom .btn-secondary,
 body.theme-custom .btn-secondary {
-    background: rgba(255,255,255,0.15);
+    background: rgba(0,0,0,0.4);
     color: #ffffff;
-    border: 1px solid rgba(255,255,255,0.25);
+    border: 1px solid rgba(255,255,255,0.3);
 }
 .theme-custom .icon-btn,
 .theme-custom .support-btn,
 body.theme-custom .icon-btn,
 body.theme-custom .support-btn {
-    background: rgba(255,255,255,0.15);
-    border-color: rgba(255,255,255,0.3);
+    background: rgba(0,0,0,0.4);
+    border-color: rgba(255,255,255,0.35);
     color: #ffffff;
 }
 .theme-custom .icon-btn:hover,
-body.theme-custom .icon-btn:hover { background: rgba(255,255,255,0.25); }
+body.theme-custom .icon-btn:hover { background: rgba(0,0,0,0.6); }
 
 .theme-custom .task-text,
 body.theme-custom .task-text {
-    background: rgba(0,0,0,0.4);
+    background: rgba(0,0,0,0.5);
     color: #ffffff;
     border-left-color: #4299e1;
 }
@@ -238,6 +249,12 @@ body.theme-custom .task-text {
 body.theme-custom .modal-text { color: #cbd5e0; }
 .theme-custom .form-label,
 body.theme-custom .form-label { color: #e2e8f0; }
+.theme-custom .topbar-user-btn,
+body.theme-custom .topbar-user-btn {
+    background: rgba(0,0,0,0.4);
+    border-color: rgba(255,255,255,0.35);
+    color: #ffffff;
+}
 
 /* ═══════════════════════════════════════
    ЭКРАН ВХОДА
@@ -338,11 +355,13 @@ body.theme-custom .form-label { color: #e2e8f0; }
     color: #2d3748;
 }
 .topbar-user-btn:hover { border-color: #4299e1; background: #ebf8ff; }
+
+/* АВААТАР В ТОПБАРЕ — только background-color, чтобы не сбросить image! */
 .topbar-avatar {
     width: 32px;
     height: 32px;
     border-radius: 50%;
-    background: #4299e1;
+    background-color: #4299e1;  /* ← было background: — теперь background-color! */
     color: white;
     display: flex;
     align-items: center;
@@ -352,6 +371,7 @@ body.theme-custom .form-label { color: #e2e8f0; }
     flex-shrink: 0;
     background-size: cover;
     background-position: center;
+    background-repeat: no-repeat;
     border: 2px solid white;
 }
 .topbar-username {
@@ -380,7 +400,6 @@ body.theme-custom .form-label { color: #e2e8f0; }
 .icon-btn:hover { border-color: #4299e1; background: #ebf8ff; }
 .icon-btn.admin-icon { border-color: #4299e1; background: #ebf8ff; }
 
-/* Старое .topbar-user — оставим для совместимости */
 .topbar-user {
     background: #edf2f7;
     padding: 6px 12px;
@@ -400,7 +419,7 @@ h3 { font-size: 15px; color: #2d3748; }
 .subtitle { text-align: center; color: #718096; margin-bottom: 24px; font-size: 15px; }
 
 /* ═══════════════════════════════════════
-   КАРТОЧКИ (по умолчанию — плотные)
+   КАРТОЧКИ
    ═══════════════════════════════════════ */
 .card {
     background: white;
@@ -550,7 +569,7 @@ select.num-input:focus { border-color: #4299e1; }
 .theme-dark .btn-logout:hover { background: rgba(74,85,104,0.8); }
 
 /* ═══════════════════════════════════════
-   АВАТАРКА (в настройках)
+   АВАТАРКА (в настройках) — тоже background-color!
    ═══════════════════════════════════════ */
 .avatar-block {
     display: flex;
@@ -563,7 +582,7 @@ select.num-input:focus { border-color: #4299e1; }
     width: 80px;
     height: 80px;
     border-radius: 50%;
-    background: #edf2f7;
+    background-color: #edf2f7;  /* ← background-color, не background! */
     color: #4a5568;
     display: flex;
     align-items: center;
@@ -572,6 +591,7 @@ select.num-input:focus { border-color: #4299e1; }
     font-weight: 700;
     background-size: cover;
     background-position: center;
+    background-repeat: no-repeat;
     flex-shrink: 0;
     border: 3px solid #e2e8f0;
     overflow: hidden;
@@ -623,18 +643,9 @@ select.num-input:focus { border-color: #4299e1; }
 
 .task-card { padding: 12px 0; border-bottom: 1px solid #edf2f7; }
 .task-card:last-child { border-bottom: none; }
-.task-card.not-found { opacity: 0.55; }
 
 .task-header { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
 .task-header h3 { font-size: 16px; color: #2d3748; font-weight: 600; }
-.badge {
-    background: #fed7d7;
-    color: #c53030;
-    padding: 3px 10px;
-    border-radius: 6px;
-    font-size: 12px;
-    font-weight: 600;
-}
 
 .task-card.text-task { padding: 14px 0; }
 .task-text {
@@ -746,7 +757,7 @@ select.num-input:focus { border-color: #4299e1; }
 .modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 16px; }
 
 /* ═══════════════════════════════════════
-   АВТОРИЗАЦИЯ (вкладки)
+   АВТОРИЗАЦИЯ
    ═══════════════════════════════════════ */
 .auth-tabs {
     display: flex;
@@ -977,7 +988,6 @@ select.num-input:focus { border-color: #4299e1; }
 .msg-body { color: #2d3748; font-size: 15px; line-height: 1.5; white-space: pre-wrap; word-break: break-word; }
 .msg-contact { margin-top: 8px; font-size: 13px; color: #4a5568; padding-top: 8px; border-top: 1px solid #e2e8f0; }
 
-/* Карточка пользователя */
 .user-card {
     background: #f7fafc;
     border-left: 4px solid #48bb78;
@@ -991,12 +1001,12 @@ select.num-input:focus { border-color: #4299e1; }
 .user-row { font-size: 13px; color: #4a5568; margin-bottom: 4px; word-break: break-all; line-height: 1.5; }
 .user-row.small { font-size: 12px; color: #718096; }
 
-/* Аватар пользователя в админке */
+/* Аватар пользователя в админке — background-color! */
 .user-avatar {
     width: 40px;
     height: 40px;
     border-radius: 50%;
-    background: #4299e1;
+    background-color: #4299e1;
     color: white;
     display: flex;
     align-items: center;
@@ -1006,6 +1016,7 @@ select.num-input:focus { border-color: #4299e1; }
     flex-shrink: 0;
     background-size: cover;
     background-position: center;
+    background-repeat: no-repeat;
     border: 2px solid #e2e8f0;
 }
 
@@ -1018,7 +1029,7 @@ select.num-input:focus { border-color: #4299e1; }
     width: 10px;
     height: 10px;
     border-radius: 50%;
-    background: #48bb78;
+    background-color: #48bb78;
     box-shadow: 0 0 0 3px rgba(72, 187, 120, 0.3);
     animation: pulse 1.5s infinite;
     flex-shrink: 0;
@@ -1029,7 +1040,7 @@ select.num-input:focus { border-color: #4299e1; }
 }
 
 /* ═══════════════════════════════════════
-   УПРАВЛЕНИЕ ПРЕДМЕТАМИ (админка)
+   УПРАВЛЕНИЕ ПРЕДМЕТАМИ
    ═══════════════════════════════════════ */
 .subject-card {
     background: #f7fafc;
@@ -1044,15 +1055,8 @@ select.num-input:focus { border-color: #4299e1; }
     transition: transform 0.15s, box-shadow 0.15s, border-color 0.15s, opacity 0.15s;
 }
 .subject-card:active { cursor: grabbing; }
-.subject-card.dragging {
-    opacity: 0.4;
-    transform: scale(0.98);
-}
-.subject-card.drag-over {
-    border-left-color: #4299e1;
-    border-top: 3px solid #4299e1;
-    background: #ebf8ff;
-}
+.subject-card.dragging { opacity: 0.4; transform: scale(0.98); }
+.subject-card.drag-over { border-left-color: #4299e1; border-top: 3px solid #4299e1; background: #ebf8ff; }
 
 .subj-head {
     display: flex;
@@ -1069,11 +1073,7 @@ select.num-input:focus { border-color: #4299e1; }
     line-height: 1;
     padding: 0 4px;
 }
-.subj-head strong {
-    font-size: 15px;
-    color: #2d3748;
-    flex: 1;
-}
+.subj-head strong { font-size: 15px; color: #2d3748; flex: 1; }
 .subj-row {
     font-size: 13px;
     color: #4a5568;
@@ -1084,14 +1084,8 @@ select.num-input:focus { border-color: #4299e1; }
     flex-wrap: wrap;
 }
 .subj-row.small { font-size: 12px; color: #a0aec0; }
-.subj-actions {
-    display: flex;
-    gap: 8px;
-    margin-top: 6px;
-    flex-wrap: wrap;
-}
+.subj-actions { display: flex; gap: 8px; margin-top: 6px; flex-wrap: wrap; }
 
-/* Пилюли статистики */
 .stat-pill {
     display: inline-flex;
     align-items: center;
@@ -1129,11 +1123,7 @@ select.num-input:focus { border-color: #4299e1; }
     margin-bottom: 8px;
     border-left: 3px solid #a0aec0;
 }
-.log-icon {
-    font-size: 20px;
-    flex-shrink: 0;
-    line-height: 1.2;
-}
+.log-icon { font-size: 20px; flex-shrink: 0; line-height: 1.2; }
 .log-content { flex: 1; min-width: 0; }
 .log-head {
     display: flex;
@@ -1142,16 +1132,12 @@ select.num-input:focus { border-color: #4299e1; }
     margin-bottom: 4px;
     flex-wrap: wrap;
 }
-.log-head strong {
-    font-size: 14px;
-    color: #2d3748;
-    word-break: break-all;
-}
+.log-head strong { font-size: 14px; color: #2d3748; word-break: break-all; }
 .log-avatar {
     width: 26px;
     height: 26px;
     border-radius: 50%;
-    background: #4299e1;
+    background-color: #4299e1;
     color: white;
     display: flex;
     align-items: center;
@@ -1161,6 +1147,7 @@ select.num-input:focus { border-color: #4299e1; }
     flex-shrink: 0;
     background-size: cover;
     background-position: center;
+    background-repeat: no-repeat;
     border: 1px solid #e2e8f0;
 }
 .log-action {
@@ -1179,15 +1166,8 @@ select.num-input:focus { border-color: #4299e1; }
     word-break: break-all;
     margin-bottom: 4px;
 }
-.log-meta {
-    font-size: 11px;
-    color: #a0aec0;
-    font-family: monospace;
-}
+.log-meta { font-size: 11px; color: #a0aec0; font-family: monospace; }
 
-/* ═══════════════════════════════════════
-   ПРОЧЕЕ
-   ═══════════════════════════════════════ */
 .empty { color: #a0aec0; text-align: center; padding: 30px 20px; font-size: 14px; }
 .hidden { display: none !important; }
 
