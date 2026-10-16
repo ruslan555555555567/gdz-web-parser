@@ -9,6 +9,7 @@
             try {
                 const theme = localStorage.getItem('gdz_theme') || 'light';
                 const bg = localStorage.getItem('gdz_bg');
+                const token = localStorage.getItem('gdz_token');
                 const root = document.documentElement;
                 if (theme === 'dark') {
                     root.classList.add('theme-dark');
@@ -16,9 +17,23 @@
                     root.classList.add('theme-custom');
                     root.style.backgroundImage = 'url("' + bg + '")';
                 }
+
+                // МГНОВЕННО определяем, что показать — без мерцания
+                if (token) {
+                    root.classList.add('has-auth');
+                } else {
+                    root.classList.add('no-auth');
+                }
             } catch (e) {}
         })();
     </script>
+    <style>
+        /* Мгновенно скрываем то, что не нужно, ДО загрузки CSS */
+        html.has-auth #authScreen { display: none !important; }
+        html.has-auth #mainScreen { display: block !important; }
+        html.no-auth #authScreen { display: flex !important; }
+        html.no-auth #mainScreen { display: none !important; }
+    </style>
     <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
@@ -96,7 +111,6 @@
         <div class="modal-content">
             <h3>⚙️ Настройки аккаунта</h3>
 
-            <!-- АВАТАРКА -->
             <div class="settings-section">
                 <label class="form-label">Аватарка</label>
                 <div class="avatar-block">
@@ -115,7 +129,6 @@
                 </div>
             </div>
 
-            <!-- ИМЯ -->
             <div class="settings-section">
                 <label class="form-label">
                     Имя
@@ -123,7 +136,6 @@
                 </label>
             </div>
 
-            <!-- ФОН -->
             <div class="settings-section">
                 <label class="form-label">Оформление главной</label>
                 <div class="theme-options">
@@ -183,7 +195,6 @@
                 </div>
             </div>
 
-            <!-- ПАРОЛЬ -->
             <div class="settings-section" id="passwordSection">
                 <label class="form-label">Смена пароля</label>
                 <input type="password" id="setOldPwd" class="num-input"
@@ -192,7 +203,6 @@
                     placeholder="Новый пароль (мин. 6 символов)">
             </div>
 
-            <!-- ВЫХОД -->
             <div class="settings-section" id="logoutSection">
                 <label class="form-label">Сессия</label>
                 <button type="button" id="logoutBtn" class="btn-logout">🚪 Выйти из аккаунта</button>
@@ -347,6 +357,12 @@
             return '?';
         }
 
+        function setAuthState(hasAuth) {
+            const root = document.documentElement;
+            root.classList.remove('has-auth', 'no-auth');
+            root.classList.add(hasAuth ? 'has-auth' : 'no-auth');
+        }
+
         async function init() {
             if (authToken) {
                 try {
@@ -358,7 +374,8 @@
                         currentAdminBg = authUser.admin_bg_url || null;
                         currentAdminBtnColor = authUser.admin_btn_color || '#4299e1';
                         applyTheme(authUser.theme || 'light', authUser.bg_url);
-                        showMain();
+                        setAuthState(true);
+                        await showMain();
                         return;
                     } else {
                         authToken = '';
@@ -366,15 +383,18 @@
                     }
                 } catch {}
             }
+            setAuthState(false);
             showAuth();
         }
 
         function showAuth() {
+            setAuthState(false);
             authScreen.classList.remove('hidden');
             mainScreen.classList.add('hidden');
         }
 
         async function showMain() {
+            setAuthState(true);
             authScreen.classList.add('hidden');
             mainScreen.classList.remove('hidden');
             renderTopbar();
@@ -434,7 +454,6 @@
             });
         }
 
-        // ─── ТОПБАР с шестерёнкой ──────────────────────
         function renderTopbar() {
             topbarRight.innerHTML = '';
 
@@ -451,7 +470,6 @@
             histBtn.onclick = openHistory;
             topbarRight.appendChild(histBtn);
 
-            // ШЕСТЕРЁНКА ВЕРНУЛАСЬ
             const setBtn = document.createElement('button');
             setBtn.className = 'icon-btn';
             setBtn.title = 'Настройки';
@@ -525,7 +543,7 @@
                 currentAdminBtnColor = d.user.admin_btn_color || '#4299e1';
                 localStorage.setItem('gdz_token', authToken);
                 applyTheme(authUser.theme || 'light', authUser.bg_url);
-                showMain();
+                await showMain();
             } catch (err) {
                 st.textContent = '❌ ' + err.message;
                 st.className = 'fb-status error';
@@ -630,7 +648,6 @@
             });
             $('customBgBlock').style.display = currentTheme === 'custom' ? 'block' : 'none';
 
-            // Показываем настройки админки только админам
             if (authUser?.is_admin) {
                 $('adminSettingsSection').classList.remove('hidden');
                 $('adminBtnColor').value = currentAdminBtnColor || '#4299e1';
@@ -689,7 +706,7 @@
             } catch {}
         };
 
-        // ─── ФОН ГЛАВНОЙ (только галерея) ──────────────
+        // ─── ФОН ГЛАВНОЙ ───────────────────────────────
         $('bgInput').onchange = async (e) => {
             const file = e.target.files[0];
             if (!file) return;
@@ -721,7 +738,7 @@
             try {
                 const b64 = await shrinkImage(file, 1600, 0.82);
                 currentAdminBg = b64;
-                alert('✅ Фон админки сохранён. Он появится когда откроешь админку.');
+                alert('✅ Фон админки сохранён. Открой админку чтобы увидеть.');
             } catch (err) {
                 alert('Ошибка: ' + err.message);
             }
@@ -744,7 +761,7 @@
             $('adminBtnColorLabel').textContent = '#4299e1';
         };
 
-        // ─── СОХРАНЕНИЕ НАСТРОЕК ───────────────────────
+        // ─── СОХРАНЕНИЕ ────────────────────────────────
         $('saveSettingsBtn').onclick = async () => {
             const st = $('settingsStatus');
             const newName = $('setName').value.trim();
@@ -762,7 +779,6 @@
                 bg_url: bgToSave
             };
 
-            // Добавляем админ-настройки если админ
             if (authUser?.is_admin) {
                 payload.admin_bg_url = currentAdminBg || '';
                 payload.admin_btn_color = currentAdminBtnColor || '';

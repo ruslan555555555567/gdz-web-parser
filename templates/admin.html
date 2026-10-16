@@ -5,32 +5,35 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Админка — GDZ Парсер</title>
     <script>
-        // Тема и фон админки применяются ДО отрисовки — без мерцания
         (function() {
             try {
                 const theme = localStorage.getItem('gdz_theme') || 'light';
                 const bg = localStorage.getItem('gdz_bg');
                 const adminBg = localStorage.getItem('gdz_admin_bg');
                 const btnColor = localStorage.getItem('gdz_admin_btn_color') || '#4299e1';
+                const token = localStorage.getItem('gdz_token');
                 const root = document.documentElement;
-
                 if (theme === 'dark') root.classList.add('theme-dark');
                 else if (theme === 'custom' && bg) {
                     root.classList.add('theme-custom');
                     root.style.backgroundImage = 'url("' + bg + '")';
                 }
-
-                // Фон админки — перекрывает основной
                 if (adminBg) {
                     root.classList.add('theme-admin-bg');
                     root.style.setProperty('--admin-bg-image', 'url("' + adminBg + '")');
                 }
-
-                // Цвет кнопок
                 root.style.setProperty('--admin-btn-color', btnColor);
+                if (token) root.classList.add('has-token');
+                else root.classList.add('no-token');
             } catch (e) {}
         })();
     </script>
+    <style>
+        html.has-token #loginCard { display: none !important; }
+        html.no-token #loginCard { display: block !important; }
+        html.has-token #adminContent { display: block; }
+        html.no-token #adminContent { display: none; }
+    </style>
     <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
@@ -39,18 +42,14 @@
             <span class="version">v{{ version }}</span>
             <a href="/" class="support-btn" title="На главную">🏠</a>
         </div>
-
         <h1>🔐 Админка</h1>
         <p class="subtitle">Предметы · Онлайн · Пользователи · Сообщения · Логи</p>
 
         <section class="card" id="loginCard">
             <h2>Введите пароль</h2>
-            <p class="hint" style="margin-bottom:12px;">
-                Если вы вошли в аккаунт администратора — пароль не нужен.
-            </p>
+            <p class="hint" style="margin-bottom:12px;">Если вы вошли в аккаунт администратора — пароль не нужен.</p>
             <form id="loginForm">
-                <input type="password" id="pwd" class="num-input"
-                    placeholder="Пароль" autocomplete="current-password">
+                <input type="password" id="pwd" class="num-input" placeholder="Пароль" autocomplete="current-password">
                 <div id="loginStatus" class="fb-status"></div>
                 <button type="submit" class="btn-primary" style="margin-top: 12px;">Войти</button>
             </form>
@@ -65,7 +64,6 @@
                 <button class="admin-tab" data-tab="logs">📋 Логи</button>
             </div>
 
-            <!-- ПРЕДМЕТЫ -->
             <div id="tabSubjects">
                 <div class="section-header">
                     <h2>📚 Предметы (<span id="subjectsCount">0</span>)</h2>
@@ -75,16 +73,11 @@
                         <button id="refreshSubjectsBtn" class="btn-small">🔄 Обновить</button>
                     </div>
                 </div>
-
-                <p class="hint" style="margin-bottom:12px;">
-                    💡 Перетаскивай карточки мышкой за <b>⠿</b>, чтобы изменить порядок.
-                </p>
-
+                <p class="hint" style="margin-bottom:12px;">💡 Перетаскивай карточки мышкой за <b>⠿</b>, чтобы изменить порядок.</p>
                 <div id="subjectsList"></div>
                 <div id="emptySubjects" class="empty">Пока нет предметов</div>
             </div>
 
-            <!-- ОНЛАЙН -->
             <div id="tabOnline" class="hidden">
                 <div class="section-header">
                     <h2>🟢 Онлайн (<span id="onlineCount">0</span>)</h2>
@@ -95,7 +88,6 @@
                 <div id="emptyOnline" class="empty">Сейчас никого нет</div>
             </div>
 
-            <!-- ПОЛЬЗОВАТЕЛИ -->
             <div id="tabUsers" class="hidden">
                 <div class="section-header">
                     <h2>👥 Пользователи (<span id="usersCount">0</span>)</h2>
@@ -105,7 +97,6 @@
                 <div id="emptyUsers" class="empty">Пока нет зарегистрированных</div>
             </div>
 
-            <!-- СООБЩЕНИЯ -->
             <div id="tabMessages" class="hidden">
                 <div class="section-header">
                     <h2>📬 Сообщения (<span id="count">0</span>)</h2>
@@ -118,7 +109,6 @@
                 </div>
             </div>
 
-            <!-- ЛОГИ -->
             <div id="tabLogs" class="hidden">
                 <div class="section-header">
                     <h2>📋 Логи (<span id="logsCount">0</span>)</h2>
@@ -127,40 +117,25 @@
                         <button id="refreshLogsBtn" class="btn-small">🔄 Обновить</button>
                     </div>
                 </div>
-                <p class="hint" style="margin-bottom:12px;">
-                    Последние 500 действий: входы, регистрации, поиски, изменения предметов.
-                </p>
+                <p class="hint" style="margin-bottom:12px;">Последние 500 действий: входы, регистрации, поиски, изменения предметов.</p>
                 <div id="logsList"></div>
                 <div id="emptyLogs" class="empty">Логов пока нет</div>
             </div>
         </section>
     </div>
 
-    <!-- МОДАЛКА РЕДАКТИРОВАНИЯ ПРЕДМЕТА -->
     <div id="editModal" class="modal hidden">
         <div class="modal-content">
             <h3 id="editModalTitle">✏️ Редактировать предмет</h3>
-
-            <label class="form-label">
-                Название
-                <input type="text" id="editName" placeholder="Алгебра">
-            </label>
-
-            <label class="form-label">
-                Ссылка на gdz.ru
-                <input type="text" id="editUrl" placeholder="https://gdz.ru/class-7/algebra/makarichev-18/">
-            </label>
-
-            <label class="form-label">
-                Тип
+            <label class="form-label">Название<input type="text" id="editName" placeholder="Алгебра"></label>
+            <label class="form-label">Ссылка на gdz.ru<input type="text" id="editUrl" placeholder="https://gdz.ru/class-7/algebra/makarichev-18/"></label>
+            <label class="form-label">Тип
                 <select id="editType" class="num-input">
                     <option value="numbers">🔍 Поиск номеров</option>
                     <option value="text">📝 Текстовые задания</option>
                 </select>
             </label>
-
-            <label class="form-label">
-                Группа
+            <label class="form-label">Группа
                 <select id="editGroup" class="num-input">
                     <option value="🧮 Точные науки">🧮 Точные науки</option>
                     <option value="🌿 Естественные науки">🌿 Естественные науки</option>
@@ -168,24 +143,10 @@
                     <option value="🎨 Остальные предметы">🎨 Остальные предметы</option>
                 </select>
             </label>
-
-            <label class="form-label">
-                Всего номеров в учебнике (0 = не знаем)
-                <input type="number" id="editMaxNum" placeholder="560" min="0">
-            </label>
-
-            <label class="form-label">
-                Порядок
-                <input type="number" id="editSort" placeholder="1" min="0">
-            </label>
-
-            <label class="form-label">
-                Заметка (необязательно)
-                <textarea id="editNote" rows="2" placeholder="Например: Мерзляк, 2023 год"></textarea>
-            </label>
-
+            <label class="form-label">Всего номеров в учебнике (0 = не знаем)<input type="number" id="editMaxNum" placeholder="560" min="0"></label>
+            <label class="form-label">Порядок<input type="number" id="editSort" placeholder="1" min="0"></label>
+            <label class="form-label">Заметка (необязательно)<textarea id="editNote" rows="2" placeholder="Например: Мерзляк, 2023 год"></textarea></label>
             <div id="editStatus" class="fb-status"></div>
-
             <div class="modal-actions">
                 <button type="button" id="editCancelBtn" class="btn-secondary">Отмена</button>
                 <button type="button" id="editSaveBtn" class="btn-primary" style="width:auto;">💾 Сохранить</button>
@@ -206,21 +167,11 @@
         const loginStatus = document.getElementById('loginStatus');
 
         const ACTION_ICONS = {
-            'register': '🆕',
-            'login': '🔑',
-            'login_fail': '⚠️',
-            'logout': '🚪',
-            'parse': '🔍',
-            'profile_update': '⚙️',
-            'avatar_update': '🖼',
-            'password_change': '🔐',
-            'account_delete': '❌',
-            'subject_add': '➕',
-            'subject_update': '✏️',
-            'subject_delete': '🗑',
-            'subject_reorder': '↕️',
-            'subjects_reset': '🔄',
-            'admin_delete_user': '👤',
+            'register': '🆕', 'login': '🔑', 'login_fail': '⚠️', 'logout': '🚪',
+            'parse': '🔍', 'profile_update': '⚙️', 'avatar_update': '🖼',
+            'password_change': '🔐', 'account_delete': '❌',
+            'subject_add': '➕', 'subject_update': '✏️', 'subject_delete': '🗑',
+            'subject_reorder': '↕️', 'subjects_reset': '🔄', 'admin_delete_user': '👤',
         };
 
         function getInitial(name, email) {
@@ -230,7 +181,6 @@
             return '?';
         }
 
-        // Загружаем настройки админки (фон, цвет) с сервера
         async function loadAdminSettings() {
             const token = localStorage.getItem('gdz_token') || '';
             if (!token) return;
@@ -240,19 +190,11 @@
                 const d = await r.json();
                 const u = d.user;
                 if (!u || !u.is_admin) return;
-
-                // Фон админки
                 if (u.admin_bg_url) {
                     localStorage.setItem('gdz_admin_bg', u.admin_bg_url);
                     document.documentElement.classList.add('theme-admin-bg');
                     document.documentElement.style.setProperty('--admin-bg-image', 'url("' + u.admin_bg_url + '")');
-                } else {
-                    localStorage.removeItem('gdz_admin_bg');
-                    document.documentElement.classList.remove('theme-admin-bg');
-                    document.documentElement.style.removeProperty('--admin-bg-image');
                 }
-
-                // Цвет кнопок
                 const color = u.admin_btn_color || '#4299e1';
                 localStorage.setItem('gdz_admin_btn_color', color);
                 document.documentElement.style.setProperty('--admin-btn-color', color);
@@ -260,35 +202,31 @@
         }
 
         async function init() {
-            // Сначала подтянем настройки админа (фон, цвет)
             await loadAdminSettings();
-
             const token = localStorage.getItem('gdz_token') || '';
             if (token) {
                 try {
-                    const r = await fetch('/api/admin/check', {
-                        method: 'POST',
-                        headers: {'Content-Type': 'application/json'},
-                        body: JSON.stringify({token})
-                    });
+                    const r = await fetch('/api/admin/check', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({token}) });
                     if (r.ok) {
                         authData.token = token;
+                        document.documentElement.classList.remove('no-token');
+                        document.documentElement.classList.add('has-token');
                         openAdmin();
                         return;
                     }
                 } catch {}
             }
+            document.documentElement.classList.remove('has-token');
+            document.documentElement.classList.add('no-token');
             loginCard.classList.remove('hidden');
         }
 
         function openAdmin() {
+            document.documentElement.classList.remove('no-token');
+            document.documentElement.classList.add('has-token');
             loginCard.classList.add('hidden');
             adminContent.classList.remove('hidden');
-            loadSubjects();
-            loadOnline();
-            loadUsers();
-            loadMessages();
-            loadLogs();
+            loadSubjects(); loadOnline(); loadUsers(); loadMessages(); loadLogs();
             if (onlineTimer) clearInterval(onlineTimer);
             onlineTimer = setInterval(loadOnline, 30000);
         }
@@ -300,57 +238,35 @@
             loginStatus.textContent = '⏳ Проверяем...';
             loginStatus.className = 'fb-status loading';
             try {
-                const r = await fetch('/api/admin/check', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({password})
-                });
-                if (!r.ok) {
-                    loginStatus.textContent = '❌ Неверный пароль';
-                    loginStatus.className = 'fb-status error';
-                    return;
-                }
+                const r = await fetch('/api/admin/check', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({password}) });
+                if (!r.ok) { loginStatus.textContent = '❌ Неверный пароль'; loginStatus.className = 'fb-status error'; return; }
                 authData.password = password;
                 openAdmin();
-            } catch (err) {
-                loginStatus.textContent = '❌ ' + err.message;
-                loginStatus.className = 'fb-status error';
-            }
+            } catch (err) { loginStatus.textContent = '❌ ' + err.message; loginStatus.className = 'fb-status error'; }
         });
 
         document.querySelectorAll('.admin-tab').forEach(t => {
             t.addEventListener('click', () => {
-                document.querySelectorAll('.admin-tab').forEach(x =>
-                    x.classList.toggle('active', x === t));
+                document.querySelectorAll('.admin-tab').forEach(x => x.classList.toggle('active', x === t));
                 const tab = t.dataset.tab;
                 ['subjects', 'online', 'users', 'messages', 'logs'].forEach(name => {
-                    document.getElementById('tab' + name.charAt(0).toUpperCase() + name.slice(1))
-                        .classList.toggle('hidden', name !== tab);
+                    document.getElementById('tab' + name.charAt(0).toUpperCase() + name.slice(1)).classList.toggle('hidden', name !== tab);
                 });
             });
         });
 
-        function getAuthPayload() {
-            return authData.token ? {token: authData.token} : {password: authData.password};
-        }
+        function getAuthPayload() { return authData.token ? {token: authData.token} : {password: authData.password}; }
 
-        // ═══════ ПРЕДМЕТЫ ═══════
         document.getElementById('refreshSubjectsBtn').onclick = loadSubjects;
         document.getElementById('resetSubjectsBtn').onclick = async () => {
             if (!confirm('Восстановить список по умолчанию? ВСЕ текущие предметы будут удалены.')) return;
             if (!confirm('Точно? Это нельзя отменить.')) return;
             try {
-                const r = await fetch('/api/admin/subjects/reset', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify(getAuthPayload())
-                });
+                const r = await fetch('/api/admin/subjects/reset', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(getAuthPayload()) });
                 if (!r.ok) throw new Error('Ошибка');
                 await loadSubjects();
                 alert('✅ Список восстановлен!');
-            } catch (e) {
-                alert('Ошибка: ' + e.message);
-            }
+            } catch (e) { alert('Ошибка: ' + e.message); }
         };
         document.getElementById('addSubjectBtn').onclick = () => openEditModal(null);
 
@@ -363,19 +279,14 @@
                 subjectsCache = d.subjects;
                 document.getElementById('subjectsCount').textContent = d.subjects.length;
                 list.innerHTML = '';
-                if (!d.subjects.length) {
-                    empty.style.display = 'block';
-                    return;
-                }
+                if (!d.subjects.length) { empty.style.display = 'block'; return; }
                 empty.style.display = 'none';
                 d.subjects.forEach(s => {
                     const div = document.createElement('div');
                     div.className = 'subject-card';
                     div.draggable = true;
                     div.dataset.id = s.id;
-                    const typeLabel = s.type === 'text'
-                        ? '<span class="type-badge type-text">📝 текст</span>'
-                        : '<span class="type-badge type-num">🔍 номера</span>';
+                    const typeLabel = s.type === 'text' ? '<span class="type-badge type-text">📝 текст</span>' : '<span class="type-badge type-num">🔍 номера</span>';
                     const maxNum = s.max_number ? `${s.max_number}` : '—';
                     div.innerHTML = `
                         <div class="subj-head">
@@ -395,96 +306,52 @@
                             <button class="msg-delete subj-del">🗑</button>
                         </div>
                     `;
-
-                    div.addEventListener('dragstart', (e) => {
-                        draggedId = s.id;
-                        div.classList.add('dragging');
-                        e.dataTransfer.effectAllowed = 'move';
-                    });
-                    div.addEventListener('dragend', () => {
-                        div.classList.remove('dragging');
-                        document.querySelectorAll('.subject-card').forEach(c =>
-                            c.classList.remove('drag-over'));
-                    });
-                    div.addEventListener('dragover', (e) => {
-                        e.preventDefault();
-                        e.dataTransfer.dropEffect = 'move';
-                        if (draggedId !== s.id) div.classList.add('drag-over');
-                    });
+                    div.addEventListener('dragstart', (e) => { draggedId = s.id; div.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; });
+                    div.addEventListener('dragend', () => { div.classList.remove('dragging'); document.querySelectorAll('.subject-card').forEach(c => c.classList.remove('drag-over')); });
+                    div.addEventListener('dragover', (e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; if (draggedId !== s.id) div.classList.add('drag-over'); });
                     div.addEventListener('dragleave', () => div.classList.remove('drag-over'));
                     div.addEventListener('drop', async (e) => {
                         e.preventDefault();
                         div.classList.remove('drag-over');
                         if (!draggedId || draggedId === s.id) return;
-
                         const draggedEl = document.querySelector(`.subject-card[data-id="${draggedId}"]`);
                         if (!draggedEl) return;
-
                         const allCards = Array.from(document.querySelectorAll('.subject-card'));
                         const draggedIdx = allCards.indexOf(draggedEl);
                         const targetIdx = allCards.indexOf(div);
-
-                        if (draggedIdx < targetIdx) {
-                            div.parentNode.insertBefore(draggedEl, div.nextSibling);
-                        } else {
-                            div.parentNode.insertBefore(draggedEl, div);
-                        }
-
-                        const newOrder = Array.from(document.querySelectorAll('.subject-card'))
-                            .map(c => parseInt(c.dataset.id));
-
+                        if (draggedIdx < targetIdx) div.parentNode.insertBefore(draggedEl, div.nextSibling);
+                        else div.parentNode.insertBefore(draggedEl, div);
+                        const newOrder = Array.from(document.querySelectorAll('.subject-card')).map(c => parseInt(c.dataset.id));
                         try {
-                            const r = await fetch('/api/admin/subjects/reorder', {
-                                method: 'POST',
-                                headers: {'Content-Type': 'application/json'},
-                                body: JSON.stringify({...getAuthPayload(), ids: newOrder})
-                            });
+                            const r = await fetch('/api/admin/subjects/reorder', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({...getAuthPayload(), ids: newOrder}) });
                             if (!r.ok) throw new Error('Ошибка сохранения');
                             newOrder.forEach((id, i) => {
                                 const el = document.querySelector(`.subject-card[data-id="${id}"]`);
-                                if (el) {
-                                    const pill = el.querySelectorAll('.stat-pill b');
-                                    if (pill[1]) pill[1].textContent = i + 1;
-                                }
+                                if (el) { const pill = el.querySelectorAll('.stat-pill b'); if (pill[1]) pill[1].textContent = i + 1; }
                             });
-                        } catch (err) {
-                            alert('Не удалось сохранить порядок: ' + err.message);
-                            loadSubjects();
-                        }
+                        } catch (err) { alert('Не удалось сохранить порядок: ' + err.message); loadSubjects(); }
                     });
-
                     div.querySelector('.subj-edit').onclick = () => openEditModal(s);
                     div.querySelector('.subj-del').onclick = async () => {
                         if (!confirm(`Удалить «${s.name}»?`)) return;
                         try {
-                            const r = await fetch('/api/admin/subjects/delete', {
-                                method: 'POST',
-                                headers: {'Content-Type': 'application/json'},
-                                body: JSON.stringify({...getAuthPayload(), id: s.id})
-                            });
+                            const r = await fetch('/api/admin/subjects/delete', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({...getAuthPayload(), id: s.id}) });
                             if (!r.ok) throw new Error('Ошибка');
                             loadSubjects();
-                        } catch (err) {
-                            alert('Ошибка: ' + err.message);
-                        }
+                        } catch (err) { alert('Ошибка: ' + err.message); }
                     };
-
                     list.appendChild(div);
                 });
-            } catch (e) {
-                list.innerHTML = '<p class="empty">Ошибка: ' + e.message + '</p>';
-            }
+            } catch (e) { list.innerHTML = '<p class="empty">Ошибка: ' + e.message + '</p>'; }
         }
 
-        // ═══════ МОДАЛКА ═══════
         const editModal = document.getElementById('editModal');
         let editingId = null;
 
         function openEditModal(subject) {
             editModal.classList.remove('hidden');
             editingId = subject ? subject.id : null;
-            document.getElementById('editModalTitle').textContent =
-                subject ? '✏️ Редактировать: ' + subject.name : '➕ Новый предмет';
+            document.getElementById('editModalTitle').textContent = subject ? '✏️ Редактировать: ' + subject.name : '➕ Новый предмет';
             document.getElementById('editName').value = subject ? subject.name : '';
             document.getElementById('editUrl').value = subject ? (subject.url || '') : '';
             document.getElementById('editType').value = subject ? (subject.type || 'numbers') : 'numbers';
@@ -508,95 +375,46 @@
             const max_number = parseInt(document.getElementById('editMaxNum').value) || 0;
             const sort_order = parseInt(document.getElementById('editSort').value) || 999;
             const note = document.getElementById('editNote').value.trim();
-
-            if (!name) {
-                st.textContent = '⚠️ Нужно название';
-                st.className = 'fb-status error';
-                return;
-            }
-            if (type === 'numbers' && !url) {
-                st.textContent = '⚠️ Для поиска номеров нужна ссылка';
-                st.className = 'fb-status error';
-                return;
-            }
-
+            if (!name) { st.textContent = '⚠️ Нужно название'; st.className = 'fb-status error'; return; }
+            if (type === 'numbers' && !url) { st.textContent = '⚠️ Для поиска номеров нужна ссылка'; st.className = 'fb-status error'; return; }
             st.textContent = '⏳ Сохраняем...';
             st.className = 'fb-status loading';
-
-            const payload = {
-                ...getAuthPayload(),
-                name, url, type, group_name, max_number, sort_order, note
-            };
-
+            const payload = { ...getAuthPayload(), name, url, type, group_name, max_number, sort_order, note };
             try {
                 let r;
                 if (editingId) {
                     payload.id = editingId;
-                    r = await fetch('/api/admin/subjects/update', {
-                        method: 'POST',
-                        headers: {'Content-Type': 'application/json'},
-                        body: JSON.stringify(payload)
-                    });
+                    r = await fetch('/api/admin/subjects/update', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload) });
                 } else {
-                    r = await fetch('/api/admin/subjects/add', {
-                        method: 'POST',
-                        headers: {'Content-Type': 'application/json'},
-                        body: JSON.stringify(payload)
-                    });
+                    r = await fetch('/api/admin/subjects/add', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload) });
                 }
                 const d = await r.json();
-                if (!r.ok) {
-                    st.textContent = '❌ ' + (d.detail || 'Ошибка');
-                    st.className = 'fb-status error';
-                    return;
-                }
+                if (!r.ok) { st.textContent = '❌ ' + (d.detail || 'Ошибка'); st.className = 'fb-status error'; return; }
                 st.textContent = '✅ Сохранено';
                 st.className = 'fb-status success';
-                setTimeout(() => {
-                    editModal.classList.add('hidden');
-                    loadSubjects();
-                }, 500);
-            } catch (e) {
-                st.textContent = '❌ ' + e.message;
-                st.className = 'fb-status error';
-            }
+                setTimeout(() => { editModal.classList.add('hidden'); loadSubjects(); }, 500);
+            } catch (e) { st.textContent = '❌ ' + e.message; st.className = 'fb-status error'; }
         };
 
-        // ═══════ ОНЛАЙН ═══════
         document.getElementById('refreshOnlineBtn').onclick = loadOnline;
-
         async function loadOnline() {
             try {
-                const r = await fetch('/api/admin/online', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify(getAuthPayload())
-                });
+                const r = await fetch('/api/admin/online', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(getAuthPayload()) });
                 if (!r.ok) return;
                 const d = await r.json();
                 document.getElementById('onlineCount').textContent = d.total;
                 const list = document.getElementById('onlineList');
                 const empty = document.getElementById('emptyOnline');
                 list.innerHTML = '';
-                if (!d.users.length) {
-                    empty.style.display = 'block';
-                    return;
-                }
+                if (!d.users.length) { empty.style.display = 'block'; return; }
                 empty.style.display = 'none';
                 d.users.forEach(u => {
                     const div = document.createElement('div');
                     div.className = 'user-card online-card';
                     const badge = u.is_admin ? '<span class="admin-badge">👑 АДМИН</span>' : '';
-                    const avatarHtml = u.avatar
-                        ? `<span class="user-avatar" style="background-image:url('${u.avatar}')"></span>`
-                        : `<span class="user-avatar">${getInitial(u.name, u.email)}</span>`;
+                    const avatarHtml = u.avatar ? `<span class="user-avatar" style="background-image:url('${u.avatar}')"></span>` : `<span class="user-avatar">${getInitial(u.name, u.email)}</span>`;
                     div.innerHTML = `
-                        <div class="user-head">
-                            ${avatarHtml}
-                            <span class="online-dot"></span>
-                            <strong>${escapeHtml(u.name || 'Без имени')}</strong>
-                            ${badge}
-                        </div>
+                        <div class="user-head">${avatarHtml}<span class="online-dot"></span><strong>${escapeHtml(u.name || 'Без имени')}</strong>${badge}</div>
                         <div class="user-row">📧 ${escapeHtml(u.email)}</div>
                         <div class="user-row">💻 ${escapeHtml(u.device || '—')}</div>
                         <div class="user-row small">🕐 ${escapeHtml(u.last_seen || '—')}</div>
@@ -606,52 +424,32 @@
             } catch {}
         }
 
-        // ═══════ ПОЛЬЗОВАТЕЛИ ═══════
         document.getElementById('refreshUsersBtn').onclick = loadUsers;
-
         async function loadUsers() {
             const list = document.getElementById('usersList');
             const empty = document.getElementById('emptyUsers');
             try {
-                const r = await fetch('/api/admin/users', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify(getAuthPayload())
-                });
+                const r = await fetch('/api/admin/users', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(getAuthPayload()) });
                 if (!r.ok) return;
                 const d = await r.json();
                 document.getElementById('usersCount').textContent = d.users.length;
                 list.innerHTML = '';
-                if (!d.users.length) {
-                    empty.style.display = 'block';
-                    return;
-                }
+                if (!d.users.length) { empty.style.display = 'block'; return; }
                 empty.style.display = 'none';
                 d.users.forEach(u => {
                     const div = document.createElement('div');
                     div.className = 'user-card';
                     const badge = u.is_admin ? '<span class="admin-badge">👑 АДМИН</span>' : '';
-                    const avatarHtml = u.avatar
-                        ? `<span class="user-avatar" style="background-image:url('${u.avatar}')"></span>`
-                        : `<span class="user-avatar">${getInitial(u.name, u.email)}</span>`;
+                    const avatarHtml = u.avatar ? `<span class="user-avatar" style="background-image:url('${u.avatar}')"></span>` : `<span class="user-avatar">${getInitial(u.name, u.email)}</span>`;
                     div.innerHTML = `
-                        <div class="user-head">
-                            ${avatarHtml}
-                            <strong>${escapeHtml(u.name || 'Без имени')}</strong>
-                            ${badge}
-                            <button class="msg-delete user-del" data-id="${u.id}">🗑</button>
-                        </div>
+                        <div class="user-head">${avatarHtml}<strong>${escapeHtml(u.name || 'Без имени')}</strong>${badge}<button class="msg-delete user-del" data-id="${u.id}">🗑</button></div>
                         <div class="user-row">📧 ${escapeHtml(u.email)}</div>
                         <div class="user-row">💻 ${escapeHtml(u.device || '—')}</div>
-                        <div class="user-row small">
-                            📅 ${escapeHtml(u.created || '—')} · 🕐 ${escapeHtml(u.last_seen || '—')}
-                        </div>
+                        <div class="user-row small">📅 ${escapeHtml(u.created || '—')} · 🕐 ${escapeHtml(u.last_seen || '—')}</div>
                     `;
                     list.appendChild(div);
                 });
-            } catch (e) {
-                list.innerHTML = '<p class="empty">Ошибка: ' + e.message + '</p>';
-            }
+            } catch (e) { list.innerHTML = '<p class="empty">Ошибка: ' + e.message + '</p>'; }
         }
 
         document.getElementById('usersList').addEventListener('click', async (e) => {
@@ -660,39 +458,23 @@
             if (!confirm('Удалить пользователя?')) return;
             btn.disabled = true;
             try {
-                const r = await fetch('/api/admin/delete-user/' + btn.dataset.id, {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify(getAuthPayload())
-                });
+                const r = await fetch('/api/admin/delete-user/' + btn.dataset.id, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(getAuthPayload()) });
                 if (!r.ok) throw new Error('Ошибка');
                 loadUsers();
-            } catch (err) {
-                btn.disabled = false;
-                alert('Ошибка: ' + err.message);
-            }
+            } catch (err) { btn.disabled = false; alert('Ошибка: ' + err.message); }
         });
 
-        // ═══════ СООБЩЕНИЯ ═══════
         document.getElementById('refreshBtn').onclick = loadMessages;
-
         async function loadMessages() {
             const list = document.getElementById('messagesList');
             const empty = document.getElementById('emptyMsg');
             try {
-                const r = await fetch('/api/admin/messages', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify(getAuthPayload())
-                });
+                const r = await fetch('/api/admin/messages', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(getAuthPayload()) });
                 if (!r.ok) return;
                 const d = await r.json();
                 document.getElementById('count').textContent = d.total;
                 list.innerHTML = '';
-                if (!d.messages.length) {
-                    empty.style.display = 'block';
-                    return;
-                }
+                if (!d.messages.length) { empty.style.display = 'block'; return; }
                 empty.style.display = 'none';
                 d.messages.forEach(m => {
                     const div = document.createElement('div');
@@ -710,9 +492,7 @@
                     `;
                     list.appendChild(div);
                 });
-            } catch (e) {
-                list.innerHTML = '<p class="empty">Ошибка: ' + e.message + '</p>';
-            }
+            } catch (e) { list.innerHTML = '<p class="empty">Ошибка: ' + e.message + '</p>'; }
         }
 
         document.getElementById('messagesList').addEventListener('click', async (e) => {
@@ -721,102 +501,62 @@
             if (!confirm('Удалить сообщение?')) return;
             btn.disabled = true;
             try {
-                const r = await fetch('/api/admin/delete/' + btn.dataset.id, {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify(getAuthPayload())
-                });
+                const r = await fetch('/api/admin/delete/' + btn.dataset.id, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(getAuthPayload()) });
                 if (!r.ok) throw new Error('Ошибка');
                 loadMessages();
-            } catch (err) {
-                btn.disabled = false;
-                alert('Ошибка: ' + err.message);
-            }
+            } catch (err) { btn.disabled = false; alert('Ошибка: ' + err.message); }
         });
 
         document.getElementById('clearBtn').onclick = async () => {
             if (!confirm('Удалить ВСЕ сообщения?')) return;
             try {
-                const r = await fetch('/api/admin/clear', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify(getAuthPayload())
-                });
+                const r = await fetch('/api/admin/clear', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(getAuthPayload()) });
                 if (!r.ok) throw new Error('Ошибка');
                 loadMessages();
             } catch (err) { alert('Ошибка: ' + err.message); }
         };
 
-        // ═══════ ЛОГИ ═══════
         document.getElementById('refreshLogsBtn').onclick = loadLogs;
-
         async function loadLogs() {
             const list = document.getElementById('logsList');
             const empty = document.getElementById('emptyLogs');
             try {
-                const r = await fetch('/api/admin/logs', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify(getAuthPayload())
-                });
+                const r = await fetch('/api/admin/logs', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(getAuthPayload()) });
                 if (!r.ok) return;
                 const d = await r.json();
                 document.getElementById('logsCount').textContent = d.logs.length;
                 list.innerHTML = '';
-                if (!d.logs.length) {
-                    empty.style.display = 'block';
-                    return;
-                }
+                if (!d.logs.length) { empty.style.display = 'block'; return; }
                 empty.style.display = 'none';
                 d.logs.forEach(l => {
                     const div = document.createElement('div');
                     div.className = 'log-row';
                     const icon = ACTION_ICONS[l.action] || '📌';
                     const who = l.name || l.email || 'Гость';
-                    const avatarHtml = l.avatar
-                        ? `<span class="log-avatar" style="background-image:url('${l.avatar}')"></span>`
-                        : `<span class="log-avatar">${getInitial(l.name, l.email)}</span>`;
+                    const avatarHtml = l.avatar ? `<span class="log-avatar" style="background-image:url('${l.avatar}')"></span>` : `<span class="log-avatar">${getInitial(l.name, l.email)}</span>`;
                     div.innerHTML = `
                         <span class="log-icon">${icon}</span>
                         <div class="log-content">
-                            <div class="log-head">
-                                ${avatarHtml}
-                                <strong>${escapeHtml(who)}</strong>
-                                <span class="log-action">${escapeHtml(l.action)}</span>
-                            </div>
+                            <div class="log-head">${avatarHtml}<strong>${escapeHtml(who)}</strong><span class="log-action">${escapeHtml(l.action)}</span></div>
                             ${l.details ? `<div class="log-details">${escapeHtml(l.details)}</div>` : ''}
-                            <div class="log-meta">
-                                🕐 ${escapeHtml(l.created || '')}
-                                ${l.ip ? ` · 🌐 ${escapeHtml(l.ip)}` : ''}
-                            </div>
+                            <div class="log-meta">🕐 ${escapeHtml(l.created || '')}${l.ip ? ` · 🌐 ${escapeHtml(l.ip)}` : ''}</div>
                         </div>
                     `;
                     list.appendChild(div);
                 });
-            } catch (e) {
-                list.innerHTML = '<p class="empty">Ошибка: ' + e.message + '</p>';
-            }
+            } catch (e) { list.innerHTML = '<p class="empty">Ошибка: ' + e.message + '</p>'; }
         }
 
         document.getElementById('clearLogsBtn').onclick = async () => {
             if (!confirm('Удалить ВСЕ логи?')) return;
             try {
-                const r = await fetch('/api/admin/logs/clear', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify(getAuthPayload())
-                });
+                const r = await fetch('/api/admin/logs/clear', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(getAuthPayload()) });
                 if (!r.ok) throw new Error('Ошибка');
                 loadLogs();
             } catch (err) { alert('Ошибка: ' + err.message); }
         };
 
-        function escapeHtml(t) {
-            const d = document.createElement('div');
-            d.textContent = t || '';
-            return d.innerHTML;
-        }
-
+        function escapeHtml(t) { const d = document.createElement('div'); d.textContent = t || ''; return d.innerHTML; }
         init();
     </script>
 </body>

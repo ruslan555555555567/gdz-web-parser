@@ -122,7 +122,7 @@ body.theme-dark .group-hint { color: #a0aec0; }
 .theme-dark .avatar-preview { background-color: rgba(74,85,104,0.5); color: #cbd5e0; border-color: rgba(74,85,104,0.6); }
 
 /* ═══════════════════════════════════════
-   СВОЯ КАРТИНКА ФОНА ГЛАВНОЙ
+   СВОЯ КАРТИНКА ФОНА
    ═══════════════════════════════════════ */
 .theme-custom body,
 body.theme-custom {
@@ -225,7 +225,7 @@ body.theme-custom .form-label { color: #e2e8f0; }
 body.theme-custom .topbar-user { background: rgba(0,0,0,0.5); color: #ffffff; }
 
 /* ═══════════════════════════════════════
-   ФОН АДМИНКИ (theme-admin-bg)
+   ФОН АДМИНКИ
    ═══════════════════════════════════════ */
 .theme-admin-bg body,
 body.theme-admin-bg {
@@ -259,10 +259,7 @@ body.theme-admin-bg .card {
 .theme-admin-bg h3,
 body.theme-admin-bg h1,
 body.theme-admin-bg h2,
-body.theme-admin-bg h3 {
-    color: #ffffff;
-    text-shadow: 0 2px 6px rgba(0,0,0,0.9);
-}
+body.theme-admin-bg h3 { color: #ffffff; text-shadow: 0 2px 6px rgba(0,0,0,0.9); }
 .theme-admin-bg .subtitle,
 .theme-admin-bg .hint,
 body.theme-admin-bg .subtitle,
@@ -331,7 +328,7 @@ body.theme-admin-bg .form-label select {
 body.theme-admin-bg .form-label { color: #e2e8f0; }
 
 /* ═══════════════════════════════════════
-   КНОПКИ АДМИНКИ — используют --admin-btn-color
+   КНОПКИ — цвет через --admin-btn-color
    ═══════════════════════════════════════ */
 .btn-primary,
 .btn-small,
@@ -348,13 +345,47 @@ body.theme-admin-bg .form-label { color: #e2e8f0; }
     box-shadow: 0 2px 4px rgba(0,0,0,0.15);
 }
 
-/* Специальные кнопки оставляем как были */
 .reset-btn { background-color: #ed8936 !important; }
 .reset-btn:hover { filter: brightness(0.9); }
 .btn-danger { background: #fff5f5 !important; }
-.btn-danger:hover { background: #fed7d7 !important; }
-.btn-logout { background: #f7fafc !important; }
-.btn-logout:hover { background: #edf2f7 !important; }
+
+/* Кнопка выхода — контрастная везде */
+.btn-logout {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    padding: 12px 20px;
+    background: #e2e8f0;
+    color: #1a202c;
+    border: 2px solid #cbd5e0;
+    border-radius: 8px;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    margin-top: 8px;
+}
+.btn-logout:hover { background: #cbd5e0; border-color: #a0aec0; }
+.theme-dark .btn-logout,
+body.theme-dark .btn-logout,
+.theme-admin-bg .btn-logout,
+body.theme-admin-bg .btn-logout,
+.theme-custom .btn-logout,
+body.theme-custom .btn-logout {
+    background: #4a5568;
+    color: #ffffff;
+    border-color: #718096;
+}
+.theme-dark .btn-logout:hover,
+body.theme-dark .btn-logout:hover,
+.theme-admin-bg .btn-logout:hover,
+body.theme-admin-bg .btn-logout:hover,
+.theme-custom .btn-logout:hover,
+body.theme-custom .btn-logout:hover {
+    background: #718096;
+    border-color: #a0aec0;
+}
 
 /* ═══════════════════════════════════════
    ЭКРАН ВХОДА
@@ -426,7 +457,6 @@ body.theme-admin-bg .form-label { color: #e2e8f0; }
     flex-wrap: wrap;
 }
 
-/* Кнопка-профиль с аватаркой */
 .topbar-user-btn {
     display: flex;
     align-items: center;
@@ -577,7 +607,7 @@ select.num-input:focus { border-color: #4299e1; }
 }
 
 /* ═══════════════════════════════════════
-   КНОПКИ (базовые стили)
+   КНОПКИ (базовые)
    ═══════════════════════════════════════ */
 .btn-primary {
     width: 100%;
@@ -617,7 +647,6 @@ select.num-input:focus { border-color: #4299e1; }
     font-family: inherit;
     transition: filter 0.2s;
 }
-
 .reset-btn { background: #ed8936; }
 
 .btn-danger {
@@ -632,28 +661,8 @@ select.num-input:focus { border-color: #4299e1; }
 }
 .btn-danger:hover { background: #fed7d7; }
 
-.btn-logout {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    width: 100%;
-    padding: 12px 20px;
-    background: #f7fafc;
-    color: #4a5568;
-    border: 2px solid #e2e8f0;
-    border-radius: 8px;
-    font-size: 15px;
-    font-weight: 600;
-    cursor: pointer;
-    margin-top: 8px;
-}
-.btn-logout:hover { background: #edf2f7; border-color: #cbd5e0; }
-.theme-dark .btn-logout { background: rgba(45,55,72,0.6); color: #e2e8f0; border-color: rgba(74,85,104,0.6); }
-.theme-dark .btn-logout:hover { background: rgba(74,85,104,0.8); }
-
 /* ═══════════════════════════════════════
-   АВАТАРКА (настройки)
+   АВАТАРКА (в настройках)
    ═══════════════════════════════════════ */
 .avatar-block {
     display: flex;
@@ -699,7 +708,7 @@ select.num-input:focus { border-color: #4299e1; }
 .theme-dark .avatar-remove-btn:hover { background: rgba(113,128,150,0.7); }
 
 /* ═══════════════════════════════════════
-   ЦВЕТ-ПИКЕР (для админа)
+   ЦВЕТ-ПИКЕР
    ═══════════════════════════════════════ */
 .color-picker-row {
     display: flex;
@@ -1153,7 +1162,7 @@ select.num-input:focus { border-color: #4299e1; }
 }
 
 /* ═══════════════════════════════════════
-   УПРАВЛЕНИЕ ПРЕДМЕТАМИ
+   ПРЕДМЕТЫ (админка)
    ═══════════════════════════════════════ */
 .subject-card {
     background: #f7fafc;
