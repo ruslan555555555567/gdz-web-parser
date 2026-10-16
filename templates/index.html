@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>GDZ Парсер — 7 класс</title>
     <script>
-        // ─── МГНОВЕННОЕ ПРИМЕНЕНИЕ ТЕМЫ (без мерцания) ───
         (function() {
             try {
                 const theme = localStorage.getItem('gdz_theme') || 'light';
@@ -23,77 +22,18 @@
     <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
-    <div class="container">
-        <div class="topbar">
-            <span class="version">v{{ version }}</span>
-            <div class="topbar-right" id="topbarRight"></div>
-        </div>
+    <!-- ═══════ ЭКРАН ВХОДА ═══════ -->
+    <div id="authScreen" class="auth-screen">
+        <div class="auth-screen-box">
+            <div class="auth-logo">📚</div>
+            <h1 class="auth-screen-title">GDZ Парсер</h1>
+            <p class="auth-screen-subtitle">Войди или зарегистрируйся, чтобы начать</p>
 
-        <h1>📚 GDZ Парсер</h1>
-        <p class="subtitle">7 класс · Введи номера заданий</p>
-
-        <section class="card">
-            <h2>📝 Домашка</h2>
-
-            <div class="input-row">
-                <label class="input-label">📐 Алгебра <span class="hint">(Макарычев)</span></label>
-                <input type="text" class="num-input" id="algebra"
-                    placeholder="447, 449, 451(а,в,д), 455, 459">
-            </div>
-
-            <div class="input-row">
-                <label class="input-label">📖 Русский язык <span class="hint">(Баранов)</span></label>
-                <input type="text" class="num-input" id="russian"
-                    placeholder="1, 5, 10 или стр. 8, 12">
-            </div>
-
-            <div class="input-row">
-                <label class="input-label">📐 Геометрия <span class="hint">(Мерзляк)</span></label>
-                <input type="text" class="num-input" id="geometry"
-                    placeholder="1, 5, 10, 15">
-            </div>
-
-            <button id="btn" class="btn-primary">🔍 Найти решения</button>
-        </section>
-
-        <div id="status" class="status"></div>
-        <div id="result" class="result"></div>
-
-        <footer class="footer">
-            <span>GDZ Парсер · v{{ version }}</span>
-        </footer>
-    </div>
-
-    <!-- Приветствие -->
-    <div id="welcomeModal" class="modal hidden">
-        <div class="modal-content welcome-content">
-            <h2>Добро пожаловать! 👋</h2>
-            <p class="modal-text">Как будем заходить?</p>
-            <button id="guestBtn" class="welcome-btn guest">
-                <span class="wb-icon">👤</span>
-                <div class="wb-text">
-                    <strong>Гость</strong>
-                    <small>История не сохраняется</small>
-                </div>
-            </button>
-            <button id="authBtn" class="welcome-btn auth">
-                <span class="wb-icon">🔑</span>
-                <div class="wb-text">
-                    <strong>Войти / Регистрация</strong>
-                    <small>История поисков сохраняется</small>
-                </div>
-            </button>
-        </div>
-    </div>
-
-    <!-- Вход -->
-    <div id="authModal" class="modal hidden">
-        <div class="modal-content">
-            <h3 id="authTitle">Вход</h3>
             <div class="auth-tabs">
                 <button type="button" class="auth-tab active" data-tab="login">Вход</button>
                 <button type="button" class="auth-tab" data-tab="register">Регистрация</button>
             </div>
+
             <form id="authForm">
                 <label class="form-label" id="nameField" style="display:none;">
                     Имя
@@ -108,15 +48,132 @@
                     <input type="password" id="authPwd" placeholder="минимум 6 символов" required>
                 </label>
                 <div id="authStatus" class="fb-status"></div>
-                <div class="modal-actions">
-                    <button type="button" id="authCancel" class="btn-secondary">Отмена</button>
-                    <button type="submit" id="authSubmit" class="btn-primary">Войти</button>
-                </div>
+                <button type="submit" id="authSubmit" class="btn-primary">Войти</button>
             </form>
         </div>
     </div>
 
-    <!-- История -->
+    <!-- ═══════ ГЛАВНЫЙ ЭКРАН ═══════ -->
+    <div id="mainScreen" class="container hidden">
+        <div class="topbar">
+            <span class="version">v{{ version }}</span>
+            <div class="topbar-right" id="topbarRight"></div>
+        </div>
+
+        <h1>📚 GDZ Парсер</h1>
+        <p class="subtitle">7 класс · Введи номера заданий</p>
+
+        <section class="card">
+            <h2>📝 Домашка</h2>
+
+            <!-- Точные науки -->
+            <div class="subject-group">
+                <h3 class="group-title">🧮 Точные науки</h3>
+
+                <div class="input-row">
+                    <label class="input-label">📐 Алгебра <span class="hint">(Макарычев)</span></label>
+                    <input type="text" class="num-input" id="algebra" placeholder="447, 449, 451(а,в,д), 455">
+                </div>
+
+                <div class="input-row">
+                    <label class="input-label">📐 Геометрия <span class="hint">(Мерзляк)</span></label>
+                    <input type="text" class="num-input" id="geometry" placeholder="115, 117, 127">
+                </div>
+
+                <div class="input-row">
+                    <label class="input-label">🎲 Вероятность и статистика <span class="hint">(Высоцкий)</span></label>
+                    <input type="text" class="num-input" id="probability" placeholder="28, 33, 90">
+                </div>
+
+                <div class="input-row">
+                    <label class="input-label">⚛️ Физика <span class="hint">(Перышкин)</span></label>
+                    <input type="text" class="num-input" id="physics" placeholder="12, 15, 20">
+                </div>
+
+                <div class="input-row">
+                    <label class="input-label">💻 Информатика <span class="hint">(Босова)</span></label>
+                    <input type="text" class="num-input" id="informatika" placeholder="1, 5, 10">
+                </div>
+            </div>
+
+            <!-- Естественные науки -->
+            <div class="subject-group">
+                <h3 class="group-title">🌿 Естественные науки</h3>
+
+                <div class="input-row">
+                    <label class="input-label">🌱 Биология <span class="hint">(вкл. разнообразие бактерий)</span></label>
+                    <input type="text" class="num-input" id="biologiya" placeholder="1, 5, 10">
+                </div>
+
+                <div class="input-row">
+                    <label class="input-label">🌍 География <span class="hint">(Алексеев)</span></label>
+                    <input type="text" class="num-input" id="geografiya" placeholder="1, 5, 10">
+                </div>
+            </div>
+
+            <!-- Гуманитарные науки -->
+            <div class="subject-group">
+                <h3 class="group-title">📖 Гуманитарные науки</h3>
+
+                <div class="input-row">
+                    <label class="input-label">📖 Русский язык <span class="hint">(Баранов)</span></label>
+                    <input type="text" class="num-input" id="russian" placeholder="96, 119, 130">
+                </div>
+
+                <div class="input-row">
+                    <label class="input-label">🇬🇧 Английский язык <span class="hint">(Spotlight)</span></label>
+                    <input type="text" class="num-input" id="english" placeholder="1, 4, 8">
+                </div>
+            </div>
+
+            <!-- Текстовые предметы -->
+            <div class="subject-group">
+                <h3 class="group-title">📝 Текстовые предметы</h3>
+                <p class="group-hint">В этих предметах задания обычно текстовые — просто вставь текст.</p>
+
+                <div class="input-row">
+                    <label class="input-label">📚 Литература</label>
+                    <textarea class="text-input" id="literatura" rows="2"
+                        placeholder="Написать сочинение по поэме «Полтава»..."></textarea>
+                </div>
+
+                <div class="input-row">
+                    <label class="input-label">🏛 История</label>
+                    <textarea class="text-input" id="istoriya" rows="2"
+                        placeholder="Читать параграф 7, написать этапы войн..."></textarea>
+                </div>
+
+                <div class="input-row">
+                    <label class="input-label">🎵 Музыка</label>
+                    <textarea class="text-input" id="muzyka" rows="2"
+                        placeholder="Повторение изученного материала..."></textarea>
+                </div>
+
+                <div class="input-row">
+                    <label class="input-label">🛠 Труд (технология)</label>
+                    <textarea class="text-input" id="trud" rows="2"
+                        placeholder="Принести материалы для работы..."></textarea>
+                </div>
+
+                <div class="input-row">
+                    <label class="input-label">🎨 Изобразительное искусство</label>
+                    <textarea class="text-input" id="izo" rows="2"
+                        placeholder="Принести альбом и краски..."></textarea>
+                </div>
+            </div>
+
+            <button id="btn" class="btn-primary">🔍 Найти решения</button>
+        </section>
+
+        <div id="status" class="status"></div>
+        <div id="result" class="result"></div>
+
+        <footer class="footer">
+            <span>GDZ Парсер · v{{ version }}</span>
+        </footer>
+    </div>
+
+    <!-- ИСТОРИЯ -->
     <div id="historyModal" class="modal hidden">
         <div class="modal-content">
             <h3>📜 История поисков</h3>
@@ -128,7 +185,7 @@
         </div>
     </div>
 
-    <!-- Настройки -->
+    <!-- НАСТРОЙКИ -->
     <div id="settingsModal" class="modal hidden">
         <div class="modal-content">
             <h3>⚙️ Настройки аккаунта</h3>
@@ -159,12 +216,8 @@
                 <div id="customBgBlock" style="display:none; margin-top:12px;">
                     <label class="form-label">
                         URL картинки для фона
-                        <input type="text" id="setBgUrl"
-                            placeholder="https://example.com/image.jpg">
+                        <input type="text" id="setBgUrl" placeholder="https://example.com/image.jpg">
                     </label>
-                    <p class="hint" style="margin-top:6px;">
-                        Вставь прямую ссылку на картинку. Она будет фоном сайта.
-                    </p>
                 </div>
             </div>
 
@@ -176,7 +229,7 @@
                     placeholder="Новый пароль (мин. 6 символов)">
             </div>
 
-            <div class="settings-section" id="logoutSection" style="display:none;">
+            <div class="settings-section" id="logoutSection">
                 <label class="form-label">Сессия</label>
                 <button type="button" id="logoutBtn" class="btn-logout">
                     🚪 Выйти из аккаунта
@@ -199,7 +252,7 @@
         </div>
     </div>
 
-    <!-- Техподдержка -->
+    <!-- ТЕХПОДДЕРЖКА -->
     <div id="supportModal" class="modal hidden">
         <div class="modal-content">
             <h3>💬 Техподдержка</h3>
@@ -222,7 +275,7 @@
         </div>
     </div>
 
-    <!-- Картинка -->
+    <!-- КАРТИНКА -->
     <div id="imageModal" class="modal hidden">
         <div class="image-modal-content">
             <button id="closeImageModal" class="image-modal-close">✕</button>
@@ -232,21 +285,31 @@
 
     <script>
         const SUBJECTS = [
-            { id: 'algebra', subject: 'Алгебра', url: 'https://gdz.ru/class-7/algebra/makarichev-18/' },
-            { id: 'russian', subject: 'Русский язык', url: 'https://gdz.ru/class-7/russkii_yazik/baranova/' },
-            { id: 'geometry', subject: 'Геометрия', url: 'https://gdz.ru/class-7/geometria/merzljak/' },
+            { id: 'algebra', subject: 'Алгебра', url: 'https://gdz.ru/class-7/algebra/makarichev-18/', type: 'numbers' },
+            { id: 'geometry', subject: 'Геометрия', url: 'https://gdz.ru/class-7/geometria/merzljak/', type: 'numbers' },
+            { id: 'probability', subject: 'Вероятность и статистика', url: 'https://gdz.ru/class-7/matematika/vysockij-yashenko-bazovij-uroven/', type: 'numbers' },
+            { id: 'physics', subject: 'Физика', url: 'https://gdz.ru/class-7/fizika/peryshkin-7/', type: 'numbers' },
+            { id: 'informatika', subject: 'Информатика', url: 'https://gdz.ru/class-7/informatika/bosova/', type: 'numbers' },
+            { id: 'biologiya', subject: 'Биология', url: 'https://gdz.ru/class-7/biologiya/pasechnik-mnogoobrazie/', type: 'numbers' },
+            { id: 'geografiya', subject: 'География', url: 'https://gdz.ru/class-7/geografiya/alekseev-nikolina/', type: 'numbers' },
+            { id: 'russian', subject: 'Русский язык', url: 'https://gdz.ru/class-7/russkii_yazik/baranova/', type: 'numbers' },
+            { id: 'english', subject: 'Английский язык', url: 'https://gdz.ru/class-7/english/spotlight-7/', type: 'numbers' },
+            { id: 'literatura', subject: 'Литература', url: 'https://gdz.ru/class-7/literatura/korovina/', type: 'text' },
+            { id: 'istoriya', subject: 'История', url: 'https://gdz.ru/class-7/istoriya/yudovskaya/', type: 'text' },
+            { id: 'muzyka', subject: 'Музыка', url: 'https://gdz.ru/class-7/muzyka/sergeeva/', type: 'text' },
+            { id: 'trud', subject: 'Труд (технология)', url: 'https://gdz.ru/class-7/tehnologiya/', type: 'text' },
+            { id: 'izo', subject: 'Изобразительное искусство', url: 'https://gdz.ru/class-7/izo/shpikalova/', type: 'text' },
         ];
 
         let authToken = localStorage.getItem('gdz_token') || '';
         let authUser = null;
-        let isGuest = localStorage.getItem('gdz_guest') === '1';
         let currentTheme = localStorage.getItem('gdz_theme') || 'light';
         let currentBgUrl = localStorage.getItem('gdz_bg') || null;
 
         const $ = id => document.getElementById(id);
+        const authScreen = $('authScreen');
+        const mainScreen = $('mainScreen');
         const btn = $('btn'), status = $('status'), result = $('result');
-        const welcomeModal = $('welcomeModal');
-        const authModal = $('authModal');
         const historyModal = $('historyModal');
         const settingsModal = $('settingsModal');
         const supportModal = $('supportModal');
@@ -259,35 +322,29 @@
             let device = '💻 Компьютер';
             if (/mobile/i.test(ua)) device = '📱 Телефон';
             else if (/tablet|ipad/i.test(ua)) device = '📱 Планшет';
-
             let browser = 'Unknown';
             if (/chrome/i.test(ua) && !/edg/i.test(ua)) browser = 'Chrome';
             else if (/edg/i.test(ua)) browser = 'Edge';
             else if (/firefox/i.test(ua)) browser = 'Firefox';
             else if (/safari/i.test(ua)) browser = 'Safari';
             else if (/yabrowser/i.test(ua)) browser = 'Yandex';
-
             let os = 'Unknown';
             if (/windows/i.test(ua)) os = 'Windows';
             else if (/mac/i.test(ua)) os = 'macOS';
             else if (/linux/i.test(ua)) os = 'Linux';
             else if (/android/i.test(ua)) os = 'Android';
             else if (/iphone|ipad|ios/i.test(ua)) os = 'iOS';
-
             const scr = `${window.screen.width}×${window.screen.height}`;
             const lang = navigator.language || 'unknown';
             return `${device} · ${os} · ${browser} · ${scr} · ${lang}`;
         }
 
-        // ─── ТЕМА ───────────────────────────────────────
         function applyTheme(theme, bgUrl) {
             currentTheme = theme;
             currentBgUrl = bgUrl;
-
             const root = document.documentElement;
             root.classList.remove('theme-dark', 'theme-custom');
             root.style.backgroundImage = '';
-
             if (theme === 'dark') {
                 root.classList.add('theme-dark');
                 localStorage.setItem('gdz_theme', 'dark');
@@ -311,72 +368,57 @@
                         const d = await r.json();
                         authUser = d.user;
                         applyTheme(authUser.theme || 'light', authUser.bg_url);
+                        showMain();
+                        return;
                     } else {
                         authToken = '';
                         localStorage.removeItem('gdz_token');
                     }
                 } catch {}
             }
+            showAuth();
+        }
 
-            if (!authToken && !isGuest) {
-                welcomeModal.classList.remove('hidden');
-            } else {
-                renderTopbar();
-            }
+        function showAuth() {
+            authScreen.classList.remove('hidden');
+            mainScreen.classList.add('hidden');
+        }
+
+        function showMain() {
+            authScreen.classList.add('hidden');
+            mainScreen.classList.remove('hidden');
+            renderTopbar();
         }
 
         function renderTopbar() {
             topbarRight.innerHTML = '';
+            const name = authUser.name || authUser.email.split('@')[0];
+            const greet = document.createElement('span');
+            greet.className = 'topbar-user';
+            greet.textContent = '👤 ' + name;
+            topbarRight.appendChild(greet);
 
-            if (authUser) {
-                const name = authUser.name || authUser.email.split('@')[0];
-                const greet = document.createElement('span');
-                greet.className = 'topbar-user';
-                greet.textContent = '👤 ' + name;
-                topbarRight.appendChild(greet);
+            const histBtn = document.createElement('button');
+            histBtn.className = 'icon-btn';
+            histBtn.title = 'История';
+            histBtn.textContent = '📜';
+            histBtn.onclick = openHistory;
+            topbarRight.appendChild(histBtn);
 
-                const histBtn = document.createElement('button');
-                histBtn.className = 'icon-btn';
-                histBtn.title = 'История поисков';
-                histBtn.textContent = '📜';
-                histBtn.onclick = openHistory;
-                topbarRight.appendChild(histBtn);
+            const setBtn = document.createElement('button');
+            setBtn.className = 'icon-btn';
+            setBtn.title = 'Настройки';
+            setBtn.textContent = '⚙️';
+            setBtn.onclick = openSettings;
+            topbarRight.appendChild(setBtn);
 
-                const setBtn = document.createElement('button');
-                setBtn.className = 'icon-btn';
-                setBtn.title = 'Настройки аккаунта';
-                setBtn.textContent = '⚙️';
-                setBtn.onclick = openSettings;
-                topbarRight.appendChild(setBtn);
-
-                if (authUser.is_admin) {
-                    const adminBtn = document.createElement('button');
-                    adminBtn.className = 'icon-btn admin-icon';
-                    adminBtn.title = 'Админка';
-                    adminBtn.textContent = '💬';
-                    adminBtn.onclick = () => window.location.href = '/admin';
-                    topbarRight.appendChild(adminBtn);
-                }
-                // Выход из аккаунта убран — он теперь в настройках ⚙️
-            } else {
-                const guestLabel = document.createElement('span');
-                guestLabel.className = 'topbar-user';
-                guestLabel.textContent = '👤 Гость';
-                topbarRight.appendChild(guestLabel);
-
-                const setBtn = document.createElement('button');
-                setBtn.className = 'icon-btn';
-                setBtn.title = 'Настройки оформления';
-                setBtn.textContent = '⚙️';
-                setBtn.onclick = openSettings;
-                topbarRight.appendChild(setBtn);
-
-                const loginBtn = document.createElement('button');
-                loginBtn.className = 'icon-btn';
-                loginBtn.title = 'Войти';
-                loginBtn.textContent = '🔑';
-                loginBtn.onclick = openAuth;
-                topbarRight.appendChild(loginBtn);
+            if (authUser.is_admin) {
+                const adminBtn = document.createElement('button');
+                adminBtn.className = 'icon-btn admin-icon';
+                adminBtn.title = 'Админка';
+                adminBtn.textContent = '💬';
+                adminBtn.onclick = () => window.location.href = '/admin';
+                topbarRight.appendChild(adminBtn);
             }
 
             const supBtn = document.createElement('button');
@@ -387,45 +429,20 @@
             topbarRight.appendChild(supBtn);
         }
 
-        $('guestBtn').onclick = () => {
-            isGuest = true;
-            localStorage.setItem('gdz_guest', '1');
-            welcomeModal.classList.add('hidden');
-            renderTopbar();
-        };
-
-        $('authBtn').onclick = () => {
-            welcomeModal.classList.add('hidden');
-            openAuth();
-        };
-
-        // ─── ВХОД ───────────────────────────────────────
         let authMode = 'login';
-
-        function openAuth() {
-            authModal.classList.remove('hidden');
-            authMode = 'login';
-            switchTab('login');
-        }
 
         function switchTab(mode) {
             authMode = mode;
             document.querySelectorAll('.auth-tab').forEach(t => {
                 t.classList.toggle('active', t.dataset.tab === mode);
             });
-            $('authTitle').textContent = mode === 'login' ? 'Вход' : 'Регистрация';
-            $('authSubmit').textContent = mode === 'login' ? 'Войти' : 'Создать аккаунт';
             $('nameField').style.display = mode === 'register' ? 'block' : 'none';
+            $('authSubmit').textContent = mode === 'login' ? 'Войти' : 'Создать аккаунт';
         }
 
         document.querySelectorAll('.auth-tab').forEach(t => {
             t.onclick = () => switchTab(t.dataset.tab);
         });
-
-        $('authCancel').onclick = () => {
-            authModal.classList.add('hidden');
-            if (!authToken && !isGuest) welcomeModal.classList.remove('hidden');
-        };
 
         $('authForm').onsubmit = async (e) => {
             e.preventDefault();
@@ -439,9 +456,7 @@
             st.className = 'fb-status loading';
 
             const url = authMode === 'login' ? '/api/auth/login' : '/api/auth/register';
-            const body = authMode === 'login'
-                ? {email, password, device}
-                : {email, password, name, device};
+            const body = authMode === 'login' ? {email, password, device} : {email, password, name, device};
 
             try {
                 const r = await fetch(url, {
@@ -458,11 +473,8 @@
                 authToken = d.token;
                 authUser = d.user;
                 localStorage.setItem('gdz_token', authToken);
-                localStorage.removeItem('gdz_guest');
-                isGuest = false;
                 applyTheme(authUser.theme || 'light', authUser.bg_url);
-                authModal.classList.add('hidden');
-                renderTopbar();
+                showMain();
             } catch (err) {
                 st.textContent = '❌ ' + err.message;
                 st.className = 'fb-status error';
@@ -480,15 +492,12 @@
             } catch {}
             authToken = '';
             authUser = null;
-            isGuest = false;
             localStorage.removeItem('gdz_token');
-            localStorage.removeItem('gdz_guest');
             applyTheme('light', null);
             topbarRight.innerHTML = '';
-            welcomeModal.classList.remove('hidden');
+            showAuth();
         }
 
-        // ─── ИСТОРИЯ ────────────────────────────────────
         async function openHistory() {
             historyModal.classList.remove('hidden');
             const list = $('historyList');
@@ -513,13 +522,11 @@
                         <span class="history-date">${escapeHtml(it.created)}</span>
                     `;
                     row.onclick = () => {
-                        const input = document.getElementById(
-                            it.subject === 'Алгебра' ? 'algebra'
-                            : it.subject === 'Русский язык' ? 'russian'
-                            : 'geometry'
+                        const el = document.getElementById(
+                            SUBJECTS.find(s => s.subject === it.subject)?.id || ''
                         );
-                        if (input) {
-                            input.value = it.numbers;
+                        if (el) {
+                            el.value = it.numbers;
                             historyModal.classList.add('hidden');
                         }
                     };
@@ -531,7 +538,6 @@
         }
 
         $('closeHistoryBtn').onclick = () => historyModal.classList.add('hidden');
-
         $('clearHistoryBtn').onclick = async () => {
             if (!confirm('Очистить всю историю?')) return;
             try {
@@ -544,27 +550,14 @@
             } catch {}
         };
 
-        // ─── НАСТРОЙКИ ──────────────────────────────────
         function openSettings() {
             settingsModal.classList.remove('hidden');
             $('settingsStatus').textContent = '';
             $('settingsStatus').className = 'fb-status';
-
             $('setName').value = authUser?.name || '';
             $('setBgUrl').value = currentBgUrl || '';
             $('setOldPwd').value = '';
             $('setNewPwd').value = '';
-
-            if (!authUser) {
-                $('passwordSection').style.display = 'none';
-                $('logoutSection').style.display = 'none';
-                $('deleteAccountBtn').style.display = 'none';
-            } else {
-                $('passwordSection').style.display = 'block';
-                $('logoutSection').style.display = 'block';
-                $('deleteAccountBtn').style.display = 'block';
-            }
-
             document.querySelectorAll('.theme-btn').forEach(t => {
                 t.classList.toggle('active', t.dataset.theme === currentTheme);
             });
@@ -604,21 +597,12 @@
             st.textContent = '⏳ Сохраняем...';
             st.className = 'fb-status loading';
 
-            if (!authUser) {
-                applyTheme(newTheme, newTheme === 'custom' ? newBg : null);
-                st.textContent = '✅ Настройки сохранены';
-                st.className = 'fb-status success';
-                setTimeout(() => settingsModal.classList.add('hidden'), 1500);
-                return;
-            }
-
             try {
                 const r1 = await fetch('/api/auth/update', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify({
-                        token: authToken,
-                        name: newName,
+                        token: authToken, name: newName,
                         theme: newTheme,
                         bg_url: newTheme === 'custom' ? newBg : ''
                     })
@@ -637,11 +621,7 @@
                     const r2 = await fetch('/api/auth/change-password', {
                         method: 'POST',
                         headers: {'Content-Type': 'application/json'},
-                        body: JSON.stringify({
-                            token: authToken,
-                            old_password: oldPwd,
-                            new_password: newPwd
-                        })
+                        body: JSON.stringify({token: authToken, old_password: oldPwd, new_password: newPwd})
                     });
                     const d2 = await r2.json();
                     if (!r2.ok) {
@@ -661,21 +641,17 @@
             }
         };
 
-        // Выход из аккаунта (в настройках)
         $('logoutBtn').onclick = () => {
             settingsModal.classList.add('hidden');
             logout();
         };
 
-        // Удалить аккаунт
         $('deleteAccountBtn').onclick = async () => {
-            if (!confirm('Удалить аккаунт? Вся история и данные будут потеряны. Это нельзя отменить.')) return;
-            if (!confirm('Точно удалить? Нажми ОК для подтверждения.')) return;
-
+            if (!confirm('Удалить аккаунт?')) return;
+            if (!confirm('Точно удалить?')) return;
             const st = $('settingsStatus');
             st.textContent = '⏳ Удаляем...';
             st.className = 'fb-status loading';
-
             try {
                 const r = await fetch('/api/auth/delete', {
                     method: 'POST',
@@ -683,25 +659,20 @@
                     body: JSON.stringify({token: authToken})
                 });
                 if (!r.ok) throw new Error('Ошибка удаления');
-
                 authToken = '';
                 authUser = null;
-                isGuest = false;
                 localStorage.removeItem('gdz_token');
-                localStorage.removeItem('gdz_guest');
                 localStorage.removeItem('gdz_theme');
                 localStorage.removeItem('gdz_bg');
                 applyTheme('light', null);
-                topbarRight.innerHTML = '';
                 settingsModal.classList.add('hidden');
-                welcomeModal.classList.remove('hidden');
+                showAuth();
             } catch (e) {
                 st.textContent = '❌ ' + e.message;
                 st.className = 'fb-status error';
             }
         };
 
-        // ─── ТЕХПОДДЕРЖКА ───────────────────────────────
         $('closeSupport').onclick = () => supportModal.classList.add('hidden');
         supportModal.onclick = (e) => {
             if (e.target === supportModal) supportModal.classList.add('hidden');
@@ -718,10 +689,7 @@
                 const r = await fetch('/api/feedback', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({
-                        message: msg,
-                        contact: $('fbContact').value.trim()
-                    })
+                    body: JSON.stringify({message: msg, contact: $('fbContact').value.trim()})
                 });
                 if (!r.ok) throw new Error('Ошибка');
                 st.textContent = '✅ Отправлено! Спасибо.';
@@ -735,7 +703,6 @@
             }
         };
 
-        // ─── КАРТИНКА ───────────────────────────────────
         function openImageModal(src) {
             imageModalImg.src = src;
             imageModal.classList.remove('hidden');
@@ -750,7 +717,6 @@
         imageModal.onclick = (e) => { if (e.target === imageModal) closeModal(); };
         document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeModal(); });
 
-        // ─── ЗАГРУЗКА КАРТИНОК ─────────────────────────
         let activeLoads = 0;
         const MAX_PARALLEL = 3;
         const pendingQueue = [];
@@ -830,8 +796,7 @@
 
                     img.addEventListener('load', onLoad, { once: true });
                     img.addEventListener('error', onError, { once: true });
-                    img.src = '/api/image?url=' + encodeURIComponent(imgUrl)
-                        + '&w=1000&t=' + Date.now();
+                    img.src = '/api/image?url=' + encodeURIComponent(imgUrl) + '&w=1000&t=' + Date.now();
                 }
 
                 function onFail(reason) {
@@ -851,14 +816,20 @@
             }));
         }
 
-        // ─── ПОИСК ──────────────────────────────────────
         btn.addEventListener('click', async () => {
             const jobs = [];
             SUBJECTS.forEach(s => {
-                const v = document.getElementById(s.id).value.trim();
-                if (v) jobs.push({ subject: s.subject, url: s.url, numbers: v });
+                const el = document.getElementById(s.id);
+                const v = el.value.trim();
+                if (!v) return;
+
+                if (s.type === 'text') {
+                    jobs.push({ subject: s.subject, url: s.url, numbers: '', raw_text: v });
+                } else {
+                    jobs.push({ subject: s.subject, url: s.url, numbers: v, raw_text: '' });
+                }
             });
-            if (!jobs.length) return showStatus('⚠️ Введи номера хотя бы в одном поле', 'error');
+            if (!jobs.length) return showStatus('⚠️ Заполни хотя бы одно поле', 'error');
 
             btn.disabled = true;
             result.innerHTML = '';
@@ -882,19 +853,15 @@
                 if (data.total === 0) return showStatus('🤷 Ничего не найдено', 'error');
 
                 const found = data.results.filter(r => r.found).length;
-                showStatus(`✅ Найдено ${found} из ${data.total} за ${seconds} сек`,
-                    found > 0 ? 'success' : 'error');
+                showStatus(`✅ Обработано ${data.total} заданий`, 'success');
 
                 if (authToken) {
                     for (const j of jobs) {
+                        if (!j.numbers) continue;
                         fetch('/api/history/save', {
                             method: 'POST',
                             headers: {'Content-Type': 'application/json'},
-                            body: JSON.stringify({
-                                token: authToken,
-                                subject: j.subject,
-                                numbers: j.numbers
-                            })
+                            body: JSON.stringify({token: authToken, subject: j.subject, numbers: j.numbers})
                         }).catch(() => {});
                     }
                 }
@@ -909,6 +876,20 @@
                     sec.className = 'subject-block';
                     sec.innerHTML = `<h2>${subject}</h2>`;
                     items.forEach(r => {
+                        // Если есть текст — показываем текст
+                        if (r.raw_text && (!r.number || !r.found)) {
+                            const textCard = document.createElement('div');
+                            textCard.className = 'task-card text-task';
+                            textCard.innerHTML = `
+                                <div class="task-header">
+                                    <h3>📝 Задание</h3>
+                                </div>
+                                <div class="task-text">${escapeHtml(r.raw_text)}</div>
+                            `;
+                            sec.appendChild(textCard);
+                            return;
+                        }
+                        // Иначе — картинка
                         const card = document.createElement('div');
                         card.className = 'task-card' + (r.found ? '' : ' not-found');
                         card.innerHTML = `<div class="task-header">

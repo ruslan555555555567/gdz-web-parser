@@ -1,7 +1,7 @@
 import os
 import hashlib
 import secrets
-from datetime import datetime
+from datetime import datetime, timedelta
 from io import BytesIO
 from typing import List
 from fastapi import FastAPI, HTTPException, Request
@@ -65,6 +65,13 @@ async def init_db():
                     created_at TIMESTAMP DEFAULT NOW()
                 )
             """)
+            await conn.execute("""
+                CREATE TABLE IF NOT EXISTS subjects_stats (
+                    subject TEXT PRIMARY KEY,
+                    max_number INTEGER,
+                    scanned_at TIMESTAMP DEFAULT NOW()
+                )
+            """)
         print("[main] PostgreSQL подключена")
     except Exception as e:
         print(f"[main] Ошибка PostgreSQL: {e}")
@@ -95,6 +102,8 @@ async def get_user_by_token(token: str):
             FROM sessions s JOIN users u ON u.id = s.user_id
             WHERE s.token = $1
         """, token)
+        if row:
+            await conn.execute("UPDATE users SET last_seen = NOW() WHERE id = $1", row["id"])
     return dict(row) if row else None
 
 
@@ -134,6 +143,7 @@ class Job(BaseModel):
     subject: str
     url: str
     numbers: str = ""
+    raw_text: str = ""
 
 
 class ParseRequest(BaseModel):
@@ -290,7 +300,6 @@ async def me(token: str = ""):
 
 @app.post("/api/auth/update")
 async def update_profile(req: UpdateProfileRequest):
-    """Обновление имени, темы, фона."""
     user = await get_user_by_token(req.token)
     if not user:
         raise HTTPException(401, "Не авторизован")
@@ -309,9 +318,8 @@ async def update_profile(req: UpdateProfileRequest):
         updates.append(f"theme = ${idx}")
         params.append(req.theme)
         idx += 1
-        # Если переключились с custom — очистим bg_url
         if req.theme != 'custom':
-            updates.append(f"bg_url = NULL")
+            updates.append("bg_url = NULL")
     if req.theme == 'custom' and req.bg_url:
         updates.append(f"bg_url = ${idx}")
         params.append(req.bg_url)
@@ -353,7 +361,6 @@ async def change_password(req: ChangePasswordRequest):
 
 @app.post("/api/auth/delete")
 async def delete_account(req: TokenRequest):
-    """Удаление аккаунта (все сессии, история — через CASCADE)."""
     user = await get_user_by_token(req.token)
     if not user:
         raise HTTPException(401, "Не авторизован")
@@ -474,6 +481,24 @@ async def admin_users(data: dict):
     return {"users": [dict(r) for r in rows]}
 
 
+@app.post("/api/admin/online")
+async def admin_online(data: dict):
+    """Пользователи онлайн (активны в последние 5 минут)."""
+    if not await check_admin(data):
+        raise HTTPException(401, "Нет доступа")
+    if db_pool is None:
+        return {"users": []}
+    async with db_pool.acquire() as conn:
+        rows = await conn.fetch("""
+            SELECT id, email, name, device, is_admin,
+                   to_char(last_seen, 'HH24:MI:SS') AS last_seen
+            FROM users
+            WHERE last_seen > NOW() - INTERVAL '5 minutes'
+            ORDER BY last_seen DESC
+        """)
+    return {"users": [dict(r) for r in rows], "total": len(rows)}
+
+
 @app.post("/api/admin/delete/{msg_id}")
 async def admin_delete(msg_id: int, data: dict):
     if not await check_admin(data):
@@ -504,17 +529,76 @@ async def admin_clear(data: dict):
     return {"ok": True}
 
 
+@app.post("/api/admin/scan-subject")
+async def admin_scan_subject(data: dict):
+    """Сканирует предмет и находит максимальный номер. Долго (5-15 мин)."""
+    if not await check_admin(data):
+        raise HTTPException(401, "Нет доступа")
+
+    subject = (data or {}).get("subject", "")
+    url = (data or {}).get("url", "")
+    if not subject or not url:
+        raise HTTPException(400, "Нужны subject и url")
+    if not url.endswith("/"):
+        url += "/"
+
+    from parser import _get_images
+    from urllib.parse import urljoin
+
+    max_number = 0
+    # Сканируем с шагом 1, до 2000 (защита от бесконечного цикла)
+    for num in range(1, 2001):
+        found = False
+        for suffix in [f"{num}-task/", f"{num}-s/", f"{num}-nom/", f"task-{num}/"]:
+            test_url = urljoin(url, suffix)
+            images = await asyncio.to_thread(_get_images, test_url)
+            if images:
+                found = True
+                break
+        if found:
+            max_number = num
+
+    if db_pool is not None:
+        async with db_pool.acquire() as conn:
+            await conn.execute("""
+                INSERT INTO subjects_stats (subject, max_number, scanned_at)
+                VALUES ($1, $2, NOW())
+                ON CONFLICT (subject) DO UPDATE
+                SET max_number = $2, scanned_at = NOW()
+            """, subject, max_number)
+
+    return {"ok": True, "subject": subject, "max_number": max_number}
+
+
+@app.post("/api/admin/get-stats")
+async def admin_get_stats(data: dict):
+    """Возвращает статистику по всем предметам."""
+    if not await check_admin(data):
+        raise HTTPException(401, "Нет доступа")
+    if db_pool is None:
+        return {"stats": []}
+    async with db_pool.acquire() as conn:
+        rows = await conn.fetch("""
+            SELECT subject, max_number,
+                   to_char(scanned_at, 'DD.MM.YY HH24:MI') AS scanned
+            FROM subjects_stats ORDER BY subject
+        """)
+    return {"stats": [dict(r) for r in rows]}
+
+
 # ═══════ ПАРСИНГ ═══════
 
 @app.post("/api/parse")
 async def parse(req: ParseRequest):
-    jobs = [j for j in req.jobs if j.numbers.strip()]
+    jobs = [j for j in req.jobs if (j.numbers.strip() or j.raw_text.strip())]
     if not jobs:
-        raise HTTPException(400, "Введи номера хотя бы для одного предмета")
+        raise HTTPException(400, "Введи номера или текст хотя бы в одном поле")
+
     try:
         results = await parse_tasks([j.dict() for j in jobs])
     except Exception as e:
         raise HTTPException(500, f"Ошибка парсинга: {e}")
+
     return {"results": results, "total": len(results)}
 
 

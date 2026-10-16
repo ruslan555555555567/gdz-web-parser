@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Админка — GDZ Парсер</title>
     <script>
-        // ─── МГНОВЕННОЕ ПРИМЕНЕНИЕ ТЕМЫ (без мерцания) ───
         (function() {
             try {
                 const theme = localStorage.getItem('gdz_theme') || 'light';
@@ -30,7 +29,7 @@
         </div>
 
         <h1>🔐 Админка</h1>
-        <p class="subtitle">Сообщения и пользователи</p>
+        <p class="subtitle">Сообщения · Пользователи · Онлайн</p>
 
         <section class="card" id="loginCard">
             <h2>Введите пароль</h2>
@@ -49,13 +48,37 @@
 
         <section class="card hidden" id="adminContent">
             <div class="admin-tabs">
-                <button class="admin-tab active" data-tab="messages">📬 Сообщения</button>
+                <button class="admin-tab active" data-tab="online">🟢 Онлайн</button>
                 <button class="admin-tab" data-tab="users">👥 Пользователи</button>
+                <button class="admin-tab" data-tab="messages">📬 Сообщения</button>
+                <button class="admin-tab" data-tab="stats">📊 Сканирование</button>
             </div>
 
-            <div id="tabMessages">
+            <!-- ОНЛАЙН -->
+            <div id="tabOnline">
                 <div class="section-header">
-                    <h2>Сообщения (<span id="count">0</span>)</h2>
+                    <h2>🟢 Онлайн (<span id="onlineCount">0</span>)</h2>
+                    <button id="refreshOnlineBtn" class="btn-small">🔄 Обновить</button>
+                </div>
+                <p class="hint" style="margin-bottom:12px;">Активны за последние 5 минут. Автообновление раз в 30 сек.</p>
+                <div id="onlineList"></div>
+                <div id="emptyOnline" class="empty">Сейчас никого нет</div>
+            </div>
+
+            <!-- ПОЛЬЗОВАТЕЛИ -->
+            <div id="tabUsers" class="hidden">
+                <div class="section-header">
+                    <h2>👥 Пользователи (<span id="usersCount">0</span>)</h2>
+                    <button id="refreshUsersBtn" class="btn-small">🔄 Обновить</button>
+                </div>
+                <div id="usersList"></div>
+                <div id="emptyUsers" class="empty">Пока нет зарегистрированных</div>
+            </div>
+
+            <!-- СООБЩЕНИЯ -->
+            <div id="tabMessages" class="hidden">
+                <div class="section-header">
+                    <h2>📬 Сообщения (<span id="count">0</span>)</h2>
                     <button id="refreshBtn" class="btn-small">🔄 Обновить</button>
                 </div>
                 <div id="messagesList"></div>
@@ -65,19 +88,38 @@
                 </div>
             </div>
 
-            <div id="tabUsers" class="hidden">
+            <!-- СКАНИРОВАНИЕ -->
+            <div id="tabStats" class="hidden">
                 <div class="section-header">
-                    <h2>Пользователи (<span id="usersCount">0</span>)</h2>
-                    <button id="refreshUsersBtn" class="btn-small">🔄 Обновить</button>
+                    <h2>📊 Границы номеров</h2>
+                    <button id="refreshStatsBtn" class="btn-small">🔄 Обновить</button>
                 </div>
-                <div id="usersList"></div>
-                <div id="emptyUsers" class="empty">Пока нет зарегистрированных</div>
+                <p class="hint" style="margin-bottom:12px;">
+                    Сканирование ищет максимальный номер задания в учебнике. Занимает 5–15 минут на предмет.
+                </p>
+                <div id="statsList"></div>
+                <div id="emptyStats" class="empty">Пока ничего не сканировано</div>
+
+                <h3 style="margin-top:20px; margin-bottom:12px;">🔍 Запустить сканирование</h3>
+                <div class="input-row">
+                    <label class="input-label">Предмет</label>
+                    <input type="text" id="scanSubject" class="num-input" placeholder="Алгебра">
+                </div>
+                <div class="input-row">
+                    <label class="input-label">URL учебника</label>
+                    <input type="text" id="scanUrl" class="num-input"
+                        placeholder="https://gdz.ru/class-7/algebra/makarichev-18/">
+                </div>
+                <button id="scanBtn" class="btn-primary">▶️ Начать сканирование</button>
+                <div id="scanStatus" class="fb-status"></div>
             </div>
         </section>
     </div>
 
     <script>
         let authData = { token: '', password: '' };
+        let onlineTimer = null;
+
         const loginCard = document.getElementById('loginCard');
         const adminContent = document.getElementById('adminContent');
         const loginForm = document.getElementById('loginForm');
@@ -106,8 +148,13 @@
         function openAdmin() {
             loginCard.classList.add('hidden');
             adminContent.classList.remove('hidden');
-            loadMessages();
+            loadOnline();
             loadUsers();
+            loadMessages();
+            loadStats();
+            // Автообновление онлайна раз в 30 сек
+            if (onlineTimer) clearInterval(onlineTimer);
+            onlineTimer = setInterval(loadOnline, 30000);
         }
 
         loginForm.addEventListener('submit', async (e) => {
@@ -140,33 +187,135 @@
                 document.querySelectorAll('.admin-tab').forEach(x =>
                     x.classList.toggle('active', x === t));
                 const tab = t.dataset.tab;
-                document.getElementById('tabMessages').classList.toggle('hidden', tab !== 'messages');
-                document.getElementById('tabUsers').classList.toggle('hidden', tab !== 'users');
+                ['online', 'users', 'messages', 'stats'].forEach(name => {
+                    document.getElementById('tab' + name.charAt(0).toUpperCase() + name.slice(1))
+                        .classList.toggle('hidden', name !== tab);
+                });
             });
         });
 
         function getAuthPayload() {
-            return authData.token
-                ? {token: authData.token}
-                : {password: authData.password};
+            return authData.token ? {token: authData.token} : {password: authData.password};
         }
 
-        document.getElementById('refreshBtn').onclick = loadMessages;
+        // ─── ОНЛАЙН ────────────────────────────────────
+        document.getElementById('refreshOnlineBtn').onclick = loadOnline;
+
+        async function loadOnline() {
+            try {
+                const r = await fetch('/api/admin/online', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(getAuthPayload())
+                });
+                if (!r.ok) return;
+                const d = await r.json();
+                document.getElementById('onlineCount').textContent = d.total;
+                const list = document.getElementById('onlineList');
+                const empty = document.getElementById('emptyOnline');
+                list.innerHTML = '';
+                if (!d.users.length) {
+                    empty.style.display = 'block';
+                    return;
+                }
+                empty.style.display = 'none';
+                d.users.forEach(u => {
+                    const div = document.createElement('div');
+                    div.className = 'user-card online-card';
+                    const badge = u.is_admin ? '<span class="admin-badge">👑 АДМИН</span>' : '';
+                    div.innerHTML = `
+                        <div class="user-head">
+                            <span class="online-dot"></span>
+                            <strong>${escapeHtml(u.name || 'Без имени')}</strong>
+                            ${badge}
+                        </div>
+                        <div class="user-row">📧 ${escapeHtml(u.email)}</div>
+                        <div class="user-row">💻 ${escapeHtml(u.device || '—')}</div>
+                        <div class="user-row small">🕐 ${escapeHtml(u.last_seen || '—')}</div>
+                    `;
+                    list.appendChild(div);
+                });
+            } catch {}
+        }
+
+        // ─── ПОЛЬЗОВАТЕЛИ ──────────────────────────────
         document.getElementById('refreshUsersBtn').onclick = loadUsers;
+
+        async function loadUsers() {
+            const list = document.getElementById('usersList');
+            const empty = document.getElementById('emptyUsers');
+            try {
+                const r = await fetch('/api/admin/users', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(getAuthPayload())
+                });
+                if (!r.ok) return;
+                const d = await r.json();
+                document.getElementById('usersCount').textContent = d.users.length;
+                list.innerHTML = '';
+                if (!d.users.length) {
+                    empty.style.display = 'block';
+                    return;
+                }
+                empty.style.display = 'none';
+                d.users.forEach(u => {
+                    const div = document.createElement('div');
+                    div.className = 'user-card';
+                    const badge = u.is_admin ? '<span class="admin-badge">👑 АДМИН</span>' : '';
+                    div.innerHTML = `
+                        <div class="user-head">
+                            <strong>${escapeHtml(u.name || 'Без имени')}</strong>
+                            ${badge}
+                            <button class="msg-delete user-del" data-id="${u.id}">🗑</button>
+                        </div>
+                        <div class="user-row">📧 ${escapeHtml(u.email)}</div>
+                        <div class="user-row">💻 ${escapeHtml(u.device || '—')}</div>
+                        <div class="user-row small">
+                            📅 ${escapeHtml(u.created || '—')} · 🕐 ${escapeHtml(u.last_seen || '—')}
+                        </div>
+                    `;
+                    list.appendChild(div);
+                });
+            } catch (e) {
+                list.innerHTML = '<p class="empty">Ошибка: ' + e.message + '</p>';
+            }
+        }
+
+        document.getElementById('usersList').addEventListener('click', async (e) => {
+            const btn = e.target.closest('.user-del');
+            if (!btn) return;
+            if (!confirm('Удалить пользователя?')) return;
+            btn.disabled = true;
+            try {
+                const r = await fetch('/api/admin/delete-user/' + btn.dataset.id, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(getAuthPayload())
+                });
+                if (!r.ok) throw new Error('Ошибка');
+                loadUsers();
+            } catch (err) {
+                btn.disabled = false;
+                alert('Ошибка: ' + err.message);
+            }
+        });
+
+        // ─── СООБЩЕНИЯ ─────────────────────────────────
+        document.getElementById('refreshBtn').onclick = loadMessages;
 
         async function loadMessages() {
             const list = document.getElementById('messagesList');
             const empty = document.getElementById('emptyMsg');
-            const countEl = document.getElementById('count');
             try {
                 const r = await fetch('/api/admin/messages', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify(getAuthPayload())
                 });
-                if (!r.ok) throw new Error('Нет доступа');
+                if (!r.ok) return;
                 const d = await r.json();
-                countEl.textContent = d.total;
+                document.getElementById('count').textContent = d.total;
                 list.innerHTML = '';
                 if (!d.messages.length) {
                     empty.style.display = 'block';
@@ -197,7 +346,7 @@
         document.getElementById('messagesList').addEventListener('click', async (e) => {
             const btn = e.target.closest('.msg-delete');
             if (!btn) return;
-            if (!confirm('Удалить это сообщение?')) return;
+            if (!confirm('Удалить сообщение?')) return;
             btn.disabled = true;
             try {
                 const r = await fetch('/api/admin/delete/' + btn.dataset.id, {
@@ -206,13 +355,10 @@
                     body: JSON.stringify(getAuthPayload())
                 });
                 if (!r.ok) throw new Error('Ошибка');
-                btn.closest('.message-card').remove();
-                const remaining = document.querySelectorAll('.message-card').length;
-                document.getElementById('count').textContent = remaining;
-                if (!remaining) document.getElementById('emptyMsg').style.display = 'block';
+                loadMessages();
             } catch (err) {
                 btn.disabled = false;
-                alert('Не удалось удалить: ' + err.message);
+                alert('Ошибка: ' + err.message);
             }
         });
 
@@ -229,42 +375,33 @@
             } catch (err) { alert('Ошибка: ' + err.message); }
         };
 
-        async function loadUsers() {
-            const list = document.getElementById('usersList');
-            const empty = document.getElementById('emptyUsers');
-            const countEl = document.getElementById('usersCount');
+        // ─── СКАНИРОВАНИЕ ──────────────────────────────
+        document.getElementById('refreshStatsBtn').onclick = loadStats;
+
+        async function loadStats() {
+            const list = document.getElementById('statsList');
+            const empty = document.getElementById('emptyStats');
             try {
-                const r = await fetch('/api/admin/users', {
+                const r = await fetch('/api/admin/get-stats', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify(getAuthPayload())
                 });
-                if (!r.ok) throw new Error('Нет доступа');
+                if (!r.ok) return;
                 const d = await r.json();
-                countEl.textContent = d.users.length;
                 list.innerHTML = '';
-                if (!d.users.length) {
+                if (!d.stats.length) {
                     empty.style.display = 'block';
                     return;
                 }
                 empty.style.display = 'none';
-                d.users.forEach(u => {
+                d.stats.forEach(s => {
                     const div = document.createElement('div');
-                    div.className = 'user-card';
-                    const badge = u.is_admin ? '<span class="admin-badge">👑 АДМИН</span>' : '';
+                    div.className = 'stats-card';
                     div.innerHTML = `
-                        <div class="user-head">
-                            <strong>${escapeHtml(u.name || 'Без имени')}</strong>
-                            ${badge}
-                            <button class="msg-delete user-del" data-id="${u.id}">🗑</button>
-                        </div>
-                        <div class="user-row">📧 ${escapeHtml(u.email)}</div>
-                        <div class="user-row">💻 ${escapeHtml(u.device || '—')}</div>
-                        <div class="user-row small">
-                            📅 Зарегистрирован: ${escapeHtml(u.created || '—')}
-                            &nbsp;·&nbsp;
-                            🕐 Последний вход: ${escapeHtml(u.last_seen || '—')}
-                        </div>
+                        <strong>${escapeHtml(s.subject)}</strong>
+                        <span>макс. номер: ${s.max_number}</span>
+                        <span class="small">📅 ${escapeHtml(s.scanned || '')}</span>
                     `;
                     list.appendChild(div);
                 });
@@ -273,27 +410,40 @@
             }
         }
 
-        document.getElementById('usersList').addEventListener('click', async (e) => {
-            const btn = e.target.closest('.user-del');
-            if (!btn) return;
-            if (!confirm('Удалить этого пользователя? Все его данные тоже удалятся.')) return;
-            btn.disabled = true;
+        document.getElementById('scanBtn').onclick = async () => {
+            const subject = document.getElementById('scanSubject').value.trim();
+            const url = document.getElementById('scanUrl').value.trim();
+            const st = document.getElementById('scanStatus');
+            if (!subject || !url) {
+                st.textContent = '⚠️ Заполни оба поля';
+                st.className = 'fb-status error';
+                return;
+            }
+            if (!confirm('Сканирование займёт 5-15 минут. Продолжить?')) return;
+
+            st.textContent = '⏳ Сканируем... Это долго, не закрывай вкладку';
+            st.className = 'fb-status loading';
+
             try {
-                const r = await fetch('/api/admin/delete-user/' + btn.dataset.id, {
+                const r = await fetch('/api/admin/scan-subject', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify(getAuthPayload())
+                    body: JSON.stringify({...getAuthPayload(), subject, url})
                 });
-                if (!r.ok) throw new Error('Ошибка');
-                btn.closest('.user-card').remove();
-                const remaining = document.querySelectorAll('.user-card').length;
-                document.getElementById('usersCount').textContent = remaining;
-                if (!remaining) document.getElementById('emptyUsers').style.display = 'block';
-            } catch (err) {
-                btn.disabled = false;
-                alert('Ошибка: ' + err.message);
+                const d = await r.json();
+                if (!r.ok) {
+                    st.textContent = '❌ ' + (d.detail || 'Ошибка');
+                    st.className = 'fb-status error';
+                    return;
+                }
+                st.textContent = `✅ Готово! Максимальный номер: ${d.max_number}`;
+                st.className = 'fb-status success';
+                loadStats();
+            } catch (e) {
+                st.textContent = '❌ ' + e.message;
+                st.className = 'fb-status error';
             }
-        });
+        };
 
         function escapeHtml(t) {
             const d = document.createElement('div');
