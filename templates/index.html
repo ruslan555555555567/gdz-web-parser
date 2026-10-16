@@ -10,27 +10,15 @@
                 const theme = localStorage.getItem('gdz_theme') || 'light';
                 const bg = localStorage.getItem('gdz_bg');
                 const token = localStorage.getItem('gdz_token');
-                const adminTheme = localStorage.getItem('gdz_admin_theme') || 'auto';
-                const adminBg = localStorage.getItem('gdz_admin_bg');
-                const btnStyle = localStorage.getItem('gdz_btn_style') || 'light';
                 const root = document.documentElement;
 
-                if (theme === 'dark') root.classList.add('theme-dark');
-                else if (theme === 'custom' && bg) {
+                // На главной применяется ТОЛЬКО тема главной
+                if (theme === 'dark') {
+                    root.classList.add('theme-dark');
+                } else if (theme === 'custom' && bg) {
                     root.classList.add('theme-custom');
+                    root.classList.add('btn-style-light');
                     root.style.backgroundImage = 'url("' + bg + '")';
-                }
-
-                if (adminTheme === 'dark') root.classList.add('admin-theme-dark');
-                else if (adminTheme === 'custom' && adminBg) {
-                    root.classList.add('admin-theme-custom');
-                    root.style.setProperty('--admin-bg-image', 'url("' + adminBg + '")');
-                }
-
-                // Стиль кнопок только при custom теме
-                if (theme === 'custom') {
-                    if (btnStyle === 'dark') root.classList.add('btn-style-dark');
-                    else root.classList.add('btn-style-light');
                 }
 
                 if (token) root.classList.add('has-auth');
@@ -47,6 +35,7 @@
     <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
+    <!-- ЭКРАН ВХОДА -->
     <div id="authScreen" class="auth-screen">
         <div class="auth-screen-box">
             <div class="auth-logo">📚</div>
@@ -57,15 +46,25 @@
                 <button type="button" class="auth-tab" data-tab="register">Регистрация</button>
             </div>
             <form id="authForm">
-                <label class="form-label" id="nameField" style="display:none;">Имя<input type="text" id="authName" placeholder="Как тебя зовут"></label>
-                <label class="form-label">Email<input type="email" id="authEmail" placeholder="you@example.com" required></label>
-                <label class="form-label">Пароль<input type="password" id="authPwd" placeholder="минимум 6 символов" required></label>
+                <label class="form-label" id="nameField" style="display:none;">
+                    Имя
+                    <input type="text" id="authName" placeholder="Как тебя зовут">
+                </label>
+                <label class="form-label">
+                    Email
+                    <input type="email" id="authEmail" placeholder="you@example.com" required>
+                </label>
+                <label class="form-label">
+                    Пароль
+                    <input type="password" id="authPwd" placeholder="минимум 6 символов" required>
+                </label>
                 <div id="authStatus" class="fb-status"></div>
                 <button type="submit" id="authSubmit" class="btn-primary">Войти</button>
             </form>
         </div>
     </div>
 
+    <!-- ГЛАВНЫЙ ЭКРАН -->
     <div id="mainScreen" class="container hidden">
         <div class="topbar">
             <span class="version">v{{ version }}</span>
@@ -83,6 +82,7 @@
         <footer class="footer"><span>GDZ Парсер · v{{ version }}</span></footer>
     </div>
 
+    <!-- ИСТОРИЯ -->
     <div id="historyModal" class="modal hidden">
         <div class="modal-content">
             <h3>📜 История поисков</h3>
@@ -94,6 +94,7 @@
         </div>
     </div>
 
+    <!-- НАСТРОЙКИ АККАУНТА -->
     <div id="settingsModal" class="modal hidden">
         <div class="modal-content">
             <h3>⚙️ Настройки аккаунта</h3>
@@ -103,75 +104,47 @@
                 <div class="avatar-block">
                     <div class="avatar-preview" id="avatarPreview"><span id="avatarInitial">?</span></div>
                     <div class="avatar-actions">
-                        <label class="btn-small avatar-upload-btn">🖼 Из галереи<input type="file" id="avatarInput" accept="image/*" hidden></label>
+                        <label class="btn-small avatar-upload-btn">
+                            🖼 Из галереи
+                            <input type="file" id="avatarInput" accept="image/*" hidden>
+                        </label>
                         <button type="button" id="avatarRemoveBtn" class="btn-small avatar-remove-btn">🗑 Убрать</button>
                     </div>
                 </div>
             </div>
 
             <div class="settings-section">
-                <label class="form-label">Имя<input type="text" id="setName" placeholder="Как тебя зовут"></label>
+                <label class="form-label">
+                    Имя
+                    <input type="text" id="setName" placeholder="Как тебя зовут">
+                </label>
             </div>
 
             <div class="settings-section">
                 <label class="form-label">Оформление главной</label>
                 <div class="theme-options">
-                    <button type="button" class="theme-btn active" data-theme="light"><span class="theme-preview light-preview"></span>☀️ Светлая</button>
-                    <button type="button" class="theme-btn" data-theme="dark"><span class="theme-preview dark-preview"></span>🌙 Тёмная</button>
-                    <button type="button" class="theme-btn" data-theme="custom"><span class="theme-preview custom-preview">🖼</span>🎨 Своя картинка</button>
+                    <button type="button" class="theme-btn active" data-theme="light">
+                        <span class="theme-preview light-preview"></span>
+                        ☀️ Светлая
+                    </button>
+                    <button type="button" class="theme-btn" data-theme="dark">
+                        <span class="theme-preview dark-preview"></span>
+                        🌙 Тёмная
+                    </button>
+                    <button type="button" class="theme-btn" data-theme="custom">
+                        <span class="theme-preview custom-preview">🖼</span>
+                        🎨 Своя картинка
+                    </button>
                 </div>
                 <div id="customBgBlock" style="display:none; margin-top:12px;">
                     <div class="avatar-actions">
-                        <label class="btn-small avatar-upload-btn">🖼 Загрузить из галереи<input type="file" id="bgInput" accept="image/*" hidden></label>
+                        <label class="btn-small avatar-upload-btn">
+                            🖼 Загрузить из галереи
+                            <input type="file" id="bgInput" accept="image/*" hidden>
+                        </label>
                         <button type="button" id="bgRemoveBtn" class="btn-small avatar-remove-btn">🗑 Убрать фон</button>
                     </div>
-                </div>
-            </div>
-
-            <!-- Стиль кнопок и текста — только при своей картинке -->
-            <div class="settings-section hidden" id="btnStyleSection">
-                <label class="form-label">🎨 Стиль кнопок и текста</label>
-                <p class="hint" style="margin-bottom:8px;">Для своей картинки выбери светлый или тёмный вариант</p>
-                <div class="btn-style-options">
-                    <button type="button" class="btn-style-btn" data-style="light">
-                        <span class="btn-style-preview light-btn-preview">☀️</span>
-                        Светлые
-                    </button>
-                    <button type="button" class="btn-style-btn" data-style="dark">
-                        <span class="btn-style-preview dark-btn-preview">🌙</span>
-                        Тёмные
-                    </button>
-                </div>
-            </div>
-
-            <div class="settings-section hidden" id="adminSettingsSection">
-                <label class="form-label">👑 Настройки админ-панели</label>
-
-                <div style="margin-top:8px;">
-                    <label class="form-label" style="font-size:13px;">Тема админки</label>
-                    <div class="theme-options">
-                        <button type="button" class="admin-theme-btn active" data-admin-theme="auto"><span class="theme-preview auto-preview">A</span>Как главная</button>
-                        <button type="button" class="admin-theme-btn" data-admin-theme="light"><span class="theme-preview light-preview"></span>☀️ Светлая</button>
-                        <button type="button" class="admin-theme-btn" data-admin-theme="dark"><span class="theme-preview dark-preview"></span>🌙 Тёмная</button>
-                        <button type="button" class="admin-theme-btn" data-admin-theme="custom"><span class="theme-preview custom-preview">🖼</span>Своя картинка</button>
-                    </div>
-                </div>
-
-                <div id="adminCustomBgBlock" style="display:none; margin-top:12px;">
-                    <label class="form-label" style="font-size:13px;">Фон админки</label>
-                    <div class="avatar-actions">
-                        <label class="btn-small avatar-upload-btn">🖼 Загрузить из галереи<input type="file" id="adminBgInput" accept="image/*" hidden></label>
-                        <button type="button" id="adminBgRemoveBtn" class="btn-small avatar-remove-btn">🗑 Убрать</button>
-                    </div>
-                </div>
-
-                <div style="margin-top:12px;">
-                    <label class="form-label" style="font-size:13px;">Цвет кнопок админки</label>
-                    <div class="color-picker-row">
-                        <input type="color" id="adminBtnColor" value="#4299e1" class="color-input">
-                        <span id="adminBtnColorLabel" class="hint">#4299e1</span>
-                        <button type="button" class="btn-small" id="adminBtnColorReset">Сбросить</button>
-                    </div>
+                    <p class="hint" style="margin-top:6px;">Картинка сохранится в аккаунте.</p>
                 </div>
             </div>
 
@@ -187,6 +160,7 @@
             </div>
 
             <div id="settingsStatus" class="fb-status"></div>
+
             <div class="modal-actions" style="justify-content:space-between;">
                 <button type="button" id="deleteAccountBtn" class="btn-danger">🗑 Удалить аккаунт</button>
                 <div style="display:flex; gap:10px;">
@@ -197,13 +171,20 @@
         </div>
     </div>
 
+    <!-- ТЕХПОДДЕРЖКА -->
     <div id="supportModal" class="modal hidden">
         <div class="modal-content">
             <h3>💬 Техподдержка</h3>
             <p class="modal-text">Нашли ошибку или есть вопрос? Напишите — мы ответим.</p>
             <form id="feedbackForm">
-                <label class="form-label">Сообщение <span class="required">*</span><textarea id="fbMessage" rows="4" placeholder="Опишите проблему..."></textarea></label>
-                <label class="form-label">Контакт <span class="hint">(необязательно)</span><input type="text" id="fbContact" placeholder="Telegram, email"></label>
+                <label class="form-label">
+                    Сообщение <span class="required">*</span>
+                    <textarea id="fbMessage" rows="4" placeholder="Опишите проблему..."></textarea>
+                </label>
+                <label class="form-label">
+                    Контакт <span class="hint">(необязательно)</span>
+                    <input type="text" id="fbContact" placeholder="Telegram, email">
+                </label>
                 <div id="fbStatus" class="fb-status"></div>
                 <div class="modal-actions">
                     <button type="button" id="closeSupport" class="btn-secondary">Отмена</button>
@@ -213,6 +194,7 @@
         </div>
     </div>
 
+    <!-- КАРТИНКА -->
     <div id="imageModal" class="modal hidden">
         <div class="image-modal-content">
             <button id="closeImageModal" class="image-modal-close">✕</button>
@@ -226,10 +208,6 @@
         let currentTheme = localStorage.getItem('gdz_theme') || 'light';
         let currentBgUrl = localStorage.getItem('gdz_bg') || null;
         let currentAvatar = null;
-        let currentAdminBg = null;
-        let currentAdminBtnColor = '#4299e1';
-        let currentAdminTheme = localStorage.getItem('gdz_admin_theme') || 'auto';
-        let currentBtnStyle = localStorage.getItem('gdz_btn_style') || 'light';
         let SUBJECTS = [];
 
         const $ = id => document.getElementById(id);
@@ -290,11 +268,12 @@
             });
         }
 
+        // Тема главной — применяется только на этой странице
         function applyTheme(theme, bgUrl) {
             currentTheme = theme;
             currentBgUrl = bgUrl;
             const root = document.documentElement;
-            root.classList.remove('theme-dark', 'theme-custom', 'btn-style-dark', 'btn-style-light');
+            root.classList.remove('theme-dark', 'theme-custom', 'btn-style-light');
             root.style.backgroundImage = '';
             if (theme === 'dark') {
                 root.classList.add('theme-dark');
@@ -302,46 +281,13 @@
                 localStorage.removeItem('gdz_bg');
             } else if (theme === 'custom' && bgUrl) {
                 root.classList.add('theme-custom');
+                root.classList.add('btn-style-light');
                 root.style.backgroundImage = 'url("' + bgUrl + '")';
                 localStorage.setItem('gdz_theme', 'custom');
                 localStorage.setItem('gdz_bg', bgUrl);
-                // применяем стиль кнопок
-                if (currentBtnStyle === 'dark') root.classList.add('btn-style-dark');
-                else root.classList.add('btn-style-light');
             } else {
                 localStorage.setItem('gdz_theme', 'light');
                 localStorage.removeItem('gdz_bg');
-            }
-        }
-
-        function applyAdminTheme(theme, bgUrl) {
-            currentAdminTheme = theme;
-            currentAdminBg = bgUrl;
-            const root = document.documentElement;
-            root.classList.remove('admin-theme-dark', 'admin-theme-custom');
-            root.style.removeProperty('--admin-bg-image');
-            localStorage.setItem('gdz_admin_theme', theme);
-            if (theme === 'dark') {
-                root.classList.add('admin-theme-dark');
-                localStorage.removeItem('gdz_admin_bg');
-            } else if (theme === 'custom' && bgUrl) {
-                root.classList.add('admin-theme-custom');
-                root.style.setProperty('--admin-bg-image', 'url("' + bgUrl + '")');
-                localStorage.setItem('gdz_admin_bg', bgUrl);
-            } else {
-                localStorage.removeItem('gdz_admin_bg');
-            }
-        }
-
-        function applyBtnStyle(style) {
-            currentBtnStyle = style;
-            const root = document.documentElement;
-            root.classList.remove('btn-style-dark', 'btn-style-light');
-            localStorage.setItem('gdz_btn_style', style);
-            // Применяем только если тема custom
-            if (currentTheme === 'custom') {
-                if (style === 'dark') root.classList.add('btn-style-dark');
-                else root.classList.add('btn-style-light');
             }
         }
 
@@ -366,12 +312,7 @@
                         const d = await r.json();
                         authUser = d.user;
                         currentAvatar = authUser.avatar || null;
-                        currentAdminBg = authUser.admin_bg_url || null;
-                        currentAdminBtnColor = authUser.admin_btn_color || '#4299e1';
-                        currentAdminTheme = authUser.admin_theme || 'auto';
-                        currentBtnStyle = authUser.btn_style || 'light';
                         applyTheme(authUser.theme || 'light', authUser.bg_url);
-                        applyAdminTheme(currentAdminTheme, currentAdminBg);
                         setAuthState(true);
                         await showMain();
                         return;
@@ -440,7 +381,9 @@
                     ta.dataset.subject = s.name;
                     ta.dataset.type = s.type || 'numbers';
                     ta.dataset.url = s.url || '';
-                    ta.placeholder = s.type === 'text' ? 'Вставь текст задания...' : '447, 449, 451 — или текст задания';
+                    ta.placeholder = s.type === 'text'
+                        ? 'Вставь текст задания...'
+                        : '447, 449, 451 — или текст задания';
                     row.appendChild(ta);
                     groupDiv.appendChild(row);
                 });
@@ -514,13 +457,8 @@
                 authToken = d.token;
                 authUser = d.user;
                 currentAvatar = d.user.avatar || null;
-                currentAdminBg = d.user.admin_bg_url || null;
-                currentAdminBtnColor = d.user.admin_btn_color || '#4299e1';
-                currentAdminTheme = d.user.admin_theme || 'auto';
-                currentBtnStyle = d.user.btn_style || 'light';
                 localStorage.setItem('gdz_token', authToken);
                 applyTheme(authUser.theme || 'light', authUser.bg_url);
-                applyAdminTheme(currentAdminTheme, currentAdminBg);
                 await showMain();
             } catch (err) { st.textContent = '❌ ' + err.message; st.className = 'fb-status error'; }
         };
@@ -531,7 +469,6 @@
             authToken = ''; authUser = null; currentAvatar = null;
             localStorage.removeItem('gdz_token');
             applyTheme('light', null);
-            applyAdminTheme('auto', null);
             topbarRight.innerHTML = '';
             showAuth();
         }
@@ -579,15 +516,6 @@
             }
         }
 
-        function updateBtnStyleVisibility() {
-            // Стиль кнопок виден только при теме custom
-            if (currentTheme === 'custom') {
-                $('btnStyleSection').classList.remove('hidden');
-            } else {
-                $('btnStyleSection').classList.add('hidden');
-            }
-        }
-
         function openSettings() {
             settingsModal.classList.remove('hidden');
             $('settingsStatus').textContent = '';
@@ -599,19 +527,6 @@
 
             document.querySelectorAll('.theme-btn').forEach(t => t.classList.toggle('active', t.dataset.theme === currentTheme));
             $('customBgBlock').style.display = currentTheme === 'custom' ? 'block' : 'none';
-
-            updateBtnStyleVisibility();
-            document.querySelectorAll('.btn-style-btn').forEach(t => t.classList.toggle('active', t.dataset.style === currentBtnStyle));
-
-            if (authUser?.is_admin) {
-                $('adminSettingsSection').classList.remove('hidden');
-                $('adminBtnColor').value = currentAdminBtnColor || '#4299e1';
-                $('adminBtnColorLabel').textContent = currentAdminBtnColor || '#4299e1';
-                document.querySelectorAll('.admin-theme-btn').forEach(t => t.classList.toggle('active', t.dataset.adminTheme === currentAdminTheme));
-                $('adminCustomBgBlock').style.display = currentAdminTheme === 'custom' ? 'block' : 'none';
-            } else {
-                $('adminSettingsSection').classList.add('hidden');
-            }
         }
 
         $('closeSettingsBtn').onclick = () => settingsModal.classList.add('hidden');
@@ -624,25 +539,6 @@
                 $('customBgBlock').style.display = theme === 'custom' ? 'block' : 'none';
                 const bg = theme === 'custom' ? currentBgUrl : null;
                 applyTheme(theme, bg);
-                updateBtnStyleVisibility();
-            };
-        });
-
-        document.querySelectorAll('.btn-style-btn').forEach(t => {
-            t.onclick = () => {
-                const style = t.dataset.style;
-                document.querySelectorAll('.btn-style-btn').forEach(x => x.classList.toggle('active', x === t));
-                applyBtnStyle(style);
-            };
-        });
-
-        document.querySelectorAll('.admin-theme-btn').forEach(t => {
-            t.onclick = () => {
-                const theme = t.dataset.adminTheme;
-                document.querySelectorAll('.admin-theme-btn').forEach(x => x.classList.toggle('active', x === t));
-                $('adminCustomBgBlock').style.display = theme === 'custom' ? 'block' : 'none';
-                if (theme === 'custom' && currentAdminBg) applyAdminTheme('custom', currentAdminBg);
-                else applyAdminTheme(theme, null);
             };
         });
 
@@ -672,7 +568,6 @@
                 applyTheme('custom', b64);
                 document.querySelectorAll('.theme-btn').forEach(x => x.classList.toggle('active', x.dataset.theme === 'custom'));
                 $('customBgBlock').style.display = 'block';
-                updateBtnStyleVisibility();
             } catch (err) { alert('Ошибка: ' + err.message); }
             e.target.value = '';
         };
@@ -682,30 +577,7 @@
             applyTheme('light', null);
             document.querySelectorAll('.theme-btn').forEach(x => x.classList.toggle('active', x.dataset.theme === 'light'));
             $('customBgBlock').style.display = 'none';
-            updateBtnStyleVisibility();
         };
-
-        $('adminBgInput').onchange = async (e) => {
-            const file = e.target.files[0]; if (!file) return;
-            try {
-                const b64 = await shrinkImage(file, 1600, 0.82);
-                currentAdminBg = b64;
-                applyAdminTheme('custom', b64);
-                document.querySelectorAll('.admin-theme-btn').forEach(x => x.classList.toggle('active', x.dataset.adminTheme === 'custom'));
-                $('adminCustomBgBlock').style.display = 'block';
-            } catch (err) { alert('Ошибка: ' + err.message); }
-            e.target.value = '';
-        };
-
-        $('adminBgRemoveBtn').onclick = () => {
-            currentAdminBg = null;
-            applyAdminTheme('auto', null);
-            document.querySelectorAll('.admin-theme-btn').forEach(x => x.classList.toggle('active', x.dataset.adminTheme === 'auto'));
-            $('adminCustomBgBlock').style.display = 'none';
-        };
-
-        $('adminBtnColor').oninput = (e) => { currentAdminBtnColor = e.target.value; $('adminBtnColorLabel').textContent = currentAdminBtnColor; };
-        $('adminBtnColorReset').onclick = () => { currentAdminBtnColor = '#4299e1'; $('adminBtnColor').value = '#4299e1'; $('adminBtnColorLabel').textContent = '#4299e1'; };
 
         $('saveSettingsBtn').onclick = async () => {
             const st = $('settingsStatus');
@@ -717,26 +589,15 @@
             st.textContent = '⏳ Сохраняем...';
             st.className = 'fb-status loading';
             const payload = {
-                token: authToken, name: newName, theme: newTheme, bg_url: bgToSave,
-                btn_style: newTheme === 'custom' ? currentBtnStyle : 'light'
+                token: authToken, name: newName, theme: newTheme, bg_url: bgToSave
             };
-            if (authUser?.is_admin) {
-                payload.admin_bg_url = currentAdminBg || '';
-                payload.admin_btn_color = currentAdminBtnColor || '';
-                payload.admin_theme = currentAdminTheme || 'auto';
-            }
             try {
                 const r1 = await fetch('/api/auth/update', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload) });
                 const d1 = await r1.json();
                 if (!r1.ok) { st.textContent = '❌ ' + (d1.detail || 'Ошибка'); st.className = 'fb-status error'; return; }
                 authUser = d1.user;
                 if (authUser.bg_url) currentBgUrl = authUser.bg_url;
-                currentAdminBg = authUser.admin_bg_url || null;
-                currentAdminBtnColor = authUser.admin_btn_color || '#4299e1';
-                currentAdminTheme = authUser.admin_theme || 'auto';
-                currentBtnStyle = authUser.btn_style || 'light';
                 applyTheme(authUser.theme, authUser.bg_url);
-                applyAdminTheme(currentAdminTheme, currentAdminBg);
                 renderTopbar();
                 if (oldPwd && newPwd) {
                     const r2 = await fetch('/api/auth/change-password', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({token: authToken, old_password: oldPwd, new_password: newPwd}) });
@@ -764,11 +625,7 @@
                 localStorage.removeItem('gdz_token');
                 localStorage.removeItem('gdz_theme');
                 localStorage.removeItem('gdz_bg');
-                localStorage.removeItem('gdz_admin_theme');
-                localStorage.removeItem('gdz_admin_bg');
-                localStorage.removeItem('gdz_btn_style');
                 applyTheme('light', null);
-                applyAdminTheme('auto', null);
                 settingsModal.classList.add('hidden');
                 showAuth();
             } catch (e) { st.textContent = '❌ ' + e.message; st.className = 'fb-status error'; }

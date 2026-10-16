@@ -7,29 +7,26 @@
     <script>
         (function() {
             try {
-                const theme = localStorage.getItem('gdz_theme') || 'light';
-                const bg = localStorage.getItem('gdz_bg');
                 const adminTheme = localStorage.getItem('gdz_admin_theme') || 'auto';
                 const adminBg = localStorage.getItem('gdz_admin_bg');
                 const btnColor = localStorage.getItem('gdz_admin_btn_color') || '#4299e1';
-                const btnStyle = localStorage.getItem('gdz_btn_style') || 'auto';
                 const token = localStorage.getItem('gdz_token');
                 const root = document.documentElement;
 
-                if (theme === 'dark') root.classList.add('theme-dark');
-                else if (theme === 'custom' && bg) {
-                    root.classList.add('theme-custom');
-                    root.style.backgroundImage = 'url("' + bg + '")';
-                }
-
-                if (adminTheme === 'dark') root.classList.add('admin-theme-dark');
-                else if (adminTheme === 'custom' && adminBg) {
+                if (adminTheme === 'dark') {
+                    root.classList.add('admin-theme-dark');
+                } else if (adminTheme === 'custom' && adminBg) {
                     root.classList.add('admin-theme-custom');
                     root.style.setProperty('--admin-bg-image', 'url("' + adminBg + '")');
+                } else {
+                    const mainTheme = localStorage.getItem('gdz_theme') || 'light';
+                    const mainBg = localStorage.getItem('gdz_bg');
+                    if (mainTheme === 'dark') root.classList.add('theme-dark');
+                    else if (mainTheme === 'custom' && mainBg) {
+                        root.classList.add('theme-custom');
+                        root.style.backgroundImage = 'url("' + mainBg + '")';
+                    }
                 }
-
-                if (btnStyle === 'dark') root.classList.add('btn-style-dark');
-                else if (btnStyle === 'light') root.classList.add('btn-style-light');
 
                 root.style.setProperty('--admin-btn-color', btnColor);
 
@@ -53,7 +50,7 @@
             <a href="/" class="support-btn" title="На главную">🏠</a>
         </div>
         <h1>🔐 Админка</h1>
-        <p class="subtitle">Предметы · Онлайн · Пользователи · Сообщения · Логи</p>
+        <p class="subtitle">Предметы · Онлайн · Пользователи · Сообщения · Логи · Настройки</p>
 
         <section class="card" id="loginCard">
             <h2>Введите пароль</h2>
@@ -72,8 +69,10 @@
                 <button class="admin-tab" data-tab="users">👥 Пользователи</button>
                 <button class="admin-tab" data-tab="messages">📬 Сообщения</button>
                 <button class="admin-tab" data-tab="logs">📋 Логи</button>
+                <button class="admin-tab" data-tab="settings">⚙️ Настройки</button>
             </div>
 
+            <!-- ПРЕДМЕТЫ -->
             <div id="tabSubjects">
                 <div class="section-header">
                     <h2>📚 Предметы (<span id="subjectsCount">0</span>)</h2>
@@ -88,6 +87,7 @@
                 <div id="emptySubjects" class="empty">Пока нет предметов</div>
             </div>
 
+            <!-- ОНЛАЙН -->
             <div id="tabOnline" class="hidden">
                 <div class="section-header">
                     <h2>🟢 Онлайн (<span id="onlineCount">0</span>)</h2>
@@ -98,6 +98,7 @@
                 <div id="emptyOnline" class="empty">Сейчас никого нет</div>
             </div>
 
+            <!-- ПОЛЬЗОВАТЕЛИ -->
             <div id="tabUsers" class="hidden">
                 <div class="section-header">
                     <h2>👥 Пользователи (<span id="usersCount">0</span>)</h2>
@@ -107,6 +108,7 @@
                 <div id="emptyUsers" class="empty">Пока нет зарегистрированных</div>
             </div>
 
+            <!-- СООБЩЕНИЯ -->
             <div id="tabMessages" class="hidden">
                 <div class="section-header">
                     <h2>📬 Сообщения (<span id="count">0</span>)</h2>
@@ -119,6 +121,7 @@
                 </div>
             </div>
 
+            <!-- ЛОГИ -->
             <div id="tabLogs" class="hidden">
                 <div class="section-header">
                     <h2>📋 Логи (<span id="logsCount">0</span>)</h2>
@@ -130,6 +133,74 @@
                 <p class="hint" style="margin-bottom:12px;">Последние 500 действий: входы, регистрации, поиски, изменения предметов.</p>
                 <div id="logsList"></div>
                 <div id="emptyLogs" class="empty">Логов пока нет</div>
+            </div>
+
+            <!-- НАСТРОЙКИ АДМИНКИ (НОВАЯ ВКЛАДКА) -->
+            <div id="tabSettings" class="hidden">
+                <h2>⚙️ Настройки админ-панели</h2>
+                <p class="hint" style="margin-bottom:16px;">
+                    Здесь настраивается вид админки. На главную страницу эти настройки не влияют.
+                </p>
+
+                <div class="settings-section">
+                    <label class="form-label">🎨 Тема админки</label>
+                    <div class="theme-options">
+                        <button type="button" class="admin-theme-btn active" data-admin-theme="auto">
+                            <span class="theme-preview auto-preview">A</span>
+                            Как главная
+                        </button>
+                        <button type="button" class="admin-theme-btn" data-admin-theme="light">
+                            <span class="theme-preview light-preview"></span>
+                            ☀️ Светлая
+                        </button>
+                        <button type="button" class="admin-theme-btn" data-admin-theme="dark">
+                            <span class="theme-preview dark-preview"></span>
+                            🌙 Тёмная
+                        </button>
+                        <button type="button" class="admin-theme-btn" data-admin-theme="custom">
+                            <span class="theme-preview custom-preview">🖼</span>
+                            Своя картинка
+                        </button>
+                    </div>
+                </div>
+
+                <div class="settings-section" id="adminBgSection" style="display:none;">
+                    <label class="form-label">🖼 Фон админки</label>
+                    <div class="avatar-block">
+                        <div class="avatar-preview" id="adminBgPreview">
+                            <span>🖼</span>
+                        </div>
+                        <div class="avatar-actions">
+                            <label class="btn-small avatar-upload-btn">
+                                🖼 Загрузить из галереи
+                                <input type="file" id="adminBgInput" accept="image/*" hidden>
+                            </label>
+                            <button type="button" id="adminBgRemoveBtn" class="btn-small avatar-remove-btn">
+                                🗑 Убрать фон
+                            </button>
+                        </div>
+                    </div>
+                    <p class="hint" style="margin-top:8px;">
+                        Картинка сохранится в аккаунте.
+                    </p>
+                </div>
+
+                <div class="settings-section">
+                    <label class="form-label">🎨 Цвет кнопок админки</label>
+                    <div class="color-picker-row">
+                        <input type="color" id="adminBtnColor" value="#4299e1" class="color-input">
+                        <span id="adminBtnColorLabel" class="hint">#4299e1</span>
+                        <button type="button" class="btn-small" id="adminBtnColorReset">Сбросить</button>
+                    </div>
+                </div>
+
+                <div id="settingsStatus" class="fb-status"></div>
+
+                <div style="margin-top:20px; display:flex; gap:10px; flex-wrap:wrap;">
+                    <button id="saveAdminSettingsBtn" class="btn-primary" style="width:auto; flex:1;">
+                        💾 Сохранить настройки
+                    </button>
+                </div>
             </div>
         </section>
     </div>
@@ -170,6 +241,12 @@
         let subjectsCache = [];
         let draggedId = null;
 
+        // Текущие настройки админки (загружаются из БД)
+        let currentAdminTheme = localStorage.getItem('gdz_admin_theme') || 'auto';
+        let currentAdminBg = localStorage.getItem('gdz_admin_bg') || null;
+        let currentAdminBtnColor = localStorage.getItem('gdz_admin_btn_color') || '#4299e1';
+        let pendingAdminBg = null; // временный фон для сохранения
+
         const loginCard = document.getElementById('loginCard');
         const adminContent = document.getElementById('adminContent');
         const loginForm = document.getElementById('loginForm');
@@ -191,6 +268,63 @@
             return '?';
         }
 
+        function fileToBase64(file, maxSizeMb = 5) {
+            return new Promise((resolve, reject) => {
+                if (file.size > maxSizeMb * 1024 * 1024) { reject(new Error(`Файл больше ${maxSizeMb} МБ`)); return; }
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = () => reject(new Error('Ошибка чтения файла'));
+                reader.readAsDataURL(file);
+            });
+        }
+
+        async function shrinkImage(file, maxW = 1600, quality = 0.82) {
+            const dataUrl = await fileToBase64(file, 20);
+            return new Promise((resolve, reject) => {
+                const img = new Image();
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    let w = img.width, h = img.height;
+                    if (w > maxW) { h = Math.round(h * (maxW / w)); w = maxW; }
+                    canvas.width = w; canvas.height = h;
+                    canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+                    resolve(canvas.toDataURL('image/jpeg', quality));
+                };
+                img.onerror = () => reject(new Error('Не удалось загрузить картинку'));
+                img.src = dataUrl;
+            });
+        }
+
+        // Применяем тему админки (только на этой странице)
+        function applyAdminTheme(theme, bgUrl) {
+            const root = document.documentElement;
+            root.classList.remove('admin-theme-dark', 'admin-theme-custom', 'theme-dark', 'theme-custom');
+            root.style.removeProperty('--admin-bg-image');
+            root.style.backgroundImage = '';
+
+            if (theme === 'dark') {
+                root.classList.add('admin-theme-dark');
+            } else if (theme === 'custom' && bgUrl) {
+                root.classList.add('admin-theme-custom');
+                root.style.setProperty('--admin-bg-image', 'url("' + bgUrl + '")');
+            } else if (theme === 'auto') {
+                // Как на главной
+                const mainTheme = localStorage.getItem('gdz_theme') || 'light';
+                const mainBg = localStorage.getItem('gdz_bg');
+                if (mainTheme === 'dark') root.classList.add('theme-dark');
+                else if (mainTheme === 'custom' && mainBg) {
+                    root.classList.add('theme-custom');
+                    root.style.backgroundImage = 'url("' + mainBg + '")';
+                }
+            }
+            // theme === 'light' — по умолчанию (без класса)
+        }
+
+        function applyAdminBtnColor(color) {
+            document.documentElement.style.setProperty('--admin-btn-color', color);
+        }
+
+        // Загружаем настройки из БД
         async function loadAdminSettings() {
             const token = localStorage.getItem('gdz_token') || '';
             if (!token) return;
@@ -201,28 +335,17 @@
                 const u = d.user;
                 if (!u || !u.is_admin) return;
 
-                const adminTheme = u.admin_theme || 'auto';
-                const adminBg = u.admin_bg_url;
-                localStorage.setItem('gdz_admin_theme', adminTheme);
-                const root = document.documentElement;
-                root.classList.remove('admin-theme-dark', 'admin-theme-custom');
-                if (adminTheme === 'dark') {
-                    root.classList.add('admin-theme-dark');
-                } else if (adminTheme === 'custom' && adminBg) {
-                    root.classList.add('admin-theme-custom');
-                    root.style.setProperty('--admin-bg-image', 'url("' + adminBg + '")');
-                    localStorage.setItem('gdz_admin_bg', adminBg);
-                }
+                currentAdminTheme = u.admin_theme || 'auto';
+                currentAdminBg = u.admin_bg_url || null;
+                currentAdminBtnColor = u.admin_btn_color || '#4299e1';
 
-                const color = u.admin_btn_color || '#4299e1';
-                localStorage.setItem('gdz_admin_btn_color', color);
-                root.style.setProperty('--admin-btn-color', color);
+                localStorage.setItem('gdz_admin_theme', currentAdminTheme);
+                if (currentAdminBg) localStorage.setItem('gdz_admin_bg', currentAdminBg);
+                else localStorage.removeItem('gdz_admin_bg');
+                localStorage.setItem('gdz_admin_btn_color', currentAdminBtnColor);
 
-                const btnStyle = u.btn_style || 'auto';
-                localStorage.setItem('gdz_btn_style', btnStyle);
-                root.classList.remove('btn-style-dark', 'btn-style-light');
-                if (btnStyle === 'dark') root.classList.add('btn-style-dark');
-                else if (btnStyle === 'light') root.classList.add('btn-style-light');
+                applyAdminTheme(currentAdminTheme, currentAdminBg);
+                applyAdminBtnColor(currentAdminBtnColor);
             } catch {}
         }
 
@@ -251,7 +374,7 @@
             document.documentElement.classList.add('has-token');
             loginCard.classList.add('hidden');
             adminContent.classList.remove('hidden');
-            loadSubjects(); loadOnline(); loadUsers(); loadMessages(); loadLogs();
+            loadSubjects(); loadOnline(); loadUsers(); loadMessages(); loadLogs(); renderSettings();
             if (onlineTimer) clearInterval(onlineTimer);
             onlineTimer = setInterval(loadOnline, 30000);
         }
@@ -274,7 +397,7 @@
             t.addEventListener('click', () => {
                 document.querySelectorAll('.admin-tab').forEach(x => x.classList.toggle('active', x === t));
                 const tab = t.dataset.tab;
-                ['subjects', 'online', 'users', 'messages', 'logs'].forEach(name => {
+                ['subjects', 'online', 'users', 'messages', 'logs', 'settings'].forEach(name => {
                     document.getElementById('tab' + name.charAt(0).toUpperCase() + name.slice(1)).classList.toggle('hidden', name !== tab);
                 });
             });
@@ -282,6 +405,119 @@
 
         function getAuthPayload() { return authData.token ? {token: authData.token} : {password: authData.password}; }
 
+        // ═══════ НАСТРОЙКИ АДМИНКИ ═══════
+        function renderSettings() {
+            // Тема
+            document.querySelectorAll('.admin-theme-btn').forEach(t => {
+                t.classList.toggle('active', t.dataset.adminTheme === currentAdminTheme);
+            });
+            // Показываем блок с фоном только для custom
+            document.getElementById('adminBgSection').style.display =
+                (currentAdminTheme === 'custom') ? 'block' : 'none';
+            // Цвет кнопок
+            document.getElementById('adminBtnColor').value = currentAdminBtnColor || '#4299e1';
+            document.getElementById('adminBtnColorLabel').textContent = currentAdminBtnColor || '#4299e1';
+            // Превью фона
+            const preview = document.getElementById('adminBgPreview');
+            const bgToShow = pendingAdminBg || currentAdminBg;
+            if (bgToShow) {
+                preview.style.backgroundImage = 'url("' + bgToShow + '")';
+                preview.textContent = '';
+            } else {
+                preview.style.backgroundImage = '';
+                preview.textContent = '🖼';
+            }
+        }
+
+        document.querySelectorAll('.admin-theme-btn').forEach(t => {
+            t.onclick = () => {
+                currentAdminTheme = t.dataset.adminTheme;
+                renderSettings();
+            };
+        });
+
+        document.getElementById('adminBgInput').onchange = async (e) => {
+            const file = e.target.files[0]; if (!file) return;
+            try {
+                const b64 = await shrinkImage(file, 1600, 0.82);
+                pendingAdminBg = b64;
+                renderSettings();
+            } catch (err) { alert('Ошибка: ' + err.message); }
+            e.target.value = '';
+        };
+
+        document.getElementById('adminBgRemoveBtn').onclick = () => {
+            pendingAdminBg = '';
+            if (currentAdminBg && !confirm('Убрать фон админки?')) return;
+            renderSettings();
+        };
+
+        document.getElementById('adminBtnColor').oninput = (e) => {
+            currentAdminBtnColor = e.target.value;
+            document.getElementById('adminBtnColorLabel').textContent = currentAdminBtnColor;
+            applyAdminBtnColor(currentAdminBtnColor);
+        };
+        document.getElementById('adminBtnColorReset').onclick = () => {
+            currentAdminBtnColor = '#4299e1';
+            document.getElementById('adminBtnColor').value = '#4299e1';
+            document.getElementById('adminBtnColorLabel').textContent = '#4299e1';
+            applyAdminBtnColor('#4299e1');
+        };
+
+        document.getElementById('saveAdminSettingsBtn').onclick = async () => {
+            const st = document.getElementById('settingsStatus');
+            st.textContent = '⏳ Сохраняем...';
+            st.className = 'fb-status loading';
+
+            // Определяем, что отправлять:
+            // pendingAdminBg — если было загружено/убрано в этой сессии
+            // currentAdminBg — если не менялся
+            let bgToSave = currentAdminBg || '';
+            if (pendingAdminBg !== null) {
+                bgToSave = pendingAdminBg; // может быть '' для удаления
+            }
+
+            const payload = {
+                ...getAuthPayload(),
+                admin_theme: currentAdminTheme,
+                admin_bg_url: bgToSave,
+                admin_btn_color: currentAdminBtnColor
+            };
+
+            try {
+                const r = await fetch('/api/auth/update', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(payload)
+                });
+                const d = await r.json();
+                if (!r.ok) {
+                    st.textContent = '❌ ' + (d.detail || 'Ошибка');
+                    st.className = 'fb-status error';
+                    return;
+                }
+                // Обновляем локальные значения
+                currentAdminBg = bgToSave || null;
+                pendingAdminBg = null;
+                localStorage.setItem('gdz_admin_theme', currentAdminTheme);
+                if (currentAdminBg) localStorage.setItem('gdz_admin_bg', currentAdminBg);
+                else localStorage.removeItem('gdz_admin_bg');
+                localStorage.setItem('gdz_admin_btn_color', currentAdminBtnColor);
+
+                applyAdminTheme(currentAdminTheme, currentAdminBg);
+                applyAdminBtnColor(currentAdminBtnColor);
+
+                st.textContent = '✅ Настройки сохранены';
+                st.className = 'fb-status success';
+                renderSettings();
+                setTimeout(() => { st.textContent = ''; st.className = 'fb-status'; }, 2000);
+            } catch (e) {
+                st.textContent = '❌ ' + e.message;
+                st.className = 'fb-status error';
+            }
+        };
+
+        // ═══════ ПРЕДМЕТЫ ═══════
         document.getElementById('refreshSubjectsBtn').onclick = loadSubjects;
         document.getElementById('resetSubjectsBtn').onclick = async () => {
             if (!confirm('Восстановить список по умолчанию?')) return;
