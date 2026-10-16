@@ -9,20 +9,30 @@
             try {
                 const theme = localStorage.getItem('gdz_theme') || 'light';
                 const bg = localStorage.getItem('gdz_bg');
+                const adminTheme = localStorage.getItem('gdz_admin_theme') || 'auto';
                 const adminBg = localStorage.getItem('gdz_admin_bg');
                 const btnColor = localStorage.getItem('gdz_admin_btn_color') || '#4299e1';
+                const btnStyle = localStorage.getItem('gdz_btn_style') || 'auto';
                 const token = localStorage.getItem('gdz_token');
                 const root = document.documentElement;
+
                 if (theme === 'dark') root.classList.add('theme-dark');
                 else if (theme === 'custom' && bg) {
                     root.classList.add('theme-custom');
                     root.style.backgroundImage = 'url("' + bg + '")';
                 }
-                if (adminBg) {
-                    root.classList.add('theme-admin-bg');
+
+                if (adminTheme === 'dark') root.classList.add('admin-theme-dark');
+                else if (adminTheme === 'custom' && adminBg) {
+                    root.classList.add('admin-theme-custom');
                     root.style.setProperty('--admin-bg-image', 'url("' + adminBg + '")');
                 }
+
+                if (btnStyle === 'dark') root.classList.add('btn-style-dark');
+                else if (btnStyle === 'light') root.classList.add('btn-style-light');
+
                 root.style.setProperty('--admin-btn-color', btnColor);
+
                 if (token) root.classList.add('has-token');
                 else root.classList.add('no-token');
             } catch (e) {}
@@ -190,14 +200,29 @@
                 const d = await r.json();
                 const u = d.user;
                 if (!u || !u.is_admin) return;
-                if (u.admin_bg_url) {
-                    localStorage.setItem('gdz_admin_bg', u.admin_bg_url);
-                    document.documentElement.classList.add('theme-admin-bg');
-                    document.documentElement.style.setProperty('--admin-bg-image', 'url("' + u.admin_bg_url + '")');
+
+                const adminTheme = u.admin_theme || 'auto';
+                const adminBg = u.admin_bg_url;
+                localStorage.setItem('gdz_admin_theme', adminTheme);
+                const root = document.documentElement;
+                root.classList.remove('admin-theme-dark', 'admin-theme-custom');
+                if (adminTheme === 'dark') {
+                    root.classList.add('admin-theme-dark');
+                } else if (adminTheme === 'custom' && adminBg) {
+                    root.classList.add('admin-theme-custom');
+                    root.style.setProperty('--admin-bg-image', 'url("' + adminBg + '")');
+                    localStorage.setItem('gdz_admin_bg', adminBg);
                 }
+
                 const color = u.admin_btn_color || '#4299e1';
                 localStorage.setItem('gdz_admin_btn_color', color);
-                document.documentElement.style.setProperty('--admin-btn-color', color);
+                root.style.setProperty('--admin-btn-color', color);
+
+                const btnStyle = u.btn_style || 'auto';
+                localStorage.setItem('gdz_btn_style', btnStyle);
+                root.classList.remove('btn-style-dark', 'btn-style-light');
+                if (btnStyle === 'dark') root.classList.add('btn-style-dark');
+                else if (btnStyle === 'light') root.classList.add('btn-style-light');
             } catch {}
         }
 
@@ -259,7 +284,7 @@
 
         document.getElementById('refreshSubjectsBtn').onclick = loadSubjects;
         document.getElementById('resetSubjectsBtn').onclick = async () => {
-            if (!confirm('Восстановить список по умолчанию? ВСЕ текущие предметы будут удалены.')) return;
+            if (!confirm('Восстановить список по умолчанию?')) return;
             if (!confirm('Точно? Это нельзя отменить.')) return;
             try {
                 const r = await fetch('/api/admin/subjects/reset', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(getAuthPayload()) });

@@ -10,25 +10,32 @@
                 const theme = localStorage.getItem('gdz_theme') || 'light';
                 const bg = localStorage.getItem('gdz_bg');
                 const token = localStorage.getItem('gdz_token');
+                const adminTheme = localStorage.getItem('gdz_admin_theme') || 'auto';
+                const adminBg = localStorage.getItem('gdz_admin_bg');
+                const btnStyle = localStorage.getItem('gdz_btn_style') || 'auto';
                 const root = document.documentElement;
-                if (theme === 'dark') {
-                    root.classList.add('theme-dark');
-                } else if (theme === 'custom' && bg) {
+
+                if (theme === 'dark') root.classList.add('theme-dark');
+                else if (theme === 'custom' && bg) {
                     root.classList.add('theme-custom');
                     root.style.backgroundImage = 'url("' + bg + '")';
                 }
 
-                // МГНОВЕННО определяем, что показать — без мерцания
-                if (token) {
-                    root.classList.add('has-auth');
-                } else {
-                    root.classList.add('no-auth');
+                if (adminTheme === 'dark') root.classList.add('admin-theme-dark');
+                else if (adminTheme === 'custom' && adminBg) {
+                    root.classList.add('admin-theme-custom');
+                    root.style.setProperty('--admin-bg-image', 'url("' + adminBg + '")');
                 }
+
+                if (btnStyle === 'dark') root.classList.add('btn-style-dark');
+                else if (btnStyle === 'light') root.classList.add('btn-style-light');
+
+                if (token) root.classList.add('has-auth');
+                else root.classList.add('no-auth');
             } catch (e) {}
         })();
     </script>
     <style>
-        /* Мгновенно скрываем то, что не нужно, ДО загрузки CSS */
         html.has-auth #authScreen { display: none !important; }
         html.has-auth #mainScreen { display: block !important; }
         html.no-auth #authScreen { display: flex !important; }
@@ -37,64 +44,42 @@
     <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
-    <!-- ЭКРАН ВХОДА -->
     <div id="authScreen" class="auth-screen">
         <div class="auth-screen-box">
             <div class="auth-logo">📚</div>
             <h1 class="auth-screen-title">GDZ Парсер</h1>
             <p class="auth-screen-subtitle">Войди или зарегистрируйся, чтобы начать</p>
-
             <div class="auth-tabs">
                 <button type="button" class="auth-tab active" data-tab="login">Вход</button>
                 <button type="button" class="auth-tab" data-tab="register">Регистрация</button>
             </div>
-
             <form id="authForm">
-                <label class="form-label" id="nameField" style="display:none;">
-                    Имя
-                    <input type="text" id="authName" placeholder="Как тебя зовут">
-                </label>
-                <label class="form-label">
-                    Email
-                    <input type="email" id="authEmail" placeholder="you@example.com" required>
-                </label>
-                <label class="form-label">
-                    Пароль
-                    <input type="password" id="authPwd" placeholder="минимум 6 символов" required>
-                </label>
+                <label class="form-label" id="nameField" style="display:none;">Имя<input type="text" id="authName" placeholder="Как тебя зовут"></label>
+                <label class="form-label">Email<input type="email" id="authEmail" placeholder="you@example.com" required></label>
+                <label class="form-label">Пароль<input type="password" id="authPwd" placeholder="минимум 6 символов" required></label>
                 <div id="authStatus" class="fb-status"></div>
                 <button type="submit" id="authSubmit" class="btn-primary">Войти</button>
             </form>
         </div>
     </div>
 
-    <!-- ГЛАВНЫЙ ЭКРАН -->
     <div id="mainScreen" class="container hidden">
         <div class="topbar">
             <span class="version">v{{ version }}</span>
             <div class="topbar-right" id="topbarRight"></div>
         </div>
-
         <h1>📚 GDZ Парсер</h1>
         <p class="subtitle">7 класс · Введи номера или текст задания</p>
-
         <section class="card">
             <h2>📝 Домашка</h2>
-            <div id="subjectsContainer">
-                <p class="empty">Загрузка предметов...</p>
-            </div>
+            <div id="subjectsContainer"><p class="empty">Загрузка предметов...</p></div>
             <button id="btn" class="btn-primary">🔍 Найти решения</button>
         </section>
-
         <div id="status" class="status"></div>
         <div id="result" class="result"></div>
-
-        <footer class="footer">
-            <span>GDZ Парсер · v{{ version }}</span>
-        </footer>
+        <footer class="footer"><span>GDZ Парсер · v{{ version }}</span></footer>
     </div>
 
-    <!-- ИСТОРИЯ -->
     <div id="historyModal" class="modal hidden">
         <div class="modal-content">
             <h3>📜 История поисков</h3>
@@ -106,7 +91,6 @@
         </div>
     </div>
 
-    <!-- НАСТРОЙКИ -->
     <div id="settingsModal" class="modal hidden">
         <div class="modal-content">
             <h3>⚙️ Настройки аккаунта</h3>
@@ -114,74 +98,70 @@
             <div class="settings-section">
                 <label class="form-label">Аватарка</label>
                 <div class="avatar-block">
-                    <div class="avatar-preview" id="avatarPreview">
-                        <span id="avatarInitial">?</span>
-                    </div>
+                    <div class="avatar-preview" id="avatarPreview"><span id="avatarInitial">?</span></div>
                     <div class="avatar-actions">
-                        <label class="btn-small avatar-upload-btn">
-                            🖼 Из галереи
-                            <input type="file" id="avatarInput" accept="image/*" hidden>
-                        </label>
-                        <button type="button" id="avatarRemoveBtn" class="btn-small avatar-remove-btn">
-                            🗑 Убрать
-                        </button>
+                        <label class="btn-small avatar-upload-btn">🖼 Из галереи<input type="file" id="avatarInput" accept="image/*" hidden></label>
+                        <button type="button" id="avatarRemoveBtn" class="btn-small avatar-remove-btn">🗑 Убрать</button>
                     </div>
                 </div>
             </div>
 
             <div class="settings-section">
-                <label class="form-label">
-                    Имя
-                    <input type="text" id="setName" placeholder="Как тебя зовут">
-                </label>
+                <label class="form-label">Имя<input type="text" id="setName" placeholder="Как тебя зовут"></label>
             </div>
 
             <div class="settings-section">
                 <label class="form-label">Оформление главной</label>
                 <div class="theme-options">
-                    <button type="button" class="theme-btn active" data-theme="light">
-                        <span class="theme-preview light-preview"></span>
-                        ☀️ Светлая
-                    </button>
-                    <button type="button" class="theme-btn" data-theme="dark">
-                        <span class="theme-preview dark-preview"></span>
-                        🌙 Тёмная
-                    </button>
-                    <button type="button" class="theme-btn" data-theme="custom">
-                        <span class="theme-preview custom-preview">🖼</span>
-                        🎨 Своя картинка
-                    </button>
+                    <button type="button" class="theme-btn active" data-theme="light"><span class="theme-preview light-preview"></span>☀️ Светлая</button>
+                    <button type="button" class="theme-btn" data-theme="dark"><span class="theme-preview dark-preview"></span>🌙 Тёмная</button>
+                    <button type="button" class="theme-btn" data-theme="custom"><span class="theme-preview custom-preview">🖼</span>🎨 Своя картинка</button>
                 </div>
                 <div id="customBgBlock" style="display:none; margin-top:12px;">
                     <div class="avatar-actions">
-                        <label class="btn-small avatar-upload-btn">
-                            🖼 Загрузить из галереи
-                            <input type="file" id="bgInput" accept="image/*" hidden>
-                        </label>
-                        <button type="button" id="bgRemoveBtn" class="btn-small avatar-remove-btn">
-                            🗑 Убрать фон
-                        </button>
+                        <label class="btn-small avatar-upload-btn">🖼 Загрузить из галереи<input type="file" id="bgInput" accept="image/*" hidden></label>
+                        <button type="button" id="bgRemoveBtn" class="btn-small avatar-remove-btn">🗑 Убрать фон</button>
                     </div>
-                    <p class="hint" style="margin-top:6px;">
-                        Картинка сохранится в аккаунте.
-                    </p>
                 </div>
             </div>
 
-            <!-- НАСТРОЙКИ АДМИНКИ (только для админов) -->
+            <div class="settings-section">
+                <label class="form-label">🎨 Стиль кнопок</label>
+                <p class="hint" style="margin-bottom:8px;">Независимо от фона сайта</p>
+                <div class="btn-style-options">
+                    <button type="button" class="btn-style-btn active" data-style="auto">
+                        <span class="btn-style-preview auto-preview">A</span>
+                        Авто
+                    </button>
+                    <button type="button" class="btn-style-btn" data-style="light">
+                        <span class="btn-style-preview light-btn-preview">☀️</span>
+                        Светлые
+                    </button>
+                    <button type="button" class="btn-style-btn" data-style="dark">
+                        <span class="btn-style-preview dark-btn-preview">🌙</span>
+                        Тёмные
+                    </button>
+                </div>
+            </div>
+
             <div class="settings-section hidden" id="adminSettingsSection">
                 <label class="form-label">👑 Настройки админ-панели</label>
 
                 <div style="margin-top:8px;">
+                    <label class="form-label" style="font-size:13px;">Тема админки</label>
+                    <div class="theme-options">
+                        <button type="button" class="admin-theme-btn active" data-admin-theme="auto"><span class="theme-preview auto-preview">A</span>Как главная</button>
+                        <button type="button" class="admin-theme-btn" data-admin-theme="light"><span class="theme-preview light-preview"></span>☀️ Светлая</button>
+                        <button type="button" class="admin-theme-btn" data-admin-theme="dark"><span class="theme-preview dark-preview"></span>🌙 Тёмная</button>
+                        <button type="button" class="admin-theme-btn" data-admin-theme="custom"><span class="theme-preview custom-preview">🖼</span>Своя картинка</button>
+                    </div>
+                </div>
+
+                <div id="adminCustomBgBlock" style="display:none; margin-top:12px;">
                     <label class="form-label" style="font-size:13px;">Фон админки</label>
                     <div class="avatar-actions">
-                        <label class="btn-small avatar-upload-btn">
-                            🖼 Загрузить из галереи
-                            <input type="file" id="adminBgInput" accept="image/*" hidden>
-                        </label>
-                        <button type="button" id="adminBgRemoveBtn" class="btn-small avatar-remove-btn">
-                            🗑 Убрать
-                        </button>
+                        <label class="btn-small avatar-upload-btn">🖼 Загрузить из галереи<input type="file" id="adminBgInput" accept="image/*" hidden></label>
+                        <button type="button" id="adminBgRemoveBtn" class="btn-small avatar-remove-btn">🗑 Убрать</button>
                     </div>
                 </div>
 
@@ -197,10 +177,8 @@
 
             <div class="settings-section" id="passwordSection">
                 <label class="form-label">Смена пароля</label>
-                <input type="password" id="setOldPwd" class="num-input"
-                    placeholder="Текущий пароль" style="margin-bottom:8px;">
-                <input type="password" id="setNewPwd" class="num-input"
-                    placeholder="Новый пароль (мин. 6 символов)">
+                <input type="password" id="setOldPwd" class="num-input" placeholder="Текущий пароль" style="margin-bottom:8px;">
+                <input type="password" id="setNewPwd" class="num-input" placeholder="Новый пароль (мин. 6 символов)">
             </div>
 
             <div class="settings-section" id="logoutSection">
@@ -209,7 +187,6 @@
             </div>
 
             <div id="settingsStatus" class="fb-status"></div>
-
             <div class="modal-actions" style="justify-content:space-between;">
                 <button type="button" id="deleteAccountBtn" class="btn-danger">🗑 Удалить аккаунт</button>
                 <div style="display:flex; gap:10px;">
@@ -220,20 +197,13 @@
         </div>
     </div>
 
-    <!-- ТЕХПОДДЕРЖКА -->
     <div id="supportModal" class="modal hidden">
         <div class="modal-content">
             <h3>💬 Техподдержка</h3>
             <p class="modal-text">Нашли ошибку или есть вопрос? Напишите — мы ответим.</p>
             <form id="feedbackForm">
-                <label class="form-label">
-                    Сообщение <span class="required">*</span>
-                    <textarea id="fbMessage" rows="4" placeholder="Опишите проблему..."></textarea>
-                </label>
-                <label class="form-label">
-                    Контакт <span class="hint">(необязательно)</span>
-                    <input type="text" id="fbContact" placeholder="Telegram, email">
-                </label>
+                <label class="form-label">Сообщение <span class="required">*</span><textarea id="fbMessage" rows="4" placeholder="Опишите проблему..."></textarea></label>
+                <label class="form-label">Контакт <span class="hint">(необязательно)</span><input type="text" id="fbContact" placeholder="Telegram, email"></label>
                 <div id="fbStatus" class="fb-status"></div>
                 <div class="modal-actions">
                     <button type="button" id="closeSupport" class="btn-secondary">Отмена</button>
@@ -243,7 +213,6 @@
         </div>
     </div>
 
-    <!-- КАРТИНКА -->
     <div id="imageModal" class="modal hidden">
         <div class="image-modal-content">
             <button id="closeImageModal" class="image-modal-close">✕</button>
@@ -259,6 +228,8 @@
         let currentAvatar = null;
         let currentAdminBg = null;
         let currentAdminBtnColor = '#4299e1';
+        let currentAdminTheme = localStorage.getItem('gdz_admin_theme') || 'auto';
+        let currentBtnStyle = localStorage.getItem('gdz_btn_style') || 'auto';
         let SUBJECTS = [];
 
         const $ = id => document.getElementById(id);
@@ -289,17 +260,12 @@
             else if (/linux/i.test(ua)) os = 'Linux';
             else if (/android/i.test(ua)) os = 'Android';
             else if (/iphone|ipad|ios/i.test(ua)) os = 'iOS';
-            const scr = `${window.screen.width}×${window.screen.height}`;
-            const lang = navigator.language || 'unknown';
-            return `${device} · ${os} · ${browser} · ${scr} · ${lang}`;
+            return `${device} · ${os} · ${browser} · ${window.screen.width}×${window.screen.height} · ${navigator.language || 'unknown'}`;
         }
 
         function fileToBase64(file, maxSizeMb = 5) {
             return new Promise((resolve, reject) => {
-                if (file.size > maxSizeMb * 1024 * 1024) {
-                    reject(new Error(`Файл больше ${maxSizeMb} МБ`));
-                    return;
-                }
+                if (file.size > maxSizeMb * 1024 * 1024) { reject(new Error(`Файл больше ${maxSizeMb} МБ`)); return; }
                 const reader = new FileReader();
                 reader.onload = () => resolve(reader.result);
                 reader.onerror = () => reject(new Error('Ошибка чтения файла'));
@@ -314,14 +280,9 @@
                 img.onload = () => {
                     const canvas = document.createElement('canvas');
                     let w = img.width, h = img.height;
-                    if (w > maxW) {
-                        h = Math.round(h * (maxW / w));
-                        w = maxW;
-                    }
-                    canvas.width = w;
-                    canvas.height = h;
-                    const ctx = canvas.getContext('2d');
-                    ctx.drawImage(img, 0, 0, w, h);
+                    if (w > maxW) { h = Math.round(h * (maxW / w)); w = maxW; }
+                    canvas.width = w; canvas.height = h;
+                    canvas.getContext('2d').drawImage(img, 0, 0, w, h);
                     resolve(canvas.toDataURL('image/jpeg', quality));
                 };
                 img.onerror = () => reject(new Error('Не удалось загрузить картинку'));
@@ -350,6 +311,34 @@
             }
         }
 
+        function applyAdminTheme(theme, bgUrl) {
+            currentAdminTheme = theme;
+            currentAdminBg = bgUrl;
+            const root = document.documentElement;
+            root.classList.remove('admin-theme-dark', 'admin-theme-custom');
+            root.style.removeProperty('--admin-bg-image');
+            localStorage.setItem('gdz_admin_theme', theme);
+            if (theme === 'dark') {
+                root.classList.add('admin-theme-dark');
+                localStorage.removeItem('gdz_admin_bg');
+            } else if (theme === 'custom' && bgUrl) {
+                root.classList.add('admin-theme-custom');
+                root.style.setProperty('--admin-bg-image', 'url("' + bgUrl + '")');
+                localStorage.setItem('gdz_admin_bg', bgUrl);
+            } else {
+                localStorage.removeItem('gdz_admin_bg');
+            }
+        }
+
+        function applyBtnStyle(style) {
+            currentBtnStyle = style;
+            const root = document.documentElement;
+            root.classList.remove('btn-style-dark', 'btn-style-light');
+            localStorage.setItem('gdz_btn_style', style);
+            if (style === 'dark') root.classList.add('btn-style-dark');
+            else if (style === 'light') root.classList.add('btn-style-light');
+        }
+
         function getInitial(name, email) {
             const n = (name || '').trim();
             if (n) return n[0].toUpperCase();
@@ -373,7 +362,11 @@
                         currentAvatar = authUser.avatar || null;
                         currentAdminBg = authUser.admin_bg_url || null;
                         currentAdminBtnColor = authUser.admin_btn_color || '#4299e1';
+                        currentAdminTheme = authUser.admin_theme || 'auto';
+                        currentBtnStyle = authUser.btn_style || 'auto';
                         applyTheme(authUser.theme || 'light', authUser.bg_url);
+                        applyAdminTheme(currentAdminTheme, currentAdminBg);
+                        applyBtnStyle(currentBtnStyle);
                         setAuthState(true);
                         await showMain();
                         return;
@@ -408,8 +401,7 @@
                 SUBJECTS = d.subjects || [];
                 renderSubjects();
             } catch (e) {
-                $('subjectsContainer').innerHTML =
-                    '<p class="empty">Не удалось загрузить предметы</p>';
+                $('subjectsContainer').innerHTML = '<p class="empty">Не удалось загрузить предметы</p>';
             }
         }
 
@@ -443,10 +435,7 @@
                     ta.dataset.subject = s.name;
                     ta.dataset.type = s.type || 'numbers';
                     ta.dataset.url = s.url || '';
-                    ta.dataset.maxNumber = s.max_number || 0;
-                    ta.placeholder = s.type === 'text'
-                        ? 'Вставь текст задания...'
-                        : '447, 449, 451 — или текст задания';
+                    ta.placeholder = s.type === 'text' ? 'Вставь текст задания...' : '447, 449, 451 — или текст задания';
                     row.appendChild(ta);
                     groupDiv.appendChild(row);
                 });
@@ -456,7 +445,6 @@
 
         function renderTopbar() {
             topbarRight.innerHTML = '';
-
             const name = authUser.name || authUser.email.split('@')[0];
             const greet = document.createElement('span');
             greet.className = 'topbar-user';
@@ -494,21 +482,14 @@
             topbarRight.appendChild(supBtn);
         }
 
-        // ─── ВХОД ──────────────────────────────────────
         let authMode = 'login';
-
         function switchTab(mode) {
             authMode = mode;
-            document.querySelectorAll('.auth-tab').forEach(t => {
-                t.classList.toggle('active', t.dataset.tab === mode);
-            });
+            document.querySelectorAll('.auth-tab').forEach(t => t.classList.toggle('active', t.dataset.tab === mode));
             $('nameField').style.display = mode === 'register' ? 'block' : 'none';
             $('authSubmit').textContent = mode === 'login' ? 'Войти' : 'Создать аккаунт';
         }
-
-        document.querySelectorAll('.auth-tab').forEach(t => {
-            t.onclick = () => switchTab(t.dataset.tab);
-        });
+        document.querySelectorAll('.auth-tab').forEach(t => t.onclick = () => switchTab(t.dataset.tab));
 
         $('authForm').onsubmit = async (e) => {
             e.preventDefault();
@@ -517,58 +498,41 @@
             const name = $('authName').value.trim();
             const st = $('authStatus');
             const device = getDeviceInfo();
-
             st.textContent = '⏳ Подождите...';
             st.className = 'fb-status loading';
-
             const url = authMode === 'login' ? '/api/auth/login' : '/api/auth/register';
             const body = authMode === 'login' ? {email, password, device} : {email, password, name, device};
-
             try {
-                const r = await fetch(url, {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify(body)
-                });
+                const r = await fetch(url, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body) });
                 const d = await r.json();
-                if (!r.ok) {
-                    st.textContent = '❌ ' + (d.detail || 'Ошибка');
-                    st.className = 'fb-status error';
-                    return;
-                }
+                if (!r.ok) { st.textContent = '❌ ' + (d.detail || 'Ошибка'); st.className = 'fb-status error'; return; }
                 authToken = d.token;
                 authUser = d.user;
                 currentAvatar = d.user.avatar || null;
                 currentAdminBg = d.user.admin_bg_url || null;
                 currentAdminBtnColor = d.user.admin_btn_color || '#4299e1';
+                currentAdminTheme = d.user.admin_theme || 'auto';
+                currentBtnStyle = d.user.btn_style || 'auto';
                 localStorage.setItem('gdz_token', authToken);
                 applyTheme(authUser.theme || 'light', authUser.bg_url);
+                applyAdminTheme(currentAdminTheme, currentAdminBg);
+                applyBtnStyle(currentBtnStyle);
                 await showMain();
-            } catch (err) {
-                st.textContent = '❌ ' + err.message;
-                st.className = 'fb-status error';
-            }
+            } catch (err) { st.textContent = '❌ ' + err.message; st.className = 'fb-status error'; }
         };
 
         async function logout() {
             if (!confirm('Выйти из аккаунта?')) return;
-            try {
-                await fetch('/api/auth/logout', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({token: authToken})
-                });
-            } catch {}
-            authToken = '';
-            authUser = null;
-            currentAvatar = null;
+            try { await fetch('/api/auth/logout', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({token: authToken}) }); } catch {}
+            authToken = ''; authUser = null; currentAvatar = null;
             localStorage.removeItem('gdz_token');
             applyTheme('light', null);
+            applyAdminTheme('auto', null);
+            applyBtnStyle('auto');
             topbarRight.innerHTML = '';
             showAuth();
         }
 
-        // ─── ИСТОРИЯ ───────────────────────────────────
         async function openHistory() {
             historyModal.classList.remove('hidden');
             const list = $('historyList');
@@ -577,57 +541,35 @@
                 const r = await fetch('/api/history/list?token=' + encodeURIComponent(authToken));
                 const d = await r.json();
                 if (!r.ok) throw new Error(d.detail || 'Ошибка');
-                if (!d.items.length) {
-                    list.innerHTML = '<p class="empty">История пуста</p>';
-                    return;
-                }
+                if (!d.items.length) { list.innerHTML = '<p class="empty">История пуста</p>'; return; }
                 list.innerHTML = '';
                 d.items.forEach(it => {
                     const row = document.createElement('div');
                     row.className = 'history-row';
-                    row.innerHTML = `
-                        <div class="history-info">
-                            <strong>${escapeHtml(it.subject)}</strong>
-                            <span>${escapeHtml(it.numbers)}</span>
-                        </div>
-                        <span class="history-date">${escapeHtml(it.created)}</span>
-                    `;
+                    row.innerHTML = `<div class="history-info"><strong>${escapeHtml(it.subject)}</strong><span>${escapeHtml(it.numbers)}</span></div><span class="history-date">${escapeHtml(it.created)}</span>`;
                     row.onclick = () => {
                         const subj = SUBJECTS.find(s => s.name === it.subject);
-                        if (subj) {
-                            const el = document.getElementById('subj_' + subj.id);
-                            if (el) el.value = it.numbers;
-                            historyModal.classList.add('hidden');
-                        }
+                        if (subj) { const el = document.getElementById('subj_' + subj.id); if (el) el.value = it.numbers; historyModal.classList.add('hidden'); }
                     };
                     list.appendChild(row);
                 });
-            } catch (e) {
-                list.innerHTML = '<p class="empty">Ошибка: ' + e.message + '</p>';
-            }
+            } catch (e) { list.innerHTML = '<p class="empty">Ошибка: ' + e.message + '</p>'; }
         }
 
         $('closeHistoryBtn').onclick = () => historyModal.classList.add('hidden');
         $('clearHistoryBtn').onclick = async () => {
             if (!confirm('Очистить всю историю?')) return;
             try {
-                await fetch('/api/history/clear', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({token: authToken})
-                });
+                await fetch('/api/history/clear', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({token: authToken}) });
                 $('historyList').innerHTML = '<p class="empty">История пуста</p>';
             } catch {}
         };
 
-        // ─── НАСТРОЙКИ ─────────────────────────────────
         function updateAvatarPreview() {
             const preview = $('avatarPreview');
             if (currentAvatar) {
                 preview.style.backgroundImage = 'url("' + currentAvatar + '")';
                 preview.textContent = '';
-                preview.style.backgroundSize = 'cover';
-                preview.style.backgroundPosition = 'center';
             } else {
                 preview.style.backgroundImage = '';
                 preview.textContent = getInitial(authUser?.name, authUser?.email);
@@ -643,53 +585,61 @@
             $('setNewPwd').value = '';
             updateAvatarPreview();
 
-            document.querySelectorAll('.theme-btn').forEach(t => {
-                t.classList.toggle('active', t.dataset.theme === currentTheme);
-            });
+            document.querySelectorAll('.theme-btn').forEach(t => t.classList.toggle('active', t.dataset.theme === currentTheme));
             $('customBgBlock').style.display = currentTheme === 'custom' ? 'block' : 'none';
+
+            document.querySelectorAll('.btn-style-btn').forEach(t => t.classList.toggle('active', t.dataset.style === currentBtnStyle));
 
             if (authUser?.is_admin) {
                 $('adminSettingsSection').classList.remove('hidden');
                 $('adminBtnColor').value = currentAdminBtnColor || '#4299e1';
                 $('adminBtnColorLabel').textContent = currentAdminBtnColor || '#4299e1';
+                document.querySelectorAll('.admin-theme-btn').forEach(t => t.classList.toggle('active', t.dataset.adminTheme === currentAdminTheme));
+                $('adminCustomBgBlock').style.display = currentAdminTheme === 'custom' ? 'block' : 'none';
             } else {
                 $('adminSettingsSection').classList.add('hidden');
             }
         }
 
         $('closeSettingsBtn').onclick = () => settingsModal.classList.add('hidden');
-        settingsModal.onclick = (e) => {
-            if (e.target === settingsModal) settingsModal.classList.add('hidden');
-        };
+        settingsModal.onclick = (e) => { if (e.target === settingsModal) settingsModal.classList.add('hidden'); };
 
         document.querySelectorAll('.theme-btn').forEach(t => {
             t.onclick = () => {
                 const theme = t.dataset.theme;
-                document.querySelectorAll('.theme-btn').forEach(x =>
-                    x.classList.toggle('active', x === t));
+                document.querySelectorAll('.theme-btn').forEach(x => x.classList.toggle('active', x === t));
                 $('customBgBlock').style.display = theme === 'custom' ? 'block' : 'none';
                 const bg = theme === 'custom' ? currentBgUrl : null;
                 applyTheme(theme, bg);
             };
         });
 
-        // ─── АВАТАРКА ───────────────────────────────────
+        document.querySelectorAll('.btn-style-btn').forEach(t => {
+            t.onclick = () => {
+                const style = t.dataset.style;
+                document.querySelectorAll('.btn-style-btn').forEach(x => x.classList.toggle('active', x === t));
+                applyBtnStyle(style);
+            };
+        });
+
+        document.querySelectorAll('.admin-theme-btn').forEach(t => {
+            t.onclick = () => {
+                const theme = t.dataset.adminTheme;
+                document.querySelectorAll('.admin-theme-btn').forEach(x => x.classList.toggle('active', x === t));
+                $('adminCustomBgBlock').style.display = theme === 'custom' ? 'block' : 'none';
+                if (theme === 'custom' && currentAdminBg) applyAdminTheme('custom', currentAdminBg);
+                else applyAdminTheme(theme, null);
+            };
+        });
+
         $('avatarInput').onchange = async (e) => {
-            const file = e.target.files[0];
-            if (!file) return;
+            const file = e.target.files[0]; if (!file) return;
             try {
                 const b64 = await shrinkImage(file, 300, 0.85);
                 currentAvatar = b64;
                 updateAvatarPreview();
-                const r = await fetch('/api/auth/avatar', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({token: authToken, avatar: b64})
-                });
-                if (!r.ok) throw new Error('Не удалось сохранить аватар');
-            } catch (err) {
-                alert('Ошибка: ' + err.message);
-            }
+                await fetch('/api/auth/avatar', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({token: authToken, avatar: b64}) });
+            } catch (err) { alert('Ошибка: ' + err.message); }
             e.target.value = '';
         };
 
@@ -697,71 +647,50 @@
             if (!confirm('Убрать аватарку?')) return;
             currentAvatar = null;
             updateAvatarPreview();
-            try {
-                await fetch('/api/auth/avatar', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({token: authToken, avatar: ''})
-                });
-            } catch {}
+            try { await fetch('/api/auth/avatar', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({token: authToken, avatar: ''}) }); } catch {}
         };
 
-        // ─── ФОН ГЛАВНОЙ ───────────────────────────────
         $('bgInput').onchange = async (e) => {
-            const file = e.target.files[0];
-            if (!file) return;
+            const file = e.target.files[0]; if (!file) return;
             try {
                 const b64 = await shrinkImage(file, 1600, 0.82);
                 currentBgUrl = b64;
                 applyTheme('custom', b64);
-                document.querySelectorAll('.theme-btn').forEach(x =>
-                    x.classList.toggle('active', x.dataset.theme === 'custom'));
+                document.querySelectorAll('.theme-btn').forEach(x => x.classList.toggle('active', x.dataset.theme === 'custom'));
                 $('customBgBlock').style.display = 'block';
-            } catch (err) {
-                alert('Ошибка: ' + err.message);
-            }
+            } catch (err) { alert('Ошибка: ' + err.message); }
             e.target.value = '';
         };
 
         $('bgRemoveBtn').onclick = () => {
             currentBgUrl = null;
             applyTheme('light', null);
-            document.querySelectorAll('.theme-btn').forEach(x =>
-                x.classList.toggle('active', x.dataset.theme === 'light'));
+            document.querySelectorAll('.theme-btn').forEach(x => x.classList.toggle('active', x.dataset.theme === 'light'));
             $('customBgBlock').style.display = 'none';
         };
 
-        // ─── АДМИН-ФОН И ЦВЕТ ──────────────────────────
         $('adminBgInput').onchange = async (e) => {
-            const file = e.target.files[0];
-            if (!file) return;
+            const file = e.target.files[0]; if (!file) return;
             try {
                 const b64 = await shrinkImage(file, 1600, 0.82);
                 currentAdminBg = b64;
-                alert('✅ Фон админки сохранён. Открой админку чтобы увидеть.');
-            } catch (err) {
-                alert('Ошибка: ' + err.message);
-            }
+                applyAdminTheme('custom', b64);
+                document.querySelectorAll('.admin-theme-btn').forEach(x => x.classList.toggle('active', x.dataset.adminTheme === 'custom'));
+                $('adminCustomBgBlock').style.display = 'block';
+            } catch (err) { alert('Ошибка: ' + err.message); }
             e.target.value = '';
         };
 
         $('adminBgRemoveBtn').onclick = () => {
             currentAdminBg = null;
-            alert('✅ Фон админки убран.');
+            applyAdminTheme('auto', null);
+            document.querySelectorAll('.admin-theme-btn').forEach(x => x.classList.toggle('active', x.dataset.adminTheme === 'auto'));
+            $('adminCustomBgBlock').style.display = 'none';
         };
 
-        $('adminBtnColor').oninput = (e) => {
-            currentAdminBtnColor = e.target.value;
-            $('adminBtnColorLabel').textContent = currentAdminBtnColor;
-        };
+        $('adminBtnColor').oninput = (e) => { currentAdminBtnColor = e.target.value; $('adminBtnColorLabel').textContent = currentAdminBtnColor; };
+        $('adminBtnColorReset').onclick = () => { currentAdminBtnColor = '#4299e1'; $('adminBtnColor').value = '#4299e1'; $('adminBtnColorLabel').textContent = '#4299e1'; };
 
-        $('adminBtnColorReset').onclick = () => {
-            currentAdminBtnColor = '#4299e1';
-            $('adminBtnColor').value = '#4299e1';
-            $('adminBtnColorLabel').textContent = '#4299e1';
-        };
-
-        // ─── СОХРАНЕНИЕ ────────────────────────────────
         $('saveSettingsBtn').onclick = async () => {
             const st = $('settingsStatus');
             const newName = $('setName').value.trim();
@@ -769,68 +698,43 @@
             const bgToSave = newTheme === 'custom' ? (currentBgUrl || '') : '';
             const oldPwd = $('setOldPwd').value;
             const newPwd = $('setNewPwd').value;
-
             st.textContent = '⏳ Сохраняем...';
             st.className = 'fb-status loading';
-
             const payload = {
-                token: authToken, name: newName,
-                theme: newTheme,
-                bg_url: bgToSave
+                token: authToken, name: newName, theme: newTheme, bg_url: bgToSave,
+                btn_style: currentBtnStyle
             };
-
             if (authUser?.is_admin) {
                 payload.admin_bg_url = currentAdminBg || '';
                 payload.admin_btn_color = currentAdminBtnColor || '';
+                payload.admin_theme = currentAdminTheme || 'auto';
             }
-
             try {
-                const r1 = await fetch('/api/auth/update', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify(payload)
-                });
+                const r1 = await fetch('/api/auth/update', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload) });
                 const d1 = await r1.json();
-                if (!r1.ok) {
-                    st.textContent = '❌ ' + (d1.detail || 'Ошибка');
-                    st.className = 'fb-status error';
-                    return;
-                }
+                if (!r1.ok) { st.textContent = '❌ ' + (d1.detail || 'Ошибка'); st.className = 'fb-status error'; return; }
                 authUser = d1.user;
                 if (authUser.bg_url) currentBgUrl = authUser.bg_url;
                 currentAdminBg = authUser.admin_bg_url || null;
                 currentAdminBtnColor = authUser.admin_btn_color || '#4299e1';
+                currentAdminTheme = authUser.admin_theme || 'auto';
+                currentBtnStyle = authUser.btn_style || 'auto';
                 applyTheme(authUser.theme, authUser.bg_url);
+                applyAdminTheme(currentAdminTheme, currentAdminBg);
+                applyBtnStyle(currentBtnStyle);
                 renderTopbar();
-
                 if (oldPwd && newPwd) {
-                    const r2 = await fetch('/api/auth/change-password', {
-                        method: 'POST',
-                        headers: {'Content-Type': 'application/json'},
-                        body: JSON.stringify({token: authToken, old_password: oldPwd, new_password: newPwd})
-                    });
+                    const r2 = await fetch('/api/auth/change-password', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({token: authToken, old_password: oldPwd, new_password: newPwd}) });
                     const d2 = await r2.json();
-                    if (!r2.ok) {
-                        st.textContent = '⚠️ Профиль сохранён, пароль: ' + (d2.detail || 'Ошибка');
-                        st.className = 'fb-status error';
-                        return;
-                    }
+                    if (!r2.ok) { st.textContent = '⚠️ Профиль сохранён, пароль: ' + (d2.detail || 'Ошибка'); st.className = 'fb-status error'; return; }
                     st.textContent = '✅ Профиль и пароль сохранены';
-                } else {
-                    st.textContent = '✅ Настройки сохранены';
-                }
+                } else { st.textContent = '✅ Настройки сохранены'; }
                 st.className = 'fb-status success';
                 setTimeout(() => settingsModal.classList.add('hidden'), 1500);
-            } catch (e) {
-                st.textContent = '❌ ' + e.message;
-                st.className = 'fb-status error';
-            }
+            } catch (e) { st.textContent = '❌ ' + e.message; st.className = 'fb-status error'; }
         };
 
-        $('logoutBtn').onclick = () => {
-            settingsModal.classList.add('hidden');
-            logout();
-        };
+        $('logoutBtn').onclick = () => { settingsModal.classList.add('hidden'); logout(); };
 
         $('deleteAccountBtn').onclick = async () => {
             if (!confirm('Удалить аккаунт?')) return;
@@ -839,32 +743,25 @@
             st.textContent = '⏳ Удаляем...';
             st.className = 'fb-status loading';
             try {
-                const r = await fetch('/api/auth/delete', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({token: authToken})
-                });
+                const r = await fetch('/api/auth/delete', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({token: authToken}) });
                 if (!r.ok) throw new Error('Ошибка удаления');
-                authToken = '';
-                authUser = null;
-                currentAvatar = null;
+                authToken = ''; authUser = null; currentAvatar = null;
                 localStorage.removeItem('gdz_token');
                 localStorage.removeItem('gdz_theme');
                 localStorage.removeItem('gdz_bg');
+                localStorage.removeItem('gdz_admin_theme');
+                localStorage.removeItem('gdz_admin_bg');
+                localStorage.removeItem('gdz_btn_style');
                 applyTheme('light', null);
+                applyAdminTheme('auto', null);
+                applyBtnStyle('auto');
                 settingsModal.classList.add('hidden');
                 showAuth();
-            } catch (e) {
-                st.textContent = '❌ ' + e.message;
-                st.className = 'fb-status error';
-            }
+            } catch (e) { st.textContent = '❌ ' + e.message; st.className = 'fb-status error'; }
         };
 
-        // ─── ТЕХПОДДЕРЖКА ──────────────────────────────
         $('closeSupport').onclick = () => supportModal.classList.add('hidden');
-        supportModal.onclick = (e) => {
-            if (e.target === supportModal) supportModal.classList.add('hidden');
-        };
+        supportModal.onclick = (e) => { if (e.target === supportModal) supportModal.classList.add('hidden'); };
 
         $('feedbackForm').onsubmit = async (e) => {
             e.preventDefault();
@@ -874,24 +771,16 @@
             st.textContent = '⏳ Отправляем...';
             st.className = 'fb-status loading';
             try {
-                const r = await fetch('/api/feedback', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({message: msg, contact: $('fbContact').value.trim()})
-                });
+                const r = await fetch('/api/feedback', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({message: msg, contact: $('fbContact').value.trim()}) });
                 if (!r.ok) throw new Error('Ошибка');
                 st.textContent = '✅ Отправлено! Спасибо.';
                 st.className = 'fb-status success';
                 $('fbMessage').value = '';
                 $('fbContact').value = '';
                 setTimeout(() => supportModal.classList.add('hidden'), 2000);
-            } catch (err) {
-                st.textContent = '❌ ' + err.message;
-                st.className = 'fb-status error';
-            }
+            } catch (err) { st.textContent = '❌ ' + err.message; st.className = 'fb-status error'; }
         };
 
-        // ─── КАРТИНКА ──────────────────────────────────
         function openImageModal(src) {
             imageModalImg.src = src;
             imageModal.classList.remove('hidden');
@@ -906,43 +795,28 @@
         imageModal.onclick = (e) => { if (e.target === imageModal) closeModal(); };
         document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeModal(); });
 
-        // ─── ЗАГРУЗКА КАРТИНОК ─────────────────────────
         let activeLoads = 0;
-        const MAX_PARALLEL = 3;
-        const pendingQueue = [];
-        const PLACEHOLDER_RETRIES = 4;
-        const RETRY_DELAYS = [500, 1000, 2000, 3000];
-        const MIN_REAL_WIDTH = 200;
-        const MIN_REAL_HEIGHT = 150;
-        const LOAD_TIMEOUT = 15000;
-        const TALL_RATIO = 3.0;
+        const MAX_PARALLEL = 3, pendingQueue = [];
+        const PLACEHOLDER_RETRIES = 4, RETRY_DELAYS = [500, 1000, 2000, 3000];
+        const MIN_REAL_WIDTH = 200, MIN_REAL_HEIGHT = 150;
+        const LOAD_TIMEOUT = 15000, TALL_RATIO = 3.0;
 
         function scheduleLoad(fn) {
-            return new Promise((resolve) => {
-                pendingQueue.push({ fn, resolve });
-                processQueue();
-            });
+            return new Promise((resolve) => { pendingQueue.push({ fn, resolve }); processQueue(); });
         }
-
         function processQueue() {
             while (activeLoads < MAX_PARALLEL && pendingQueue.length > 0) {
                 const { fn, resolve } = pendingQueue.shift();
                 activeLoads++;
-                fn().then(resolve).finally(() => {
-                    activeLoads--;
-                    processQueue();
-                });
+                fn().then(resolve).finally(() => { activeLoads--; processQueue(); });
             }
         }
-
         function showImageError(img, imgUrl) {
             const err = document.createElement('div');
             err.className = 'img-error';
-            err.innerHTML = `⚠️ Не удалось получить решение<br><br>
-                <a href="${imgUrl}" target="_blank" class="img-error-link">Открыть напрямую с gdz.ru →</a>`;
+            err.innerHTML = `⚠️ Не удалось получить решение<br><br><a href="${imgUrl}" target="_blank" class="img-error-link">Открыть напрямую с gdz.ru →</a>`;
             img.replaceWith(err);
         }
-
         function loadImage(img, imgUrl) {
             scheduleLoad(() => new Promise((resolve) => {
                 let attempt = 0;
@@ -952,11 +826,7 @@
                     img.classList.add('img-loading');
                     img.alt = 'Загрузка...';
                     tid = setTimeout(() => onFail('Timeout'), LOAD_TIMEOUT);
-                    function cleanup() {
-                        if (tid) { clearTimeout(tid); tid = null; }
-                        img.removeEventListener('load', onLoad);
-                        img.removeEventListener('error', onError);
-                    }
+                    function cleanup() { if (tid) { clearTimeout(tid); tid = null; } img.removeEventListener('load', onLoad); img.removeEventListener('error', onError); }
                     function onLoad() {
                         cleanup();
                         const w = img.naturalWidth, h = img.naturalHeight;
@@ -969,9 +839,7 @@
                                 setTimeout(tryOnce, delay);
                                 return;
                             }
-                            showImageError(img, imgUrl);
-                            resolve();
-                            return;
+                            showImageError(img, imgUrl); resolve(); return;
                         }
                         img.classList.remove('img-loading', 'img-retrying');
                         if (h / w >= TALL_RATIO) img.classList.add('img-tall');
@@ -992,14 +860,12 @@
                         setTimeout(tryOnce, delay);
                         return;
                     }
-                    showImageError(img, imgUrl);
-                    resolve();
+                    showImageError(img, imgUrl); resolve();
                 }
                 tryOnce();
             }));
         }
 
-        // ─── ПОИСК ─────────────────────────────────────
         btn.addEventListener('click', async () => {
             const jobs = [];
             SUBJECTS.forEach(s => {
@@ -1007,54 +873,29 @@
                 if (!el) return;
                 const v = el.value.trim();
                 if (!v) return;
-                jobs.push({
-                    subject: s.name,
-                    url: s.url || '',
-                    type: s.type || 'numbers',
-                    numbers: v,
-                    raw_text: v
-                });
+                jobs.push({ subject: s.name, url: s.url || '', type: s.type || 'numbers', numbers: v, raw_text: v });
             });
             if (!jobs.length) return showStatus('⚠️ Заполни хотя бы одно поле', 'error');
-
             btn.disabled = true;
             result.innerHTML = '';
             let seconds = 0;
             showStatus('⏳ Ищу решения... 0 сек', 'loading');
-            const timer = setInterval(() => {
-                seconds++;
-                showStatus(`⏳ Ищу решения... ${seconds} сек`, 'loading');
-            }, 1000);
-
+            const timer = setInterval(() => { seconds++; showStatus(`⏳ Ищу решения... ${seconds} сек`, 'loading'); }, 1000);
             try {
-                const resp = await fetch('/api/parse', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({jobs})
-                });
+                const resp = await fetch('/api/parse', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({jobs}) });
                 const data = await resp.json();
                 clearInterval(timer);
                 if (!resp.ok) return showStatus('❌ ' + (data.detail || 'Ошибка'), 'error');
                 if (data.total === 0) return showStatus('🤷 Ничего не найдено', 'error');
-                const found = data.results.filter(r => r.found).length;
                 showStatus(`✅ Обработано ${data.total} заданий`, 'success');
-
                 if (authToken) {
                     for (const j of jobs) {
                         if (!j.numbers) continue;
-                        fetch('/api/history/save', {
-                            method: 'POST',
-                            headers: {'Content-Type': 'application/json'},
-                            body: JSON.stringify({token: authToken, subject: j.subject, numbers: j.numbers})
-                        }).catch(() => {});
+                        fetch('/api/history/save', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({token: authToken, subject: j.subject, numbers: j.numbers}) }).catch(() => {});
                     }
                 }
-
                 const bySubject = {};
-                data.results.forEach(r => {
-                    (bySubject[r.subject] = bySubject[r.subject] || []).push(r);
-                });
-
+                data.results.forEach(r => { (bySubject[r.subject] = bySubject[r.subject] || []).push(r); });
                 Object.entries(bySubject).forEach(([subject, items]) => {
                     const sec = document.createElement('section');
                     sec.className = 'subject-block';
@@ -1065,20 +906,13 @@
                             textCard.className = 'task-card text-task';
                             let headerText = '📝 Задание';
                             if (r.number) headerText = `№${r.number} — не найдено`;
-                            textCard.innerHTML = `
-                                <div class="task-header">
-                                    <h3>${escapeHtml(headerText)}</h3>
-                                </div>
-                                <div class="task-text">${escapeHtml(r.raw_text || '')}</div>
-                            `;
+                            textCard.innerHTML = `<div class="task-header"><h3>${escapeHtml(headerText)}</h3></div><div class="task-text">${escapeHtml(r.raw_text || '')}</div>`;
                             sec.appendChild(textCard);
                             return;
                         }
                         const card = document.createElement('div');
                         card.className = 'task-card';
-                        card.innerHTML = `<div class="task-header">
-                            <h3>№${r.number}</h3>
-                        </div>`;
+                        card.innerHTML = `<div class="task-header"><h3>№${r.number}</h3></div>`;
                         r.images.forEach(u => {
                             const img = document.createElement('img');
                             img.className = 'solution-img img-loading';
@@ -1097,24 +931,12 @@
                     });
                     result.appendChild(sec);
                 });
-            } catch (err) {
-                clearInterval(timer);
-                showStatus('❌ Ошибка: ' + err.message, 'error');
-            } finally {
-                btn.disabled = false;
-            }
+            } catch (err) { clearInterval(timer); showStatus('❌ Ошибка: ' + err.message, 'error'); }
+            finally { btn.disabled = false; }
         });
 
-        function showStatus(text, type) {
-            status.textContent = text;
-            status.className = 'status ' + type;
-        }
-
-        function escapeHtml(t) {
-            const d = document.createElement('div');
-            d.textContent = t || '';
-            return d.innerHTML;
-        }
+        function showStatus(text, type) { status.textContent = text; status.className = 'status ' + type; }
+        function escapeHtml(t) { const d = document.createElement('div'); d.textContent = t || ''; return d.innerHTML; }
 
         init();
     </script>
