@@ -112,7 +112,6 @@ body.theme-custom::before {
     pointer-events: none;
 }
 
-/* ПОЛНАЯ ПРОЗРАЧНОСТЬ — карточки, блоки, группы */
 .theme-custom .card,
 .theme-custom .subject-block,
 .theme-custom .subject-group,
@@ -125,7 +124,6 @@ body.theme-custom .subject-group {
     backdrop-filter: none;
 }
 
-/* Модалки — оставляем плотными чтобы читалось */
 .theme-custom .modal-content,
 .theme-custom .image-modal-content,
 body.theme-custom .modal-content,
@@ -134,7 +132,6 @@ body.theme-custom .image-modal-content {
     color: #e2e8f0;
 }
 
-/* ТЕКСТ — с тенью, всегда читается */
 .theme-custom h1, .theme-custom h2, .theme-custom h3,
 body.theme-custom h1, body.theme-custom h2, body.theme-custom h3 {
     color: #ffffff;
@@ -166,7 +163,6 @@ body.theme-custom .version {
     color: #ffffff;
 }
 
-/* ПОЛЯ ВВОДА — только тонкие границы */
 .theme-custom .num-input,
 .theme-custom .text-input,
 .theme-custom .form-label input,
@@ -210,10 +206,8 @@ body.theme-custom .task-header h3 {
 }
 
 /* ═══════════════════════════════════════
-   СТИЛЬ КНОПОК + ТЕКСТ (только при custom)
+   СТИЛЬ КНОПОК + ТЕКСТ
    ═══════════════════════════════════════ */
-
-/* === СВЕТЛЫЕ === */
 .btn-style-light .btn-primary,
 .btn-style-light .btn-small,
 .btn-style-light .avatar-upload-btn {
@@ -240,7 +234,6 @@ body.theme-custom .task-header h3 {
     color: #1a202c;
 }
 
-/* === ТЁМНЫЕ === */
 .btn-style-dark .btn-primary,
 .btn-style-dark .btn-small,
 .btn-style-dark .avatar-upload-btn {
@@ -267,7 +260,6 @@ body.theme-custom .task-header h3 {
     color: #ffffff;
 }
 
-/* Цвет кнопок админки */
 .btn-primary, .btn-small, .admin-tab.active {
     background-color: var(--admin-btn-color, #4299e1);
 }
@@ -697,6 +689,15 @@ h3 { font-size: 15px; color: #2d3748; }
 }
 .light-btn-preview { background: #ffffff; color: #1a202c; border: 1px solid #cbd5e0; }
 .dark-btn-preview { background: #2d3748; color: #ffffff; }
+
+/* Убираем полоску под секцией "Стиль кнопок и текста" */
+#btnStyleSection {
+    border-bottom: none !important;
+    padding-bottom: 0;
+}
+#customBgBlock + .settings-section {
+    border-top: none;
+}
 
 /* ═══════════════════════════════════════
    МОДАЛКА КАРТИНКИ
