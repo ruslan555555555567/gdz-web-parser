@@ -28,15 +28,29 @@ body.theme-dark .card,
 body.theme-dark .subject-block,
 body.theme-dark .modal-content,
 body.theme-dark .image-modal-content { background: #2d3748; color: #e2e8f0; }
+
+/* ── ЗАГОЛОВКИ ── */
 .theme-dark h1,
 .theme-dark h2,
 .theme-dark h3,
 body.theme-dark h1,
 body.theme-dark h2,
 body.theme-dark h3 { color: #f7fafc; }
+
+/* ── НАЗВАНИЯ ПРЕДМЕТОВ (главное исправление!) ── */
+.theme-dark .input-label,
+body.theme-dark .input-label { color: #e2e8f0; }
+
+.theme-dark .group-title,
+body.theme-dark .group-title { color: #cbd5e0; }
+
+.theme-dark .group-hint,
+body.theme-dark .group-hint { color: #a0aec0; }
+
 .theme-dark .subtitle { color: #a0aec0; }
 .theme-dark .hint { color: #718096; }
 .theme-dark .version { background: #4a5568; color: #cbd5e0; }
+
 .theme-dark .num-input,
 .theme-dark .text-input,
 .theme-dark select,
@@ -93,13 +107,12 @@ body.theme-dark h3 { color: #f7fafc; }
 .theme-dark .auth-screen-title { color: #f7fafc; }
 .theme-dark .auth-screen-subtitle { color: #a0aec0; }
 .theme-dark .subject-group { border-color: #4a5568; }
-.theme-dark .group-title { color: #a0aec0; }
-.theme-dark .group-hint { color: #718096; }
 .theme-dark .task-text { background: #1a202c; color: #e2e8f0; }
 .theme-dark .subject-card { background: #1a202c; color: #e2e8f0; }
 .theme-dark .subj-head strong { color: #f7fafc; }
 .theme-dark .subj-row { color: #a0aec0; }
 .theme-dark .subject-form { background: #1a202c; }
+.theme-dark .stats-card { background: #1a202c; color: #e2e8f0; }
 
 /* ═══════════════════════════════════════
    СВОЯ КАРТИНКА ФОНА
@@ -425,9 +438,18 @@ select.num-input:focus { border-color: #4299e1; }
 
 .task-card { padding: 12px 0; border-bottom: 1px solid #edf2f7; }
 .task-card:last-child { border-bottom: none; }
+.task-card.not-found { opacity: 0.55; }
 
 .task-header { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
 .task-header h3 { font-size: 16px; color: #2d3748; font-weight: 600; }
+.badge {
+    background: #fed7d7;
+    color: #c53030;
+    padding: 3px 10px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+}
 
 /* Текстовое задание */
 .task-card.text-task { padding: 14px 0; }
@@ -778,7 +800,6 @@ select.num-input:focus { border-color: #4299e1; }
 .user-row { font-size: 13px; color: #4a5568; margin-bottom: 4px; word-break: break-all; line-height: 1.5; }
 .user-row.small { font-size: 12px; color: #718096; }
 
-/* Онлайн-карточка */
 .user-card.online-card {
     border-left-color: #48bb78;
     background: #f0fff4;
@@ -847,14 +868,8 @@ select.num-input:focus { border-color: #4299e1; }
     flex-shrink: 0;
     white-space: nowrap;
 }
-.type-badge.type-num {
-    background: #bee3f8;
-    color: #2c5282;
-}
-.type-badge.type-text {
-    background: #fefcbf;
-    color: #744210;
-}
+.type-badge.type-num { background: #bee3f8; color: #2c5282; }
+.type-badge.type-text { background: #fefcbf; color: #744210; }
 
 .theme-dark .subject-card { background: #1a202c; }
 .theme-dark .subj-head strong { color: #f7fafc; }
