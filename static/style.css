@@ -111,7 +111,6 @@ body.theme-custom::before {
     z-index: -1;
     pointer-events: none;
 }
-
 .theme-custom .card,
 .theme-custom .subject-block,
 .theme-custom .subject-group,
@@ -123,7 +122,6 @@ body.theme-custom .subject-group {
     border: none;
     backdrop-filter: none;
 }
-
 .theme-custom .modal-content,
 .theme-custom .image-modal-content,
 body.theme-custom .modal-content,
@@ -131,7 +129,6 @@ body.theme-custom .image-modal-content {
     background: rgba(20,25,35,0.95);
     color: #e2e8f0;
 }
-
 .theme-custom h1, .theme-custom h2, .theme-custom h3,
 body.theme-custom h1, body.theme-custom h2, body.theme-custom h3 {
     color: #ffffff;
@@ -162,7 +159,6 @@ body.theme-custom .version {
     background: rgba(0,0,0,0.6);
     color: #ffffff;
 }
-
 .theme-custom .num-input,
 .theme-custom .text-input,
 .theme-custom .form-label input,
@@ -191,7 +187,6 @@ body.theme-custom .text-input:focus {
     background: rgba(0,0,0,0.15);
     border-color: #ffffff;
 }
-
 .theme-custom .task-text, .theme-custom .history-row,
 .theme-custom .user-row, .theme-custom .msg-body,
 body.theme-custom .task-text, body.theme-custom .history-row,
@@ -285,6 +280,54 @@ body.admin-theme-custom .btn-logout {
     background: #4a5568 !important;
     color: #ffffff !important;
     border-color: #718096 !important;
+}
+
+/* ═══════════════════════════════════════
+   ГЛАВНЫЙ ТЕКСТ МЕНЯЕТСЯ С КНОПКАМИ
+   ═══════════════════════════════════════ */
+
+/* === СВЕТЛЫЕ — тёмный текст с белой тенью === */
+.btn-style-light h1,
+.btn-style-light h2,
+.btn-style-light h3,
+.btn-style-light .input-label,
+.btn-style-light .group-title,
+.btn-style-light .group-hint,
+.btn-style-light .subtitle,
+.btn-style-light .task-header h3,
+.btn-style-light .task-text,
+.btn-style-light .history-info strong,
+.btn-style-light .history-info span,
+.btn-style-light .user-row,
+.btn-style-light .msg-body,
+.btn-style-light .footer,
+.btn-style-light .hint,
+.btn-style-light .modal-content h3,
+.btn-style-light .modal-text {
+    color: #1a202c !important;
+    text-shadow: 0 1px 3px rgba(255,255,255,0.95), 0 0 10px rgba(255,255,255,0.7) !important;
+}
+
+/* === ТЁМНЫЕ — белый текст с чёрной тенью === */
+.btn-style-dark h1,
+.btn-style-dark h2,
+.btn-style-dark h3,
+.btn-style-dark .input-label,
+.btn-style-dark .group-title,
+.btn-style-dark .group-hint,
+.btn-style-dark .subtitle,
+.btn-style-dark .task-header h3,
+.btn-style-dark .task-text,
+.btn-style-dark .history-info strong,
+.btn-style-dark .history-info span,
+.btn-style-dark .user-row,
+.btn-style-dark .msg-body,
+.btn-style-dark .footer,
+.btn-style-dark .hint,
+.btn-style-dark .modal-content h3,
+.btn-style-dark .modal-text {
+    color: #ffffff !important;
+    text-shadow: 0 2px 8px rgba(0,0,0,0.95), 0 0 20px rgba(0,0,0,0.7) !important;
 }
 
 /* ═══════════════════════════════════════
@@ -539,8 +582,6 @@ h3 { font-size: 15px; color: #2d3748; }
     cursor: pointer; background-color: #4299e1; color: white;
 }
 .avatar-remove-btn { background: #edf2f7; color: #4a5568; }
-
-/* Цвет-пикер */
 .color-picker-row { display: flex; align-items: center; gap: 10px; margin-top: 8px; flex-wrap: wrap; }
 .color-input {
     width: 50px; height: 40px; border: 2px solid #e2e8f0;
