@@ -40,18 +40,20 @@
         html.has-token #adminContent { display: block; }
         html.no-token #adminContent { display: none; }
 
-        /* Стили для новой кнопки и окна настроек */
-        .topbar { position: relative; }
-        .settings-btn { background: none; border: none; font-size: 24px; cursor: pointer; margin-right: 10px; padding: 5px; border-radius: 50%; transition: 0.2s; }
-        .settings-btn:hover { background: rgba(0,0,0,0.1); }
-
-        .settings-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center; z-index: 1000; }
-        .settings-content { background: var(--card-bg, #fff); padding: 20px; border-radius: 12px; width: 90%; max-width: 400px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
-        .settings-content h3 { margin-top: 0; margin-bottom: 15px; }
-        .settings-row { margin-bottom: 15px; }
-        .settings-row label { display: block; font-weight: bold; margin-bottom: 5px; font-size: 14px; }
-        .settings-row select, .settings-row input { width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #ccc; box-sizing: border-box; }
-        .modal-btns { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }
+        /* Стили для строки настроек */
+        .bg-settings-row {
+            display: flex; gap: 10px; align-items: center; flex-wrap: wrap;
+            background: var(--card-bg, #fff); padding: 12px 15px; border-radius: 10px;
+            margin-bottom: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            border: 1px solid rgba(0,0,0,0.05);
+        }
+        .bg-settings-row label { font-weight: bold; font-size: 14px; margin: 0; }
+        .bg-settings-row select, .bg-settings-row input {
+            padding: 8px 12px; border-radius: 6px; border: 1px solid #ccc;
+            font-family: inherit; font-size: 14px; outline: none;
+        }
+        .bg-settings-row input { flex: 1; min-width: 200px; }
+        .bg-status { font-size: 14px; font-weight: bold; margin-left: auto; }
     </style>
     <link rel="stylesheet" href="/static/style.css">
 </head>
@@ -59,11 +61,7 @@
     <div class="container">
         <div class="topbar" style="display: flex; justify-content: space-between; align-items: center;">
             <span class="version">v{{ version }}</span>
-            <div>
-                <!-- НОВАЯ КНОПКА НАСТРОЕК -->
-                <button class="settings-btn" onclick="toggleSettings()" title="Настройки фона">⚙️</button>
-                <a href="/" class="support-btn" title="На главную">🏠</a>
-            </div>
+            <a href="/" class="support-btn" title="На главную">🏠</a>
         </div>
         <h1>🔐 Админка</h1>
         <p class="subtitle">Предметы · Онлайн · Пользователи · Сообщения · Логи</p>
@@ -79,6 +77,20 @@
         </section>
 
         <section class="card hidden" id="adminContent">
+
+            <!-- СТРОКА НАСТРОЕК ФОНА -->
+            <div class="bg-settings-row" id="bgSettingsBlock">
+                <label>🖼 Фон:</label>
+                <select id="set-theme">
+                    <option value="auto">Как на главной</option>
+                    <option value="dark">Тёмный</option>
+                    <option value="custom">Своя картинка</option>
+                </select>
+                <input type="text" id="set-bg" placeholder="Вставь ссылку на картинку (https://...)" style="display:none;">
+                <button class="btn-primary" onclick="saveBgSettings()" style="width:auto; padding: 8px 15px;">💾 Сохранить</button>
+                <span id="bg-status" class="bg-status"></span>
+            </div>
+
             <div class="admin-tabs">
                 <button class="admin-tab active" data-tab="subjects">📚 Предметы</button>
                 <button class="admin-tab" data-tab="online">🟢 Онлайн</button>
@@ -147,29 +159,6 @@
         </section>
     </div>
 
-    <!-- МОДАЛЬНОЕ ОКНО НАСТРОЕК ФОНА -->
-    <div id="settingsModal" class="settings-modal hidden" style="display: none;">
-        <div class="settings-content">
-            <h3>⚙️ Настройки внешнего вида</h3>
-            <div class="settings-row">
-                <label>Тема админки</label>
-                <select id="set-theme">
-                    <option value="auto">Авто (как на главной)</option>
-                    <option value="dark">Тёмная</option>
-                    <option value="custom">Своя картинка</option>
-                </select>
-            </div>
-            <div class="settings-row" id="bg-url-row" style="display:none;">
-                <label>Ссылка на картинку (URL)</label>
-                <input type="text" id="set-bg" placeholder="https://...">
-            </div>
-            <div class="modal-btns">
-                <button class="btn-secondary" onclick="toggleSettings()">Отмена</button>
-                <button class="btn-primary" onclick="saveSettings()">Сохранить</button>
-            </div>
-        </div>
-    </div>
-
     <div id="editModal" class="modal hidden">
         <div class="modal-content">
             <h3 id="editModalTitle">✏️ Редактировать предмет</h3>
@@ -212,34 +201,28 @@
         const pwd = document.getElementById('pwd');
         const loginStatus = document.getElementById('loginStatus');
 
-        // --- ЛОГИКА НАСТРОЕК ФОНА ---
-        function toggleSettings() {
-            const modal = document.getElementById('settingsModal');
-            modal.style.display = modal.style.display === 'none' ? 'flex' : 'none';
+        // --- НАСТРОЙКИ ФОНА ---
+        const setTheme = document.getElementById('set-theme');
+        const setBg = document.getElementById('set-bg');
 
-            if (modal.style.display === 'flex') {
-                // Заполняем текущими значениями
-                const currentTheme = localStorage.getItem('gdz_admin_theme') || 'auto';
-                const currentBg = localStorage.getItem('gdz_admin_bg') || '';
-                document.getElementById('set-theme').value = currentTheme;
-                document.getElementById('set-bg').value = currentBg;
-                document.getElementById('bg-url-row').style.display = currentTheme === 'custom' ? 'block' : 'none';
-            }
-        }
-
-        document.getElementById('set-theme').addEventListener('change', function() {
-            document.getElementById('bg-url-row').style.display = this.value === 'custom' ? 'block' : 'none';
+        setTheme.addEventListener('change', () => {
+            setBg.style.display = setTheme.value === 'custom' ? 'block' : 'none';
         });
 
-        async function saveSettings() {
-            const theme = document.getElementById('set-theme').value;
-            const bg = document.getElementById('set-bg').value.trim();
+        async function saveBgSettings() {
+            const st = document.getElementById('bg-status');
+            const theme = setTheme.value;
+            const bg = setBg.value.trim();
             const token = localStorage.getItem('gdz_token');
 
             if (!token) {
-                alert('Чтобы менять фон, нужно войти на главной странице под своим аккаунтом админа (по паролю здесь фон не сохранится).');
+                st.textContent = '❌ Нужно зайти на главную под аккаунтом админа';
+                st.style.color = 'red';
                 return;
             }
+
+            st.textContent = '⏳ Сохранение...';
+            st.style.color = '#4299e1';
 
             try {
                 const payload = {
@@ -257,15 +240,17 @@
 
                 if (!r.ok) throw new Error('Ошибка сервера');
 
-                // Сохраняем локально и применяем
                 localStorage.setItem('gdz_admin_theme', theme);
                 localStorage.setItem('gdz_admin_bg', bg);
 
-                alert('✅ Настройки сохранены! Страница сейчас перезагрузится.');
-                location.reload();
+                st.textContent = '✅ Сохранено! Обнови страницу.';
+                st.style.color = 'green';
+
+                setTimeout(() => location.reload(), 1000);
 
             } catch (e) {
-                alert('❌ Ошибка: ' + e.message);
+                st.textContent = '❌ ' + e.message;
+                st.style.color = 'red';
             }
         }
 
@@ -296,8 +281,12 @@
                 if (!u || !u.is_admin) return;
 
                 const adminTheme = u.admin_theme || 'auto';
-                const adminBg = u.admin_bg_url;
+                const adminBg = u.admin_bg_url || '';
+
                 localStorage.setItem('gdz_admin_theme', adminTheme);
+                setTheme.value = adminTheme;
+                setBg.value = adminBg;
+                if (adminTheme === 'custom') setBg.style.display = 'block';
 
                 const root = document.documentElement;
                 root.classList.remove('admin-theme-dark', 'admin-theme-custom', 'theme-dark', 'theme-custom');
