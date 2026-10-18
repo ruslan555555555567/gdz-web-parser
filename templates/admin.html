@@ -3,822 +3,529 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Админка — GDZ Парсер</title>
-    <script>
-        (function() {
-            try {
-                const adminTheme = localStorage.getItem('gdz_admin_theme') || 'auto';
-                const adminBg = localStorage.getItem('gdz_admin_bg');
-                const btnColor = localStorage.getItem('gdz_admin_btn_color') || '#4299e1';
-                const token = localStorage.getItem('gdz_token');
-                const root = document.documentElement;
-
-                if (adminTheme === 'dark') {
-                    root.classList.add('admin-theme-dark');
-                } else if (adminTheme === 'custom' && adminBg) {
-                    root.classList.add('admin-theme-custom');
-                    root.style.setProperty('--admin-bg-image', 'url("' + adminBg + '")');
-                } else {
-                    const mainTheme = localStorage.getItem('gdz_theme') || 'light';
-                    const mainBg = localStorage.getItem('gdz_bg');
-                    if (mainTheme === 'dark') root.classList.add('theme-dark');
-                    else if (mainTheme === 'custom' && mainBg) {
-                        root.classList.add('theme-custom');
-                        root.style.backgroundImage = 'url("' + mainBg + '")';
-                    }
-                }
-
-                root.style.setProperty('--admin-btn-color', btnColor);
-
-                if (token) root.classList.add('has-token');
-                else root.classList.add('no-token');
-            } catch (e) {}
-        })();
-    </script>
+    <title>Админ-панель GDZ</title>
     <style>
-        html.has-token #loginCard { display: none !important; }
-        html.no-token #loginCard { display: block !important; }
-        html.has-token #adminContent { display: block; }
-        html.no-token #adminContent { display: none; }
+        :root {
+            --bg: #1a202c; --panel: #2d3748; --text: #e2e8f0; --primary: #4299e1;
+            --danger: #f56565; --success: #48bb78; --border: #4a5568;
+        }
+        body { font-family: system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 0; }
+        .hidden { display: none !important; }
+
+        /* Экран входа */
+        #login-screen { display: flex; justify-content: center; align-items: center; height: 100vh; }
+        .login-box { background: var(--panel); padding: 40px; border-radius: 10px; width: 300px; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
+        .login-box input { width: 100%; padding: 10px; margin: 15px 0; border-radius: 5px; border: 1px solid var(--border); background: var(--bg); color: white; box-sizing: border-box;}
+        .btn { padding: 10px 15px; border: none; border-radius: 5px; cursor: pointer; color: white; background: var(--primary); font-weight: bold; }
+        .btn:hover { opacity: 0.8; }
+        .btn-danger { background: var(--danger); }
+        .btn-success { background: var(--success); }
+
+        /* Основной интерфейс */
+        #admin-panel { display: flex; height: 100vh; }
+        .sidebar { width: 220px; background: var(--panel); border-right: 1px solid var(--border); display: flex; flex-direction: column; }
+        .sidebar h2 { text-align: center; margin: 20px 0; font-size: 20px; }
+        .sidebar button { background: none; border: none; color: var(--text); padding: 15px 20px; text-align: left; cursor: pointer; font-size: 16px; border-left: 4px solid transparent; }
+        .sidebar button:hover, .sidebar button.active { background: rgba(255,255,255,0.05); border-left-color: var(--primary); }
+
+        .content { flex: 1; padding: 30px; overflow-y: auto; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        /* Таблицы и формы */
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; background: var(--panel); border-radius: 8px; overflow: hidden; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid var(--border); }
+        th { background: rgba(0,0,0,0.2); }
+        input[type="text"], input[type="number"], textarea, select { width: 100%; padding: 10px; margin: 5px 0 15px; background: var(--bg); border: 1px solid var(--border); color: white; border-radius: 5px; box-sizing: border-box; font-family: inherit; }
+        textarea.code-editor { height: 400px; font-family: monospace; white-space: pre; }
+        .card { background: var(--panel); padding: 20px; border-radius: 8px; margin-bottom: 20px; }
+        .row { display: flex; gap: 20px; }
+        .col { flex: 1; }
+        .status-msg { margin-left: 15px; font-weight: bold; }
     </style>
-    <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
-    <div class="container">
-        <div class="topbar">
-            <span class="version">v{{ version }}</span>
-            <a href="/" class="support-btn" title="На главную">🏠</a>
+
+    <!-- ЭКРАН ВХОДА -->
+    <div id="login-screen">
+        <div class="login-box">
+            <h2>Вход в админку</h2>
+            <input type="password" id="login-password" placeholder="Пароль админа">
+            <button class="btn" style="width: 100%;" onclick="login()">Войти</button>
+            <p id="login-error" style="color: var(--danger); font-size: 14px;"></p>
         </div>
-        <h1>🔐 Админка</h1>
-        <p class="subtitle">Предметы · Онлайн · Пользователи · Сообщения · Логи · Настройки</p>
-
-        <section class="card" id="loginCard">
-            <h2>Введите пароль</h2>
-            <p class="hint" style="margin-bottom:12px;">Если вы вошли в аккаунт администратора — пароль не нужен.</p>
-            <form id="loginForm">
-                <input type="password" id="pwd" class="num-input" placeholder="Пароль" autocomplete="current-password">
-                <div id="loginStatus" class="fb-status"></div>
-                <button type="submit" class="btn-primary" style="margin-top: 12px;">Войти</button>
-            </form>
-        </section>
-
-        <section class="card hidden" id="adminContent">
-            <div class="admin-tabs">
-                <button class="admin-tab active" data-tab="subjects">📚 Предметы</button>
-                <button class="admin-tab" data-tab="online">🟢 Онлайн</button>
-                <button class="admin-tab" data-tab="users">👥 Пользователи</button>
-                <button class="admin-tab" data-tab="messages">📬 Сообщения</button>
-                <button class="admin-tab" data-tab="logs">📋 Логи</button>
-                <button class="admin-tab" data-tab="settings">⚙️ Настройки</button>
-            </div>
-
-            <!-- ПРЕДМЕТЫ -->
-            <div id="tabSubjects">
-                <div class="section-header">
-                    <h2>📚 Предметы (<span id="subjectsCount">0</span>)</h2>
-                    <div style="display:flex; gap:8px; flex-wrap:wrap;">
-                        <button id="resetSubjectsBtn" class="btn-small reset-btn">🔄 Сброс</button>
-                        <button id="addSubjectBtn" class="btn-small">➕ Добавить</button>
-                        <button id="refreshSubjectsBtn" class="btn-small">🔄 Обновить</button>
-                    </div>
-                </div>
-                <p class="hint" style="margin-bottom:12px;">💡 Перетаскивай карточки мышкой за <b>⠿</b>, чтобы изменить порядок.</p>
-                <div id="subjectsList"></div>
-                <div id="emptySubjects" class="empty">Пока нет предметов</div>
-            </div>
-
-            <!-- ОНЛАЙН -->
-            <div id="tabOnline" class="hidden">
-                <div class="section-header">
-                    <h2>🟢 Онлайн (<span id="onlineCount">0</span>)</h2>
-                    <button id="refreshOnlineBtn" class="btn-small">🔄 Обновить</button>
-                </div>
-                <p class="hint" style="margin-bottom:12px;">Активны за последние 5 минут.</p>
-                <div id="onlineList"></div>
-                <div id="emptyOnline" class="empty">Сейчас никого нет</div>
-            </div>
-
-            <!-- ПОЛЬЗОВАТЕЛИ -->
-            <div id="tabUsers" class="hidden">
-                <div class="section-header">
-                    <h2>👥 Пользователи (<span id="usersCount">0</span>)</h2>
-                    <button id="refreshUsersBtn" class="btn-small">🔄 Обновить</button>
-                </div>
-                <div id="usersList"></div>
-                <div id="emptyUsers" class="empty">Пока нет зарегистрированных</div>
-            </div>
-
-            <!-- СООБЩЕНИЯ -->
-            <div id="tabMessages" class="hidden">
-                <div class="section-header">
-                    <h2>📬 Сообщения (<span id="count">0</span>)</h2>
-                    <button id="refreshBtn" class="btn-small">🔄 Обновить</button>
-                </div>
-                <div id="messagesList"></div>
-                <div id="emptyMsg" class="empty">Пока сообщений нет</div>
-                <div style="text-align:center; margin-top:20px;">
-                    <button id="clearBtn" class="btn-secondary">🗑 Удалить все сообщения</button>
-                </div>
-            </div>
-
-            <!-- ЛОГИ -->
-            <div id="tabLogs" class="hidden">
-                <div class="section-header">
-                    <h2>📋 Логи (<span id="logsCount">0</span>)</h2>
-                    <div style="display:flex; gap:8px; flex-wrap:wrap;">
-                        <button id="clearLogsBtn" class="btn-small reset-btn">🗑 Очистить</button>
-                        <button id="refreshLogsBtn" class="btn-small">🔄 Обновить</button>
-                    </div>
-                </div>
-                <p class="hint" style="margin-bottom:12px;">Последние 500 действий: входы, регистрации, поиски, изменения предметов.</p>
-                <div id="logsList"></div>
-                <div id="emptyLogs" class="empty">Логов пока нет</div>
-            </div>
-
-            <!-- НАСТРОЙКИ АДМИНКИ (НОВАЯ ВКЛАДКА) -->
-            <div id="tabSettings" class="hidden">
-                <h2>⚙️ Настройки админ-панели</h2>
-                <p class="hint" style="margin-bottom:16px;">
-                    Здесь настраивается вид админки. На главную страницу эти настройки не влияют.
-                </p>
-
-                <div class="settings-section">
-                    <label class="form-label">🎨 Тема админки</label>
-                    <div class="theme-options">
-                        <button type="button" class="admin-theme-btn active" data-admin-theme="auto">
-                            <span class="theme-preview auto-preview">A</span>
-                            Как главная
-                        </button>
-                        <button type="button" class="admin-theme-btn" data-admin-theme="light">
-                            <span class="theme-preview light-preview"></span>
-                            ☀️ Светлая
-                        </button>
-                        <button type="button" class="admin-theme-btn" data-admin-theme="dark">
-                            <span class="theme-preview dark-preview"></span>
-                            🌙 Тёмная
-                        </button>
-                        <button type="button" class="admin-theme-btn" data-admin-theme="custom">
-                            <span class="theme-preview custom-preview">🖼</span>
-                            Своя картинка
-                        </button>
-                    </div>
-                </div>
-
-                <div class="settings-section" id="adminBgSection" style="display:none;">
-                    <label class="form-label">🖼 Фон админки</label>
-                    <div class="avatar-block">
-                        <div class="avatar-preview" id="adminBgPreview">
-                            <span>🖼</span>
-                        </div>
-                        <div class="avatar-actions">
-                            <label class="btn-small avatar-upload-btn">
-                                🖼 Загрузить из галереи
-                                <input type="file" id="adminBgInput" accept="image/*" hidden>
-                            </label>
-                            <button type="button" id="adminBgRemoveBtn" class="btn-small avatar-remove-btn">
-                                🗑 Убрать фон
-                            </button>
-                        </div>
-                    </div>
-                    <p class="hint" style="margin-top:8px;">
-                        Картинка сохранится в аккаунте.
-                    </p>
-                </div>
-
-                <div class="settings-section">
-                    <label class="form-label">🎨 Цвет кнопок админки</label>
-                    <div class="color-picker-row">
-                        <input type="color" id="adminBtnColor" value="#4299e1" class="color-input">
-                        <span id="adminBtnColorLabel" class="hint">#4299e1</span>
-                        <button type="button" class="btn-small" id="adminBtnColorReset">Сбросить</button>
-                    </div>
-                </div>
-
-                <div id="settingsStatus" class="fb-status"></div>
-
-                <div style="margin-top:20px; display:flex; gap:10px; flex-wrap:wrap;">
-                    <button id="saveAdminSettingsBtn" class="btn-primary" style="width:auto; flex:1;">
-                        💾 Сохранить настройки
-                    </button>
-                </div>
-            </div>
-        </section>
     </div>
 
-    <div id="editModal" class="modal hidden">
-        <div class="modal-content">
-            <h3 id="editModalTitle">✏️ Редактировать предмет</h3>
-            <label class="form-label">Название<input type="text" id="editName" placeholder="Алгебра"></label>
-            <label class="form-label">Ссылка на gdz.ru<input type="text" id="editUrl" placeholder="https://gdz.ru/class-7/algebra/makarichev-18/"></label>
-            <label class="form-label">Тип
-                <select id="editType" class="num-input">
-                    <option value="numbers">🔍 Поиск номеров</option>
-                    <option value="text">📝 Текстовые задания</option>
-                </select>
-            </label>
-            <label class="form-label">Группа
-                <select id="editGroup" class="num-input">
-                    <option value="🧮 Точные науки">🧮 Точные науки</option>
-                    <option value="🌿 Естественные науки">🌿 Естественные науки</option>
-                    <option value="📖 Гуманитарные науки">📖 Гуманитарные науки</option>
-                    <option value="🎨 Остальные предметы">🎨 Остальные предметы</option>
-                </select>
-            </label>
-            <label class="form-label">Всего номеров в учебнике (0 = не знаем)<input type="number" id="editMaxNum" placeholder="560" min="0"></label>
-            <label class="form-label">Порядок<input type="number" id="editSort" placeholder="1" min="0"></label>
-            <label class="form-label">Заметка (необязательно)<textarea id="editNote" rows="2" placeholder="Например: Мерзляк, 2023 год"></textarea></label>
-            <div id="editStatus" class="fb-status"></div>
-            <div class="modal-actions">
-                <button type="button" id="editCancelBtn" class="btn-secondary">Отмена</button>
-                <button type="button" id="editSaveBtn" class="btn-primary" style="width:auto;">💾 Сохранить</button>
+    <!-- АДМИНКА -->
+    <div id="admin-panel" class="hidden">
+        <div class="sidebar">
+            <h2>GDZ Admin</h2>
+            <button class="active" onclick="switchTab('tab-dashboard', this)">📊 Дашборд</button>
+            <button onclick="switchTab('tab-subjects', this)">📚 Предметы</button>
+            <button onclick="switchTab('tab-users', this)">👥 Пользователи</button>
+            <button onclick="switchTab('tab-messages', this)">✉️ Сообщения</button>
+            <button onclick="switchTab('tab-logs', this)">📝 Логи</button>
+            <button onclick="switchTab('tab-settings', this)">⚙️ Настройки сайта</button>
+            <button onclick="switchTab('tab-templates', this)">💻 Код (HTML)</button>
+            <button onclick="switchTab('tab-password', this)">🔑 Смена пароля</button>
+            <div style="margin-top: auto; padding: 20px;">
+                <button class="btn btn-danger" style="width: 100%;" onclick="logout()">Выйти</button>
             </div>
+        </div>
+
+        <div class="content">
+            <!-- 1. ДАШБОРД -->
+            <div id="tab-dashboard" class="tab-content active">
+                <h1>Дашборд</h1>
+                <div class="row">
+                    <div class="card col">
+                        <h3>Онлайн сейчас</h3>
+                        <h1 id="stat-online" style="color: var(--success);">0</h1>
+                    </div>
+                    <div class="card col">
+                        <h3>Всего пользователей</h3>
+                        <h1 id="stat-users" style="color: var(--primary);">0</h1>
+                    </div>
+                </div>
+                <div class="card">
+                    <h3>Быстрая проверка базы данных</h3>
+                    <p>Статус: <span id="stat-db" style="color: var(--success);">ok</span></p>
+                    <button class="btn" onclick="loadDashboard()">Обновить данные</button>
+                </div>
+            </div>
+
+            <!-- 2. ПРЕДМЕТЫ -->
+            <div id="tab-subjects" class="tab-content">
+                <h1>Управление предметами</h1>
+                <button class="btn btn-success" onclick="addSubject()">+ Добавить предмет</button>
+                <button class="btn btn-danger" style="margin-left: 10px;" onclick="resetSubjects()">Сбросить к заводским</button>
+                <table id="subjects-table">
+                    <thead><tr><th>ID</th><th>Название</th><th>Группа</th><th>Тип</th><th>Действия</th></tr></thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+
+            <!-- 3. ПОЛЬЗОВАТЕЛИ -->
+            <div id="tab-users" class="tab-content">
+                <h1>Пользователи</h1>
+                <button class="btn" onclick="loadUsers()">Обновить</button>
+                <table id="users-table">
+                    <thead><tr><th>ID</th><th>Email</th><th>Имя</th><th>Админ?</th><th>Последний вход</th><th>Действия</th></tr></thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+
+            <!-- 4. СООБЩЕНИЯ -->
+            <div id="tab-messages" class="tab-content">
+                <h1>Сообщения (Обратная связь)</h1>
+                <button class="btn btn-danger" onclick="clearMessages()">Очистить всё</button>
+                <table id="messages-table">
+                    <thead><tr><th>Дата</th><th>Сообщение</th><th>Контакт</th><th>Действия</th></tr></thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+
+            <!-- 5. ЛОГИ -->
+            <div id="tab-logs" class="tab-content">
+                <h1>Логи действий</h1>
+                <button class="btn btn-danger" onclick="clearLogs()">Очистить логи</button>
+                <table id="logs-table">
+                    <thead><tr><th>Время</th><th>Пользователь</th><th>Действие</th><th>Детали</th><th>IP</th></tr></thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+
+            <!-- 6. НАСТРОЙКИ САЙТА -->
+            <div id="tab-settings" class="tab-content">
+                <h1>Настройки сайта</h1>
+                <div class="card">
+                    <label>Название сайта</label>
+                    <input type="text" id="set-site_title">
+
+                    <label>Объявление (HTML)</label>
+                    <textarea id="set-announcement" rows="3"></textarea>
+
+                    <label>Текст в футере (HTML)</label>
+                    <textarea id="set-footer_text" rows="3"></textarea>
+
+                    <label>Дополнительный CSS</label>
+                    <textarea id="set-custom_css" rows="5" style="font-family: monospace;"></textarea>
+
+                    <button class="btn btn-success" onclick="saveSettings()">Сохранить настройки</button>
+                    <span id="settings-status" class="status-msg"></span>
+                </div>
+            </div>
+
+            <!-- 7. РЕДАКТОР КОДА HTML -->
+            <div id="tab-templates" class="tab-content">
+                <h1>Редактор HTML</h1>
+                <p style="color: #ecc94b;">⚠️ Осторожно! Не удаляй теги вроде <code>{{ version }}</code> — они нужны для работы сайта.</p>
+                <div class="card">
+                    <select id="tpl-select" onchange="loadTemplate()">
+                        <option value="index.html">index.html (Главная страница)</option>
+                        <option value="admin.html">admin.html (Эта админка)</option>
+                    </select>
+                    <button class="btn" onclick="loadTemplate()">Загрузить</button>
+                    <button class="btn btn-success" onclick="saveTemplate()">Сохранить</button>
+                    <button class="btn btn-danger" onclick="resetTemplate()">Сбросить из файла</button>
+                    <span id="tpl-status" class="status-msg"></span>
+                    <textarea id="tpl-content" class="code-editor" spellcheck="false"></textarea>
+                </div>
+            </div>
+
+            <!-- 8. СМЕНА ПАРОЛЯ -->
+            <div id="tab-password" class="tab-content">
+                <h1>Смена пароля админа</h1>
+                <div class="card" style="max-width: 500px;">
+                    <p>Пароль хранится в базе данных в зашифрованном виде.</p>
+                    <p id="pass-source" style="font-weight: bold; color: var(--primary);"></p>
+
+                    <label>Текущий пароль (или оставь пустым, если зашел по токену):</label>
+                    <input type="password" id="pass-current">
+
+                    <label>Новый пароль (минимум 8 символов):</label>
+                    <input type="password" id="pass-new">
+
+                    <label>Повтори новый пароль:</label>
+                    <input type="password" id="pass-confirm">
+
+                    <button class="btn btn-success" onclick="changePassword()">Сохранить пароль</button>
+                    <span id="pass-status" class="status-msg"></span>
+                </div>
+            </div>
+
         </div>
     </div>
 
     <script>
-        let authData = { token: '', password: '' };
-        let onlineTimer = null;
-        let subjectsCache = [];
-        let draggedId = null;
+        // --- БАЗОВЫЕ ФУНКЦИИ ---
+        const apiUrl = (path) => '/api/admin' + path;
 
-        // Текущие настройки админки (загружаются из БД)
-        let currentAdminTheme = localStorage.getItem('gdz_admin_theme') || 'auto';
-        let currentAdminBg = localStorage.getItem('gdz_admin_bg') || null;
-        let currentAdminBtnColor = localStorage.getItem('gdz_admin_btn_color') || '#4299e1';
-        let pendingAdminBg = null; // временный фон для сохранения
-
-        const loginCard = document.getElementById('loginCard');
-        const adminContent = document.getElementById('adminContent');
-        const loginForm = document.getElementById('loginForm');
-        const pwd = document.getElementById('pwd');
-        const loginStatus = document.getElementById('loginStatus');
-
-        const ACTION_ICONS = {
-            'register': '🆕', 'login': '🔑', 'login_fail': '⚠️', 'logout': '🚪',
-            'parse': '🔍', 'profile_update': '⚙️', 'avatar_update': '🖼',
-            'password_change': '🔐', 'account_delete': '❌',
-            'subject_add': '➕', 'subject_update': '✏️', 'subject_delete': '🗑',
-            'subject_reorder': '↕️', 'subjects_reset': '🔄', 'admin_delete_user': '👤',
-        };
-
-        function getInitial(name, email) {
-            const n = (name || '').trim();
-            if (n) return n[0].toUpperCase();
-            if (email) return email[0].toUpperCase();
-            return '?';
-        }
-
-        function fileToBase64(file, maxSizeMb = 5) {
-            return new Promise((resolve, reject) => {
-                if (file.size > maxSizeMb * 1024 * 1024) { reject(new Error(`Файл больше ${maxSizeMb} МБ`)); return; }
-                const reader = new FileReader();
-                reader.onload = () => resolve(reader.result);
-                reader.onerror = () => reject(new Error('Ошибка чтения файла'));
-                reader.readAsDataURL(file);
-            });
-        }
-
-        async function shrinkImage(file, maxW = 1600, quality = 0.82) {
-            const dataUrl = await fileToBase64(file, 20);
-            return new Promise((resolve, reject) => {
-                const img = new Image();
-                img.onload = () => {
-                    const canvas = document.createElement('canvas');
-                    let w = img.width, h = img.height;
-                    if (w > maxW) { h = Math.round(h * (maxW / w)); w = maxW; }
-                    canvas.width = w; canvas.height = h;
-                    canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-                    resolve(canvas.toDataURL('image/jpeg', quality));
-                };
-                img.onerror = () => reject(new Error('Не удалось загрузить картинку'));
-                img.src = dataUrl;
-            });
-        }
-
-        // Применяем тему админки (только на этой странице)
-        function applyAdminTheme(theme, bgUrl) {
-            const root = document.documentElement;
-            root.classList.remove('admin-theme-dark', 'admin-theme-custom', 'theme-dark', 'theme-custom');
-            root.style.removeProperty('--admin-bg-image');
-            root.style.backgroundImage = '';
-
-            if (theme === 'dark') {
-                root.classList.add('admin-theme-dark');
-            } else if (theme === 'custom' && bgUrl) {
-                root.classList.add('admin-theme-custom');
-                root.style.setProperty('--admin-bg-image', 'url("' + bgUrl + '")');
-            } else if (theme === 'auto') {
-                // Как на главной
-                const mainTheme = localStorage.getItem('gdz_theme') || 'light';
-                const mainBg = localStorage.getItem('gdz_bg');
-                if (mainTheme === 'dark') root.classList.add('theme-dark');
-                else if (mainTheme === 'custom' && mainBg) {
-                    root.classList.add('theme-custom');
-                    root.style.backgroundImage = 'url("' + mainBg + '")';
-                }
-            }
-            // theme === 'light' — по умолчанию (без класса)
-        }
-
-        function applyAdminBtnColor(color) {
-            document.documentElement.style.setProperty('--admin-btn-color', color);
-        }
-
-        // Загружаем настройки из БД
-        async function loadAdminSettings() {
-            const token = localStorage.getItem('gdz_token') || '';
-            if (!token) return;
-            try {
-                const r = await fetch('/api/auth/me?token=' + encodeURIComponent(token));
-                if (!r.ok) return;
-                const d = await r.json();
-                const u = d.user;
-                if (!u || !u.is_admin) return;
-
-                currentAdminTheme = u.admin_theme || 'auto';
-                currentAdminBg = u.admin_bg_url || null;
-                currentAdminBtnColor = u.admin_btn_color || '#4299e1';
-
-                localStorage.setItem('gdz_admin_theme', currentAdminTheme);
-                if (currentAdminBg) localStorage.setItem('gdz_admin_bg', currentAdminBg);
-                else localStorage.removeItem('gdz_admin_bg');
-                localStorage.setItem('gdz_admin_btn_color', currentAdminBtnColor);
-
-                applyAdminTheme(currentAdminTheme, currentAdminBg);
-                applyAdminBtnColor(currentAdminBtnColor);
-            } catch {}
-        }
-
-        async function init() {
-            await loadAdminSettings();
-            const token = localStorage.getItem('gdz_token') || '';
-            if (token) {
-                try {
-                    const r = await fetch('/api/admin/check', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({token}) });
-                    if (r.ok) {
-                        authData.token = token;
-                        document.documentElement.classList.remove('no-token');
-                        document.documentElement.classList.add('has-token');
-                        openAdmin();
-                        return;
-                    }
-                } catch {}
-            }
-            document.documentElement.classList.remove('has-token');
-            document.documentElement.classList.add('no-token');
-            loginCard.classList.remove('hidden');
-        }
-
-        function openAdmin() {
-            document.documentElement.classList.remove('no-token');
-            document.documentElement.classList.add('has-token');
-            loginCard.classList.add('hidden');
-            adminContent.classList.remove('hidden');
-            loadSubjects(); loadOnline(); loadUsers(); loadMessages(); loadLogs(); renderSettings();
-            if (onlineTimer) clearInterval(onlineTimer);
-            onlineTimer = setInterval(loadOnline, 30000);
-        }
-
-        loginForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const password = pwd.value;
-            if (!password) return;
-            loginStatus.textContent = '⏳ Проверяем...';
-            loginStatus.className = 'fb-status loading';
-            try {
-                const r = await fetch('/api/admin/check', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({password}) });
-                if (!r.ok) { loginStatus.textContent = '❌ Неверный пароль'; loginStatus.className = 'fb-status error'; return; }
-                authData.password = password;
-                openAdmin();
-            } catch (err) { loginStatus.textContent = '❌ ' + err.message; loginStatus.className = 'fb-status error'; }
-        });
-
-        document.querySelectorAll('.admin-tab').forEach(t => {
-            t.addEventListener('click', () => {
-                document.querySelectorAll('.admin-tab').forEach(x => x.classList.toggle('active', x === t));
-                const tab = t.dataset.tab;
-                ['subjects', 'online', 'users', 'messages', 'logs', 'settings'].forEach(name => {
-                    document.getElementById('tab' + name.charAt(0).toUpperCase() + name.slice(1)).classList.toggle('hidden', name !== tab);
-                });
-            });
-        });
-
-        function getAuthPayload() { return authData.token ? {token: authData.token} : {password: authData.password}; }
-
-        // ═══════ НАСТРОЙКИ АДМИНКИ ═══════
-        function renderSettings() {
-            // Тема
-            document.querySelectorAll('.admin-theme-btn').forEach(t => {
-                t.classList.toggle('active', t.dataset.adminTheme === currentAdminTheme);
-            });
-            // Показываем блок с фоном только для custom
-            document.getElementById('adminBgSection').style.display =
-                (currentAdminTheme === 'custom') ? 'block' : 'none';
-            // Цвет кнопок
-            document.getElementById('adminBtnColor').value = currentAdminBtnColor || '#4299e1';
-            document.getElementById('adminBtnColorLabel').textContent = currentAdminBtnColor || '#4299e1';
-            // Превью фона
-            const preview = document.getElementById('adminBgPreview');
-            const bgToShow = pendingAdminBg || currentAdminBg;
-            if (bgToShow) {
-                preview.style.backgroundImage = 'url("' + bgToShow + '")';
-                preview.textContent = '';
-            } else {
-                preview.style.backgroundImage = '';
-                preview.textContent = '🖼';
-            }
-        }
-
-        document.querySelectorAll('.admin-theme-btn').forEach(t => {
-            t.onclick = () => {
-                currentAdminTheme = t.dataset.adminTheme;
-                renderSettings();
+        function getAuthData() {
+            return {
+                password: localStorage.getItem('admin_password') || '',
+                token: localStorage.getItem('token') || ''
             };
-        });
+        }
 
-        document.getElementById('adminBgInput').onchange = async (e) => {
-            const file = e.target.files[0]; if (!file) return;
-            try {
-                const b64 = await shrinkImage(file, 1600, 0.82);
-                pendingAdminBg = b64;
-                renderSettings();
-            } catch (err) { alert('Ошибка: ' + err.message); }
-            e.target.value = '';
-        };
-
-        document.getElementById('adminBgRemoveBtn').onclick = () => {
-            pendingAdminBg = '';
-            if (currentAdminBg && !confirm('Убрать фон админки?')) return;
-            renderSettings();
-        };
-
-        document.getElementById('adminBtnColor').oninput = (e) => {
-            currentAdminBtnColor = e.target.value;
-            document.getElementById('adminBtnColorLabel').textContent = currentAdminBtnColor;
-            applyAdminBtnColor(currentAdminBtnColor);
-        };
-        document.getElementById('adminBtnColorReset').onclick = () => {
-            currentAdminBtnColor = '#4299e1';
-            document.getElementById('adminBtnColor').value = '#4299e1';
-            document.getElementById('adminBtnColorLabel').textContent = '#4299e1';
-            applyAdminBtnColor('#4299e1');
-        };
-
-        document.getElementById('saveAdminSettingsBtn').onclick = async () => {
-            const st = document.getElementById('settingsStatus');
-            st.textContent = '⏳ Сохраняем...';
-            st.className = 'fb-status loading';
-
-            // Определяем, что отправлять:
-            // pendingAdminBg — если было загружено/убрано в этой сессии
-            // currentAdminBg — если не менялся
-            let bgToSave = currentAdminBg || '';
-            if (pendingAdminBg !== null) {
-                bgToSave = pendingAdminBg; // может быть '' для удаления
+        async function apiCall(path, body = {}) {
+            const data = Object.assign({}, getAuthData(), body);
+            const res = await fetch(apiUrl(path), {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(data)
+            });
+            if (res.status === 401) {
+                logout();
+                throw new Error('Сессия истекла, войдите заново');
             }
+            return await res.json();
+        }
 
-            const payload = {
-                ...getAuthPayload(),
-                admin_theme: currentAdminTheme,
-                admin_bg_url: bgToSave,
-                admin_btn_color: currentAdminBtnColor
-            };
+        // --- АВТОРИЗАЦИЯ ---
+        async function login() {
+            const pass = document.getElementById('login-password').value;
+            const err = document.getElementById('login-error');
+            err.innerText = 'Проверка...';
 
             try {
-                const r = await fetch('/api/auth/update', {
+                const res = await fetch(apiUrl('/check'), {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify(payload)
+                    body: JSON.stringify({password: pass})
                 });
-                const d = await r.json();
-                if (!r.ok) {
-                    st.textContent = '❌ ' + (d.detail || 'Ошибка');
-                    st.className = 'fb-status error';
-                    return;
-                }
-                // Обновляем локальные значения
-                currentAdminBg = bgToSave || null;
-                pendingAdminBg = null;
-                localStorage.setItem('gdz_admin_theme', currentAdminTheme);
-                if (currentAdminBg) localStorage.setItem('gdz_admin_bg', currentAdminBg);
-                else localStorage.removeItem('gdz_admin_bg');
-                localStorage.setItem('gdz_admin_btn_color', currentAdminBtnColor);
-
-                applyAdminTheme(currentAdminTheme, currentAdminBg);
-                applyAdminBtnColor(currentAdminBtnColor);
-
-                st.textContent = '✅ Настройки сохранены';
-                st.className = 'fb-status success';
-                renderSettings();
-                setTimeout(() => { st.textContent = ''; st.className = 'fb-status'; }, 2000);
-            } catch (e) {
-                st.textContent = '❌ ' + e.message;
-                st.className = 'fb-status error';
-            }
-        };
-
-        // ═══════ ПРЕДМЕТЫ ═══════
-        document.getElementById('refreshSubjectsBtn').onclick = loadSubjects;
-        document.getElementById('resetSubjectsBtn').onclick = async () => {
-            if (!confirm('Восстановить список по умолчанию?')) return;
-            if (!confirm('Точно? Это нельзя отменить.')) return;
-            try {
-                const r = await fetch('/api/admin/subjects/reset', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(getAuthPayload()) });
-                if (!r.ok) throw new Error('Ошибка');
-                await loadSubjects();
-                alert('✅ Список восстановлен!');
-            } catch (e) { alert('Ошибка: ' + e.message); }
-        };
-        document.getElementById('addSubjectBtn').onclick = () => openEditModal(null);
-
-        async function loadSubjects() {
-            const list = document.getElementById('subjectsList');
-            const empty = document.getElementById('emptySubjects');
-            try {
-                const r = await fetch('/api/subjects');
-                const d = await r.json();
-                subjectsCache = d.subjects;
-                document.getElementById('subjectsCount').textContent = d.subjects.length;
-                list.innerHTML = '';
-                if (!d.subjects.length) { empty.style.display = 'block'; return; }
-                empty.style.display = 'none';
-                d.subjects.forEach(s => {
-                    const div = document.createElement('div');
-                    div.className = 'subject-card';
-                    div.draggable = true;
-                    div.dataset.id = s.id;
-                    const typeLabel = s.type === 'text' ? '<span class="type-badge type-text">📝 текст</span>' : '<span class="type-badge type-num">🔍 номера</span>';
-                    const maxNum = s.max_number ? `${s.max_number}` : '—';
-                    div.innerHTML = `
-                        <div class="subj-head">
-                            <span class="drag-handle" title="Перетащи">⠿</span>
-                            <strong>${escapeHtml(s.name)}</strong>
-                            ${typeLabel}
-                        </div>
-                        <div class="subj-row">📁 ${escapeHtml(s.group_name || '—')}</div>
-                        <div class="subj-row">🔗 ${escapeHtml(s.url || '—')}</div>
-                        <div class="subj-row">
-                            <span class="stat-pill">📊 Макс: <b>${maxNum}</b></span>
-                            <span class="stat-pill">📍 Порядок: <b>${s.sort_order}</b></span>
-                        </div>
-                        ${s.note ? `<div class="subj-row small">📝 ${escapeHtml(s.note)}</div>` : ''}
-                        <div class="subj-actions">
-                            <button class="btn-small subj-edit">✏️ Изменить</button>
-                            <button class="msg-delete subj-del">🗑</button>
-                        </div>
-                    `;
-                    div.addEventListener('dragstart', (e) => { draggedId = s.id; div.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; });
-                    div.addEventListener('dragend', () => { div.classList.remove('dragging'); document.querySelectorAll('.subject-card').forEach(c => c.classList.remove('drag-over')); });
-                    div.addEventListener('dragover', (e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; if (draggedId !== s.id) div.classList.add('drag-over'); });
-                    div.addEventListener('dragleave', () => div.classList.remove('drag-over'));
-                    div.addEventListener('drop', async (e) => {
-                        e.preventDefault();
-                        div.classList.remove('drag-over');
-                        if (!draggedId || draggedId === s.id) return;
-                        const draggedEl = document.querySelector(`.subject-card[data-id="${draggedId}"]`);
-                        if (!draggedEl) return;
-                        const allCards = Array.from(document.querySelectorAll('.subject-card'));
-                        const draggedIdx = allCards.indexOf(draggedEl);
-                        const targetIdx = allCards.indexOf(div);
-                        if (draggedIdx < targetIdx) div.parentNode.insertBefore(draggedEl, div.nextSibling);
-                        else div.parentNode.insertBefore(draggedEl, div);
-                        const newOrder = Array.from(document.querySelectorAll('.subject-card')).map(c => parseInt(c.dataset.id));
-                        try {
-                            const r = await fetch('/api/admin/subjects/reorder', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({...getAuthPayload(), ids: newOrder}) });
-                            if (!r.ok) throw new Error('Ошибка сохранения');
-                            newOrder.forEach((id, i) => {
-                                const el = document.querySelector(`.subject-card[data-id="${id}"]`);
-                                if (el) { const pill = el.querySelectorAll('.stat-pill b'); if (pill[1]) pill[1].textContent = i + 1; }
-                            });
-                        } catch (err) { alert('Не удалось сохранить порядок: ' + err.message); loadSubjects(); }
-                    });
-                    div.querySelector('.subj-edit').onclick = () => openEditModal(s);
-                    div.querySelector('.subj-del').onclick = async () => {
-                        if (!confirm(`Удалить «${s.name}»?`)) return;
-                        try {
-                            const r = await fetch('/api/admin/subjects/delete', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({...getAuthPayload(), id: s.id}) });
-                            if (!r.ok) throw new Error('Ошибка');
-                            loadSubjects();
-                        } catch (err) { alert('Ошибка: ' + err.message); }
-                    };
-                    list.appendChild(div);
-                });
-            } catch (e) { list.innerHTML = '<p class="empty">Ошибка: ' + e.message + '</p>'; }
-        }
-
-        const editModal = document.getElementById('editModal');
-        let editingId = null;
-
-        function openEditModal(subject) {
-            editModal.classList.remove('hidden');
-            editingId = subject ? subject.id : null;
-            document.getElementById('editModalTitle').textContent = subject ? '✏️ Редактировать: ' + subject.name : '➕ Новый предмет';
-            document.getElementById('editName').value = subject ? subject.name : '';
-            document.getElementById('editUrl').value = subject ? (subject.url || '') : '';
-            document.getElementById('editType').value = subject ? (subject.type || 'numbers') : 'numbers';
-            document.getElementById('editGroup').value = subject ? (subject.group_name || '🧮 Точные науки') : '🧮 Точные науки';
-            document.getElementById('editMaxNum').value = subject ? (subject.max_number || 0) : 0;
-            document.getElementById('editSort').value = subject ? subject.sort_order : (subjectsCache.length + 1);
-            document.getElementById('editNote').value = subject ? (subject.note || '') : '';
-            document.getElementById('editStatus').textContent = '';
-            document.getElementById('editStatus').className = 'fb-status';
-        }
-
-        document.getElementById('editCancelBtn').onclick = () => editModal.classList.add('hidden');
-        editModal.onclick = (e) => { if (e.target === editModal) editModal.classList.add('hidden'); };
-
-        document.getElementById('editSaveBtn').onclick = async () => {
-            const st = document.getElementById('editStatus');
-            const name = document.getElementById('editName').value.trim();
-            const url = document.getElementById('editUrl').value.trim();
-            const type = document.getElementById('editType').value;
-            const group_name = document.getElementById('editGroup').value;
-            const max_number = parseInt(document.getElementById('editMaxNum').value) || 0;
-            const sort_order = parseInt(document.getElementById('editSort').value) || 999;
-            const note = document.getElementById('editNote').value.trim();
-            if (!name) { st.textContent = '⚠️ Нужно название'; st.className = 'fb-status error'; return; }
-            if (type === 'numbers' && !url) { st.textContent = '⚠️ Для поиска номеров нужна ссылка'; st.className = 'fb-status error'; return; }
-            st.textContent = '⏳ Сохраняем...';
-            st.className = 'fb-status loading';
-            const payload = { ...getAuthPayload(), name, url, type, group_name, max_number, sort_order, note };
-            try {
-                let r;
-                if (editingId) {
-                    payload.id = editingId;
-                    r = await fetch('/api/admin/subjects/update', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload) });
+                if (res.ok) {
+                    localStorage.setItem('admin_password', pass);
+                    showAdmin();
                 } else {
-                    r = await fetch('/api/admin/subjects/add', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload) });
+                    err.innerText = 'Неверный пароль';
                 }
-                const d = await r.json();
-                if (!r.ok) { st.textContent = '❌ ' + (d.detail || 'Ошибка'); st.className = 'fb-status error'; return; }
-                st.textContent = '✅ Сохранено';
-                st.className = 'fb-status success';
-                setTimeout(() => { editModal.classList.add('hidden'); loadSubjects(); }, 500);
-            } catch (e) { st.textContent = '❌ ' + e.message; st.className = 'fb-status error'; }
-        };
-
-        document.getElementById('refreshOnlineBtn').onclick = loadOnline;
-        async function loadOnline() {
-            try {
-                const r = await fetch('/api/admin/online', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(getAuthPayload()) });
-                if (!r.ok) return;
-                const d = await r.json();
-                document.getElementById('onlineCount').textContent = d.total;
-                const list = document.getElementById('onlineList');
-                const empty = document.getElementById('emptyOnline');
-                list.innerHTML = '';
-                if (!d.users.length) { empty.style.display = 'block'; return; }
-                empty.style.display = 'none';
-                d.users.forEach(u => {
-                    const div = document.createElement('div');
-                    div.className = 'user-card online-card';
-                    const badge = u.is_admin ? '<span class="admin-badge">👑 АДМИН</span>' : '';
-                    const avatarHtml = u.avatar ? `<span class="user-avatar" style="background-image:url('${u.avatar}')"></span>` : `<span class="user-avatar">${getInitial(u.name, u.email)}</span>`;
-                    div.innerHTML = `
-                        <div class="user-head">${avatarHtml}<span class="online-dot"></span><strong>${escapeHtml(u.name || 'Без имени')}</strong>${badge}</div>
-                        <div class="user-row">📧 ${escapeHtml(u.email)}</div>
-                        <div class="user-row">💻 ${escapeHtml(u.device || '—')}</div>
-                        <div class="user-row small">🕐 ${escapeHtml(u.last_seen || '—')}</div>
-                    `;
-                    list.appendChild(div);
-                });
-            } catch {}
+            } catch (e) {
+                err.innerText = 'Ошибка соединения с сервером';
+            }
         }
 
-        document.getElementById('refreshUsersBtn').onclick = loadUsers;
+        function logout() {
+            localStorage.removeItem('admin_password');
+            localStorage.removeItem('token');
+            location.reload();
+        }
+
+        function showAdmin() {
+            document.getElementById('login-screen').classList.add('hidden');
+            document.getElementById('admin-panel').classList.remove('hidden');
+            loadDashboard();
+            loadSubjects();
+        }
+
+        // Проверка при загрузке: если пароль или токен есть, пробуем зайти
+        if (localStorage.getItem('admin_password') || localStorage.getItem('token')) {
+            apiCall('/check').then(() => showAdmin()).catch(() => logout());
+        }
+
+        // --- ВКЛАДКИ ---
+        function switchTab(tabId, btn) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.sidebar button').forEach(el => el.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active');
+            btn.classList.add('active');
+
+            // Подгружаем данные при клике на вкладку
+            if (tabId === 'tab-users') loadUsers();
+            if (tabId === 'tab-messages') loadMessages();
+            if (tabId === 'tab-logs') loadLogs();
+            if (tabId === 'tab-settings') loadSettings();
+            if (tabId === 'tab-templates') loadTemplate();
+            if (tabId === 'tab-password') checkPasswordSource();
+        }
+
+        // --- ДАШБОРД ---
+        async function loadDashboard() {
+            try {
+                const online = await apiCall('/online');
+                const users = await apiCall('/users');
+                document.getElementById('stat-online').innerText = online.total || 0;
+                document.getElementById('stat-users').innerText = users.users ? users.users.length : 0;
+            } catch (e) { console.error(e); }
+        }
+
+        // --- ПРЕДМЕТЫ ---
+        async function loadSubjects() {
+            const res = await apiCall('/subjects'); // Публичный эндпоинт, но сойдет
+            const tbody = document.querySelector('#subjects-table tbody');
+            tbody.innerHTML = '';
+            // Бэкенд отдает {subjects: [...]}
+            const subjRes = await fetch('/api/subjects').then(r=>r.json());
+            subjRes.subjects.forEach(s => {
+                tbody.innerHTML += `
+                    <tr>
+                        <td>${s.id}</td>
+                        <td>${s.name}</td>
+                        <td>${s.group_name}</td>
+                        <td>${s.type}</td>
+                        <td>
+                            <button class="btn btn-danger" onclick="deleteSubject(${s.id})">Удалить</button>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        async function addSubject() {
+            const name = prompt("Название предмета (например: Алгебра):");
+            if (!name) return;
+            const url = prompt("Ссылка на gdz.ru (или оставь пустым для текстовых):");
+            const type = url ? "numbers" : "text";
+
+            try {
+                await apiCall('/subjects/add', {name, url, type, group_name: "Разное", sort_order: 99, max_number: 500, note: ""});
+                loadSubjects();
+            } catch (e) { alert(e.message); }
+        }
+
+        async function deleteSubject(id) {
+            if (!confirm('Удалить предмет?')) return;
+            await apiCall('/subjects/delete', {id});
+            loadSubjects();
+        }
+
+        async function resetSubjects() {
+            if (!confirm('Сбросить все предметы к стандартным?')) return;
+            await apiCall('/subjects/reset');
+            loadSubjects();
+        }
+
+        // --- ПОЛЬЗОВАТЕЛИ ---
         async function loadUsers() {
-            const list = document.getElementById('usersList');
-            const empty = document.getElementById('emptyUsers');
-            try {
-                const r = await fetch('/api/admin/users', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(getAuthPayload()) });
-                if (!r.ok) return;
-                const d = await r.json();
-                document.getElementById('usersCount').textContent = d.users.length;
-                list.innerHTML = '';
-                if (!d.users.length) { empty.style.display = 'block'; return; }
-                empty.style.display = 'none';
-                d.users.forEach(u => {
-                    const div = document.createElement('div');
-                    div.className = 'user-card';
-                    const badge = u.is_admin ? '<span class="admin-badge">👑 АДМИН</span>' : '';
-                    const avatarHtml = u.avatar ? `<span class="user-avatar" style="background-image:url('${u.avatar}')"></span>` : `<span class="user-avatar">${getInitial(u.name, u.email)}</span>`;
-                    div.innerHTML = `
-                        <div class="user-head">${avatarHtml}<strong>${escapeHtml(u.name || 'Без имени')}</strong>${badge}<button class="msg-delete user-del" data-id="${u.id}">🗑</button></div>
-                        <div class="user-row">📧 ${escapeHtml(u.email)}</div>
-                        <div class="user-row">💻 ${escapeHtml(u.device || '—')}</div>
-                        <div class="user-row small">📅 ${escapeHtml(u.created || '—')} · 🕐 ${escapeHtml(u.last_seen || '—')}</div>
-                    `;
-                    list.appendChild(div);
-                });
-            } catch (e) { list.innerHTML = '<p class="empty">Ошибка: ' + e.message + '</p>'; }
+            const res = await apiCall('/users');
+            const tbody = document.querySelector('#users-table tbody');
+            tbody.innerHTML = '';
+            res.users.forEach(u => {
+                tbody.innerHTML += `
+                    <tr>
+                        <td>${u.id}</td>
+                        <td>${u.email}</td>
+                        <td>${u.name || '-'}</td>
+                        <td>${u.is_admin ? '✅' : '❌'}</td>
+                        <td>${u.last_seen || '-'}</td>
+                        <td>
+                            <button class="btn btn-danger" onclick="deleteUser(${u.id})">Удалить</button>
+                        </td>
+                    </tr>
+                `;
+            });
         }
 
-        document.getElementById('usersList').addEventListener('click', async (e) => {
-            const btn = e.target.closest('.user-del');
-            if (!btn) return;
+        async function deleteUser(id) {
             if (!confirm('Удалить пользователя?')) return;
-            btn.disabled = true;
-            try {
-                const r = await fetch('/api/admin/delete-user/' + btn.dataset.id, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(getAuthPayload()) });
-                if (!r.ok) throw new Error('Ошибка');
-                loadUsers();
-            } catch (err) { btn.disabled = false; alert('Ошибка: ' + err.message); }
-        });
+            await apiCall('/delete-user/' + id);
+            loadUsers();
+        }
 
-        document.getElementById('refreshBtn').onclick = loadMessages;
+        // --- СООБЩЕНИЯ ---
         async function loadMessages() {
-            const list = document.getElementById('messagesList');
-            const empty = document.getElementById('emptyMsg');
-            try {
-                const r = await fetch('/api/admin/messages', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(getAuthPayload()) });
-                if (!r.ok) return;
-                const d = await r.json();
-                document.getElementById('count').textContent = d.total;
-                list.innerHTML = '';
-                if (!d.messages.length) { empty.style.display = 'block'; return; }
-                empty.style.display = 'none';
-                d.messages.forEach(m => {
-                    const div = document.createElement('div');
-                    div.className = 'message-card';
-                    div.innerHTML = `
-                        <div class="msg-head">
-                            <span class="msg-date">📅 ${escapeHtml(m.date || '')}</span>
-                            <div class="msg-actions">
-                                <span class="msg-ver">v${escapeHtml(m.version || '?')}</span>
-                                <button class="msg-delete" data-id="${m.id}">🗑</button>
-                            </div>
-                        </div>
-                        <div class="msg-body">${escapeHtml(m.message || '')}</div>
-                        ${m.contact ? `<div class="msg-contact">📞 ${escapeHtml(m.contact)}</div>` : ''}
-                    `;
-                    list.appendChild(div);
-                });
-            } catch (e) { list.innerHTML = '<p class="empty">Ошибка: ' + e.message + '</p>'; }
+            const res = await apiCall('/messages');
+            const tbody = document.querySelector('#messages-table tbody');
+            tbody.innerHTML = '';
+            res.messages.forEach(m => {
+                tbody.innerHTML += `
+                    <tr>
+                        <td>${m.date}</td>
+                        <td>${m.message}</td>
+                        <td>${m.contact}</td>
+                        <td><button class="btn btn-danger" onclick="deleteMessage(${m.id})">Удалить</button></td>
+                    </tr>
+                `;
+            });
         }
 
-        document.getElementById('messagesList').addEventListener('click', async (e) => {
-            const btn = e.target.closest('.msg-delete');
-            if (!btn) return;
-            if (!confirm('Удалить сообщение?')) return;
-            btn.disabled = true;
-            try {
-                const r = await fetch('/api/admin/delete/' + btn.dataset.id, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(getAuthPayload()) });
-                if (!r.ok) throw new Error('Ошибка');
-                loadMessages();
-            } catch (err) { btn.disabled = false; alert('Ошибка: ' + err.message); }
-        });
+        async function deleteMessage(id) {
+            await apiCall('/delete/' + id);
+            loadMessages();
+        }
 
-        document.getElementById('clearBtn').onclick = async () => {
-            if (!confirm('Удалить ВСЕ сообщения?')) return;
-            try {
-                const r = await fetch('/api/admin/clear', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(getAuthPayload()) });
-                if (!r.ok) throw new Error('Ошибка');
-                loadMessages();
-            } catch (err) { alert('Ошибка: ' + err.message); }
-        };
+        async function clearMessages() {
+            if (!confirm('Очистить все сообщения?')) return;
+            await apiCall('/clear');
+            loadMessages();
+        }
 
-        document.getElementById('refreshLogsBtn').onclick = loadLogs;
+        // --- ЛОГИ ---
         async function loadLogs() {
-            const list = document.getElementById('logsList');
-            const empty = document.getElementById('emptyLogs');
-            try {
-                const r = await fetch('/api/admin/logs', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(getAuthPayload()) });
-                if (!r.ok) return;
-                const d = await r.json();
-                document.getElementById('logsCount').textContent = d.logs.length;
-                list.innerHTML = '';
-                if (!d.logs.length) { empty.style.display = 'block'; return; }
-                empty.style.display = 'none';
-                d.logs.forEach(l => {
-                    const div = document.createElement('div');
-                    div.className = 'log-row';
-                    const icon = ACTION_ICONS[l.action] || '📌';
-                    const who = l.name || l.email || 'Гость';
-                    const avatarHtml = l.avatar ? `<span class="log-avatar" style="background-image:url('${l.avatar}')"></span>` : `<span class="log-avatar">${getInitial(l.name, l.email)}</span>`;
-                    div.innerHTML = `
-                        <span class="log-icon">${icon}</span>
-                        <div class="log-content">
-                            <div class="log-head">${avatarHtml}<strong>${escapeHtml(who)}</strong><span class="log-action">${escapeHtml(l.action)}</span></div>
-                            ${l.details ? `<div class="log-details">${escapeHtml(l.details)}</div>` : ''}
-                            <div class="log-meta">🕐 ${escapeHtml(l.created || '')}${l.ip ? ` · 🌐 ${escapeHtml(l.ip)}` : ''}</div>
-                        </div>
-                    `;
-                    list.appendChild(div);
-                });
-            } catch (e) { list.innerHTML = '<p class="empty">Ошибка: ' + e.message + '</p>'; }
+            const res = await apiCall('/logs');
+            const tbody = document.querySelector('#logs-table tbody');
+            tbody.innerHTML = '';
+            res.logs.forEach(l => {
+                tbody.innerHTML += `
+                    <tr>
+                        <td>${l.created}</td>
+                        <td>${l.email || 'Гость'}</td>
+                        <td>${l.action}</td>
+                        <td>${l.details || ''}</td>
+                        <td>${l.ip || ''}</td>
+                    </tr>
+                `;
+            });
         }
 
-        document.getElementById('clearLogsBtn').onclick = async () => {
-            if (!confirm('Удалить ВСЕ логи?')) return;
-            try {
-                const r = await fetch('/api/admin/logs/clear', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(getAuthPayload()) });
-                if (!r.ok) throw new Error('Ошибка');
-                loadLogs();
-            } catch (err) { alert('Ошибка: ' + err.message); }
-        };
+        async function clearLogs() {
+            if (!confirm('Очистить логи?')) return;
+            await apiCall('/logs/clear');
+            loadLogs();
+        }
 
-        function escapeHtml(t) { const d = document.createElement('div'); d.textContent = t || ''; return d.innerHTML; }
-        init();
+        // --- НАСТРОЙКИ САЙТА ---
+        async function loadSettings() {
+            const res = await apiCall('/settings/get');
+            for (const [key, value] of Object.entries(res.settings)) {
+                const el = document.getElementById('set-' + key);
+                if (el) el.value = value;
+            }
+        }
+
+        async function saveSettings() {
+            const status = document.getElementById('settings-status');
+            status.innerText = 'Сохранение...';
+            const settings = {
+                site_title: document.getElementById('set-site_title').value,
+                announcement: document.getElementById('set-announcement').value,
+                footer_text: document.getElementById('set-footer_text').value,
+                custom_css: document.getElementById('set-custom_css').value
+            };
+            try {
+                await apiCall('/settings/save', {settings});
+                status.innerText = '✅ Сохранено';
+                status.style.color = 'var(--success)';
+            } catch (e) {
+                status.innerText = '❌ ' + e.message;
+                status.style.color = 'var(--danger)';
+            }
+        }
+
+        // --- РЕДАКТОР ШАБЛОНОВ ---
+        async function loadTemplate() {
+            const name = document.getElementById('tpl-select').value;
+            const status = document.getElementById('tpl-status');
+            status.innerText = 'Загрузка...';
+            try {
+                const res = await apiCall('/templates/get', {name});
+                document.getElementById('tpl-content').value = res.content;
+                status.innerText = res.source === 'db' ? 'Загружено из БД' : 'Загружено из файла';
+            } catch (e) {
+                status.innerText = '❌ ' + e.message;
+            }
+        }
+
+        async function saveTemplate() {
+            const name = document.getElementById('tpl-select').value;
+            const content = document.getElementById('tpl-content').value;
+            const status = document.getElementById('tpl-status');
+
+            if (!confirm('Сохранить изменения в коде? Сайт сразу применит их.')) return;
+            status.innerText = 'Сохранение...';
+            try {
+                await apiCall('/templates/save', {name, content});
+                status.innerText = '✅ Сохранено';
+                status.style.color = 'var(--success)';
+            } catch (e) {
+                status.innerText = '❌ ' + e.message;
+                status.style.color = 'var(--danger)';
+            }
+        }
+
+        async function resetTemplate() {
+            const name = document.getElementById('tpl-select').value;
+            if (!confirm('Сбросить код до версии из файла PyCharm? Изменения в БД удалятся.')) return;
+            await apiCall('/templates/reset', {name});
+            loadTemplate();
+        }
+
+        // --- СМЕНА ПАРОЛЯ ---
+        async function checkPasswordSource() {
+            const res = await apiCall('/password/status');
+            const el = document.getElementById('pass-source');
+            if (res.has_custom_password) {
+                el.innerText = 'ℹ️ Сейчас используется пароль из Базы Данных.';
+            } else {
+                el.innerText = 'ℹ️ Сейчас используется пароль из настроек Render (ADMIN_PASSWORD).';
+            }
+        }
+
+        async function changePassword() {
+            const cur = document.getElementById('pass-current').value;
+            const n1 = document.getElementById('pass-new').value;
+            const n2 = document.getElementById('pass-confirm').value;
+            const status = document.getElementById('pass-status');
+
+            if (n1 !== n2) {
+                status.innerText = '❌ Пароли не совпадают';
+                status.style.color = 'var(--danger)';
+                return;
+            }
+            if (n1.length < 8) {
+                status.innerText = '❌ Минимум 8 символов';
+                status.style.color = 'var(--danger)';
+                return;
+            }
+
+            status.innerText = 'Сохранение...';
+            try {
+                await apiCall('/password/change', {current_password: cur, new_password: n1});
+                status.innerText = '✅ Пароль обновлён! Запомни его.';
+                status.style.color = 'var(--success)';
+
+                // Если пароль вводили вручную, обновляем его в памяти
+                if (localStorage.getItem('admin_password')) {
+                    localStorage.setItem('admin_password', n1);
+                }
+                document.getElementById('pass-current').value = '';
+                document.getElementById('pass-new').value = '';
+                document.getElementById('pass-confirm').value = '';
+            } catch (e) {
+                status.innerText = '❌ ' + e.message;
+                status.style.color = 'var(--danger)';
+            }
+        }
     </script>
 </body>
 </html>
