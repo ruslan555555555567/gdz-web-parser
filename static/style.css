@@ -91,12 +91,12 @@ body.theme-dark h1, body.theme-dark h2, body.theme-dark h3 { color: #f7fafc; }
 .theme-dark .avatar-preview { background-color: rgba(74,85,104,0.5); color: #cbd5e0; border-color: rgba(74,85,104,0.6); }
 
 /* ═══════════════════════════════════════
-   СВОЯ КАРТИНКА — ГЛАВНАЯ (прозрачная + тёмный текст)
+   СВОЯ КАРТИНКА — ГЛАВНАЯ (БЕЛЫЙ ТЕКСТ + ЧЁРНАЯ ОБВОДКА)
    ═══════════════════════════════════════ */
 .theme-custom body,
 body.theme-custom {
     background-color: transparent;
-    color: #1a202c;
+    color: #ffffff;
     background-image: inherit;
     background-size: inherit;
     background-attachment: inherit;
@@ -107,7 +107,7 @@ body.theme-custom::before {
     content: '';
     position: fixed;
     inset: 0;
-    background: rgba(255,255,255,0.35);
+    background: rgba(0,0,0,0.45); /* Затемнение картинки, чтобы белый текст было видно */
     z-index: -1;
     pointer-events: none;
 }
@@ -117,10 +117,9 @@ body.theme-custom::before {
 body.theme-custom .card,
 body.theme-custom .subject-block,
 body.theme-custom .subject-group {
-    background: transparent;
-    box-shadow: none;
-    border: none;
-    backdrop-filter: none;
+    background: rgba(0,0,0,0.6);
+    border: 1px solid rgba(255,255,255,0.2);
+    backdrop-filter: blur(8px);
 }
 .theme-custom .modal-content,
 .theme-custom .image-modal-content,
@@ -129,75 +128,67 @@ body.theme-custom .image-modal-content {
     background: rgba(255,255,255,0.97);
     color: #1a202c;
 }
+
+/* Всё, что должно быть белым с чёрной обводкой */
 .theme-custom h1, .theme-custom h2, .theme-custom h3,
-body.theme-custom h1, body.theme-custom h2, body.theme-custom h3 {
-    color: #1a202c;
-    text-shadow: 0 1px 3px rgba(255,255,255,0.95), 0 0 10px rgba(255,255,255,0.7);
+body.theme-custom h1, body.theme-custom h2, body.theme-custom h3,
+.theme-custom .input-label, body.theme-custom .input-label,
+.theme-custom .group-title, body.theme-custom .group-title,
+.theme-custom .group-hint, body.theme-custom .group-hint,
+.theme-custom .subtitle, body.theme-custom .subtitle,
+.theme-custom .footer, body.theme-custom .footer,
+.theme-custom .hint, body.theme-custom .hint,
+.theme-custom .task-header h3, body.theme-custom .task-header h3,
+.theme-custom .task-text, body.theme-custom .task-text,
+.theme-custom .history-row, body.theme-custom .history-row,
+.theme-custom .user-row, body.theme-custom .user-row,
+.theme-custom .msg-body, body.theme-custom .msg-body,
+.theme-custom .form-label, body.theme-custom .form-label {
+    color: #ffffff !important;
+    text-shadow:
+        -1px -1px 0 #000,
+         1px -1px 0 #000,
+        -1px  1px 0 #000,
+         1px  1px 0 #000,
+         0px  2px 5px rgba(0,0,0,0.9) !important;
 }
-.theme-custom .input-label,
-body.theme-custom .input-label {
-    color: #1a202c;
-    text-shadow: 0 1px 3px rgba(255,255,255,0.95), 0 0 10px rgba(255,255,255,0.7);
-}
-.theme-custom .group-title,
-body.theme-custom .group-title {
-    color: #1a202c;
-    text-shadow: 0 1px 3px rgba(255,255,255,0.95), 0 0 10px rgba(255,255,255,0.7);
-}
-.theme-custom .group-hint, .theme-custom .subtitle,
-body.theme-custom .group-hint, body.theme-custom .subtitle {
-    color: #2d3748;
-    text-shadow: 0 1px 3px rgba(255,255,255,0.95);
-}
-.theme-custom .footer, .theme-custom .hint,
-body.theme-custom .footer, body.theme-custom .hint {
-    color: #4a5568;
-    text-shadow: 0 1px 3px rgba(255,255,255,0.9);
-}
+
 .theme-custom .version,
 body.theme-custom .version {
-    background: rgba(255,255,255,0.85);
-    color: #1a202c;
+    background: rgba(0,0,0,0.7);
+    color: #ffffff;
 }
+
+/* Поля ввода делаем тёмными и прозрачными */
 .theme-custom .num-input,
 .theme-custom .text-input,
 .theme-custom .form-label input,
 .theme-custom .form-label textarea,
+.theme-custom select,
 body.theme-custom .num-input,
 body.theme-custom .text-input,
 body.theme-custom .form-label input,
-body.theme-custom .form-label textarea {
-    background: transparent;
-    border: 2px solid rgba(26,32,44,0.4);
-    color: #1a202c;
-    backdrop-filter: none;
-    text-shadow: 0 1px 2px rgba(255,255,255,0.8);
+body.theme-custom .form-label textarea,
+body.theme-custom select {
+    background: rgba(0,0,0,0.6) !important;
+    border: 2px solid rgba(255,255,255,0.4) !important;
+    color: #ffffff !important;
+    text-shadow: none !important;
 }
+
 .theme-custom .num-input::placeholder,
 .theme-custom .text-input::placeholder,
 body.theme-custom .num-input::placeholder,
 body.theme-custom .text-input::placeholder {
-    color: rgba(26,32,44,0.55);
-    text-shadow: 0 1px 2px rgba(255,255,255,0.7);
+    color: #cccccc !important;
+    text-shadow: none !important;
 }
 .theme-custom .num-input:focus,
 .theme-custom .text-input:focus,
 body.theme-custom .num-input:focus,
 body.theme-custom .text-input:focus {
-    background: rgba(255,255,255,0.25);
-    border-color: #1a202c;
-}
-.theme-custom .task-text, .theme-custom .history-row,
-.theme-custom .user-row, .theme-custom .msg-body,
-body.theme-custom .task-text, body.theme-custom .history-row,
-body.theme-custom .user-row, body.theme-custom .msg-body {
-    color: #1a202c;
-    text-shadow: 0 1px 3px rgba(255,255,255,0.9);
-}
-.theme-custom .task-header h3,
-body.theme-custom .task-header h3 {
-    color: #1a202c;
-    text-shadow: 0 1px 3px rgba(255,255,255,0.95);
+    background: rgba(0,0,0,0.8) !important;
+    border-color: #ffffff !important;
 }
 
 .btn-style-light .btn-primary,
