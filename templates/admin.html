@@ -7,32 +7,28 @@
     <script>
         (function() {
             try {
-                const theme = localStorage.getItem('gdz_theme') || 'light';
-                const bg = localStorage.getItem('gdz_bg');
                 const adminTheme = localStorage.getItem('gdz_admin_theme') || 'auto';
                 const adminBg = localStorage.getItem('gdz_admin_bg');
                 const btnColor = localStorage.getItem('gdz_admin_btn_color') || '#4299e1';
-                const btnStyle = localStorage.getItem('gdz_btn_style') || 'auto';
                 const token = localStorage.getItem('gdz_token');
                 const root = document.documentElement;
 
-                if (theme === 'dark') root.classList.add('theme-dark');
-                else if (theme === 'custom' && bg) {
-                    root.classList.add('theme-custom');
-                    root.style.backgroundImage = 'url("' + bg + '")';
-                }
-
-                if (adminTheme === 'dark') root.classList.add('admin-theme-dark');
-                else if (adminTheme === 'custom' && adminBg) {
+                if (adminTheme === 'dark') {
+                    root.classList.add('admin-theme-dark');
+                } else if (adminTheme === 'custom' && adminBg) {
                     root.classList.add('admin-theme-custom');
                     root.style.setProperty('--admin-bg-image', 'url("' + adminBg + '")');
+                } else {
+                    const mainTheme = localStorage.getItem('gdz_theme') || 'light';
+                    const mainBg = localStorage.getItem('gdz_bg');
+                    if (mainTheme === 'dark') root.classList.add('theme-dark');
+                    else if (mainTheme === 'custom' && mainBg) {
+                        root.classList.add('theme-custom');
+                        root.style.backgroundImage = 'url("' + mainBg + '")';
+                    }
                 }
 
-                if (btnStyle === 'dark') root.classList.add('btn-style-dark');
-                else if (btnStyle === 'light') root.classList.add('btn-style-light');
-
                 root.style.setProperty('--admin-btn-color', btnColor);
-
                 if (token) root.classList.add('has-token');
                 else root.classList.add('no-token');
             } catch (e) {}
@@ -48,7 +44,7 @@
 </head>
 <body>
     <div class="container">
-        <div class="topbar">
+        <div class="topbar" style="display: flex; justify-content: space-between; align-items: center;">
             <span class="version">v{{ version }}</span>
             <a href="/" class="support-btn" title="На главную">🏠</a>
         </div>
@@ -72,6 +68,7 @@
                 <button class="admin-tab" data-tab="users">👥 Пользователи</button>
                 <button class="admin-tab" data-tab="messages">📬 Сообщения</button>
                 <button class="admin-tab" data-tab="logs">📋 Логи</button>
+                <button class="admin-tab" data-tab="settings">⚙️ Настройки</button>
             </div>
 
             <div id="tabSubjects">
@@ -131,6 +128,46 @@
                 <div id="logsList"></div>
                 <div id="emptyLogs" class="empty">Логов пока нет</div>
             </div>
+
+            <!-- ВКЛАДКА НАСТРОЕК -->
+            <div id="tabSettings" class="hidden">
+                <div class="section-header">
+                    <h2>⚙️ Настройки аккаунта</h2>
+                </div>
+
+                <div class="settings-section">
+                    <label class="input-label">Оформление главной</label>
+                    <div class="theme-options" style="margin-top: 10px;">
+                        <button class="theme-btn" data-theme="light" onclick="selectTheme('light')">
+                            <div class="theme-preview light-preview"></div>
+                            <span>☀️ Светлая</span>
+                        </button>
+                        <button class="theme-btn" data-theme="dark" onclick="selectTheme('dark')">
+                            <div class="theme-preview dark-preview"></div>
+                            <span>🌙 Тёмная</span>
+                        </button>
+                        <button class="theme-btn" data-theme="custom" onclick="selectTheme('custom')">
+                            <div class="theme-preview custom-preview" id="customPreviewBg"></div>
+                            <span>🎨 Своя картинка</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="settings-section" id="bgUploadSection" style="display: none;">
+                    <div style="display:flex; gap:10px; flex-wrap:wrap;">
+                        <input type="file" id="bgFileInput" accept="image/*" style="display:none;" onchange="handleBgUpload(event)">
+                        <button class="btn-primary" style="width:auto;" onclick="document.getElementById('bgFileInput').click()">🖼 Загрузить из галереи</button>
+                        <button class="btn-secondary" onclick="removeBg()">🗑 Убрать фон</button>
+                    </div>
+                    <p class="hint" style="margin-top: 8px;">Картинка сохранится в аккаунте.</p>
+                </div>
+
+                <div class="settings-section" style="margin-top: 20px; border-bottom: none;">
+                    <button class="btn-primary" style="width:auto;" onclick="saveSettings()">💾 Сохранить настройки</button>
+                    <span id="settingsStatus" class="fb-status" style="margin-left: 10px;"></span>
+                </div>
+            </div>
+
         </section>
     </div>
 
@@ -176,6 +213,152 @@
         const pwd = document.getElementById('pwd');
         const loginStatus = document.getElementById('loginStatus');
 
+        // Переменные для настроек
+        let currentTheme = 'auto';
+        let currentBgUrl = '';
+
+        async function loadAdminSettings() {
+            const token = localStorage.getItem('gdz_token') || '';
+            if (!token) return;
+            try {
+                const r = await fetch('/api/auth/me?token=' + encodeURIComponent(token));
+                if (!r.ok) return;
+                const d = await r.json();
+                const u = d.user;
+                if (!u || !u.is_admin) return;
+
+                currentTheme = u.admin_theme || 'auto';
+                currentBgUrl = u.admin_bg_url || '';
+
+                updateSettingsUI();
+
+                const adminTheme = u.admin_theme || 'auto';
+                const adminBg = u.admin_bg_url;
+                localStorage.setItem('gdz_admin_theme', adminTheme);
+
+                const root = document.documentElement;
+                root.classList.remove('admin-theme-dark', 'admin-theme-custom', 'theme-dark', 'theme-custom');
+                root.style.removeProperty('--admin-bg-image');
+                root.style.backgroundImage = '';
+
+                if (adminTheme === 'dark') {
+                    root.classList.add('admin-theme-dark');
+                } else if (adminTheme === 'custom' && adminBg) {
+                    root.classList.add('admin-theme-custom');
+                    root.style.setProperty('--admin-bg-image', 'url("' + adminBg + '")');
+                    localStorage.setItem('gdz_admin_bg', adminBg);
+                } else {
+                    const mainTheme = localStorage.getItem('gdz_theme') || 'light';
+                    const mainBg = localStorage.getItem('gdz_bg');
+                    if (mainTheme === 'dark') root.classList.add('theme-dark');
+                    else if (mainTheme === 'custom' && mainBg) {
+                        root.classList.add('theme-custom');
+                        root.style.backgroundImage = 'url("' + mainBg + '")';
+                    }
+                }
+                const color = u.admin_btn_color || '#4299e1';
+                localStorage.setItem('gdz_admin_btn_color', color);
+                root.style.setProperty('--admin-btn-color', color);
+            } catch {}
+        }
+
+        // --- ЛОГИКА НАСТРОЕК ---
+        function selectTheme(theme) {
+            currentTheme = theme;
+            updateSettingsUI();
+        }
+
+        function updateSettingsUI() {
+            // Подсветка кнопок
+            document.querySelectorAll('.theme-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.theme === currentTheme);
+            });
+
+            // Показ/скрытие кнопок загрузки
+            const uploadSec = document.getElementById('bgUploadSection');
+            if (currentTheme === 'custom') {
+                uploadSec.style.display = 'block';
+            } else {
+                uploadSec.style.display = 'none';
+            }
+
+            // Превью картинки
+            const preview = document.getElementById('customPreviewBg');
+            if (currentBgUrl) {
+                preview.style.backgroundImage = `url('${currentBgUrl}')`;
+                preview.style.backgroundSize = 'cover';
+                preview.style.backgroundPosition = 'center';
+            } else {
+                preview.style.backgroundImage = 'none';
+            }
+        }
+
+        function handleBgUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            if (file.size > 2 * 1024 * 1024) {
+                alert('Файл слишком большой! Максимум 2 МБ.');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                currentBgUrl = e.target.result; // Base64
+                updateSettingsUI();
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function removeBg() {
+            currentBgUrl = '';
+            document.getElementById('bgFileInput').value = '';
+            updateSettingsUI();
+        }
+
+        async function saveSettings() {
+            const st = document.getElementById('settingsStatus');
+            const token = localStorage.getItem('gdz_token');
+
+            if (!token) {
+                st.textContent = '❌ Нужно войти на главной странице под аккаунтом админа';
+                st.className = 'fb-status error';
+                return;
+            }
+
+            st.textContent = '⏳ Сохранение...';
+            st.className = 'fb-status loading';
+
+            try {
+                const payload = {
+                    token: token,
+                    admin_theme: currentTheme,
+                    admin_bg_url: currentBgUrl,
+                    theme: localStorage.getItem('gdz_theme') || 'light',
+                    name: '', bg_url: '', admin_btn_color: '', btn_style: ''
+                };
+
+                const r = await fetch('/api/auth/update', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(payload)
+                });
+                if (!r.ok) throw new Error('Ошибка сервера');
+
+                st.textContent = '✅ Сохранено! Обновите страницу.';
+                st.className = 'fb-status success';
+
+                localStorage.setItem('gdz_admin_theme', currentTheme);
+                if (currentTheme === 'custom') localStorage.setItem('gdz_admin_bg', currentBgUrl);
+
+                setTimeout(() => location.reload(), 1000);
+            } catch (e) {
+                st.textContent = '❌ ' + e.message;
+                st.className = 'fb-status error';
+            }
+        }
+
+        // --- ОСТАЛЬНАЯ ЛОГИКА АДМИНКИ ---
         const ACTION_ICONS = {
             'register': '🆕', 'login': '🔑', 'login_fail': '⚠️', 'logout': '🚪',
             'parse': '🔍', 'profile_update': '⚙️', 'avatar_update': '🖼',
@@ -189,41 +372,6 @@
             if (n) return n[0].toUpperCase();
             if (email) return email[0].toUpperCase();
             return '?';
-        }
-
-        async function loadAdminSettings() {
-            const token = localStorage.getItem('gdz_token') || '';
-            if (!token) return;
-            try {
-                const r = await fetch('/api/auth/me?token=' + encodeURIComponent(token));
-                if (!r.ok) return;
-                const d = await r.json();
-                const u = d.user;
-                if (!u || !u.is_admin) return;
-
-                const adminTheme = u.admin_theme || 'auto';
-                const adminBg = u.admin_bg_url;
-                localStorage.setItem('gdz_admin_theme', adminTheme);
-                const root = document.documentElement;
-                root.classList.remove('admin-theme-dark', 'admin-theme-custom');
-                if (adminTheme === 'dark') {
-                    root.classList.add('admin-theme-dark');
-                } else if (adminTheme === 'custom' && adminBg) {
-                    root.classList.add('admin-theme-custom');
-                    root.style.setProperty('--admin-bg-image', 'url("' + adminBg + '")');
-                    localStorage.setItem('gdz_admin_bg', adminBg);
-                }
-
-                const color = u.admin_btn_color || '#4299e1';
-                localStorage.setItem('gdz_admin_btn_color', color);
-                root.style.setProperty('--admin-btn-color', color);
-
-                const btnStyle = u.btn_style || 'auto';
-                localStorage.setItem('gdz_btn_style', btnStyle);
-                root.classList.remove('btn-style-dark', 'btn-style-light');
-                if (btnStyle === 'dark') root.classList.add('btn-style-dark');
-                else if (btnStyle === 'light') root.classList.add('btn-style-light');
-            } catch {}
         }
 
         async function init() {
@@ -274,8 +422,9 @@
             t.addEventListener('click', () => {
                 document.querySelectorAll('.admin-tab').forEach(x => x.classList.toggle('active', x === t));
                 const tab = t.dataset.tab;
-                ['subjects', 'online', 'users', 'messages', 'logs'].forEach(name => {
-                    document.getElementById('tab' + name.charAt(0).toUpperCase() + name.slice(1)).classList.toggle('hidden', name !== tab);
+                ['subjects', 'online', 'users', 'messages', 'logs', 'settings'].forEach(name => {
+                    const el = document.getElementById('tab' + name.charAt(0).toUpperCase() + name.slice(1));
+                    if (el) el.classList.toggle('hidden', name !== tab);
                 });
             });
         });
