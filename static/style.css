@@ -91,7 +91,7 @@ body.theme-dark h1, body.theme-dark h2, body.theme-dark h3 { color: #f7fafc; }
 .theme-dark .avatar-preview { background-color: rgba(74,85,104,0.5); color: #cbd5e0; border-color: rgba(74,85,104,0.6); }
 
 /* ═══════════════════════════════════════
-   СВОЯ КАРТИНКА — ГЛАВНАЯ (БЕЛЫЙ ТЕКСТ + ЧЁРНАЯ ОБВОДКА)
+   СВОЯ КАРТИНКА — ГЛАВНАЯ (ПРОЗРАЧНЫЕ ПОЛЯ + БЕЛЫЙ ТЕКСТ С ЧЁРНОЙ ОБВОДКОЙ)
    ═══════════════════════════════════════ */
 .theme-custom body,
 body.theme-custom {
@@ -107,7 +107,7 @@ body.theme-custom::before {
     content: '';
     position: fixed;
     inset: 0;
-    background: rgba(0,0,0,0.45); /* Затемнение картинки, чтобы белый текст было видно */
+    background: rgba(0,0,0,0.4); /* Легкое затемнение картинки */
     z-index: -1;
     pointer-events: none;
 }
@@ -117,9 +117,9 @@ body.theme-custom::before {
 body.theme-custom .card,
 body.theme-custom .subject-block,
 body.theme-custom .subject-group {
-    background: rgba(0,0,0,0.6);
-    border: 1px solid rgba(255,255,255,0.2);
-    backdrop-filter: blur(8px);
+    background: rgba(0,0,0,0.45); /* Полупрозрачная темная подложка для блоков */
+    border: 1px solid rgba(255,255,255,0.15);
+    backdrop-filter: blur(5px);
 }
 .theme-custom .modal-content,
 .theme-custom .image-modal-content,
@@ -150,16 +150,17 @@ body.theme-custom h1, body.theme-custom h2, body.theme-custom h3,
          1px -1px 0 #000,
         -1px  1px 0 #000,
          1px  1px 0 #000,
-         0px  2px 5px rgba(0,0,0,0.9) !important;
+         0px  2px 5px rgba(0,0,0,0.8) !important; /* Черная обводка */
 }
 
 .theme-custom .version,
 body.theme-custom .version {
     background: rgba(0,0,0,0.7);
     color: #ffffff;
+    text-shadow: none;
 }
 
-/* Поля ввода делаем тёмными и прозрачными */
+/* ⚠️ ВОЗВРАЩАЕМ ПРОЗРАЧНОСТЬ ПОЛЯМ ВВОДА */
 .theme-custom .num-input,
 .theme-custom .text-input,
 .theme-custom .form-label input,
@@ -170,24 +171,24 @@ body.theme-custom .text-input,
 body.theme-custom .form-label input,
 body.theme-custom .form-label textarea,
 body.theme-custom select {
-    background: rgba(0,0,0,0.6) !important;
-    border: 2px solid rgba(255,255,255,0.4) !important;
-    color: #ffffff !important;
-    text-shadow: none !important;
+    background: transparent !important; /* Прозрачный фон */
+    border: 2px solid rgba(255,255,255,0.5) !important; /* Белая рамка */
+    color: #ffffff !important; /* Белый текст ввода */
+    text-shadow: none !important; /* Без обводки внутри поля */
 }
 
 .theme-custom .num-input::placeholder,
 .theme-custom .text-input::placeholder,
 body.theme-custom .num-input::placeholder,
 body.theme-custom .text-input::placeholder {
-    color: #cccccc !important;
+    color: rgba(255,255,255,0.7) !important;
     text-shadow: none !important;
 }
 .theme-custom .num-input:focus,
 .theme-custom .text-input:focus,
 body.theme-custom .num-input:focus,
 body.theme-custom .text-input:focus {
-    background: rgba(0,0,0,0.8) !important;
+    background: rgba(255,255,255,0.1) !important; /* Легкая подсветка при клике */
     border-color: #ffffff !important;
 }
 
@@ -241,7 +242,7 @@ body.admin-theme-dark .btn-logout {
 }
 
 /* ═══════════════════════════════════════
-   ФОН АДМИНКИ — СВОЯ КАРТИНКА (УЛУЧШЕНА ВИДИМОСТЬ)
+   ФОН АДМИНКИ — СВОЯ КАРТИНКА
    ═══════════════════════════════════════ */
 .admin-theme-custom body,
 body.admin-theme-custom {
@@ -261,8 +262,6 @@ body.admin-theme-custom::before {
     z-index: -1;
     pointer-events: none;
 }
-
-/* Карточки — тёмная подложка для читаемости */
 .admin-theme-custom .card,
 body.admin-theme-custom .card {
     background: rgba(0,0,0,0.55);
@@ -270,21 +269,13 @@ body.admin-theme-custom .card {
     border: 1px solid rgba(255,255,255,0.15);
     box-shadow: 0 4px 16px rgba(0,0,0,0.4);
 }
-
-/* Заголовки — яркие белые с сильной тенью */
-.admin-theme-custom h1,
-.admin-theme-custom h2,
-.admin-theme-custom h3,
-body.admin-theme-custom h1,
-body.admin-theme-custom h2,
-body.admin-theme-custom h3 {
+.admin-theme-custom h1, .admin-theme-custom h2, .admin-theme-custom h3,
+body.admin-theme-custom h1, body.admin-theme-custom h2, body.admin-theme-custom h3 {
     color: #ffffff !important;
     text-shadow: 0 2px 8px rgba(0,0,0,1), 0 0 20px rgba(0,0,0,0.9) !important;
 }
-.admin-theme-custom .subtitle,
-.admin-theme-custom .hint,
-body.admin-theme-custom .subtitle,
-body.admin-theme-custom .hint {
+.admin-theme-custom .subtitle, .admin-theme-custom .hint,
+body.admin-theme-custom .subtitle, body.admin-theme-custom .hint {
     color: #f7fafc !important;
     text-shadow: 0 2px 6px rgba(0,0,0,1) !important;
 }
@@ -299,8 +290,6 @@ body.admin-theme-custom .support-btn {
     border-color: rgba(255,255,255,0.4) !important;
     color: #ffffff !important;
 }
-
-/* Вкладки — тёмные с ярким текстом */
 .admin-theme-custom .admin-tabs,
 body.admin-theme-custom .admin-tabs {
     background: rgba(0,0,0,0.6) !important;
@@ -318,52 +307,27 @@ body.admin-theme-custom .admin-tab.active {
     font-weight: 700;
     text-shadow: 0 1px 3px rgba(0,0,0,0.5);
 }
-
-/* Карточки пользователей/сообщений/логов/предметов */
-.admin-theme-custom .subject-card,
-.admin-theme-custom .user-card,
-.admin-theme-custom .message-card,
-.admin-theme-custom .log-row,
-body.admin-theme-custom .subject-card,
-body.admin-theme-custom .user-card,
-body.admin-theme-custom .message-card,
-body.admin-theme-custom .log-row {
+.admin-theme-custom .subject-card, .admin-theme-custom .user-card,
+.admin-theme-custom .message-card, .admin-theme-custom .log-row,
+body.admin-theme-custom .subject-card, body.admin-theme-custom .user-card,
+body.admin-theme-custom .message-card, body.admin-theme-custom .log-row {
     background: rgba(0,0,0,0.5) !important;
     color: #ffffff !important;
     border: 1px solid rgba(255,255,255,0.2) !important;
     backdrop-filter: blur(6px);
 }
-
-/* Текст внутри карточек — яркий */
-.admin-theme-custom .subj-head strong,
-.admin-theme-custom .user-head strong,
-.admin-theme-custom .log-head strong,
-body.admin-theme-custom .subj-head strong,
-body.admin-theme-custom .user-head strong,
-body.admin-theme-custom .log-head strong {
+.admin-theme-custom .subj-head strong, .admin-theme-custom .user-head strong, .admin-theme-custom .log-head strong,
+body.admin-theme-custom .subj-head strong, body.admin-theme-custom .user-head strong, body.admin-theme-custom .log-head strong {
     color: #ffffff !important;
     text-shadow: 0 2px 6px rgba(0,0,0,1) !important;
 }
-
-.admin-theme-custom .subj-row,
-.admin-theme-custom .user-row,
-.admin-theme-custom .log-details,
-.admin-theme-custom .msg-body,
-body.admin-theme-custom .subj-row,
-body.admin-theme-custom .user-row,
-body.admin-theme-custom .log-details,
-body.admin-theme-custom .msg-body {
+.admin-theme-custom .subj-row, .admin-theme-custom .user-row, .admin-theme-custom .log-details, .admin-theme-custom .msg-body,
+body.admin-theme-custom .subj-row, body.admin-theme-custom .user-row, body.admin-theme-custom .log-details, body.admin-theme-custom .msg-body {
     color: #f0f4f8 !important;
     text-shadow: 0 1px 3px rgba(0,0,0,1) !important;
 }
-.admin-theme-custom .subj-row.small,
-.admin-theme-custom .user-row.small,
-.admin-theme-custom .log-meta,
-.admin-theme-custom .msg-contact,
-body.admin-theme-custom .subj-row.small,
-body.admin-theme-custom .user-row.small,
-body.admin-theme-custom .log-meta,
-body.admin-theme-custom .msg-contact {
+.admin-theme-custom .subj-row.small, .admin-theme-custom .user-row.small, .admin-theme-custom .log-meta, .admin-theme-custom .msg-contact,
+body.admin-theme-custom .subj-row.small, body.admin-theme-custom .user-row.small, body.admin-theme-custom .log-meta, body.admin-theme-custom .msg-contact {
     color: #cbd5e0 !important;
     text-shadow: 0 1px 3px rgba(0,0,0,1) !important;
 }
@@ -383,8 +347,6 @@ body.admin-theme-custom .stat-pill {
 body.admin-theme-custom .stat-pill b {
     color: #ffffff !important;
 }
-
-/* Онлайн-карточка — зелёная подложка, но читаемая */
 .admin-theme-custom .user-card.online-card,
 body.admin-theme-custom .user-card.online-card {
     background: rgba(16, 100, 60, 0.65) !important;
@@ -395,16 +357,10 @@ body.admin-theme-custom .online-dot {
     background-color: #68d391 !important;
     box-shadow: 0 0 0 3px rgba(104, 211, 145, 0.5) !important;
 }
-
-/* Формы */
-.admin-theme-custom .num-input,
-.admin-theme-custom .form-label input,
-.admin-theme-custom .form-label textarea,
-.admin-theme-custom .form-label select,
-body.admin-theme-custom .num-input,
-body.admin-theme-custom .form-label input,
-body.admin-theme-custom .form-label textarea,
-body.admin-theme-custom .form-label select {
+.admin-theme-custom .num-input, .admin-theme-custom .form-label input,
+.admin-theme-custom .form-label textarea, .admin-theme-custom .form-label select,
+body.admin-theme-custom .num-input, body.admin-theme-custom .form-label input,
+body.admin-theme-custom .form-label textarea, body.admin-theme-custom .form-label select {
     background: rgba(0,0,0,0.55) !important;
     border-color: rgba(255,255,255,0.4) !important;
     color: #ffffff !important;
@@ -415,39 +371,27 @@ body.admin-theme-custom .form-label {
     color: #ffffff !important;
     text-shadow: 0 1px 3px rgba(0,0,0,1);
 }
-
-/* Настройки — тоже с подложкой */
 .admin-theme-custom .settings-section,
 body.admin-theme-custom .settings-section {
     border-bottom-color: rgba(255,255,255,0.2) !important;
 }
-.admin-theme-custom .theme-btn,
-.admin-theme-custom .admin-theme-btn,
-body.admin-theme-custom .theme-btn,
-body.admin-theme-custom .admin-theme-btn {
+.admin-theme-custom .theme-btn, .admin-theme-custom .admin-theme-btn,
+body.admin-theme-custom .theme-btn, body.admin-theme-custom .admin-theme-btn {
     background: rgba(0,0,0,0.4) !important;
     border-color: rgba(255,255,255,0.3) !important;
     color: #ffffff !important;
 }
-.admin-theme-custom .theme-btn.active,
-.admin-theme-custom .admin-theme-btn.active,
-body.admin-theme-custom .theme-btn.active,
-body.admin-theme-custom .admin-theme-btn.active {
+.admin-theme-custom .theme-btn.active, .admin-theme-custom .admin-theme-btn.active,
+body.admin-theme-custom .theme-btn.active, body.admin-theme-custom .admin-theme-btn.active {
     background: var(--admin-btn-color, #4299e1) !important;
     border-color: #ffffff !important;
     color: #ffffff !important;
     font-weight: 700;
 }
-
-/* Аватарки в админке */
-.admin-theme-custom .user-avatar,
-.admin-theme-custom .log-avatar,
-body.admin-theme-custom .user-avatar,
-body.admin-theme-custom .log-avatar {
+.admin-theme-custom .user-avatar, .admin-theme-custom .log-avatar,
+body.admin-theme-custom .user-avatar, body.admin-theme-custom .log-avatar {
     border-color: rgba(255,255,255,0.4) !important;
 }
-
-/* Сообщения */
 .admin-theme-custom .msg-contact,
 body.admin-theme-custom .msg-contact {
     border-top-color: rgba(255,255,255,0.2) !important;
