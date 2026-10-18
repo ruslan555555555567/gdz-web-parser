@@ -16,8 +16,8 @@ import asyncpg
 
 from parser import parse_tasks
 
-VERSION = "24.0.0"
-ADMIN_PASSWORD = "gdz2024admin"
+VERSION = "25.0.0"
+ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "")
 ADMIN_EMAIL = os.getenv("ADMIN_EMAIL", "admin@gdz.ru").lower().strip()
 DATABASE_URL = os.getenv("DATABASE_URL")
 
@@ -39,6 +39,16 @@ DEFAULT_SUBJECTS = [
     {"name": "Труд (технология)", "url": "", "type": "text", "group_name": "🎨 Остальные предметы", "sort_order": 13, "max_number": 0, "note": ""},
     {"name": "Изобразительное искусство", "url": "", "type": "text", "group_name": "🎨 Остальные предметы", "sort_order": 14, "max_number": 0, "note": ""},
 ]
+
+DEFAULT_SETTINGS = {
+    "site_title": "GDZ Парсер",
+    "announcement": "",
+    "footer_text": "",
+    "custom_css": "",
+}
+
+ALLOWED_TEMPLATES = ("index.html", "admin.html")
+MAX_TEMPLATE_SIZE = 2_000_000
 
 
 async def init_db():
@@ -113,6 +123,22 @@ async def init_db():
                 )
             """)
 
+            # ─── НОВЫЕ ТАБЛИЦЫ ───
+            await conn.execute("""
+                CREATE TABLE IF NOT EXISTS templates (
+                    name TEXT PRIMARY KEY,
+                    content TEXT NOT NULL,
+                    updated_at TIMESTAMP DEFAULT NOW()
+                )
+            """)
+            await conn.execute("""
+                CREATE TABLE IF NOT EXISTS settings (
+                    key TEXT PRIMARY KEY,
+                    value TEXT,
+                    updated_at TIMESTAMP DEFAULT NOW()
+                )
+            """)
+
             count = await conn.fetchval("SELECT COUNT(*) FROM subjects")
             if count == 0:
                 for s in DEFAULT_SUBJECTS:
@@ -178,15 +204,34 @@ async def get_user_by_token(token: str):
     return dict(row) if row else None
 
 
+async def get_admin_password_hash():
+    if db_pool is None:
+        return None
+    try:
+        async with db_pool.acquire() as conn:
+            return await conn.fetchval(
+                "SELECT value FROM settings WHERE key = 'admin_password_hash'"
+            )
+    except Exception:
+        return None
+
+
 async def check_admin(data: dict):
     password = (data or {}).get("password", "")
     token = (data or {}).get("token", "")
+
     if token:
         user = await get_user_by_token(token)
         if user and user.get("is_admin"):
             return True
-    if password and password == ADMIN_PASSWORD:
-        return True
+
+    if password:
+        stored_hash = await get_admin_password_hash()
+        if stored_hash and verify_password(password, stored_hash):
+            return True
+        if not stored_hash and ADMIN_PASSWORD and password == ADMIN_PASSWORD:
+            return True
+
     return False
 
 
@@ -272,24 +317,95 @@ class AvatarRequest(BaseModel):
     avatar: str
 
 
+class ChangeAdminPasswordRequest(BaseModel):
+    current_password: str = ""
+    new_password: str
+    token: str = ""
+
+
+class TemplateSaveRequest(BaseModel):
+    password: str = ""
+    token: str = ""
+    name: str
+    content: str
+
+
+class SettingsSaveRequest(BaseModel):
+    password: str = ""
+    token: str = ""
+    settings: dict
+
+
 @app.on_event("startup")
 async def startup():
     await init_db()
 
 
+# ═══════ РЕНДЕР ШАБЛОНОВ (БД → файл) ═══════
+
+async def render_page(request: Request, name: str, context: dict):
+    html = None
+    if db_pool is not None:
+        try:
+            async with db_pool.acquire() as conn:
+                html = await conn.fetchval(
+                    "SELECT content FROM templates WHERE name = $1", name
+                )
+        except Exception:
+            pass
+    if html:
+        try:
+            tmpl = templates.env.from_string(html)
+            return HTMLResponse(tmpl.render(request=request, **context))
+        except Exception as e:
+            print(f"[template] ошибка рендера {name}: {e}")
+    return templates.TemplateResponse(request, name, context)
+
+
 @app.get("/", response_class=HTMLResponse)
 async def index(request: Request):
-    return templates.TemplateResponse(request, "index.html", {"version": VERSION})
+    return await render_page(request, "index.html", {"version": VERSION})
 
 
 @app.get("/admin", response_class=HTMLResponse)
 async def admin_page(request: Request):
-    return templates.TemplateResponse(request, "admin.html", {"version": VERSION})
+    return await render_page(request, "admin.html", {"version": VERSION})
 
 
 @app.get("/api/version")
 async def get_version():
     return {"version": VERSION}
+
+
+# ═══════ HEALTHCHECK ДЛЯ KEEP-ALIVE ═══════
+
+@app.get("/health")
+async def health():
+    db_status = "no_pool"
+    if db_pool is not None:
+        try:
+            async with db_pool.acquire() as conn:
+                await conn.fetchval("SELECT 1")
+            db_status = "ok"
+        except Exception as e:
+            db_status = f"error: {type(e).__name__}"
+
+    return {
+        "status": "ok",
+        "db": db_status,
+        "version": VERSION,
+        "time": datetime.utcnow().isoformat() + "Z",
+    }
+
+
+@app.head("/health")
+async def health_head():
+    return Response(status_code=200)
+
+
+@app.get("/ping")
+async def ping():
+    return await health()
 
 
 # ═══════ ПРЕДМЕТЫ ═══════
@@ -803,6 +919,187 @@ async def admin_clear(data: dict):
     if db_pool is not None:
         async with db_pool.acquire() as conn:
             await conn.execute("DELETE FROM feedback")
+    return {"ok": True}
+
+
+# ═══════ СМЕНА ПАРОЛЯ АДМИНА ═══════
+
+@app.post("/api/admin/password/status")
+async def admin_password_status(data: dict):
+    if not await check_admin(data):
+        raise HTTPException(401, "Нет доступа")
+    stored_hash = await get_admin_password_hash()
+    return {
+        "source": "database" if stored_hash else "render_env",
+        "has_custom_password": bool(stored_hash),
+    }
+
+
+@app.post("/api/admin/password/change")
+async def admin_change_password(req: ChangeAdminPasswordRequest):
+    if db_pool is None:
+        raise HTTPException(500, "БД недоступна")
+
+    allowed = False
+    if req.token:
+        user = await get_user_by_token(req.token)
+        if user and user.get("is_admin"):
+            allowed = True
+    if not allowed and req.current_password:
+        stored_hash = await get_admin_password_hash()
+        if stored_hash and verify_password(req.current_password, stored_hash):
+            allowed = True
+        elif not stored_hash and ADMIN_PASSWORD and req.current_password == ADMIN_PASSWORD:
+            allowed = True
+
+    if not allowed:
+        raise HTTPException(401, "Неверный текущий пароль или нет прав")
+
+    if len(req.new_password) < 8:
+        raise HTTPException(400, "Новый пароль минимум 8 символов")
+    if req.new_password == req.current_password:
+        raise HTTPException(400, "Новый пароль должен отличаться от старого")
+
+    new_hash = hash_password(req.new_password)
+    async with db_pool.acquire() as conn:
+        await conn.execute("""
+            INSERT INTO settings (key, value, updated_at)
+            VALUES ('admin_password_hash', $1, NOW())
+            ON CONFLICT (key) DO UPDATE
+            SET value = $1, updated_at = NOW()
+        """, new_hash)
+
+    await log_action(None, "admin_password_change", "changed")
+    return {"ok": True, "message": "Пароль обновлён. В следующий раз используй новый."}
+
+
+# ═══════ НАСТРОЙКИ САЙТА ═══════
+
+@app.get("/api/settings/public")
+async def public_settings():
+    result = dict(DEFAULT_SETTINGS)
+    if db_pool is not None:
+        try:
+            async with db_pool.acquire() as conn:
+                rows = await conn.fetch("SELECT key, value FROM settings")
+                for row in rows:
+                    if row["key"] in result:
+                        result[row["key"]] = row["value"] or ""
+        except Exception:
+            pass
+    return result
+
+
+@app.post("/api/admin/settings/get")
+async def admin_settings_get(data: dict):
+    if not await check_admin(data):
+        raise HTTPException(401, "Нет доступа")
+    result = dict(DEFAULT_SETTINGS)
+    if db_pool is not None:
+        async with db_pool.acquire() as conn:
+            rows = await conn.fetch("SELECT key, value FROM settings")
+            for row in rows:
+                result[row["key"]] = row["value"] or ""
+    return {"settings": result}
+
+
+@app.post("/api/admin/settings/save")
+async def admin_settings_save(req: SettingsSaveRequest):
+    if not await check_admin({"password": req.password, "token": req.token}):
+        raise HTTPException(401, "Нет доступа")
+    if db_pool is None:
+        raise HTTPException(500, "БД недоступна")
+    async with db_pool.acquire() as conn:
+        for key, value in req.settings.items():
+            if key not in DEFAULT_SETTINGS:
+                continue
+            await conn.execute("""
+                INSERT INTO settings (key, value, updated_at)
+                VALUES ($1, $2, NOW())
+                ON CONFLICT (key) DO UPDATE
+                SET value = $2, updated_at = NOW()
+            """, key, str(value or ""))
+    await log_action(None, "settings_save", ",".join(req.settings.keys())[:200])
+    return {"ok": True}
+
+
+# ═══════ РЕДАКТОР ШАБЛОНОВ ═══════
+
+@app.post("/api/admin/templates/list")
+async def admin_templates_list(data: dict):
+    if not await check_admin(data):
+        raise HTTPException(401, "Нет доступа")
+    if db_pool is None:
+        return {"templates": []}
+    async with db_pool.acquire() as conn:
+        rows = await conn.fetch("""
+            SELECT name, length(content) AS size,
+                   to_char(updated_at, 'DD.MM.YY HH24:MI') AS updated
+            FROM templates ORDER BY name
+        """)
+    return {"templates": [dict(r) for r in rows]}
+
+
+@app.post("/api/admin/templates/get")
+async def admin_templates_get(data: dict):
+    if not await check_admin(data):
+        raise HTTPException(401, "Нет доступа")
+    name = (data.get("name") or "").strip()
+    if name not in ALLOWED_TEMPLATES:
+        raise HTTPException(400, "Недопустимое имя шаблона")
+    content = None
+    source = "file"
+    if db_pool is not None:
+        async with db_pool.acquire() as conn:
+            content = await conn.fetchval(
+                "SELECT content FROM templates WHERE name = $1", name
+            )
+        if content:
+            source = "db"
+    if content is None:
+        path = os.path.join("templates", name)
+        if os.path.exists(path):
+            with open(path, "r", encoding="utf-8") as f:
+                content = f.read()
+        else:
+            raise HTTPException(404, "Шаблон не найден")
+    return {"name": name, "content": content, "source": source}
+
+
+@app.post("/api/admin/templates/save")
+async def admin_templates_save(req: TemplateSaveRequest):
+    if not await check_admin({"password": req.password, "token": req.token}):
+        raise HTTPException(401, "Нет доступа")
+    if req.name not in ALLOWED_TEMPLATES:
+        raise HTTPException(400, "Недопустимое имя шаблона")
+    if not req.content.strip():
+        raise HTTPException(400, "Шаблон пустой")
+    if len(req.content) > MAX_TEMPLATE_SIZE:
+        raise HTTPException(400, "Файл слишком большой (макс 2 МБ)")
+    if db_pool is None:
+        raise HTTPException(500, "БД недоступна")
+    async with db_pool.acquire() as conn:
+        await conn.execute("""
+            INSERT INTO templates (name, content, updated_at)
+            VALUES ($1, $2, NOW())
+            ON CONFLICT (name) DO UPDATE
+            SET content = $2, updated_at = NOW()
+        """, req.name, req.content)
+    await log_action(None, "template_save", req.name)
+    return {"ok": True, "size": len(req.content)}
+
+
+@app.post("/api/admin/templates/reset")
+async def admin_templates_reset(data: dict):
+    if not await check_admin(data):
+        raise HTTPException(401, "Нет доступа")
+    name = (data.get("name") or "").strip()
+    if name not in ALLOWED_TEMPLATES:
+        raise HTTPException(400, "Недопустимое имя шаблона")
+    if db_pool is not None:
+        async with db_pool.acquire() as conn:
+            await conn.execute("DELETE FROM templates WHERE name = $1", name)
+    await log_action(None, "template_reset", name)
     return {"ok": True}
 
 
