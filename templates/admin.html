@@ -7,28 +7,29 @@
     <script>
         (function() {
             try {
+                const theme = localStorage.getItem('gdz_theme') || 'light';
+                const bg = localStorage.getItem('gdz_bg');
                 const adminTheme = localStorage.getItem('gdz_admin_theme') || 'auto';
                 const adminBg = localStorage.getItem('gdz_admin_bg');
                 const btnColor = localStorage.getItem('gdz_admin_btn_color') || '#4299e1';
+                const btnStyle = localStorage.getItem('gdz_btn_style') || 'auto';
                 const token = localStorage.getItem('gdz_token');
                 const root = document.documentElement;
 
-                // На админке применяется ТОЛЬКО тема админки
-                if (adminTheme === 'dark') {
-                    root.classList.add('admin-theme-dark');
-                } else if (adminTheme === 'custom' && adminBg) {
+                if (theme === 'dark') root.classList.add('theme-dark');
+                else if (theme === 'custom' && bg) {
+                    root.classList.add('theme-custom');
+                    root.style.backgroundImage = 'url("' + bg + '")';
+                }
+
+                if (adminTheme === 'dark') root.classList.add('admin-theme-dark');
+                else if (adminTheme === 'custom' && adminBg) {
                     root.classList.add('admin-theme-custom');
                     root.style.setProperty('--admin-bg-image', 'url("' + adminBg + '")');
-                } else {
-                    // auto — как на главной
-                    const mainTheme = localStorage.getItem('gdz_theme') || 'light';
-                    const mainBg = localStorage.getItem('gdz_bg');
-                    if (mainTheme === 'dark') root.classList.add('theme-dark');
-                    else if (mainTheme === 'custom' && mainBg) {
-                        root.classList.add('theme-custom');
-                        root.style.backgroundImage = 'url("' + mainBg + '")';
-                    }
                 }
+
+                if (btnStyle === 'dark') root.classList.add('btn-style-dark');
+                else if (btnStyle === 'light') root.classList.add('btn-style-light');
 
                 root.style.setProperty('--admin-btn-color', btnColor);
 
@@ -190,7 +191,6 @@
             return '?';
         }
 
-        // Обновляем фон и цвет кнопок из БД (свежие данные)
         async function loadAdminSettings() {
             const token = localStorage.getItem('gdz_token') || '';
             if (!token) return;
@@ -204,32 +204,25 @@
                 const adminTheme = u.admin_theme || 'auto';
                 const adminBg = u.admin_bg_url;
                 localStorage.setItem('gdz_admin_theme', adminTheme);
-
                 const root = document.documentElement;
-                root.classList.remove('admin-theme-dark', 'admin-theme-custom', 'theme-dark', 'theme-custom');
-                root.style.removeProperty('--admin-bg-image');
-                root.style.backgroundImage = '';
-
+                root.classList.remove('admin-theme-dark', 'admin-theme-custom');
                 if (adminTheme === 'dark') {
                     root.classList.add('admin-theme-dark');
                 } else if (adminTheme === 'custom' && adminBg) {
                     root.classList.add('admin-theme-custom');
                     root.style.setProperty('--admin-bg-image', 'url("' + adminBg + '")');
                     localStorage.setItem('gdz_admin_bg', adminBg);
-                } else {
-                    // auto — как на главной
-                    const mainTheme = localStorage.getItem('gdz_theme') || 'light';
-                    const mainBg = localStorage.getItem('gdz_bg');
-                    if (mainTheme === 'dark') root.classList.add('theme-dark');
-                    else if (mainTheme === 'custom' && mainBg) {
-                        root.classList.add('theme-custom');
-                        root.style.backgroundImage = 'url("' + mainBg + '")';
-                    }
                 }
 
                 const color = u.admin_btn_color || '#4299e1';
                 localStorage.setItem('gdz_admin_btn_color', color);
                 root.style.setProperty('--admin-btn-color', color);
+
+                const btnStyle = u.btn_style || 'auto';
+                localStorage.setItem('gdz_btn_style', btnStyle);
+                root.classList.remove('btn-style-dark', 'btn-style-light');
+                if (btnStyle === 'dark') root.classList.add('btn-style-dark');
+                else if (btnStyle === 'light') root.classList.add('btn-style-light');
             } catch {}
         }
 
