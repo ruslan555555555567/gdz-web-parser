@@ -13,14 +13,12 @@
                 const token = localStorage.getItem('gdz_token');
                 const root = document.documentElement;
 
-                // На админке применяется ТОЛЬКО тема админки
                 if (adminTheme === 'dark') {
                     root.classList.add('admin-theme-dark');
                 } else if (adminTheme === 'custom' && adminBg) {
                     root.classList.add('admin-theme-custom');
                     root.style.setProperty('--admin-bg-image', 'url("' + adminBg + '")');
                 } else {
-                    // auto — как на главной
                     const mainTheme = localStorage.getItem('gdz_theme') || 'light';
                     const mainBg = localStorage.getItem('gdz_bg');
                     if (mainTheme === 'dark') root.classList.add('theme-dark');
@@ -31,7 +29,6 @@
                 }
 
                 root.style.setProperty('--admin-btn-color', btnColor);
-
                 if (token) root.classList.add('has-token');
                 else root.classList.add('no-token');
             } catch (e) {}
@@ -42,14 +39,31 @@
         html.no-token #loginCard { display: block !important; }
         html.has-token #adminContent { display: block; }
         html.no-token #adminContent { display: none; }
+
+        /* Стили для новой кнопки и окна настроек */
+        .topbar { position: relative; }
+        .settings-btn { background: none; border: none; font-size: 24px; cursor: pointer; margin-right: 10px; padding: 5px; border-radius: 50%; transition: 0.2s; }
+        .settings-btn:hover { background: rgba(0,0,0,0.1); }
+
+        .settings-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center; z-index: 1000; }
+        .settings-content { background: var(--card-bg, #fff); padding: 20px; border-radius: 12px; width: 90%; max-width: 400px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
+        .settings-content h3 { margin-top: 0; margin-bottom: 15px; }
+        .settings-row { margin-bottom: 15px; }
+        .settings-row label { display: block; font-weight: bold; margin-bottom: 5px; font-size: 14px; }
+        .settings-row select, .settings-row input { width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #ccc; box-sizing: border-box; }
+        .modal-btns { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }
     </style>
     <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
     <div class="container">
-        <div class="topbar">
+        <div class="topbar" style="display: flex; justify-content: space-between; align-items: center;">
             <span class="version">v{{ version }}</span>
-            <a href="/" class="support-btn" title="На главную">🏠</a>
+            <div>
+                <!-- НОВАЯ КНОПКА НАСТРОЕК -->
+                <button class="settings-btn" onclick="toggleSettings()" title="Настройки фона">⚙️</button>
+                <a href="/" class="support-btn" title="На главную">🏠</a>
+            </div>
         </div>
         <h1>🔐 Админка</h1>
         <p class="subtitle">Предметы · Онлайн · Пользователи · Сообщения · Логи</p>
@@ -133,6 +147,29 @@
         </section>
     </div>
 
+    <!-- МОДАЛЬНОЕ ОКНО НАСТРОЕК ФОНА -->
+    <div id="settingsModal" class="settings-modal hidden" style="display: none;">
+        <div class="settings-content">
+            <h3>⚙️ Настройки внешнего вида</h3>
+            <div class="settings-row">
+                <label>Тема админки</label>
+                <select id="set-theme">
+                    <option value="auto">Авто (как на главной)</option>
+                    <option value="dark">Тёмная</option>
+                    <option value="custom">Своя картинка</option>
+                </select>
+            </div>
+            <div class="settings-row" id="bg-url-row" style="display:none;">
+                <label>Ссылка на картинку (URL)</label>
+                <input type="text" id="set-bg" placeholder="https://...">
+            </div>
+            <div class="modal-btns">
+                <button class="btn-secondary" onclick="toggleSettings()">Отмена</button>
+                <button class="btn-primary" onclick="saveSettings()">Сохранить</button>
+            </div>
+        </div>
+    </div>
+
     <div id="editModal" class="modal hidden">
         <div class="modal-content">
             <h3 id="editModalTitle">✏️ Редактировать предмет</h3>
@@ -175,6 +212,64 @@
         const pwd = document.getElementById('pwd');
         const loginStatus = document.getElementById('loginStatus');
 
+        // --- ЛОГИКА НАСТРОЕК ФОНА ---
+        function toggleSettings() {
+            const modal = document.getElementById('settingsModal');
+            modal.style.display = modal.style.display === 'none' ? 'flex' : 'none';
+
+            if (modal.style.display === 'flex') {
+                // Заполняем текущими значениями
+                const currentTheme = localStorage.getItem('gdz_admin_theme') || 'auto';
+                const currentBg = localStorage.getItem('gdz_admin_bg') || '';
+                document.getElementById('set-theme').value = currentTheme;
+                document.getElementById('set-bg').value = currentBg;
+                document.getElementById('bg-url-row').style.display = currentTheme === 'custom' ? 'block' : 'none';
+            }
+        }
+
+        document.getElementById('set-theme').addEventListener('change', function() {
+            document.getElementById('bg-url-row').style.display = this.value === 'custom' ? 'block' : 'none';
+        });
+
+        async function saveSettings() {
+            const theme = document.getElementById('set-theme').value;
+            const bg = document.getElementById('set-bg').value.trim();
+            const token = localStorage.getItem('gdz_token');
+
+            if (!token) {
+                alert('Чтобы менять фон, нужно войти на главной странице под своим аккаунтом админа (по паролю здесь фон не сохранится).');
+                return;
+            }
+
+            try {
+                const payload = {
+                    token: token,
+                    theme: theme === 'dark' ? 'dark' : (theme === 'custom' ? 'custom' : 'light'),
+                    admin_theme: theme,
+                    admin_bg_url: theme === 'custom' ? bg : ''
+                };
+
+                const r = await fetch('/api/auth/update', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(payload)
+                });
+
+                if (!r.ok) throw new Error('Ошибка сервера');
+
+                // Сохраняем локально и применяем
+                localStorage.setItem('gdz_admin_theme', theme);
+                localStorage.setItem('gdz_admin_bg', bg);
+
+                alert('✅ Настройки сохранены! Страница сейчас перезагрузится.');
+                location.reload();
+
+            } catch (e) {
+                alert('❌ Ошибка: ' + e.message);
+            }
+        }
+
+        // --- ОСТАЛЬНАЯ ЛОГИКА АДМИНКИ ---
         const ACTION_ICONS = {
             'register': '🆕', 'login': '🔑', 'login_fail': '⚠️', 'logout': '🚪',
             'parse': '🔍', 'profile_update': '⚙️', 'avatar_update': '🖼',
@@ -190,7 +285,6 @@
             return '?';
         }
 
-        // Обновляем фон и цвет кнопок из БД (свежие данные)
         async function loadAdminSettings() {
             const token = localStorage.getItem('gdz_token') || '';
             if (!token) return;
@@ -217,7 +311,6 @@
                     root.style.setProperty('--admin-bg-image', 'url("' + adminBg + '")');
                     localStorage.setItem('gdz_admin_bg', adminBg);
                 } else {
-                    // auto — как на главной
                     const mainTheme = localStorage.getItem('gdz_theme') || 'light';
                     const mainBg = localStorage.getItem('gdz_bg');
                     if (mainTheme === 'dark') root.classList.add('theme-dark');
@@ -226,7 +319,6 @@
                         root.style.backgroundImage = 'url("' + mainBg + '")';
                     }
                 }
-
                 const color = u.admin_btn_color || '#4299e1';
                 localStorage.setItem('gdz_admin_btn_color', color);
                 root.style.setProperty('--admin-btn-color', color);
