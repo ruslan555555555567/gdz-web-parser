@@ -39,21 +39,6 @@
         html.no-token #loginCard { display: block !important; }
         html.has-token #adminContent { display: block; }
         html.no-token #adminContent { display: none; }
-
-        /* Стили для строки настроек */
-        .bg-settings-row {
-            display: flex; gap: 10px; align-items: center; flex-wrap: wrap;
-            background: var(--card-bg, #fff); padding: 12px 15px; border-radius: 10px;
-            margin-bottom: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-            border: 1px solid rgba(0,0,0,0.05);
-        }
-        .bg-settings-row label { font-weight: bold; font-size: 14px; margin: 0; }
-        .bg-settings-row select, .bg-settings-row input {
-            padding: 8px 12px; border-radius: 6px; border: 1px solid #ccc;
-            font-family: inherit; font-size: 14px; outline: none;
-        }
-        .bg-settings-row input { flex: 1; min-width: 200px; }
-        .bg-status { font-size: 14px; font-weight: bold; margin-left: auto; }
     </style>
     <link rel="stylesheet" href="/static/style.css">
 </head>
@@ -64,7 +49,7 @@
             <a href="/" class="support-btn" title="На главную">🏠</a>
         </div>
         <h1>🔐 Админка</h1>
-        <p class="subtitle">Предметы · Онлайн · Пользователи · Сообщения · Логи</p>
+        <p class="subtitle">Предметы · Онлайн · Пользователи · Сообщения · Логи · Настройки</p>
 
         <section class="card" id="loginCard">
             <h2>Введите пароль</h2>
@@ -77,26 +62,14 @@
         </section>
 
         <section class="card hidden" id="adminContent">
-
-            <!-- СТРОКА НАСТРОЕК ФОНА -->
-            <div class="bg-settings-row" id="bgSettingsBlock">
-                <label>🖼 Фон:</label>
-                <select id="set-theme">
-                    <option value="auto">Как на главной</option>
-                    <option value="dark">Тёмный</option>
-                    <option value="custom">Своя картинка</option>
-                </select>
-                <input type="text" id="set-bg" placeholder="Вставь ссылку на картинку (https://...)" style="display:none;">
-                <button class="btn-primary" onclick="saveBgSettings()" style="width:auto; padding: 8px 15px;">💾 Сохранить</button>
-                <span id="bg-status" class="bg-status"></span>
-            </div>
-
             <div class="admin-tabs">
                 <button class="admin-tab active" data-tab="subjects">📚 Предметы</button>
                 <button class="admin-tab" data-tab="online">🟢 Онлайн</button>
                 <button class="admin-tab" data-tab="users">👥 Пользователи</button>
                 <button class="admin-tab" data-tab="messages">📬 Сообщения</button>
                 <button class="admin-tab" data-tab="logs">📋 Логи</button>
+                <!-- НОВАЯ ВКЛАДКА НАСТРОЕК -->
+                <button class="admin-tab" data-tab="settings">⚙️ Настройки</button>
             </div>
 
             <div id="tabSubjects">
@@ -156,6 +129,45 @@
                 <div id="logsList"></div>
                 <div id="emptyLogs" class="empty">Логов пока нет</div>
             </div>
+
+            <!-- ВКЛАДКА НАСТРОЕК -->
+            <div id="tabSettings" class="hidden">
+                <div class="section-header">
+                    <h2>⚙️ Настройки внешнего вида</h2>
+                </div>
+                <p class="hint" style="margin-bottom:15px;">Эти настройки сохраняются в ваш аккаунт. Чтобы они работали, вы должны быть авторизованы на главной странице под аккаунтом администратора.</p>
+
+                <label class="form-label">Тема админки
+                    <select id="set-admin_theme" class="num-input">
+                        <option value="auto">Авто (как на главной)</option>
+                        <option value="light">Светлая</option>
+                        <option value="dark">Темная</option>
+                        <option value="custom">Своя картинка</option>
+                    </select>
+                </label>
+
+                <label class="form-label" id="admin_bg_url_wrap" style="display:none;">Ссылка на фоновую картинку админки
+                    <input type="text" id="set-admin_bg_url" placeholder="https://...">
+                </label>
+
+                <label class="form-label">Цвет основных кнопок (HEX)
+                    <input type="text" id="set-admin_btn_color" placeholder="#4299e1" maxlength="7">
+                </label>
+
+                <label class="form-label">Стиль кнопок
+                    <select id="set-btn_style" class="num-input">
+                        <option value="light">Светлый</option>
+                        <option value="dark">Темный</option>
+                    </select>
+                </label>
+
+                <div id="settingsStatus" class="fb-status"></div>
+
+                <div style="margin-top: 20px;">
+                    <button id="saveSettingsBtn" class="btn-primary" style="width:auto;">💾 Сохранить настройки</button>
+                </div>
+            </div>
+
         </section>
     </div>
 
@@ -201,75 +213,7 @@
         const pwd = document.getElementById('pwd');
         const loginStatus = document.getElementById('loginStatus');
 
-        // --- НАСТРОЙКИ ФОНА ---
-        const setTheme = document.getElementById('set-theme');
-        const setBg = document.getElementById('set-bg');
-
-        setTheme.addEventListener('change', () => {
-            setBg.style.display = setTheme.value === 'custom' ? 'block' : 'none';
-        });
-
-        async function saveBgSettings() {
-            const st = document.getElementById('bg-status');
-            const theme = setTheme.value;
-            const bg = setBg.value.trim();
-            const token = localStorage.getItem('gdz_token');
-
-            if (!token) {
-                st.textContent = '❌ Нужно зайти на главную под аккаунтом админа';
-                st.style.color = 'red';
-                return;
-            }
-
-            st.textContent = '⏳ Сохранение...';
-            st.style.color = '#4299e1';
-
-            try {
-                const payload = {
-                    token: token,
-                    theme: theme === 'dark' ? 'dark' : (theme === 'custom' ? 'custom' : 'light'),
-                    admin_theme: theme,
-                    admin_bg_url: theme === 'custom' ? bg : ''
-                };
-
-                const r = await fetch('/api/auth/update', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify(payload)
-                });
-
-                if (!r.ok) throw new Error('Ошибка сервера');
-
-                localStorage.setItem('gdz_admin_theme', theme);
-                localStorage.setItem('gdz_admin_bg', bg);
-
-                st.textContent = '✅ Сохранено! Обнови страницу.';
-                st.style.color = 'green';
-
-                setTimeout(() => location.reload(), 1000);
-
-            } catch (e) {
-                st.textContent = '❌ ' + e.message;
-                st.style.color = 'red';
-            }
-        }
-
-        // --- ОСТАЛЬНАЯ ЛОГИКА АДМИНКИ ---
-        const ACTION_ICONS = {
-            'register': '🆕', 'login': '🔑', 'login_fail': '⚠️', 'logout': '🚪',
-            'parse': '🔍', 'profile_update': '⚙️', 'avatar_update': '🖼',
-            'password_change': '🔐', 'account_delete': '❌',
-            'subject_add': '➕', 'subject_update': '✏️', 'subject_delete': '🗑',
-            'subject_reorder': '↕️', 'subjects_reset': '🔄', 'admin_delete_user': '👤',
-        };
-
-        function getInitial(name, email) {
-            const n = (name || '').trim();
-            if (n) return n[0].toUpperCase();
-            if (email) return email[0].toUpperCase();
-            return '?';
-        }
-
+        // --- ЗАГРУЗКА НАСТРОЕК В ФОРМУ ---
         async function loadAdminSettings() {
             const token = localStorage.getItem('gdz_token') || '';
             if (!token) return;
@@ -280,13 +224,20 @@
                 const u = d.user;
                 if (!u || !u.is_admin) return;
 
-                const adminTheme = u.admin_theme || 'auto';
-                const adminBg = u.admin_bg_url || '';
+                // Заполняем форму настроек
+                document.getElementById('set-admin_theme').value = u.admin_theme || 'auto';
+                document.getElementById('set-admin_bg_url').value = u.admin_bg_url || '';
+                document.getElementById('set-admin_btn_color').value = u.admin_btn_color || '#4299e1';
+                document.getElementById('set-btn_style').value = u.btn_style || 'light';
 
+                if (u.admin_theme === 'custom') {
+                    document.getElementById('admin_bg_url_wrap').style.display = 'block';
+                }
+
+                // Применяем тему
+                const adminTheme = u.admin_theme || 'auto';
+                const adminBg = u.admin_bg_url;
                 localStorage.setItem('gdz_admin_theme', adminTheme);
-                setTheme.value = adminTheme;
-                setBg.value = adminBg;
-                if (adminTheme === 'custom') setBg.style.display = 'block';
 
                 const root = document.documentElement;
                 root.classList.remove('admin-theme-dark', 'admin-theme-custom', 'theme-dark', 'theme-custom');
@@ -312,6 +263,74 @@
                 localStorage.setItem('gdz_admin_btn_color', color);
                 root.style.setProperty('--admin-btn-color', color);
             } catch {}
+        }
+
+        // Показ поля для ссылки, если выбрана "Своя картинка"
+        document.getElementById('set-admin_theme').addEventListener('change', function() {
+            document.getElementById('admin_bg_url_wrap').style.display = this.value === 'custom' ? 'block' : 'none';
+        });
+
+        // Сохранение настроек
+        document.getElementById('saveSettingsBtn').onclick = async () => {
+            const st = document.getElementById('settingsStatus');
+            const token = localStorage.getItem('gdz_token');
+
+            if (!token) {
+                st.textContent = '❌ Нужно войти на главной странице под аккаунтом админа';
+                st.className = 'fb-status error';
+                return;
+            }
+
+            st.textContent = '⏳ Сохранение...';
+            st.className = 'fb-status loading';
+
+            const payload = {
+                token: token,
+                admin_theme: document.getElementById('set-admin_theme').value,
+                admin_bg_url: document.getElementById('set-admin_bg_url').value.trim(),
+                admin_btn_color: document.getElementById('set-admin_btn_color').value.trim(),
+                btn_style: document.getElementById('set-btn_style').value,
+                // Не трогаем настройки главной, но передаем их, чтобы бэкенд не ругался
+                theme: localStorage.getItem('gdz_theme') || 'light',
+                name: '', bg_url: ''
+            };
+
+            try {
+                const r = await fetch('/api/auth/update', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(payload)
+                });
+                if (!r.ok) throw new Error('Ошибка сервера');
+
+                st.textContent = '✅ Настройки сохранены! Обновите страницу.';
+                st.className = 'fb-status success';
+
+                localStorage.setItem('gdz_admin_theme', payload.admin_theme);
+                if (payload.admin_theme === 'custom') localStorage.setItem('gdz_admin_bg', payload.admin_bg_url);
+                localStorage.setItem('gdz_admin_btn_color', payload.admin_btn_color);
+
+                setTimeout(() => location.reload(), 1000);
+            } catch (e) {
+                st.textContent = '❌ ' + e.message;
+                st.className = 'fb-status error';
+            }
+        };
+
+        // --- ОСТАЛЬНАЯ ЛОГИКА АДМИНКИ ---
+        const ACTION_ICONS = {
+            'register': '🆕', 'login': '🔑', 'login_fail': '⚠️', 'logout': '🚪',
+            'parse': '🔍', 'profile_update': '⚙️', 'avatar_update': '🖼',
+            'password_change': '🔐', 'account_delete': '❌',
+            'subject_add': '➕', 'subject_update': '✏️', 'subject_delete': '🗑',
+            'subject_reorder': '↕️', 'subjects_reset': '🔄', 'admin_delete_user': '👤',
+        };
+
+        function getInitial(name, email) {
+            const n = (name || '').trim();
+            if (n) return n[0].toUpperCase();
+            if (email) return email[0].toUpperCase();
+            return '?';
         }
 
         async function init() {
@@ -362,8 +381,10 @@
             t.addEventListener('click', () => {
                 document.querySelectorAll('.admin-tab').forEach(x => x.classList.toggle('active', x === t));
                 const tab = t.dataset.tab;
-                ['subjects', 'online', 'users', 'messages', 'logs'].forEach(name => {
-                    document.getElementById('tab' + name.charAt(0).toUpperCase() + name.slice(1)).classList.toggle('hidden', name !== tab);
+                // Добавлен 'settings' в список вкладок
+                ['subjects', 'online', 'users', 'messages', 'logs', 'settings'].forEach(name => {
+                    const el = document.getElementById('tab' + name.charAt(0).toUpperCase() + name.slice(1));
+                    if (el) el.classList.toggle('hidden', name !== tab);
                 });
             });
         });
