@@ -91,7 +91,7 @@ body.theme-dark h1, body.theme-dark h2, body.theme-dark h3 { color: #f7fafc; }
 .theme-dark .avatar-preview { background-color: rgba(74,85,104,0.5); color: #cbd5e0; border-color: rgba(74,85,104,0.6); }
 
 /* ═══════════════════════════════════════
-   СВОЯ КАРТИНКА — МАКСИМАЛЬНАЯ ПРОЗРАЧНОСТЬ (ЭФФЕКТ СТЕКЛА)
+   СВОЯ КАРТИНКА — МАКСИМАЛЬНАЯ ПРОЗРАЧНОСТЬ (ИСПРАВЛЕНИЕ БАГА БРАУЗЕРА)
    ═══════════════════════════════════════ */
 .theme-custom body,
 body.theme-custom {
@@ -108,23 +108,23 @@ body.theme-custom::before {
     content: '';
     position: fixed;
     inset: 0;
-    background: rgba(0,0,0,0.1);
+    background: rgba(0,0,0,0.05); /* Почти нет затемнения */
     z-index: -1;
     pointer-events: none;
 }
 
-/* Карточки — настоящий эффект матового стекла */
+/* Карточки — матовое стекло */
 .theme-custom .card,
 .theme-custom .subject-block,
 .theme-custom .subject-group,
 body.theme-custom .card,
 body.theme-custom .subject-block,
 body.theme-custom .subject-group {
-    background: rgba(255, 255, 255, 0.05) !important;
+    background: rgba(255, 255, 255, 0.08) !important;
     border: 1px solid rgba(255, 255, 255, 0.2) !important;
-    backdrop-filter: blur(20px) !important;
-    -webkit-backdrop-filter: blur(20px) !important;
-    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2) !important;
+    backdrop-filter: blur(25px) !important;
+    -webkit-backdrop-filter: blur(25px) !important;
+    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1) !important;
 }
 
 .theme-custom .modal-content,
@@ -168,33 +168,40 @@ body.theme-custom .version {
     border: 1px solid rgba(255,255,255,0.15);
 }
 
-/* ⚠️ ПОЛЯ ВВОДА — ЖЕСТКИЙ СБРОС ФОНА */
-body.theme-custom textarea,
-body.theme-custom input,
+/* ⚠️ ПОЛЯ ВВОДА — ПРОЗРАЧНЫЕ С ПОМОЩЬЮ ХАКОВ */
+.theme-custom .num-input,
+.theme-custom .text-input,
 .theme-custom textarea,
-.theme-custom input {
-    background: transparent !important;
-    background-color: transparent !important;
-    border: 1px solid rgba(255,255,255,0.3) !important;
+.theme-custom input,
+body.theme-custom .num-input,
+body.theme-custom .text-input,
+body.theme-custom textarea,
+body.theme-custom input {
+    background: rgba(255, 255, 255, 0.01) !important; /* Почти 0, чтобы браузер не красил в серый */
+    background-color: rgba(255, 255, 255, 0.01) !important;
+    border: 1px solid rgba(255,255,255,0.4) !important;
     color: #ffffff !important;
+    text-shadow: none !important;
+    backdrop-filter: blur(5px);
+    -webkit-appearance: none !important; /* Убираем стандартный серый фон браузера */
+    appearance: none !important;
     box-shadow: none !important;
     outline: none !important;
-    backdrop-filter: blur(10px);
 }
 
-body.theme-custom textarea::placeholder,
-body.theme-custom input::placeholder,
-.theme-custom textarea::placeholder,
-.theme-custom input::placeholder {
-    color: rgba(255,255,255,0.6) !important;
+.theme-custom .num-input::placeholder,
+.theme-custom .text-input::placeholder,
+body.theme-custom .num-input::placeholder,
+body.theme-custom .text-input::placeholder {
+    color: rgba(255,255,255,0.7) !important;
     text-shadow: none !important;
 }
 
-body.theme-custom textarea:focus,
-body.theme-custom input:focus,
-.theme-custom textarea:focus,
-.theme-custom input:focus {
-    background: rgba(255, 255, 255, 0.1) !important;
+.theme-custom .num-input:focus,
+.theme-custom .text-input:focus,
+body.theme-custom .num-input:focus,
+body.theme-custom .text-input:focus {
+    background: rgba(255, 255, 255, 0.15) !important;
     border-color: #ffffff !important;
 }
 
