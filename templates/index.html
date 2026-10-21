@@ -737,6 +737,42 @@
             }));
         }
 
+        // Функция для скачивания одной картинки
+        async function downloadSingleImage(url, filename) {
+            try {
+                const response = await fetch(url);
+                const blob = await response.blob();
+                const blobUrl = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = blobUrl;
+                a.download = filename || 'image.jpg';
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                window.URL.revokeObjectURL(blobUrl);
+            } catch (e) {
+                console.error('Ошибка скачивания:', e);
+            }
+        }
+
+        // Функция для скачивания всех картинок
+        async function downloadAllImages() {
+            const images = Array.from(document.querySelectorAll('.solution-img'));
+            const validImages = images.filter(img => img.src && img.src.includes('/api/image'));
+
+            if (validImages.length === 0) {
+                alert('Нет загруженных решений. Подождите, пока картинки загрузятся, или найдите новые.');
+                return;
+            }
+
+            if (!confirm(`Найдено ${validImages.length} решений.\nБраузер может спросить разрешение на скачивание нескольких файлов. Нажмите "Разрешить".\n\nСкачиваем?`)) return;
+
+            for (let i = 0; i < validImages.length; i++) {
+                await downloadSingleImage(validImages[i].src, `GDZ_Решение_${i + 1}.jpg`);
+                await new Promise(r => setTimeout(r, 500)); // Пауза, чтобы браузер не заблокировал
+            }
+        }
+
         btn.addEventListener('click', async () => {
             const jobs = [];
             SUBJECTS.forEach(s => {
@@ -765,6 +801,14 @@
                         fetch('/api/history/save', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({token: authToken, subject: j.subject, numbers: j.numbers}) }).catch(() => {});
                     }
                 }
+
+                // Добавляем кнопку "Скачать всё" перед результатами
+                const globalDlBtn = document.createElement('button');
+                globalDlBtn.className = 'btn-download-all';
+                globalDlBtn.innerHTML = '⬇️ Скачать все решения';
+                globalDlBtn.onclick = downloadAllImages;
+                result.appendChild(globalDlBtn);
+
                 const bySubject = {};
                 data.results.forEach(r => { (bySubject[r.subject] = bySubject[r.subject] || []).push(r); });
                 Object.entries(bySubject).forEach(([subject, items]) => {
@@ -784,13 +828,35 @@
                         const card = document.createElement('div');
                         card.className = 'task-card';
                         card.innerHTML = `<div class="task-header"><h3>№${r.number}</h3></div>`;
-                        r.images.forEach(u => {
+
+                        r.images.forEach((u, index) => {
+                            const wrapper = document.createElement('div');
+                            wrapper.className = 'img-wrapper';
+
                             const img = document.createElement('img');
                             img.className = 'solution-img img-loading';
                             img.alt = 'Загрузка...';
                             loadImage(img, u);
-                            card.appendChild(img);
+
+                            const dlBtn = document.createElement('button');
+                            dlBtn.className = 'btn-download-one';
+                            dlBtn.innerHTML = '⬇️';
+                            dlBtn.title = 'Скачать решение';
+                            dlBtn.onclick = (e) => {
+                                e.stopPropagation(); // Чтобы не открылось модальное окно
+                                if (img.src && img.src.includes('/api/image')) {
+                                    const filename = `GDZ_${r.subject || 'Предмет'}_№${r.number || index + 1}.jpg`.replace(/\s+/g, '_');
+                                    downloadSingleImage(img.src, filename);
+                                } else {
+                                    alert('Картинка еще не загрузилась, подождите...');
+                                }
+                            };
+
+                            wrapper.appendChild(img);
+                            wrapper.appendChild(dlBtn);
+                            card.appendChild(wrapper);
                         });
+
                         if (r.raw_text) {
                             const textDiv = document.createElement('div');
                             textDiv.className = 'task-text';
