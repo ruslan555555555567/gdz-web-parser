@@ -13,7 +13,6 @@ from curl_cffi import requests as cffi_requests
 from PIL import Image
 import asyncio
 import asyncpg
-import httpx
 
 from parser import parse_tasks
 
@@ -21,7 +20,6 @@ VERSION = "33.0.0"
 ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "")
 ADMIN_EMAIL = os.getenv("ADMIN_EMAIL", "admin@gdz.ru").lower().strip()
 DATABASE_URL = os.getenv("DATABASE_URL")
-RESEND_API_KEY = os.getenv("RESEND_API_KEY")  # Ключ от Resend
 
 db_pool = None
 
@@ -92,9 +90,7 @@ async def init_db():
             await conn.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS admin_btn_color TEXT DEFAULT '#4299e1'")
             await conn.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS admin_theme TEXT DEFAULT 'auto'")
             await conn.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS btn_style TEXT DEFAULT 'light'")
-            # Новые колонки для почты
-            await conn.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS is_verified BOOLEAN DEFAULT FALSE")
-            await conn.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS verify_token TEXT")
+            await conn.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS is_verified BOOLEAN DEFAULT TRUE")
 
             await conn.execute("""
                 CREATE TABLE IF NOT EXISTS sessions (
@@ -559,7 +555,7 @@ async def admin_reset_subjects(data: dict):
     return {"ok": True, "count": len(DEFAULT_SUBJECTS)}
 
 
-# ═══════ АВТОРИЗАЦИЯ И ПОЧТА ═══════
+# ═══════ АВТОРИЗАЦИЯ ═══════
 
 @app.post("/api/auth/register")
 async def register(req: RegisterRequest, request: Request):
@@ -571,71 +567,28 @@ async def register(req: RegisterRequest, request: Request):
     if len(req.password) < 6:
         raise HTTPException(400, "Пароль минимум 6 символов")
 
-    verify_token = secrets.token_urlsafe(32)
-
     async with db_pool.acquire() as conn:
-        existing = await conn.fetchrow("SELECT id, is_verified FROM users WHERE email = $1", email)
+        existing = await conn.fetchrow("SELECT id FROM users WHERE email = $1", email)
         if existing:
-            if existing["is_verified"]:
-                raise HTTPException(400, "Этот email уже зарегистрирован и подтвержден")
-            else:
-                await conn.execute(
-                    "UPDATE users SET password_hash = $1, verify_token = $2 WHERE email = $3",
-                    hash_password(req.password), verify_token, email
-                )
-                user_id = existing["id"]
-        else:
-            is_admin = (email == ADMIN_EMAIL)
-            user_id = await conn.fetchval(
-                "INSERT INTO users (email, password_hash, name, is_admin, device, theme, verify_token) "
-                "VALUES ($1, $2, $3, $4, $5, 'light', $6) RETURNING id",
-                email, hash_password(req.password), req.name.strip(),
-                is_admin, req.device.strip(), verify_token
-            )
+            raise HTTPException(400, "Этот email уже зарегистрирован")
 
-        # Отправляем письмо
-        if RESEND_API_KEY:
-            verify_link = f"https://gdz-web-parser.onrender.com/api/auth/verify?token={verify_token}"
-            async with httpx.AsyncClient() as client:
-                try:
-                    await client.post(
-                        "https://api.resend.com/emails",
-                        headers={"Authorization": f"Bearer {RESEND_API_KEY}"},
-                        json={
-                            "from": "GDZ Парсер <onboarding@resend.dev>",
-                            "to": [email],
-                            "subject": "Подтверждение почты на GDZ Парсере",
-                            "html": f"<h3>Привет, {req.name or 'друг'}!</h3><p>Нажми на ссылку ниже, чтобы подтвердить свой аккаунт:</p><a href='{verify_link}' style='padding:10px 20px; background:#4299e1; color:white; text-decoration:none; border-radius:5px;'>Подтвердить почту</a>"
-                        }
-                    )
-                except Exception as e:
-                    print(f"Ошибка отправки письма: {e}")
-
-    return {"ok": True, "message": "Письмо отправлено! Проверьте почту (и папку Спам)."}
-
-
-@app.get("/api/auth/verify")
-async def verify_email(token: str):
-    if not token:
-        return HTMLResponse("<h1>Ошибка: Токен не найден</h1>", status_code=400)
-
-    async with db_pool.acquire() as conn:
-        row = await conn.fetchrow("SELECT id FROM users WHERE verify_token = $1", token)
-        if not row:
-            return HTMLResponse("<h1>Ошибка: Ссылка недействительна или устарела</h1>", status_code=400)
-
-        await conn.execute(
-            "UPDATE users SET is_verified = TRUE, verify_token = NULL WHERE id = $1",
-            row["id"]
+        is_admin = (email == ADMIN_EMAIL)
+        user_id = await conn.fetchval(
+            "INSERT INTO users (email, password_hash, name, is_admin, device, theme, is_verified) "
+            "VALUES ($1, $2, $3, $4, $5, 'light', TRUE) RETURNING id",
+            email, hash_password(req.password), req.name.strip(),
+            is_admin, req.device.strip()
         )
 
-    return HTMLResponse("""
-        <div style="font-family:sans-serif; text-align:center; margin-top:50px;">
-            <h1 style="color:#48bb78;">✅ Почта успешно подтверждена!</h1>
-            <p>Теперь вы можете войти на сайт.</p>
-            <a href="/" style="padding:10px 20px; background:#4299e1; color:white; text-decoration:none; border-radius:5px;">Перейти на главную</a>
-        </div>
-    """)
+        token = secrets.token_urlsafe(32)
+        await conn.execute("INSERT INTO sessions (token, user_id) VALUES ($1, $2)", token, user_id)
+
+    return {"ok": True, "token": token, "user": {
+        "id": user_id, "email": email, "name": req.name.strip(),
+        "is_admin": is_admin, "theme": "light", "bg_url": None, "avatar": None,
+        "admin_bg_url": None, "admin_btn_color": "#4299e1",
+        "admin_theme": "auto", "btn_style": "light"
+    }}
 
 
 @app.post("/api/auth/login")
@@ -646,16 +599,14 @@ async def login(req: LoginRequest, request: Request):
     async with db_pool.acquire() as conn:
         row = await conn.fetchrow(
             "SELECT id, email, password_hash, name, is_admin, theme, bg_url, avatar, "
-            "admin_bg_url, admin_btn_color, admin_theme, btn_style, is_verified "
+            "admin_bg_url, admin_btn_color, admin_theme, btn_style "
             "FROM users WHERE email = $1", email
         )
+
         if not row or not verify_password(req.password, row["password_hash"]):
             ip = request.client.host if request.client else ""
             await log_action(None, "login_fail", email, ip)
             raise HTTPException(401, "Неверный email или пароль")
-
-        if row["is_verified"] is False:
-            raise HTTPException(403, "Пожалуйста, подтвердите вашу почту. Проверьте входящие (и папку Спам).")
 
         if req.device.strip():
             await conn.execute(

@@ -464,17 +464,7 @@
                     return;
                 }
 
-                // Если регистрация - просим проверить почту
-                if (authMode === 'register') {
-                    st.textContent = '✅ ' + (d.message || 'Проверьте почту!');
-                    st.className = 'fb-status success';
-                    $('authEmail').value = '';
-                    $('authPwd').value = '';
-                    $('authName').value = '';
-                    return;
-                }
-
-                // Если вход - пускаем
+                // Регистрация и вход теперь работают одинаково
                 authToken = d.token;
                 authUser = d.user;
                 currentAvatar = d.user.avatar || null;
