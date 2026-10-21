@@ -81,6 +81,12 @@
             border-color: #4299e1 !important;
             color: #90cdf4 !important;
         }
+
+        /* Фикс заголовков в темной теме */
+        html.admin-theme-dark #tabSettings .input-label,
+        html.theme-dark #tabSettings .input-label {
+            color: #f7fafc !important;
+        }
     </style>
     <link rel="stylesheet" href="/static/style.css">
 </head>
@@ -256,13 +262,29 @@
         let subjectsCache = [];
         let draggedId = null;
 
+        // ВОТ ОНИ, ПОТЕРЯННЫЕ ФУНКЦИИ!
+        const ACTION_ICONS = {
+            'register': '🆕', 'login': '🔑', 'login_fail': '⚠️', 'logout': '🚪',
+            'parse': '🔍', 'profile_update': '⚙️', 'avatar_update': '🖼',
+            'password_change': '🔐', 'account_delete': '❌',
+            'subject_add': '➕', 'subject_update': '✏️', 'subject_delete': '🗑',
+            'subject_reorder': '↕️', 'subjects_reset': '🔄', 'admin_delete_user': '👤',
+        };
+
+        function getInitial(name, email) {
+            const n = (name || '').trim();
+            if (n) return n[0].toUpperCase();
+            if (email) return email[0].toUpperCase();
+            return '?';
+        }
+        // -----------------------------------
+
         const loginCard = document.getElementById('loginCard');
         const adminContent = document.getElementById('adminContent');
         const loginForm = document.getElementById('loginForm');
         const pwd = document.getElementById('pwd');
         const loginStatus = document.getElementById('loginStatus');
 
-        // Переменные для настроек
         let currentAdminTheme = 'auto';
         let currentAdminBgUrl = '';
         let originalAdminTheme = 'auto';
@@ -719,7 +741,6 @@
             } catch (err) { alert('Ошибка: ' + err.message); }
         };
 
-        // СОХРАНЕНИЕ НАСТРОЕК
         document.getElementById('saveSettingsBtn').onclick = async () => {
             const st = document.getElementById('settingsStatus');
             const token = localStorage.getItem('gdz_token');
