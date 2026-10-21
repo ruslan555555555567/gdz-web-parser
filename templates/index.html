@@ -798,7 +798,7 @@
                     }
                 }
 
-                // Кнопка "Скачать всё" со встроенными стилями
+                // Кнопка "Скачать всё"
                 const globalDlBtn = document.createElement('button');
                 globalDlBtn.className = 'btn-download-all';
                 globalDlBtn.innerHTML = '⬇️ Скачать все решения';
@@ -829,19 +829,38 @@
                         r.images.forEach((u, index) => {
                             const wrapper = document.createElement('div');
                             wrapper.className = 'img-wrapper';
-                            wrapper.style.position = 'relative'; // Гарантируем позиционирование
+                            wrapper.style.position = 'relative';
 
                             const img = document.createElement('img');
                             img.className = 'solution-img img-loading';
                             img.alt = 'Загрузка...';
                             loadImage(img, u);
 
-                            // Кнопка "Скачать одну" со встроенными стилями
+                            // Кнопка "Обновить"
+                            const refreshBtn = document.createElement('button');
+                            refreshBtn.className = 'btn-refresh-one';
+                            refreshBtn.innerHTML = '🔄';
+                            refreshBtn.title = 'Обновить картинку';
+                            refreshBtn.style.cssText = 'position: absolute; top: 15px; right: 65px; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; background: rgba(0, 0, 0, 0.65); color: #ffffff; border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 50%; font-size: 20px; cursor: pointer; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); z-index: 10; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3); padding: 0; line-height: 1; transition: all 0.2s;';
+                            refreshBtn.onmouseenter = () => refreshBtn.style.transform = 'scale(1.1)';
+                            refreshBtn.onmouseleave = () => refreshBtn.style.transform = 'scale(1)';
+                            refreshBtn.onclick = (e) => {
+                                e.stopPropagation();
+                                // Очищаем старую картинку и запускаем загрузку заново
+                                img.classList.remove('img-tall', 'img-retrying');
+                                img.classList.add('img-loading');
+                                img.src = '';
+                                loadImage(img, u);
+                            };
+
+                            // Кнопка "Скачать"
                             const dlBtn = document.createElement('button');
                             dlBtn.className = 'btn-download-one';
                             dlBtn.innerHTML = '⬇️';
                             dlBtn.title = 'Скачать решение';
-                            dlBtn.style.cssText = 'position: absolute; top: 15px; right: 15px; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; background: rgba(0, 0, 0, 0.65); color: #ffffff; border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 50%; font-size: 20px; cursor: pointer; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); z-index: 10; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3); padding: 0; line-height: 1;';
+                            dlBtn.style.cssText = 'position: absolute; top: 15px; right: 15px; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; background: rgba(0, 0, 0, 0.65); color: #ffffff; border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 50%; font-size: 20px; cursor: pointer; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); z-index: 10; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3); padding: 0; line-height: 1; transition: all 0.2s;';
+                            dlBtn.onmouseenter = () => dlBtn.style.transform = 'scale(1.1)';
+                            dlBtn.onmouseleave = () => dlBtn.style.transform = 'scale(1)';
                             dlBtn.onclick = (e) => {
                                 e.stopPropagation();
                                 if (img.src && img.src.includes('/api/image')) {
@@ -853,6 +872,7 @@
                             };
 
                             wrapper.appendChild(img);
+                            wrapper.appendChild(refreshBtn);
                             wrapper.appendChild(dlBtn);
                             card.appendChild(wrapper);
                         });
