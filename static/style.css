@@ -121,11 +121,11 @@ body.theme-custom::before {
 body.theme-custom .card,
 body.theme-custom .subject-block,
 body.theme-custom .subject-group {
-    background: rgba(255, 255, 255, 0.08) !important; /* Светлая прозрачность */
-    border: 1px solid rgba(255, 255, 255, 0.2) !important;
-    backdrop-filter: blur(25px) !important; /* Сильное размытие фона */
-    -webkit-backdrop-filter: blur(25px) !important;
-    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3) !important;
+    background: rgba(255, 255, 255, 0.03) !important; /* Еще прозрачнее */
+    border: 1px solid rgba(255, 255, 255, 0.15) !important;
+    backdrop-filter: blur(20px) !important;
+    -webkit-backdrop-filter: blur(20px) !important;
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2) !important;
 }
 
 .theme-custom .modal-content,
@@ -136,7 +136,7 @@ body.theme-custom .image-modal-content {
     color: #1a202c;
 }
 
-/* Всё, что должно быть белым с чёрной обводкой (чтобы читалось на фоне) */
+/* Всё, что должно быть белым с чёрной обводкой */
 .theme-custom h1, .theme-custom h2, .theme-custom h3,
 body.theme-custom h1, body.theme-custom h2, body.theme-custom h3,
 .theme-custom .input-label, body.theme-custom .input-label,
@@ -162,14 +162,14 @@ body.theme-custom h1, body.theme-custom h2, body.theme-custom h3,
 
 .theme-custom .version,
 body.theme-custom .version {
-    background: rgba(255,255,255,0.1) !important;
+    background: rgba(255,255,255,0.05) !important;
     color: #ffffff !important;
     text-shadow: none !important;
     backdrop-filter: blur(10px);
-    border: 1px solid rgba(255,255,255,0.2);
+    border: 1px solid rgba(255,255,255,0.15);
 }
 
-/* ⚠️ ПОЛЯ ВВОДА — ТЕПЕРЬ СОВСЕМ ПРОЗРАЧНЫЕ */
+/* ⚠️ ПОЛЯ ВВОДА — АБСОЛЮТНО ПРОЗРАЧНЫЕ */
 .theme-custom .num-input,
 .theme-custom .text-input,
 .theme-custom .form-label input,
@@ -180,18 +180,20 @@ body.theme-custom .text-input,
 body.theme-custom .form-label input,
 body.theme-custom .form-label textarea,
 body.theme-custom select {
-    background: rgba(255, 255, 255, 0.05) !important; /* Почти невидимый фон */
-    border: 1px solid rgba(255,255,255,0.4) !important; /* Белая рамка */
+    background: transparent !important; /* Убираем серый фон */
+    border: 1px solid rgba(255,255,255,0.3) !important;
     color: #ffffff !important;
     text-shadow: none !important;
     backdrop-filter: blur(10px);
+    appearance: none; /* Убираем дефолтные стили браузера */
+    -webkit-appearance: none;
 }
 
 .theme-custom .num-input::placeholder,
 .theme-custom .text-input::placeholder,
 body.theme-custom .num-input::placeholder,
 body.theme-custom .text-input::placeholder {
-    color: rgba(255,255,255,0.7) !important;
+    color: rgba(255,255,255,0.6) !important;
     text-shadow: none !important;
 }
 
@@ -199,7 +201,7 @@ body.theme-custom .text-input::placeholder {
 .theme-custom .text-input:focus,
 body.theme-custom .num-input:focus,
 body.theme-custom .text-input:focus {
-    background: rgba(255, 255, 255, 0.15) !important;
+    background: rgba(255, 255, 255, 0.1) !important;
     border-color: #ffffff !important;
 }
 
