@@ -953,3 +953,81 @@ h3 { font-size: 15px; color: #2d3748; }
     background: rgba(0, 0, 0, 0.9);
     transform: scale(1.1);
 }
+/* ═══════════════════════════════════════
+   СТИЛЬНЫЕ КНОПКИ СКАЧИВАНИЯ
+   ═══════════════════════════════════════ */
+
+/* Большая кнопка "Скачать все решения" */
+.btn-download-all {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    width: 100%;
+    padding: 16px 24px;
+    margin: 25px 0;
+    background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+    color: #ffffff;
+    border: none;
+    border-radius: 12px;
+    font-size: 17px;
+    font-weight: 700;
+    cursor: pointer;
+    text-align: center;
+    box-shadow: 0 4px 15px rgba(72, 187, 120, 0.4);
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+.btn-download-all:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 25px rgba(72, 187, 120, 0.5);
+}
+
+.btn-download-all:active {
+    transform: translateY(1px);
+    box-shadow: 0 2px 10px rgba(72, 187, 120, 0.4);
+}
+
+/* Кнопка на самой картинке (эффект стекла) */
+.btn-download-one {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    width: 44px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.55); /* Темное полупрозрачное стекло */
+    color: #ffffff;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 50%; /* Круглая кнопка */
+    font-size: 20px;
+    cursor: pointer;
+    backdrop-filter: blur(8px); /* Эффект матового стекла */
+    -webkit-backdrop-filter: blur(8px);
+    transition: all 0.2s ease;
+    z-index: 10;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+    padding: 0;
+    line-height: 1;
+}
+
+.btn-download-one:hover {
+    background: rgba(0, 0, 0, 0.8);
+    transform: scale(1.1);
+    border-color: rgba(255, 255, 255, 0.4);
+}
+
+.btn-download-one:active {
+    transform: scale(0.95);
+}
+
+/* Адаптация под темную тему (если нужно, чтобы кнопка на картинке была светлой) */
+.theme-dark .btn-download-one {
+    background: rgba(255, 255, 255, 0.2);
+    border-color: rgba(255, 255, 255, 0.3);
+}
+.theme-dark .btn-download-one:hover {
+    background: rgba(255, 255, 255, 0.4);
+}
