@@ -56,87 +56,46 @@
         }
 
         /* ═══ СТИЛИ ДЛЯ ВЫПАДАЮЩЕГО МЕНЮ ═══ */
-        .user-menu-container {
-            position: relative;
-            display: inline-block;
-        }
+        .user-menu-container { position: relative; display: inline-block; }
         .user-menu-btn {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            background: #edf2f7;
-            padding: 6px 14px;
-            border-radius: 20px;
-            border: none;
-            cursor: pointer;
-            font-weight: 600;
-            font-family: inherit;
-            color: #4a5568;
-            transition: all 0.2s;
+            display: flex; align-items: center; gap: 8px;
+            background: #edf2f7; padding: 6px 14px; border-radius: 20px;
+            border: none; cursor: pointer; font-weight: 600; font-family: inherit;
+            color: #4a5568; transition: all 0.2s;
         }
         .user-menu-btn:hover { background: #e2e8f0; }
         .theme-dark .user-menu-btn { background: rgba(74,85,104,0.6); color: #e2e8f0; }
         .theme-dark .user-menu-btn:hover { background: rgba(74,85,104,0.9); }
 
         .user-avatar-mini {
-            width: 24px; height: 24px;
-            border-radius: 50%;
-            background: #4299e1;
-            color: white;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 12px; font-weight: 700;
-            background-size: cover; background-position: center;
+            width: 24px; height: 24px; border-radius: 50%;
+            background: #4299e1; color: white; display: flex; align-items: center; justify-content: center;
+            font-size: 12px; font-weight: 700; background-size: cover; background-position: center;
         }
 
         .dropdown-menu {
-            position: absolute;
-            top: calc(100% + 10px);
-            right: 0;
-            background: white;
-            border-radius: 12px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
-            min-width: 220px;
-            opacity: 0;
-            visibility: hidden;
+            position: absolute; top: calc(100% + 10px); right: 0;
+            background: white; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+            min-width: 220px; opacity: 0; visibility: hidden;
             transform: translateY(-10px) scale(0.95);
             transition: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            z-index: 1000;
-            overflow: hidden;
-            border: 1px solid #e2e8f0;
+            z-index: 1000; overflow: hidden; border: 1px solid #e2e8f0;
         }
         .theme-dark .dropdown-menu { background: #2d3748; border-color: #4a5568; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
 
-        .dropdown-menu.show {
-            opacity: 1;
-            visibility: visible;
-            transform: translateY(0) scale(1);
-        }
+        .dropdown-menu.show { opacity: 1; visibility: visible; transform: translateY(0) scale(1); }
 
         .dropdown-header {
-            padding: 15px;
-            background: #f7fafc;
-            border-bottom: 1px solid #e2e8f0;
-            font-size: 14px;
-            font-weight: 700;
-            color: #2d3748;
+            padding: 15px; background: #f7fafc; border-bottom: 1px solid #e2e8f0;
+            font-size: 14px; font-weight: 700; color: #2d3748;
         }
         .theme-dark .dropdown-header { background: #1a202c; border-color: #4a5568; color: #f7fafc; }
 
         .dropdown-item {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            width: 100%;
-            padding: 12px 15px;
-            border: none;
-            background: transparent;
-            text-align: left;
-            font-size: 14px;
-            font-weight: 600;
-            color: #4a5568;
-            cursor: pointer;
-            transition: background 0.2s;
-            font-family: inherit;
+            display: flex; align-items: center; gap: 10px; width: 100%;
+            padding: 12px 15px; border: none; background: transparent;
+            text-align: left; font-size: 14px; font-weight: 600; color: #4a5568;
+            cursor: pointer; transition: background 0.2s; font-family: inherit;
         }
         .theme-dark .dropdown-item { color: #cbd5e0; }
         .dropdown-item:hover { background: #edf2f7; color: #2b6cb0; }
@@ -148,6 +107,47 @@
         .dropdown-item.logout { color: #e53e3e; }
         .dropdown-item.logout:hover { background: #fff5f5; color: #c53030; }
         .theme-dark .dropdown-item.logout:hover { background: rgba(229,62,62,0.2); }
+
+        /* ═══════════════════════════════════════════════════════════
+           ЖЕСТКИЙ ФИКС ПРОЗРАЧНОСТИ ДЛЯ СВОЕЙ КАРТИНКИ
+           ═══════════════════════════════════════════════════════════ */
+        html.theme-custom .card,
+        html.theme-custom .subject-block,
+        html.theme-custom .subject-group {
+            background: rgba(255, 255, 255, 0.03) !important;
+            backdrop-filter: blur(25px) !important;
+            -webkit-backdrop-filter: blur(25px) !important;
+            border: 1px solid rgba(255, 255, 255, 0.15) !important;
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1) !important;
+        }
+
+        html.theme-custom textarea,
+        html.theme-custom input,
+        html.theme-custom .text-input {
+            background: transparent !important;
+            background-color: transparent !important;
+            border: 1px solid rgba(255, 255, 255, 0.3) !important;
+            color: #ffffff !important;
+            -webkit-appearance: none !important;
+            appearance: none !important;
+            box-shadow: none !important;
+            outline: none !important;
+        }
+
+        html.theme-custom textarea::placeholder,
+        html.theme-custom input::placeholder {
+            color: rgba(255, 255, 255, 0.6) !important;
+        }
+
+        html.theme-custom .user-menu-btn {
+            background: rgba(255, 255, 255, 0.1) !important;
+            color: #ffffff !important;
+            border: 1px solid rgba(255,255,255,0.3) !important;
+            backdrop-filter: blur(10px);
+        }
+        html.theme-custom .user-menu-btn:hover {
+            background: rgba(255, 255, 255, 0.2) !important;
+        }
     </style>
     <link rel="stylesheet" href="/static/style.css">
 </head>
@@ -468,8 +468,8 @@
         function updateGreeting() {
             const hour = new Date().getHours();
             let greeting = 'Доброй ночи';
-            if (hour >= 5 && hour < 12) greeting = 'Доброе утро';
-            else if (hour >= 12 && hour < 18) greeting = 'Добрый день';
+            if (hour >= 7 && hour < 9) greeting = 'Доброе утро';
+            else if (hour >= 9 && hour < 18) greeting = 'Добрый день';
             else if (hour >= 18 && hour < 23) greeting = 'Добрый вечер';
 
             const name = authUser.name || authUser.email.split('@')[0];
