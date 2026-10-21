@@ -164,7 +164,8 @@
                 <button type="button" id="deleteAccountBtn" class="btn-danger">🗑 Удалить аккаунт</button>
                 <div style="display:flex; gap:10px;">
                     <button type="button" id="closeSettingsBtn" class="btn-secondary">Отмена</button>
-                    <button type="button" id="saveSettingsBtn" class="btn-primary" style="width:auto;">Сохранить</button>
+                    <!-- Кнопка переименована в "Применить" -->
+                    <button type="button" id="saveSettingsBtn" class="btn-primary" style="width:auto;">Применить</button>
                 </div>
             </div>
         </div>
@@ -208,6 +209,10 @@
         let currentBgUrl = localStorage.getItem('gdz_bg') || null;
         let currentAvatar = null;
         let SUBJECTS = [];
+
+        // Переменные для отката темы при нажатии "Отмена"
+        let originalTheme = 'light';
+        let originalBgUrl = null;
 
         const $ = id => document.getElementById(id);
         const authScreen = $('authScreen');
@@ -523,20 +528,32 @@
             $('setNewPwd').value = '';
             updateAvatarPreview();
 
+            // Запоминаем текущую тему для отката
+            originalTheme = authUser.theme || 'light';
+            originalBgUrl = authUser.bg_url || null;
+
             document.querySelectorAll('.theme-btn').forEach(t => t.classList.toggle('active', t.dataset.theme === currentTheme));
             $('customBgBlock').style.display = currentTheme === 'custom' ? 'block' : 'none';
         }
 
-        $('closeSettingsBtn').onclick = () => settingsModal.classList.add('hidden');
-        settingsModal.onclick = (e) => { if (e.target === settingsModal) settingsModal.classList.add('hidden'); };
+        // Функция отмены (возвращает сохраненную тему)
+        function cancelSettings() {
+            applyTheme(originalTheme, originalBgUrl);
+            document.querySelectorAll('.theme-btn').forEach(t => t.classList.toggle('active', t.dataset.theme === originalTheme));
+            settingsModal.classList.add('hidden');
+        }
 
+        $('closeSettingsBtn').onclick = cancelSettings;
+        settingsModal.onclick = (e) => { if (e.target === settingsModal) cancelSettings(); };
+
+        // Мгновенное применение темы при клике
         document.querySelectorAll('.theme-btn').forEach(t => {
             t.onclick = () => {
                 const theme = t.dataset.theme;
                 document.querySelectorAll('.theme-btn').forEach(x => x.classList.toggle('active', x === t));
                 $('customBgBlock').style.display = theme === 'custom' ? 'block' : 'none';
                 const bg = theme === 'custom' ? currentBgUrl : null;
-                applyTheme(theme, bg);
+                applyTheme(theme, bg); // Применяется мгновенно
             };
         });
 
@@ -563,7 +580,7 @@
             try {
                 const b64 = await shrinkImage(file, 1600, 0.82);
                 currentBgUrl = b64;
-                applyTheme('custom', b64);
+                applyTheme('custom', b64); // Мгновенно применяется
                 document.querySelectorAll('.theme-btn').forEach(x => x.classList.toggle('active', x.dataset.theme === 'custom'));
                 $('customBgBlock').style.display = 'block';
             } catch (err) { alert('Ошибка: ' + err.message); }
@@ -572,7 +589,7 @@
 
         $('bgRemoveBtn').onclick = () => {
             currentBgUrl = null;
-            applyTheme('light', null);
+            applyTheme('light', null); // Мгновенный сброс
             document.querySelectorAll('.theme-btn').forEach(x => x.classList.toggle('active', x.dataset.theme === 'light'));
             $('customBgBlock').style.display = 'none';
         };
@@ -584,7 +601,7 @@
             const bgToSave = newTheme === 'custom' ? (currentBgUrl || '') : '';
             const oldPwd = $('setOldPwd').value;
             const newPwd = $('setNewPwd').value;
-            st.textContent = '⏳ Сохраняем...';
+            st.textContent = '⏳ Применяем...';
             st.className = 'fb-status loading';
             const payload = {
                 token: authToken, name: newName, theme: newTheme, bg_url: bgToSave
@@ -595,14 +612,19 @@
                 if (!r1.ok) { st.textContent = '❌ ' + (d1.detail || 'Ошибка'); st.className = 'fb-status error'; return; }
                 authUser = d1.user;
                 if (authUser.bg_url) currentBgUrl = authUser.bg_url;
+
+                // Обновляем сохраненные данные
+                originalTheme = authUser.theme;
+                originalBgUrl = authUser.bg_url;
+
                 applyTheme(authUser.theme, authUser.bg_url);
                 renderTopbar();
                 if (oldPwd && newPwd) {
                     const r2 = await fetch('/api/auth/change-password', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({token: authToken, old_password: oldPwd, new_password: newPwd}) });
                     const d2 = await r2.json();
-                    if (!r2.ok) { st.textContent = '⚠️ Профиль сохранён, пароль: ' + (d2.detail || 'Ошибка'); st.className = 'fb-status error'; return; }
-                    st.textContent = '✅ Профиль и пароль сохранены';
-                } else { st.textContent = '✅ Настройки сохранены'; }
+                    if (!r2.ok) { st.textContent = '⚠️ Профиль применён, пароль: ' + (d2.detail || 'Ошибка'); st.className = 'fb-status error'; return; }
+                    st.textContent = '✅ Профиль и пароль применены';
+                } else { st.textContent = '✅ Настройки применены'; }
                 st.className = 'fb-status success';
                 setTimeout(() => settingsModal.classList.add('hidden'), 1500);
             } catch (e) { st.textContent = '❌ ' + e.message; st.className = 'fb-status error'; }
@@ -827,21 +849,18 @@
                         card.innerHTML = `<div class="task-header"><h3>№${r.number}</h3></div>`;
 
                         r.images.forEach((u, index) => {
-                            // Контейнер для картинки и кнопок под ней
                             const wrapper = document.createElement('div');
                             wrapper.style.cssText = 'display: flex; flex-direction: column; gap: 8px; margin-bottom: 15px;';
 
                             const img = document.createElement('img');
                             img.className = 'solution-img img-loading';
-                            img.style.marginTop = '0'; // Убираем отступ сверху, так как он есть у wrapper
+                            img.style.marginTop = '0';
                             img.alt = 'Загрузка...';
                             loadImage(img, u);
 
-                            // Контейнер для кнопок
                             const controls = document.createElement('div');
                             controls.style.cssText = 'display: flex; gap: 10px; justify-content: flex-end;';
 
-                            // Кнопка "Обновить"
                             const refreshBtn = document.createElement('button');
                             refreshBtn.innerHTML = '🔄 Обновить';
                             refreshBtn.title = 'Обновить картинку';
@@ -856,7 +875,6 @@
                                 loadImage(img, u);
                             };
 
-                            // Кнопка "Скачать"
                             const dlBtn = document.createElement('button');
                             dlBtn.innerHTML = '⬇️ Скачать';
                             dlBtn.title = 'Скачать решение';
