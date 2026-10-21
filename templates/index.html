@@ -12,7 +12,6 @@
                 const token = localStorage.getItem('gdz_token');
                 const root = document.documentElement;
 
-                // На главной применяется ТОЛЬКО тема главной
                 if (theme === 'dark') {
                     root.classList.add('theme-dark');
                 } else if (theme === 'custom' && bg) {
@@ -268,7 +267,6 @@
             });
         }
 
-        // Тема главной — применяется только на этой странице
         function applyTheme(theme, bgUrl) {
             currentTheme = theme;
             currentBgUrl = bgUrl;
@@ -737,7 +735,6 @@
             }));
         }
 
-        // Функция для скачивания одной картинки
         async function downloadSingleImage(url, filename) {
             try {
                 const response = await fetch(url);
@@ -755,7 +752,6 @@
             }
         }
 
-        // Функция для скачивания всех картинок
         async function downloadAllImages() {
             const images = Array.from(document.querySelectorAll('.solution-img'));
             const validImages = images.filter(img => img.src && img.src.includes('/api/image'));
@@ -769,7 +765,7 @@
 
             for (let i = 0; i < validImages.length; i++) {
                 await downloadSingleImage(validImages[i].src, `GDZ_Решение_${i + 1}.jpg`);
-                await new Promise(r => setTimeout(r, 500)); // Пауза, чтобы браузер не заблокировал
+                await new Promise(r => setTimeout(r, 500));
             }
         }
 
@@ -802,10 +798,11 @@
                     }
                 }
 
-                // Добавляем кнопку "Скачать всё" перед результатами
+                // Кнопка "Скачать всё" со встроенными стилями
                 const globalDlBtn = document.createElement('button');
                 globalDlBtn.className = 'btn-download-all';
                 globalDlBtn.innerHTML = '⬇️ Скачать все решения';
+                globalDlBtn.style.cssText = 'display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; padding: 16px 24px; margin: 25px 0; background: linear-gradient(135deg, #48bb78 0%, #38a169 100%); color: #ffffff; border: none; border-radius: 12px; font-size: 17px; font-weight: 700; cursor: pointer; box-shadow: 0 4px 15px rgba(72, 187, 120, 0.4); transition: all 0.3s;';
                 globalDlBtn.onclick = downloadAllImages;
                 result.appendChild(globalDlBtn);
 
@@ -832,18 +829,21 @@
                         r.images.forEach((u, index) => {
                             const wrapper = document.createElement('div');
                             wrapper.className = 'img-wrapper';
+                            wrapper.style.position = 'relative'; // Гарантируем позиционирование
 
                             const img = document.createElement('img');
                             img.className = 'solution-img img-loading';
                             img.alt = 'Загрузка...';
                             loadImage(img, u);
 
+                            // Кнопка "Скачать одну" со встроенными стилями
                             const dlBtn = document.createElement('button');
                             dlBtn.className = 'btn-download-one';
                             dlBtn.innerHTML = '⬇️';
                             dlBtn.title = 'Скачать решение';
+                            dlBtn.style.cssText = 'position: absolute; top: 15px; right: 15px; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; background: rgba(0, 0, 0, 0.65); color: #ffffff; border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 50%; font-size: 20px; cursor: pointer; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); z-index: 10; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3); padding: 0; line-height: 1;';
                             dlBtn.onclick = (e) => {
-                                e.stopPropagation(); // Чтобы не открылось модальное окно
+                                e.stopPropagation();
                                 if (img.src && img.src.includes('/api/image')) {
                                     const filename = `GDZ_${r.subject || 'Предмет'}_№${r.number || index + 1}.jpg`.replace(/\s+/g, '_');
                                     downloadSingleImage(img.src, filename);
