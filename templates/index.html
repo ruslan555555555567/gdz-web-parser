@@ -27,7 +27,7 @@
     </script>
     <style>
         html.has-auth #authScreen { display: none !important; }
-        html.has-auth #mainScreen { display: block !important; }
+        html.has-auth #mainScreen { display: flex !important; flex-direction: column; }
         html.no-auth #authScreen { display: flex !important; }
         html.no-auth #mainScreen { display: none !important; }
 
@@ -109,29 +109,36 @@
         .theme-dark .dropdown-item.logout:hover { background: rgba(229,62,62,0.2); }
 
         /* ═══════════════════════════════════════════════════════════
-           ЖЕСТКИЙ ФИКС ПРОЗРАЧНОСТИ ДЛЯ СВОЕЙ КАРТИНКИ
+           ЯДЕРНЫЙ ФИКС ПРОЗРАЧНОСТИ (ПЕРЕБИВАЕТ ВСЁ)
            ═══════════════════════════════════════════════════════════ */
         html.theme-custom .card,
-        html.theme-custom .subject-block,
-        html.theme-custom .subject-group {
-            background: rgba(255, 255, 255, 0.03) !important;
-            backdrop-filter: blur(25px) !important;
-            -webkit-backdrop-filter: blur(25px) !important;
-            border: 1px solid rgba(255, 255, 255, 0.15) !important;
-            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1) !important;
+        html.theme-custom .subject-block {
+            background: rgba(255, 255, 255, 0.05) !important;
+            backdrop-filter: blur(30px) !important;
+            -webkit-backdrop-filter: blur(30px) !important;
+            border: 1px solid rgba(255, 255, 255, 0.2) !important;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2) !important;
         }
 
         html.theme-custom textarea,
-        html.theme-custom input,
-        html.theme-custom .text-input {
+        html.theme-custom input[type="text"],
+        html.theme-custom input[type="email"],
+        html.theme-custom input[type="password"] {
             background: transparent !important;
             background-color: transparent !important;
-            border: 1px solid rgba(255, 255, 255, 0.3) !important;
+            border: 1px solid rgba(255, 255, 255, 0.4) !important;
             color: #ffffff !important;
             -webkit-appearance: none !important;
             appearance: none !important;
             box-shadow: none !important;
             outline: none !important;
+            backdrop-filter: blur(5px) !important;
+        }
+
+        html.theme-custom textarea:focus,
+        html.theme-custom input:focus {
+            background: rgba(255, 255, 255, 0.1) !important;
+            border-color: #ffffff !important;
         }
 
         html.theme-custom textarea::placeholder,
@@ -562,8 +569,8 @@
 
             const hour = new Date().getHours();
             let g = 'Доброй ночи';
-            if (hour >= 5 && hour < 12) g = 'Доброе утро';
-            else if (hour >= 12 && hour < 18) g = 'Добрый день';
+            if (hour >= 7 && hour < 9) g = 'Доброе утро';
+            else if (hour >= 9 && hour < 18) g = 'Добрый день';
             else if (hour >= 18 && hour < 23) g = 'Добрый вечер';
             $('dropdownGreeting').innerText = `${g}, ${name}!`;
 
