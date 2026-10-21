@@ -164,8 +164,7 @@
                 <button type="button" id="deleteAccountBtn" class="btn-danger">🗑 Удалить аккаунт</button>
                 <div style="display:flex; gap:10px;">
                     <button type="button" id="closeSettingsBtn" class="btn-secondary">Отмена</button>
-                    <!-- Кнопка переименована в "Применить" -->
-                    <button type="button" id="saveSettingsBtn" class="btn-primary" style="width:auto;">Применить</button>
+                    <button type="button" id="saveSettingsBtn" class="btn-primary" style="width:auto;">💾 Применить</button>
                 </div>
             </div>
         </div>
@@ -210,7 +209,6 @@
         let currentAvatar = null;
         let SUBJECTS = [];
 
-        // Переменные для отката темы при нажатии "Отмена"
         let originalTheme = 'light';
         let originalBgUrl = null;
 
@@ -449,21 +447,45 @@
             const name = $('authName').value.trim();
             const st = $('authStatus');
             const device = getDeviceInfo();
+
             st.textContent = '⏳ Подождите...';
             st.className = 'fb-status loading';
+
             const url = authMode === 'login' ? '/api/auth/login' : '/api/auth/register';
             const body = authMode === 'login' ? {email, password, device} : {email, password, name, device};
+
             try {
                 const r = await fetch(url, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body) });
                 const d = await r.json();
-                if (!r.ok) { st.textContent = '❌ ' + (d.detail || 'Ошибка'); st.className = 'fb-status error'; return; }
+
+                if (!r.ok) {
+                    st.textContent = '❌ ' + (d.detail || 'Ошибка');
+                    st.className = 'fb-status error';
+                    return;
+                }
+
+                // Если регистрация - просим проверить почту
+                if (authMode === 'register') {
+                    st.textContent = '✅ ' + (d.message || 'Проверьте почту!');
+                    st.className = 'fb-status success';
+                    $('authEmail').value = '';
+                    $('authPwd').value = '';
+                    $('authName').value = '';
+                    return;
+                }
+
+                // Если вход - пускаем
                 authToken = d.token;
                 authUser = d.user;
                 currentAvatar = d.user.avatar || null;
                 localStorage.setItem('gdz_token', authToken);
                 applyTheme(authUser.theme || 'light', authUser.bg_url);
                 await showMain();
-            } catch (err) { st.textContent = '❌ ' + err.message; st.className = 'fb-status error'; }
+
+            } catch (err) {
+                st.textContent = '❌ ' + err.message;
+                st.className = 'fb-status error';
+            }
         };
 
         async function logout() {
@@ -528,7 +550,6 @@
             $('setNewPwd').value = '';
             updateAvatarPreview();
 
-            // Запоминаем текущую тему для отката
             originalTheme = authUser.theme || 'light';
             originalBgUrl = authUser.bg_url || null;
 
@@ -536,7 +557,6 @@
             $('customBgBlock').style.display = currentTheme === 'custom' ? 'block' : 'none';
         }
 
-        // Функция отмены (возвращает сохраненную тему)
         function cancelSettings() {
             applyTheme(originalTheme, originalBgUrl);
             document.querySelectorAll('.theme-btn').forEach(t => t.classList.toggle('active', t.dataset.theme === originalTheme));
@@ -546,14 +566,13 @@
         $('closeSettingsBtn').onclick = cancelSettings;
         settingsModal.onclick = (e) => { if (e.target === settingsModal) cancelSettings(); };
 
-        // Мгновенное применение темы при клике
         document.querySelectorAll('.theme-btn').forEach(t => {
             t.onclick = () => {
                 const theme = t.dataset.theme;
                 document.querySelectorAll('.theme-btn').forEach(x => x.classList.toggle('active', x === t));
                 $('customBgBlock').style.display = theme === 'custom' ? 'block' : 'none';
                 const bg = theme === 'custom' ? currentBgUrl : null;
-                applyTheme(theme, bg); // Применяется мгновенно
+                applyTheme(theme, bg);
             };
         });
 
@@ -580,7 +599,7 @@
             try {
                 const b64 = await shrinkImage(file, 1600, 0.82);
                 currentBgUrl = b64;
-                applyTheme('custom', b64); // Мгновенно применяется
+                applyTheme('custom', b64);
                 document.querySelectorAll('.theme-btn').forEach(x => x.classList.toggle('active', x.dataset.theme === 'custom'));
                 $('customBgBlock').style.display = 'block';
             } catch (err) { alert('Ошибка: ' + err.message); }
@@ -589,7 +608,7 @@
 
         $('bgRemoveBtn').onclick = () => {
             currentBgUrl = null;
-            applyTheme('light', null); // Мгновенный сброс
+            applyTheme('light', null);
             document.querySelectorAll('.theme-btn').forEach(x => x.classList.toggle('active', x.dataset.theme === 'light'));
             $('customBgBlock').style.display = 'none';
         };
@@ -613,7 +632,6 @@
                 authUser = d1.user;
                 if (authUser.bg_url) currentBgUrl = authUser.bg_url;
 
-                // Обновляем сохраненные данные
                 originalTheme = authUser.theme;
                 originalBgUrl = authUser.bg_url;
 
@@ -820,7 +838,6 @@
                     }
                 }
 
-                // Кнопка "Скачать всё"
                 const globalDlBtn = document.createElement('button');
                 globalDlBtn.className = 'btn-download-all';
                 globalDlBtn.innerHTML = '⬇️ Скачать все решения';

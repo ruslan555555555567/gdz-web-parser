@@ -1,10 +1,9 @@
 fastapi
-uvicorn[standard]
-jinja2
-httpx
+uvicorn
+asyncpg
 curl_cffi
 beautifulsoup4
-lxml
 pydantic
-pillow
-asyncpg
+Pillow
+jinja2
+httpx

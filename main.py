@@ -13,32 +13,58 @@ from curl_cffi import requests as cffi_requests
 from PIL import Image
 import asyncio
 import asyncpg
+import httpx
 
 from parser import parse_tasks
 
-VERSION = "32.0.0"
-ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "")  # пароль только из окружения
+VERSION = "33.0.0"
+ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "")
 ADMIN_EMAIL = os.getenv("ADMIN_EMAIL", "admin@gdz.ru").lower().strip()
 DATABASE_URL = os.getenv("DATABASE_URL")
+RESEND_API_KEY = os.getenv("RESEND_API_KEY")  # Ключ от Resend
 
 db_pool = None
 
 DEFAULT_SUBJECTS = [
-    {"name": "Алгебра", "url": "https://gdz.ru/class-7/algebra/makarichev-18/", "type": "numbers", "group_name": "🧮 Точные науки", "sort_order": 1, "max_number": 1000, "note": ""},
-    {"name": "Геометрия", "url": "https://gdz.ru/class-7/geometria/merzljak/", "type": "numbers", "group_name": "🧮 Точные науки", "sort_order": 2, "max_number": 1000, "note": ""},
-    {"name": "Вероятность и статистика", "url": "https://gdz.ru/class-7/matematika/vysockij-yashenko-bazovij-uroven/", "type": "numbers", "group_name": "🧮 Точные науки", "sort_order": 3, "max_number": 500, "note": ""},
-    {"name": "Физика", "url": "https://gdz.ru/class-7/fizika/peryshkin-7/", "type": "numbers", "group_name": "🧮 Точные науки", "sort_order": 4, "max_number": 1000, "note": ""},
-    {"name": "Информатика", "url": "https://gdz.ru/class-7/informatika/reshebnik-bosova-l-l-7/", "type": "numbers", "group_name": "🧮 Точные науки", "sort_order": 5, "max_number": 500, "note": ""},
-    {"name": "Биология", "url": "https://gdz.ru/class-7/biologiya/pasechnik-shvecov-bazovij-uroven/", "type": "numbers", "group_name": "🌿 Естественные науки", "sort_order": 6, "max_number": 500, "note": ""},
-    {"name": "Русский язык", "url": "https://gdz.ru/class-7/russkii_yazik/baranova/", "type": "numbers", "group_name": "📖 Гуманитарные науки", "sort_order": 7, "max_number": 560, "note": ""},
-    {"name": "Английский язык", "url": "https://gdz.ru/class-7/english/spotlight-7/", "type": "numbers", "group_name": "📖 Гуманитарные науки", "sort_order": 8, "max_number": 500, "note": ""},
-    {"name": "География", "url": "", "type": "text", "group_name": "🌿 Естественные науки", "sort_order": 9, "max_number": 0, "note": ""},
-    {"name": "Литература", "url": "", "type": "text", "group_name": "📖 Гуманитарные науки", "sort_order": 10, "max_number": 0, "note": ""},
-    {"name": "История", "url": "", "type": "text", "group_name": "📖 Гуманитарные науки", "sort_order": 11, "max_number": 0, "note": ""},
-    {"name": "Музыка", "url": "", "type": "text", "group_name": "🎨 Остальные предметы", "sort_order": 12, "max_number": 0, "note": ""},
-    {"name": "Труд (технология)", "url": "", "type": "text", "group_name": "🎨 Остальные предметы", "sort_order": 13, "max_number": 0, "note": ""},
-    {"name": "Изобразительное искусство", "url": "", "type": "text", "group_name": "🎨 Остальные предметы", "sort_order": 14, "max_number": 0, "note": ""},
+    {"name": "Алгебра", "url": "https://gdz.ru/class-7/algebra/makarichev-18/", "type": "numbers",
+     "group_name": "🧮 Точные науки", "sort_order": 1, "max_number": 1000, "note": ""},
+    {"name": "Геометрия", "url": "https://gdz.ru/class-7/geometria/merzljak/", "type": "numbers",
+     "group_name": "🧮 Точные науки", "sort_order": 2, "max_number": 1000, "note": ""},
+    {"name": "Вероятность и статистика", "url": "https://gdz.ru/class-7/matematika/vysockij-yashenko-bazovij-uroven/",
+     "type": "numbers", "group_name": "🧮 Точные науки", "sort_order": 3, "max_number": 500, "note": ""},
+    {"name": "Физика", "url": "https://gdz.ru/class-7/fizika/peryshkin-7/", "type": "numbers",
+     "group_name": "🧮 Точные науки", "sort_order": 4, "max_number": 1000, "note": ""},
+    {"name": "Информатика", "url": "https://gdz.ru/class-7/informatika/reshebnik-bosova-l-l-7/", "type": "numbers",
+     "group_name": "🧮 Точные науки", "sort_order": 5, "max_number": 500, "note": ""},
+    {"name": "Биология", "url": "https://gdz.ru/class-7/biologiya/pasechnik-shvecov-bazovij-uroven/", "type": "numbers",
+     "group_name": "🌿 Естественные науки", "sort_order": 6, "max_number": 500, "note": ""},
+    {"name": "Русский язык", "url": "https://gdz.ru/class-7/russkii_yazik/baranova/", "type": "numbers",
+     "group_name": "📖 Гуманитарные науки", "sort_order": 7, "max_number": 560, "note": ""},
+    {"name": "Английский язык", "url": "https://gdz.ru/class-7/english/spotlight-7/", "type": "numbers",
+     "group_name": "📖 Гуманитарные науки", "sort_order": 8, "max_number": 500, "note": ""},
+    {"name": "География", "url": "", "type": "text", "group_name": "🌿 Естественные науки", "sort_order": 9,
+     "max_number": 0, "note": ""},
+    {"name": "Литература", "url": "", "type": "text", "group_name": "📖 Гуманитарные науки", "sort_order": 10,
+     "max_number": 0, "note": ""},
+    {"name": "История", "url": "", "type": "text", "group_name": "📖 Гуманитарные науки", "sort_order": 11,
+     "max_number": 0, "note": ""},
+    {"name": "Музыка", "url": "", "type": "text", "group_name": "🎨 Остальные предметы", "sort_order": 12,
+     "max_number": 0, "note": ""},
+    {"name": "Труд (технология)", "url": "", "type": "text", "group_name": "🎨 Остальные предметы", "sort_order": 13,
+     "max_number": 0, "note": ""},
+    {"name": "Изобразительное искусство", "url": "", "type": "text", "group_name": "🎨 Остальные предметы",
+     "sort_order": 14, "max_number": 0, "note": ""},
 ]
+
+DEFAULT_SETTINGS = {
+    "site_title": "GDZ Парсер",
+    "announcement": "",
+    "footer_text": "",
+    "custom_css": "",
+}
+
+ALLOWED_TEMPLATES = ("index.html", "admin.html")
+MAX_TEMPLATE_SIZE = 2_000_000
 
 
 async def init_db():
@@ -66,6 +92,9 @@ async def init_db():
             await conn.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS admin_btn_color TEXT DEFAULT '#4299e1'")
             await conn.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS admin_theme TEXT DEFAULT 'auto'")
             await conn.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS btn_style TEXT DEFAULT 'light'")
+            # Новые колонки для почты
+            await conn.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS is_verified BOOLEAN DEFAULT FALSE")
+            await conn.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS verify_token TEXT")
 
             await conn.execute("""
                 CREATE TABLE IF NOT EXISTS sessions (
@@ -113,6 +142,21 @@ async def init_db():
                 )
             """)
 
+            await conn.execute("""
+                CREATE TABLE IF NOT EXISTS templates (
+                    name TEXT PRIMARY KEY,
+                    content TEXT NOT NULL,
+                    updated_at TIMESTAMP DEFAULT NOW()
+                )
+            """)
+            await conn.execute("""
+                CREATE TABLE IF NOT EXISTS settings (
+                    key TEXT PRIMARY KEY,
+                    value TEXT,
+                    updated_at TIMESTAMP DEFAULT NOW()
+                )
+            """)
+
             count = await conn.fetchval("SELECT COUNT(*) FROM subjects")
             if count == 0:
                 for s in DEFAULT_SUBJECTS:
@@ -121,7 +165,7 @@ async def init_db():
                         VALUES ($1, $2, $3, $4, $5, $6, $7)
                         ON CONFLICT (name) DO NOTHING
                     """, s["name"], s["url"], s["type"], s["group_name"],
-                        s["sort_order"], s["max_number"], s["note"])
+                                       s["sort_order"], s["max_number"], s["note"])
                 print(f"[main] Добавлено {len(DEFAULT_SUBJECTS)} предметов")
 
         print("[main] PostgreSQL подключена")
@@ -178,15 +222,34 @@ async def get_user_by_token(token: str):
     return dict(row) if row else None
 
 
+async def get_admin_password_hash():
+    if db_pool is None:
+        return None
+    try:
+        async with db_pool.acquire() as conn:
+            return await conn.fetchval(
+                "SELECT value FROM settings WHERE key = 'admin_password_hash'"
+            )
+    except Exception:
+        return None
+
+
 async def check_admin(data: dict):
     password = (data or {}).get("password", "")
     token = (data or {}).get("token", "")
+
     if token:
         user = await get_user_by_token(token)
         if user and user.get("is_admin"):
             return True
-    if password and password == ADMIN_PASSWORD:
-        return True
+
+    if password:
+        stored_hash = await get_admin_password_hash()
+        if stored_hash and verify_password(password, stored_hash):
+            return True
+        if not stored_hash and ADMIN_PASSWORD and password == ADMIN_PASSWORD:
+            return True
+
     return False
 
 
@@ -272,19 +335,59 @@ class AvatarRequest(BaseModel):
     avatar: str
 
 
+class ChangeAdminPasswordRequest(BaseModel):
+    current_password: str = ""
+    new_password: str
+    token: str = ""
+
+
+class TemplateSaveRequest(BaseModel):
+    password: str = ""
+    token: str = ""
+    name: str
+    content: str
+
+
+class SettingsSaveRequest(BaseModel):
+    password: str = ""
+    token: str = ""
+    settings: dict
+
+
 @app.on_event("startup")
 async def startup():
     await init_db()
 
 
+# ═══════ РЕНДЕР ШАБЛОНОВ (БД → файл) ═══════
+
+async def render_page(request: Request, name: str, context: dict):
+    html = None
+    if db_pool is not None:
+        try:
+            async with db_pool.acquire() as conn:
+                html = await conn.fetchval(
+                    "SELECT content FROM templates WHERE name = $1", name
+                )
+        except Exception:
+            pass
+    if html:
+        try:
+            tmpl = templates.env.from_string(html)
+            return HTMLResponse(tmpl.render(request=request, **context))
+        except Exception as e:
+            print(f"[template] ошибка рендера {name}: {e}")
+    return templates.TemplateResponse(request, name, context)
+
+
 @app.get("/", response_class=HTMLResponse)
 async def index(request: Request):
-    return templates.TemplateResponse(request, "index.html", {"version": VERSION})
+    return await render_page(request, "index.html", {"version": VERSION})
 
 
 @app.get("/admin", response_class=HTMLResponse)
 async def admin_page(request: Request):
-    return templates.TemplateResponse(request, "admin.html", {"version": VERSION})
+    return await render_page(request, "admin.html", {"version": VERSION})
 
 
 @app.get("/api/version")
@@ -296,11 +399,6 @@ async def get_version():
 
 @app.get("/health")
 async def health():
-    """
-    Лёгкий эндпоинт для пингования (cron-job.org, UptimeRobot и т.п.).
-    Дёргает SELECT 1 к БД, чтобы ONREZA не усыпляла базу.
-    Всегда возвращает 200 — Render не должен считать сервис упавшим.
-    """
     db_status = "no_pool"
     if db_pool is not None:
         try:
@@ -456,12 +554,12 @@ async def admin_reset_subjects(data: dict):
                 VALUES ($1, $2, $3, $4, $5, $6, $7)
                 ON CONFLICT (name) DO NOTHING
             """, s["name"], s["url"], s["type"], s["group_name"],
-                s["sort_order"], s["max_number"], s["note"])
+                               s["sort_order"], s["max_number"], s["note"])
     await log_action(None, "subjects_reset")
     return {"ok": True, "count": len(DEFAULT_SUBJECTS)}
 
 
-# ═══════ АВТОРИЗАЦИЯ ═══════
+# ═══════ АВТОРИЗАЦИЯ И ПОЧТА ═══════
 
 @app.post("/api/auth/register")
 async def register(req: RegisterRequest, request: Request):
@@ -472,27 +570,72 @@ async def register(req: RegisterRequest, request: Request):
         raise HTTPException(400, "Некорректный email")
     if len(req.password) < 6:
         raise HTTPException(400, "Пароль минимум 6 символов")
+
+    verify_token = secrets.token_urlsafe(32)
+
     async with db_pool.acquire() as conn:
-        existing = await conn.fetchrow("SELECT id FROM users WHERE email = $1", email)
+        existing = await conn.fetchrow("SELECT id, is_verified FROM users WHERE email = $1", email)
         if existing:
-            raise HTTPException(400, "Такой email уже зарегистрирован")
-        is_admin = (email == ADMIN_EMAIL)
-        user_id = await conn.fetchval(
-            "INSERT INTO users (email, password_hash, name, is_admin, device, theme) "
-            "VALUES ($1, $2, $3, $4, $5, 'light') RETURNING id",
-            email, hash_password(req.password), req.name.strip(),
-            is_admin, req.device.strip()
+            if existing["is_verified"]:
+                raise HTTPException(400, "Этот email уже зарегистрирован и подтвержден")
+            else:
+                await conn.execute(
+                    "UPDATE users SET password_hash = $1, verify_token = $2 WHERE email = $3",
+                    hash_password(req.password), verify_token, email
+                )
+                user_id = existing["id"]
+        else:
+            is_admin = (email == ADMIN_EMAIL)
+            user_id = await conn.fetchval(
+                "INSERT INTO users (email, password_hash, name, is_admin, device, theme, verify_token) "
+                "VALUES ($1, $2, $3, $4, $5, 'light', $6) RETURNING id",
+                email, hash_password(req.password), req.name.strip(),
+                is_admin, req.device.strip(), verify_token
+            )
+
+        # Отправляем письмо
+        if RESEND_API_KEY:
+            verify_link = f"https://gdz-web-parser.onrender.com/api/auth/verify?token={verify_token}"
+            async with httpx.AsyncClient() as client:
+                try:
+                    await client.post(
+                        "https://api.resend.com/emails",
+                        headers={"Authorization": f"Bearer {RESEND_API_KEY}"},
+                        json={
+                            "from": "GDZ Парсер <onboarding@resend.dev>",
+                            "to": [email],
+                            "subject": "Подтверждение почты на GDZ Парсере",
+                            "html": f"<h3>Привет, {req.name or 'друг'}!</h3><p>Нажми на ссылку ниже, чтобы подтвердить свой аккаунт:</p><a href='{verify_link}' style='padding:10px 20px; background:#4299e1; color:white; text-decoration:none; border-radius:5px;'>Подтвердить почту</a>"
+                        }
+                    )
+                except Exception as e:
+                    print(f"Ошибка отправки письма: {e}")
+
+    return {"ok": True, "message": "Письмо отправлено! Проверьте почту (и папку Спам)."}
+
+
+@app.get("/api/auth/verify")
+async def verify_email(token: str):
+    if not token:
+        return HTMLResponse("<h1>Ошибка: Токен не найден</h1>", status_code=400)
+
+    async with db_pool.acquire() as conn:
+        row = await conn.fetchrow("SELECT id FROM users WHERE verify_token = $1", token)
+        if not row:
+            return HTMLResponse("<h1>Ошибка: Ссылка недействительна или устарела</h1>", status_code=400)
+
+        await conn.execute(
+            "UPDATE users SET is_verified = TRUE, verify_token = NULL WHERE id = $1",
+            row["id"]
         )
-        token = secrets.token_urlsafe(32)
-        await conn.execute("INSERT INTO sessions (token, user_id) VALUES ($1, $2)", token, user_id)
-    ip = request.client.host if request.client else ""
-    await log_action(user_id, "register", f"{email} · {req.device[:80]}", ip)
-    return {"ok": True, "token": token, "user": {
-        "id": user_id, "email": email, "name": req.name.strip(),
-        "is_admin": is_admin, "theme": "light", "bg_url": None, "avatar": None,
-        "admin_bg_url": None, "admin_btn_color": "#4299e1",
-        "admin_theme": "auto", "btn_style": "light"
-    }}
+
+    return HTMLResponse("""
+        <div style="font-family:sans-serif; text-align:center; margin-top:50px;">
+            <h1 style="color:#48bb78;">✅ Почта успешно подтверждена!</h1>
+            <p>Теперь вы можете войти на сайт.</p>
+            <a href="/" style="padding:10px 20px; background:#4299e1; color:white; text-decoration:none; border-radius:5px;">Перейти на главную</a>
+        </div>
+    """)
 
 
 @app.post("/api/auth/login")
@@ -503,13 +646,17 @@ async def login(req: LoginRequest, request: Request):
     async with db_pool.acquire() as conn:
         row = await conn.fetchrow(
             "SELECT id, email, password_hash, name, is_admin, theme, bg_url, avatar, "
-            "admin_bg_url, admin_btn_color, admin_theme, btn_style "
+            "admin_bg_url, admin_btn_color, admin_theme, btn_style, is_verified "
             "FROM users WHERE email = $1", email
         )
         if not row or not verify_password(req.password, row["password_hash"]):
             ip = request.client.host if request.client else ""
             await log_action(None, "login_fail", email, ip)
             raise HTTPException(401, "Неверный email или пароль")
+
+        if row["is_verified"] is False:
+            raise HTTPException(403, "Пожалуйста, подтвердите вашу почту. Проверьте входящие (и папку Спам).")
+
         if req.device.strip():
             await conn.execute(
                 "UPDATE users SET device = $1, last_seen = NOW() WHERE id = $2",
@@ -560,21 +707,29 @@ async def update_profile(req: UpdateProfileRequest):
         raise HTTPException(500, "БД недоступна")
     updates, params, idx = [], [], 1
     if req.name.strip():
-        updates.append(f"name = ${idx}"); params.append(req.name.strip()); idx += 1
+        updates.append(f"name = ${idx}");
+        params.append(req.name.strip());
+        idx += 1
     if req.theme in ('light', 'dark', 'custom'):
-        updates.append(f"theme = ${idx}"); params.append(req.theme); idx += 1
+        updates.append(f"theme = ${idx}");
+        params.append(req.theme);
+        idx += 1
         if req.theme != 'custom':
             updates.append("bg_url = NULL")
     if req.theme == 'custom' and req.bg_url:
         if len(req.bg_url) > 5_000_000:
             raise HTTPException(400, "Фон слишком большой (макс 5 МБ)")
-        updates.append(f"bg_url = ${idx}"); params.append(req.bg_url); idx += 1
+        updates.append(f"bg_url = ${idx}");
+        params.append(req.bg_url);
+        idx += 1
 
     if user.get("is_admin"):
         if req.admin_bg_url:
             if len(req.admin_bg_url) > 5_000_000:
                 raise HTTPException(400, "Фон админки слишком большой")
-            updates.append(f"admin_bg_url = ${idx}"); params.append(req.admin_bg_url); idx += 1
+            updates.append(f"admin_bg_url = ${idx}");
+            params.append(req.admin_bg_url);
+            idx += 1
         elif req.admin_bg_url == '':
             updates.append("admin_bg_url = NULL")
 
@@ -582,13 +737,19 @@ async def update_profile(req: UpdateProfileRequest):
             color = req.admin_btn_color.strip()
             import re as _re
             if _re.match(r'^#[0-9a-fA-F]{6}$', color):
-                updates.append(f"admin_btn_color = ${idx}"); params.append(color); idx += 1
+                updates.append(f"admin_btn_color = ${idx}");
+                params.append(color);
+                idx += 1
 
         if req.admin_theme in ('auto', 'light', 'dark', 'custom'):
-            updates.append(f"admin_theme = ${idx}"); params.append(req.admin_theme); idx += 1
+            updates.append(f"admin_theme = ${idx}");
+            params.append(req.admin_theme);
+            idx += 1
 
     if req.btn_style in ('light', 'dark'):
-        updates.append(f"btn_style = ${idx}"); params.append(req.btn_style); idx += 1
+        updates.append(f"btn_style = ${idx}");
+        params.append(req.btn_style);
+        idx += 1
 
     if not updates:
         return {"ok": True, "user": user}
@@ -839,6 +1000,187 @@ async def admin_clear(data: dict):
     if db_pool is not None:
         async with db_pool.acquire() as conn:
             await conn.execute("DELETE FROM feedback")
+    return {"ok": True}
+
+
+# ═══════ СМЕНА ПАРОЛЯ АДМИНА ═══════
+
+@app.post("/api/admin/password/status")
+async def admin_password_status(data: dict):
+    if not await check_admin(data):
+        raise HTTPException(401, "Нет доступа")
+    stored_hash = await get_admin_password_hash()
+    return {
+        "source": "database" if stored_hash else "render_env",
+        "has_custom_password": bool(stored_hash),
+    }
+
+
+@app.post("/api/admin/password/change")
+async def admin_change_password(req: ChangeAdminPasswordRequest):
+    if db_pool is None:
+        raise HTTPException(500, "БД недоступна")
+
+    allowed = False
+    if req.token:
+        user = await get_user_by_token(req.token)
+        if user and user.get("is_admin"):
+            allowed = True
+    if not allowed and req.current_password:
+        stored_hash = await get_admin_password_hash()
+        if stored_hash and verify_password(req.current_password, stored_hash):
+            allowed = True
+        elif not stored_hash and ADMIN_PASSWORD and req.current_password == ADMIN_PASSWORD:
+            allowed = True
+
+    if not allowed:
+        raise HTTPException(401, "Неверный текущий пароль или нет прав")
+
+    if len(req.new_password) < 8:
+        raise HTTPException(400, "Новый пароль минимум 8 символов")
+    if req.new_password == req.current_password:
+        raise HTTPException(400, "Новый пароль должен отличаться от старого")
+
+    new_hash = hash_password(req.new_password)
+    async with db_pool.acquire() as conn:
+        await conn.execute("""
+            INSERT INTO settings (key, value, updated_at)
+            VALUES ('admin_password_hash', $1, NOW())
+            ON CONFLICT (key) DO UPDATE
+            SET value = $1, updated_at = NOW()
+        """, new_hash)
+
+    await log_action(None, "admin_password_change", "changed")
+    return {"ok": True, "message": "Пароль обновлён. В следующий раз используй новый."}
+
+
+# ═══════ НАСТРОЙКИ САЙТА ═══════
+
+@app.get("/api/settings/public")
+async def public_settings():
+    result = dict(DEFAULT_SETTINGS)
+    if db_pool is not None:
+        try:
+            async with db_pool.acquire() as conn:
+                rows = await conn.fetch("SELECT key, value FROM settings")
+                for row in rows:
+                    if row["key"] in result:
+                        result[row["key"]] = row["value"] or ""
+        except Exception:
+            pass
+    return result
+
+
+@app.post("/api/admin/settings/get")
+async def admin_settings_get(data: dict):
+    if not await check_admin(data):
+        raise HTTPException(401, "Нет доступа")
+    result = dict(DEFAULT_SETTINGS)
+    if db_pool is not None:
+        async with db_pool.acquire() as conn:
+            rows = await conn.fetch("SELECT key, value FROM settings")
+            for row in rows:
+                result[row["key"]] = row["value"] or ""
+    return {"settings": result}
+
+
+@app.post("/api/admin/settings/save")
+async def admin_settings_save(req: SettingsSaveRequest):
+    if not await check_admin({"password": req.password, "token": req.token}):
+        raise HTTPException(401, "Нет доступа")
+    if db_pool is None:
+        raise HTTPException(500, "БД недоступна")
+    async with db_pool.acquire() as conn:
+        for key, value in req.settings.items():
+            if key not in DEFAULT_SETTINGS:
+                continue
+            await conn.execute("""
+                INSERT INTO settings (key, value, updated_at)
+                VALUES ($1, $2, NOW())
+                ON CONFLICT (key) DO UPDATE
+                SET value = $2, updated_at = NOW()
+            """, key, str(value or ""))
+    await log_action(None, "settings_save", ",".join(req.settings.keys())[:200])
+    return {"ok": True}
+
+
+# ═══════ РЕДАКТОР ШАБЛОНОВ ═══════
+
+@app.post("/api/admin/templates/list")
+async def admin_templates_list(data: dict):
+    if not await check_admin(data):
+        raise HTTPException(401, "Нет доступа")
+    if db_pool is None:
+        return {"templates": []}
+    async with db_pool.acquire() as conn:
+        rows = await conn.fetch("""
+            SELECT name, length(content) AS size,
+                   to_char(updated_at, 'DD.MM.YY HH24:MI') AS updated
+            FROM templates ORDER BY name
+        """)
+    return {"templates": [dict(r) for r in rows]}
+
+
+@app.post("/api/admin/templates/get")
+async def admin_templates_get(data: dict):
+    if not await check_admin(data):
+        raise HTTPException(401, "Нет доступа")
+    name = (data.get("name") or "").strip()
+    if name not in ALLOWED_TEMPLATES:
+        raise HTTPException(400, "Недопустимое имя шаблона")
+    content = None
+    source = "file"
+    if db_pool is not None:
+        async with db_pool.acquire() as conn:
+            content = await conn.fetchval(
+                "SELECT content FROM templates WHERE name = $1", name
+            )
+        if content:
+            source = "db"
+    if content is None:
+        path = os.path.join("templates", name)
+        if os.path.exists(path):
+            with open(path, "r", encoding="utf-8") as f:
+                content = f.read()
+        else:
+            raise HTTPException(404, "Шаблон не найден")
+    return {"name": name, "content": content, "source": source}
+
+
+@app.post("/api/admin/templates/save")
+async def admin_templates_save(req: TemplateSaveRequest):
+    if not await check_admin({"password": req.password, "token": req.token}):
+        raise HTTPException(401, "Нет доступа")
+    if req.name not in ALLOWED_TEMPLATES:
+        raise HTTPException(400, "Недопустимое имя шаблона")
+    if not req.content.strip():
+        raise HTTPException(400, "Шаблон пустой")
+    if len(req.content) > MAX_TEMPLATE_SIZE:
+        raise HTTPException(400, "Файл слишком большой (макс 2 МБ)")
+    if db_pool is None:
+        raise HTTPException(500, "БД недоступна")
+    async with db_pool.acquire() as conn:
+        await conn.execute("""
+            INSERT INTO templates (name, content, updated_at)
+            VALUES ($1, $2, NOW())
+            ON CONFLICT (name) DO UPDATE
+            SET content = $2, updated_at = NOW()
+        """, req.name, req.content)
+    await log_action(None, "template_save", req.name)
+    return {"ok": True, "size": len(req.content)}
+
+
+@app.post("/api/admin/templates/reset")
+async def admin_templates_reset(data: dict):
+    if not await check_admin(data):
+        raise HTTPException(401, "Нет доступа")
+    name = (data.get("name") or "").strip()
+    if name not in ALLOWED_TEMPLATES:
+        raise HTTPException(400, "Недопустимое имя шаблона")
+    if db_pool is not None:
+        async with db_pool.acquire() as conn:
+            await conn.execute("DELETE FROM templates WHERE name = $1", name)
+    await log_action(None, "template_reset", name)
     return {"ok": True}
 
 
