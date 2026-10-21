@@ -1061,3 +1061,42 @@ body.admin-theme-dark .hint {
     border-color: #4299e1 !important;
     box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.2);
 }
+/* ═══════════════════════════════════════
+   ЖЕСТКИЙ ФИКС НАСТРОЕК ДЛЯ АДМИНКИ (v30.0.0)
+   ═══════════════════════════════════════ */
+
+/* 1. Делаем заголовок "Оформление главной" и подсказки белыми в темной теме */
+html.admin-theme-dark #tabSettings .input-label,
+html.admin-theme-dark #tabSettings h2,
+html.admin-theme-dark #tabSettings .hint,
+html.admin-theme-dark #tabSettings .section-header h2 {
+    color: #f7fafc !important;
+}
+
+/* 2. Делаем кнопки выбора тем темными (а не белыми) */
+html.admin-theme-dark #tabSettings .theme-btn {
+    background: rgba(45, 55, 72, 0.6) !important; /* Темно-серый фон */
+    border: 2px solid #4a5568 !important;        /* Рамка */
+    color: #cbd5e0 !important;                   /* Светло-серый текст */
+}
+
+/* 3. Подсвечиваем активную кнопку синим */
+html.admin-theme-dark #tabSettings .theme-btn.active {
+    background: rgba(66, 153, 225, 0.2) !important; /* Полупрозрачный синий */
+    border-color: #4299e1 !important;               /* Яркая синяя рамка */
+    color: #90cdf4 !important;                      /* Голубой текст */
+    box-shadow: 0 0 10px rgba(66, 153, 225, 0.3) !important;
+}
+
+/* 4. Фикс превью картинок внутри кнопок (чтобы квадратики не сливались) */
+html.admin-theme-dark #tabSettings .light-preview {
+    background: #ffffff !important;
+    border: 1px solid #cbd5e0 !important;
+}
+html.admin-theme-dark #tabSettings .dark-preview {
+    background: #1a202c !important;
+    border: 1px solid #4a5568 !important;
+}
+html.admin-theme-dark #tabSettings .custom-preview {
+    background: linear-gradient(135deg, #e2e8f0 50%, #a0aec0 50%) !important;
+}
