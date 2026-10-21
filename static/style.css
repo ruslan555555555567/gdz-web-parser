@@ -103,7 +103,6 @@ body.theme-custom {
     background-position: inherit;
 }
 
-/* Убираем сильное затемнение фона (оставляем 10% для читаемости) */
 .theme-custom body::before,
 body.theme-custom::before {
     content: '';
@@ -121,8 +120,8 @@ body.theme-custom::before {
 body.theme-custom .card,
 body.theme-custom .subject-block,
 body.theme-custom .subject-group {
-    background: rgba(255, 255, 255, 0.03) !important; /* Еще прозрачнее */
-    border: 1px solid rgba(255, 255, 255, 0.15) !important;
+    background: rgba(255, 255, 255, 0.05) !important;
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
     backdrop-filter: blur(20px) !important;
     -webkit-backdrop-filter: blur(20px) !important;
     box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2) !important;
@@ -136,7 +135,7 @@ body.theme-custom .image-modal-content {
     color: #1a202c;
 }
 
-/* Всё, что должно быть белым с чёрной обводкой */
+/* Белый текст с чёрной обводкой */
 .theme-custom h1, .theme-custom h2, .theme-custom h3,
 body.theme-custom h1, body.theme-custom h2, body.theme-custom h3,
 .theme-custom .input-label, body.theme-custom .input-label,
@@ -169,43 +168,37 @@ body.theme-custom .version {
     border: 1px solid rgba(255,255,255,0.15);
 }
 
-/* ⚠️ ПОЛЯ ВВОДА — АБСОЛЮТНО ПРОЗРАЧНЫЕ */
-.theme-custom .num-input,
-.theme-custom .text-input,
-.theme-custom .form-label input,
-.theme-custom .form-label textarea,
-.theme-custom select,
-body.theme-custom .num-input,
-body.theme-custom .text-input,
-body.theme-custom .form-label input,
-body.theme-custom .form-label textarea,
-body.theme-custom select {
-    background: transparent !important; /* Убираем серый фон */
+/* ⚠️ ПОЛЯ ВВОДА — ЖЕСТКИЙ СБРОС ФОНА */
+body.theme-custom textarea,
+body.theme-custom input,
+.theme-custom textarea,
+.theme-custom input {
+    background: transparent !important;
+    background-color: transparent !important;
     border: 1px solid rgba(255,255,255,0.3) !important;
     color: #ffffff !important;
-    text-shadow: none !important;
+    box-shadow: none !important;
+    outline: none !important;
     backdrop-filter: blur(10px);
-    appearance: none; /* Убираем дефолтные стили браузера */
-    -webkit-appearance: none;
 }
 
-.theme-custom .num-input::placeholder,
-.theme-custom .text-input::placeholder,
-body.theme-custom .num-input::placeholder,
-body.theme-custom .text-input::placeholder {
+body.theme-custom textarea::placeholder,
+body.theme-custom input::placeholder,
+.theme-custom textarea::placeholder,
+.theme-custom input::placeholder {
     color: rgba(255,255,255,0.6) !important;
     text-shadow: none !important;
 }
 
-.theme-custom .num-input:focus,
-.theme-custom .text-input:focus,
-body.theme-custom .num-input:focus,
-body.theme-custom .text-input:focus {
+body.theme-custom textarea:focus,
+body.theme-custom input:focus,
+.theme-custom textarea:focus,
+.theme-custom input:focus {
     background: rgba(255, 255, 255, 0.1) !important;
     border-color: #ffffff !important;
 }
 
-/* Меню профиля в правом верхнем углу делаем прозрачным */
+/* Меню профиля */
 .theme-custom .user-menu-btn,
 body.theme-custom .user-menu-btn {
     background: rgba(255, 255, 255, 0.1) !important;
@@ -213,7 +206,6 @@ body.theme-custom .user-menu-btn {
     border: 1px solid rgba(255,255,255,0.3) !important;
     backdrop-filter: blur(10px);
 }
-
 .theme-custom .user-menu-btn:hover,
 body.theme-custom .user-menu-btn:hover {
     background: rgba(255, 255, 255, 0.2) !important;
