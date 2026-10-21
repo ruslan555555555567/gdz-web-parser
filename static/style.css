@@ -1031,3 +1031,33 @@ h3 { font-size: 15px; color: #2d3748; }
 .theme-dark .btn-download-one:hover {
     background: rgba(255, 255, 255, 0.4);
 }
+/* ═══════════════════════════════════════
+   ИСПРАВЛЕНИЕ ТЕКСТА В НАСТРОЙКАХ АДМИНКИ
+   ═══════════════════════════════════════ */
+
+/* Делаем заголовки и подписи светлыми в тёмной теме */
+.admin-theme-dark .input-label,
+body.admin-theme-dark .input-label,
+.theme-dark .input-label,
+body.theme-dark .input-label,
+.admin-theme-dark h2,
+body.admin-theme-dark h2,
+.admin-theme-dark .hint,
+body.admin-theme-dark .hint {
+    color: #e2e8f0 !important;
+}
+
+/* Возвращаем белый фон и тёмный текст карточкам тем */
+.admin-theme-dark .theme-btn {
+    background: #ffffff !important;
+    color: #1a202c !important;
+    border-color: #cbd5e0 !important;
+}
+
+/* Подсветка активной карточки */
+.admin-theme-dark .theme-btn.active {
+    background: #ebf8ff !important;
+    color: #2b6cb0 !important;
+    border-color: #4299e1 !important;
+    box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.2);
+}
