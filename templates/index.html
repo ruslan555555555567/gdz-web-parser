@@ -30,6 +30,126 @@
         html.has-auth #mainScreen { display: block !important; }
         html.no-auth #authScreen { display: flex !important; }
         html.no-auth #mainScreen { display: none !important; }
+
+        /* ═══ СТИЛИ ДЛЯ КРАСИВОГО ПРИВЕТСТВИЯ ═══ */
+        .welcome-greeting {
+            text-align: center;
+            font-size: 22px;
+            font-weight: 700;
+            margin-bottom: 20px;
+            color: #2d3748;
+            opacity: 0;
+            transform: translateY(-20px);
+            animation: slideDownFade 0.8s cubic-bezier(0.25, 0.8, 0.25, 1) forwards;
+        }
+        .theme-dark .welcome-greeting { color: #e2e8f0; }
+        .theme-custom .welcome-greeting { color: #ffffff; text-shadow: 0 2px 4px rgba(0,0,0,0.8); }
+
+        .welcome-greeting span {
+            color: #4299e1;
+            text-shadow: 0 0 10px rgba(66, 153, 225, 0.3);
+        }
+        .theme-custom .welcome-greeting span {
+            color: #90cdf4;
+        }
+
+        @keyframes slideDownFade {
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* ═══ СТИЛИ ДЛЯ ВЫПАДАЮЩЕГО МЕНЮ ═══ */
+        .user-menu-container {
+            position: relative;
+            display: inline-block;
+        }
+        .user-menu-btn {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: #edf2f7;
+            padding: 6px 14px;
+            border-radius: 20px;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            font-family: inherit;
+            color: #4a5568;
+            transition: all 0.2s;
+        }
+        .user-menu-btn:hover { background: #e2e8f0; }
+        .theme-dark .user-menu-btn { background: rgba(74,85,104,0.6); color: #e2e8f0; }
+        .theme-dark .user-menu-btn:hover { background: rgba(74,85,104,0.9); }
+
+        .user-avatar-mini {
+            width: 24px; height: 24px;
+            border-radius: 50%;
+            background: #4299e1;
+            color: white;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 12px; font-weight: 700;
+            background-size: cover; background-position: center;
+        }
+
+        .dropdown-menu {
+            position: absolute;
+            top: calc(100% + 10px);
+            right: 0;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+            min-width: 220px;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(-10px) scale(0.95);
+            transition: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            z-index: 1000;
+            overflow: hidden;
+            border: 1px solid #e2e8f0;
+        }
+        .theme-dark .dropdown-menu { background: #2d3748; border-color: #4a5568; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+
+        .dropdown-menu.show {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0) scale(1);
+        }
+
+        .dropdown-header {
+            padding: 15px;
+            background: #f7fafc;
+            border-bottom: 1px solid #e2e8f0;
+            font-size: 14px;
+            font-weight: 700;
+            color: #2d3748;
+        }
+        .theme-dark .dropdown-header { background: #1a202c; border-color: #4a5568; color: #f7fafc; }
+
+        .dropdown-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            width: 100%;
+            padding: 12px 15px;
+            border: none;
+            background: transparent;
+            text-align: left;
+            font-size: 14px;
+            font-weight: 600;
+            color: #4a5568;
+            cursor: pointer;
+            transition: background 0.2s;
+            font-family: inherit;
+        }
+        .theme-dark .dropdown-item { color: #cbd5e0; }
+        .dropdown-item:hover { background: #edf2f7; color: #2b6cb0; }
+        .theme-dark .dropdown-item:hover { background: #4a5568; color: #90cdf4; }
+
+        .dropdown-divider { height: 1px; background: #e2e8f0; margin: 5px 0; }
+        .theme-dark .dropdown-divider { background: #4a5568; }
+
+        .dropdown-item.logout { color: #e53e3e; }
+        .dropdown-item.logout:hover { background: #fff5f5; color: #c53030; }
+        .theme-dark .dropdown-item.logout:hover { background: rgba(229,62,62,0.2); }
     </style>
     <link rel="stylesheet" href="/static/style.css">
 </head>
@@ -69,6 +189,10 @@
             <span class="version">v{{ version }}</span>
             <div class="topbar-right" id="topbarRight"></div>
         </div>
+
+        <!-- КРАСИВОЕ ПРИВЕТСТВИЕ -->
+        <div class="welcome-greeting" id="welcomeGreeting"></div>
+
         <h1>📚 GDZ Парсер</h1>
         <p class="subtitle">7 класс · Введи номера или текст задания</p>
         <section class="card">
@@ -337,8 +461,30 @@
             setAuthState(true);
             authScreen.classList.add('hidden');
             mainScreen.classList.remove('hidden');
+
+            updateGreeting(); // Вызываем приветствие
             renderTopbar();
             await loadSubjects();
+        }
+
+        // Функция для красивого приветствия
+        function updateGreeting() {
+            const hour = new Date().getHours();
+            let greeting = 'Доброй ночи';
+            if (hour >= 5 && hour < 12) greeting = 'Доброе утро';
+            else if (hour >= 12 && hour < 18) greeting = 'Добрый день';
+            else if (hour >= 18 && hour < 23) greeting = 'Добрый вечер';
+
+            const name = authUser.name || authUser.email.split('@')[0];
+            const greetEl = $('welcomeGreeting');
+
+            if (greetEl) {
+                greetEl.innerHTML = `${greeting}, <span>${escapeHtml(name)}</span>! 👋`;
+                // Перезапуск анимации, если она уже была
+                greetEl.style.animation = 'none';
+                greetEl.offsetHeight;
+                greetEl.style.animation = null;
+            }
         }
 
         async function loadSubjects() {
@@ -392,43 +538,55 @@
             });
         }
 
+        // РЕНДЕР ВЕРХНЕГО МЕНЮ (теперь с выпадающим списком)
         function renderTopbar() {
             topbarRight.innerHTML = '';
             const name = authUser.name || authUser.email.split('@')[0];
-            const greet = document.createElement('span');
-            greet.className = 'topbar-user';
-            greet.textContent = '👤 ' + name;
-            topbarRight.appendChild(greet);
+            const initial = getInitial(authUser.name, authUser.email);
+            const avatarStyle = currentAvatar ? `background-image: url('${currentAvatar}')` : '';
 
-            const histBtn = document.createElement('button');
-            histBtn.className = 'icon-btn';
-            histBtn.title = 'История';
-            histBtn.textContent = '📜';
-            histBtn.onclick = openHistory;
-            topbarRight.appendChild(histBtn);
+            const menuHTML = `
+                <div class="user-menu-container" id="userMenuContainer">
+                    <button class="user-menu-btn" id="userMenuBtn">
+                        <div class="user-avatar-mini" style="${avatarStyle}">${currentAvatar ? '' : initial}</div>
+                        <span>${escapeHtml(name)}</span>
+                        <span style="font-size:10px; opacity:0.6;">▼</span>
+                    </button>
+                    <div class="dropdown-menu" id="userDropdown">
+                        <div class="dropdown-header" id="dropdownGreeting"></div>
+                        <button class="dropdown-item" onclick="openSettings()">⚙️ Настройки</button>
+                        <button class="dropdown-item" onclick="openHistory()">📜 История</button>
+                        <button class="dropdown-item" onclick="supportModal.classList.remove('hidden')">❓ Поддержка</button>
+                        ${authUser.is_admin ? '<button class="dropdown-item" onclick="window.location.href=\'/admin\'">👑 Админка</button>' : ''}
+                        <div class="dropdown-divider"></div>
+                        <button class="dropdown-item logout" onclick="logout()">🚪 Выйти</button>
+                    </div>
+                </div>
+            `;
+            topbarRight.innerHTML = menuHTML;
 
-            const setBtn = document.createElement('button');
-            setBtn.className = 'icon-btn';
-            setBtn.title = 'Настройки';
-            setBtn.textContent = '⚙️';
-            setBtn.onclick = openSettings;
-            topbarRight.appendChild(setBtn);
+            // Устанавливаем приветствие в меню
+            const hour = new Date().getHours();
+            let g = 'Доброй ночи';
+            if (hour >= 5 && hour < 12) g = 'Доброе утро';
+            else if (hour >= 12 && hour < 18) g = 'Добрый день';
+            else if (hour >= 18 && hour < 23) g = 'Добрый вечер';
+            $('dropdownGreeting').innerText = `${g}, ${name}!`;
 
-            if (authUser.is_admin) {
-                const adminBtn = document.createElement('button');
-                adminBtn.className = 'icon-btn admin-icon';
-                adminBtn.title = 'Админка';
-                adminBtn.textContent = '💬';
-                adminBtn.onclick = () => window.location.href = '/admin';
-                topbarRight.appendChild(adminBtn);
-            }
+            // Логика открытия/закрытия меню
+            const menuBtn = $('userMenuBtn');
+            const dropdown = $('userDropdown');
+            menuBtn.onclick = (e) => {
+                e.stopPropagation();
+                dropdown.classList.toggle('show');
+            };
 
-            const supBtn = document.createElement('button');
-            supBtn.className = 'icon-btn';
-            supBtn.title = 'Техподдержка';
-            supBtn.textContent = '❓';
-            supBtn.onclick = () => supportModal.classList.remove('hidden');
-            topbarRight.appendChild(supBtn);
+            // Закрываем меню при клике в любом другом месте
+            document.addEventListener('click', (e) => {
+                if (!e.target.closest('#userMenuContainer')) {
+                    dropdown.classList.remove('show');
+                }
+            });
         }
 
         let authMode = 'login';
@@ -464,7 +622,6 @@
                     return;
                 }
 
-                // Регистрация и вход теперь работают одинаково
                 authToken = d.token;
                 authUser = d.user;
                 currentAvatar = d.user.avatar || null;
@@ -532,6 +689,7 @@
         }
 
         function openSettings() {
+            document.getElementById('userDropdown').classList.remove('show'); // Закрываем меню
             settingsModal.classList.remove('hidden');
             $('settingsStatus').textContent = '';
             $('settingsStatus').className = 'fb-status';
@@ -573,6 +731,7 @@
                 currentAvatar = b64;
                 updateAvatarPreview();
                 await fetch('/api/auth/avatar', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({token: authToken, avatar: b64}) });
+                renderTopbar(); // Обновляем аватарку в меню
             } catch (err) { alert('Ошибка: ' + err.message); }
             e.target.value = '';
         };
@@ -581,7 +740,10 @@
             if (!confirm('Убрать аватарку?')) return;
             currentAvatar = null;
             updateAvatarPreview();
-            try { await fetch('/api/auth/avatar', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({token: authToken, avatar: ''}) }); } catch {}
+            try {
+                await fetch('/api/auth/avatar', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({token: authToken, avatar: ''}) });
+                renderTopbar(); // Обновляем меню
+            } catch {}
         };
 
         $('bgInput').onchange = async (e) => {
@@ -626,7 +788,11 @@
                 originalBgUrl = authUser.bg_url;
 
                 applyTheme(authUser.theme, authUser.bg_url);
+
+                // Обновляем имя и приветствие, если оно изменилось
+                updateGreeting();
                 renderTopbar();
+
                 if (oldPwd && newPwd) {
                     const r2 = await fetch('/api/auth/change-password', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({token: authToken, old_password: oldPwd, new_password: newPwd}) });
                     const d2 = await r2.json();
