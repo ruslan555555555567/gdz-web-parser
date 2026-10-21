@@ -102,27 +102,32 @@ body.theme-custom {
     background-attachment: inherit;
     background-position: inherit;
 }
+
+/* Убираем сильное затемнение фона (оставляем 10% для читаемости) */
 .theme-custom body::before,
 body.theme-custom::before {
     content: '';
     position: fixed;
     inset: 0;
-    background: rgba(0,0,0,0.15); /* Очень легкое затемнение */
+    background: rgba(0,0,0,0.1);
     z-index: -1;
     pointer-events: none;
 }
+
+/* Карточки — настоящий эффект матового стекла */
 .theme-custom .card,
 .theme-custom .subject-block,
 .theme-custom .subject-group,
 body.theme-custom .card,
 body.theme-custom .subject-block,
 body.theme-custom .subject-group {
-    background: rgba(0, 0, 0, 0.25); /* Прозрачный фон */
-    border: 1px solid rgba(255,255,255,0.15);
-    backdrop-filter: blur(15px); /* Мощное размытие */
-    -webkit-backdrop-filter: blur(15px);
-    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+    background: rgba(255, 255, 255, 0.08) !important; /* Светлая прозрачность */
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
+    backdrop-filter: blur(25px) !important; /* Сильное размытие фона */
+    -webkit-backdrop-filter: blur(25px) !important;
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3) !important;
 }
+
 .theme-custom .modal-content,
 .theme-custom .image-modal-content,
 body.theme-custom .modal-content,
@@ -131,7 +136,7 @@ body.theme-custom .image-modal-content {
     color: #1a202c;
 }
 
-/* Белый текст с обводкой для читаемости */
+/* Всё, что должно быть белым с чёрной обводкой (чтобы читалось на фоне) */
 .theme-custom h1, .theme-custom h2, .theme-custom h3,
 body.theme-custom h1, body.theme-custom h2, body.theme-custom h3,
 .theme-custom .input-label, body.theme-custom .input-label,
@@ -157,13 +162,14 @@ body.theme-custom h1, body.theme-custom h2, body.theme-custom h3,
 
 .theme-custom .version,
 body.theme-custom .version {
-    background: rgba(0,0,0,0.4);
-    color: #ffffff;
-    text-shadow: none;
-    backdrop-filter: blur(5px);
+    background: rgba(255,255,255,0.1) !important;
+    color: #ffffff !important;
+    text-shadow: none !important;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255,255,255,0.2);
 }
 
-/* Прозрачные поля ввода */
+/* ⚠️ ПОЛЯ ВВОДА — ТЕПЕРЬ СОВСЕМ ПРОЗРАЧНЫЕ */
 .theme-custom .num-input,
 .theme-custom .text-input,
 .theme-custom .form-label input,
@@ -174,39 +180,41 @@ body.theme-custom .text-input,
 body.theme-custom .form-label input,
 body.theme-custom .form-label textarea,
 body.theme-custom select {
-    background: rgba(0,0,0,0.2) !important;
-    border: 1px solid rgba(255,255,255,0.4) !important;
+    background: rgba(255, 255, 255, 0.05) !important; /* Почти невидимый фон */
+    border: 1px solid rgba(255,255,255,0.4) !important; /* Белая рамка */
     color: #ffffff !important;
     text-shadow: none !important;
-    backdrop-filter: blur(5px);
+    backdrop-filter: blur(10px);
 }
 
 .theme-custom .num-input::placeholder,
 .theme-custom .text-input::placeholder,
 body.theme-custom .num-input::placeholder,
 body.theme-custom .text-input::placeholder {
-    color: rgba(255,255,255,0.6) !important;
+    color: rgba(255,255,255,0.7) !important;
     text-shadow: none !important;
 }
+
 .theme-custom .num-input:focus,
 .theme-custom .text-input:focus,
 body.theme-custom .num-input:focus,
 body.theme-custom .text-input:focus {
-    background: rgba(0,0,0,0.5) !important;
+    background: rgba(255, 255, 255, 0.15) !important;
     border-color: #ffffff !important;
 }
 
-/* Прозрачное меню профиля */
+/* Меню профиля в правом верхнем углу делаем прозрачным */
 .theme-custom .user-menu-btn,
 body.theme-custom .user-menu-btn {
-    background: rgba(0, 0, 0, 0.3) !important;
+    background: rgba(255, 255, 255, 0.1) !important;
     color: #ffffff !important;
-    border: 1px solid rgba(255,255,255,0.2) !important;
+    border: 1px solid rgba(255,255,255,0.3) !important;
     backdrop-filter: blur(10px);
 }
+
 .theme-custom .user-menu-btn:hover,
 body.theme-custom .user-menu-btn:hover {
-    background: rgba(0, 0, 0, 0.6) !important;
+    background: rgba(255, 255, 255, 0.2) !important;
 }
 
 .btn-style-light .btn-primary,
