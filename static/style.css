@@ -91,7 +91,7 @@ body.theme-dark h1, body.theme-dark h2, body.theme-dark h3 { color: #f7fafc; }
 .theme-dark .avatar-preview { background-color: rgba(74,85,104,0.5); color: #cbd5e0; border-color: rgba(74,85,104,0.6); }
 
 /* ═══════════════════════════════════════
-   СВОЯ КАРТИНКА — ГЛАВНАЯ (ПРОЗРАЧНЫЕ ПОЛЯ + БЕЛЫЙ ТЕКСТ С ЧЁРНОЙ ОБВОДКОЙ)
+   СВОЯ КАРТИНКА — МАКСИМАЛЬНАЯ ПРОЗРАЧНОСТЬ (ЭФФЕКТ СТЕКЛА)
    ═══════════════════════════════════════ */
 .theme-custom body,
 body.theme-custom {
@@ -107,7 +107,7 @@ body.theme-custom::before {
     content: '';
     position: fixed;
     inset: 0;
-    background: rgba(0,0,0,0.4); /* Легкое затемнение картинки */
+    background: rgba(0,0,0,0.15); /* Очень легкое затемнение */
     z-index: -1;
     pointer-events: none;
 }
@@ -117,9 +117,11 @@ body.theme-custom::before {
 body.theme-custom .card,
 body.theme-custom .subject-block,
 body.theme-custom .subject-group {
-    background: rgba(0,0,0,0.45); /* Полупрозрачная темная подложка для блоков */
+    background: rgba(0, 0, 0, 0.25); /* Прозрачный фон */
     border: 1px solid rgba(255,255,255,0.15);
-    backdrop-filter: blur(5px);
+    backdrop-filter: blur(15px); /* Мощное размытие */
+    -webkit-backdrop-filter: blur(15px);
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
 }
 .theme-custom .modal-content,
 .theme-custom .image-modal-content,
@@ -129,7 +131,7 @@ body.theme-custom .image-modal-content {
     color: #1a202c;
 }
 
-/* Всё, что должно быть белым с чёрной обводкой */
+/* Белый текст с обводкой для читаемости */
 .theme-custom h1, .theme-custom h2, .theme-custom h3,
 body.theme-custom h1, body.theme-custom h2, body.theme-custom h3,
 .theme-custom .input-label, body.theme-custom .input-label,
@@ -150,17 +152,18 @@ body.theme-custom h1, body.theme-custom h2, body.theme-custom h3,
          1px -1px 0 #000,
         -1px  1px 0 #000,
          1px  1px 0 #000,
-         0px  2px 5px rgba(0,0,0,0.8) !important; /* Черная обводка */
+         0px  2px 5px rgba(0,0,0,0.8) !important;
 }
 
 .theme-custom .version,
 body.theme-custom .version {
-    background: rgba(0,0,0,0.7);
+    background: rgba(0,0,0,0.4);
     color: #ffffff;
     text-shadow: none;
+    backdrop-filter: blur(5px);
 }
 
-/* ⚠️ ВОЗВРАЩАЕМ ПРОЗРАЧНОСТЬ ПОЛЯМ ВВОДА */
+/* Прозрачные поля ввода */
 .theme-custom .num-input,
 .theme-custom .text-input,
 .theme-custom .form-label input,
@@ -171,25 +174,39 @@ body.theme-custom .text-input,
 body.theme-custom .form-label input,
 body.theme-custom .form-label textarea,
 body.theme-custom select {
-    background: transparent !important; /* Прозрачный фон */
-    border: 2px solid rgba(255,255,255,0.5) !important; /* Белая рамка */
-    color: #ffffff !important; /* Белый текст ввода */
-    text-shadow: none !important; /* Без обводки внутри поля */
+    background: rgba(0,0,0,0.2) !important;
+    border: 1px solid rgba(255,255,255,0.4) !important;
+    color: #ffffff !important;
+    text-shadow: none !important;
+    backdrop-filter: blur(5px);
 }
 
 .theme-custom .num-input::placeholder,
 .theme-custom .text-input::placeholder,
 body.theme-custom .num-input::placeholder,
 body.theme-custom .text-input::placeholder {
-    color: rgba(255,255,255,0.7) !important;
+    color: rgba(255,255,255,0.6) !important;
     text-shadow: none !important;
 }
 .theme-custom .num-input:focus,
 .theme-custom .text-input:focus,
 body.theme-custom .num-input:focus,
 body.theme-custom .text-input:focus {
-    background: rgba(255,255,255,0.1) !important; /* Легкая подсветка при клике */
+    background: rgba(0,0,0,0.5) !important;
     border-color: #ffffff !important;
+}
+
+/* Прозрачное меню профиля */
+.theme-custom .user-menu-btn,
+body.theme-custom .user-menu-btn {
+    background: rgba(0, 0, 0, 0.3) !important;
+    color: #ffffff !important;
+    border: 1px solid rgba(255,255,255,0.2) !important;
+    backdrop-filter: blur(10px);
+}
+.theme-custom .user-menu-btn:hover,
+body.theme-custom .user-menu-btn:hover {
+    background: rgba(0, 0, 0, 0.6) !important;
 }
 
 .btn-style-light .btn-primary,
@@ -898,205 +915,4 @@ h3 { font-size: 15px; color: #2d3748; }
     .avatar-block { flex-direction: column; align-items: flex-start; }
     .avatar-actions { width: 100%; }
     .avatar-actions .btn-small { flex: 1; text-align: center; }
-}/* ═══════════════════════════════════════
-   КНОПКИ СКАЧИВАНИЯ
-   ═══════════════════════════════════════ */
-.btn-download-all {
-    display: block;
-    width: 100%;
-    padding: 15px;
-    margin: 20px 0;
-    background: #48bb78; /* Зеленая кнопка */
-    color: white;
-    border: none;
-    border-radius: 10px;
-    font-size: 16px;
-    font-weight: bold;
-    cursor: pointer;
-    text-align: center;
-    transition: background 0.2s, transform 0.1s;
-    box-shadow: 0 4px 12px rgba(72, 187, 120, 0.3);
-}
-
-.btn-download-all:hover {
-    background: #38a169;
-}
-.btn-download-all:active {
-    transform: scale(0.98);
-}
-
-/* Контейнер для картинки и кнопки */
-.img-wrapper {
-    position: relative;
-    margin-top: 10px;
-}
-
-/* Кнопка на самой картинке */
-.btn-download-one {
-    position: absolute;
-    top: 15px;
-    right: 15px;
-    background: rgba(0, 0, 0, 0.6);
-    color: white;
-    border: none;
-    border-radius: 8px;
-    padding: 8px 12px;
-    font-size: 18px;
-    cursor: pointer;
-    backdrop-filter: blur(4px);
-    transition: background 0.2s, transform 0.1s;
-    z-index: 10;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.3);
-}
-
-.btn-download-one:hover {
-    background: rgba(0, 0, 0, 0.9);
-    transform: scale(1.1);
-}
-/* ═══════════════════════════════════════
-   СТИЛЬНЫЕ КНОПКИ СКАЧИВАНИЯ
-   ═══════════════════════════════════════ */
-
-/* Большая кнопка "Скачать все решения" */
-.btn-download-all {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 10px;
-    width: 100%;
-    padding: 16px 24px;
-    margin: 25px 0;
-    background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
-    color: #ffffff;
-    border: none;
-    border-radius: 12px;
-    font-size: 17px;
-    font-weight: 700;
-    cursor: pointer;
-    text-align: center;
-    box-shadow: 0 4px 15px rgba(72, 187, 120, 0.4);
-    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-}
-
-.btn-download-all:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 8px 25px rgba(72, 187, 120, 0.5);
-}
-
-.btn-download-all:active {
-    transform: translateY(1px);
-    box-shadow: 0 2px 10px rgba(72, 187, 120, 0.4);
-}
-
-/* Кнопка на самой картинке (эффект стекла) */
-.btn-download-one {
-    position: absolute;
-    top: 15px;
-    right: 15px;
-    width: 44px;
-    height: 44px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: rgba(0, 0, 0, 0.55); /* Темное полупрозрачное стекло */
-    color: #ffffff;
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    border-radius: 50%; /* Круглая кнопка */
-    font-size: 20px;
-    cursor: pointer;
-    backdrop-filter: blur(8px); /* Эффект матового стекла */
-    -webkit-backdrop-filter: blur(8px);
-    transition: all 0.2s ease;
-    z-index: 10;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
-    padding: 0;
-    line-height: 1;
-}
-
-.btn-download-one:hover {
-    background: rgba(0, 0, 0, 0.8);
-    transform: scale(1.1);
-    border-color: rgba(255, 255, 255, 0.4);
-}
-
-.btn-download-one:active {
-    transform: scale(0.95);
-}
-
-/* Адаптация под темную тему (если нужно, чтобы кнопка на картинке была светлой) */
-.theme-dark .btn-download-one {
-    background: rgba(255, 255, 255, 0.2);
-    border-color: rgba(255, 255, 255, 0.3);
-}
-.theme-dark .btn-download-one:hover {
-    background: rgba(255, 255, 255, 0.4);
-}
-/* ═══════════════════════════════════════
-   ИСПРАВЛЕНИЕ ТЕКСТА В НАСТРОЙКАХ АДМИНКИ
-   ═══════════════════════════════════════ */
-
-/* Делаем заголовки и подписи светлыми в тёмной теме */
-.admin-theme-dark .input-label,
-body.admin-theme-dark .input-label,
-.theme-dark .input-label,
-body.theme-dark .input-label,
-.admin-theme-dark h2,
-body.admin-theme-dark h2,
-.admin-theme-dark .hint,
-body.admin-theme-dark .hint {
-    color: #e2e8f0 !important;
-}
-
-/* Возвращаем белый фон и тёмный текст карточкам тем */
-.admin-theme-dark .theme-btn {
-    background: #ffffff !important;
-    color: #1a202c !important;
-    border-color: #cbd5e0 !important;
-}
-
-/* Подсветка активной карточки */
-.admin-theme-dark .theme-btn.active {
-    background: #ebf8ff !important;
-    color: #2b6cb0 !important;
-    border-color: #4299e1 !important;
-    box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.2);
-}
-/* ═══════════════════════════════════════
-   ЖЕСТКИЙ ФИКС НАСТРОЕК ДЛЯ АДМИНКИ (v30.0.0)
-   ═══════════════════════════════════════ */
-
-/* 1. Делаем заголовок "Оформление главной" и подсказки белыми в темной теме */
-html.admin-theme-dark #tabSettings .input-label,
-html.admin-theme-dark #tabSettings h2,
-html.admin-theme-dark #tabSettings .hint,
-html.admin-theme-dark #tabSettings .section-header h2 {
-    color: #f7fafc !important;
-}
-
-/* 2. Делаем кнопки выбора тем темными (а не белыми) */
-html.admin-theme-dark #tabSettings .theme-btn {
-    background: rgba(45, 55, 72, 0.6) !important; /* Темно-серый фон */
-    border: 2px solid #4a5568 !important;        /* Рамка */
-    color: #cbd5e0 !important;                   /* Светло-серый текст */
-}
-
-/* 3. Подсвечиваем активную кнопку синим */
-html.admin-theme-dark #tabSettings .theme-btn.active {
-    background: rgba(66, 153, 225, 0.2) !important; /* Полупрозрачный синий */
-    border-color: #4299e1 !important;               /* Яркая синяя рамка */
-    color: #90cdf4 !important;                      /* Голубой текст */
-    box-shadow: 0 0 10px rgba(66, 153, 225, 0.3) !important;
-}
-
-/* 4. Фикс превью картинок внутри кнопок (чтобы квадратики не сливались) */
-html.admin-theme-dark #tabSettings .light-preview {
-    background: #ffffff !important;
-    border: 1px solid #cbd5e0 !important;
-}
-html.admin-theme-dark #tabSettings .dark-preview {
-    background: #1a202c !important;
-    border: 1px solid #4a5568 !important;
-}
-html.admin-theme-dark #tabSettings .custom-preview {
-    background: linear-gradient(135deg, #e2e8f0 50%, #a0aec0 50%) !important;
 }
