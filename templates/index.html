@@ -49,9 +49,7 @@
             color: #4299e1;
             text-shadow: 0 0 10px rgba(66, 153, 225, 0.3);
         }
-        .theme-custom .welcome-greeting span {
-            color: #90cdf4;
-        }
+        .theme-custom .welcome-greeting span { color: #90cdf4; }
 
         @keyframes slideDownFade {
             to { opacity: 1; transform: translateY(0); }
@@ -462,12 +460,11 @@
             authScreen.classList.add('hidden');
             mainScreen.classList.remove('hidden');
 
-            updateGreeting(); // Вызываем приветствие
+            updateGreeting();
             renderTopbar();
             await loadSubjects();
         }
 
-        // Функция для красивого приветствия
         function updateGreeting() {
             const hour = new Date().getHours();
             let greeting = 'Доброй ночи';
@@ -480,7 +477,6 @@
 
             if (greetEl) {
                 greetEl.innerHTML = `${greeting}, <span>${escapeHtml(name)}</span>! 👋`;
-                // Перезапуск анимации, если она уже была
                 greetEl.style.animation = 'none';
                 greetEl.offsetHeight;
                 greetEl.style.animation = null;
@@ -538,7 +534,6 @@
             });
         }
 
-        // РЕНДЕР ВЕРХНЕГО МЕНЮ (теперь с выпадающим списком)
         function renderTopbar() {
             topbarRight.innerHTML = '';
             const name = authUser.name || authUser.email.split('@')[0];
@@ -565,7 +560,6 @@
             `;
             topbarRight.innerHTML = menuHTML;
 
-            // Устанавливаем приветствие в меню
             const hour = new Date().getHours();
             let g = 'Доброй ночи';
             if (hour >= 5 && hour < 12) g = 'Доброе утро';
@@ -573,7 +567,6 @@
             else if (hour >= 18 && hour < 23) g = 'Добрый вечер';
             $('dropdownGreeting').innerText = `${g}, ${name}!`;
 
-            // Логика открытия/закрытия меню
             const menuBtn = $('userMenuBtn');
             const dropdown = $('userDropdown');
             menuBtn.onclick = (e) => {
@@ -581,7 +574,6 @@
                 dropdown.classList.toggle('show');
             };
 
-            // Закрываем меню при клике в любом другом месте
             document.addEventListener('click', (e) => {
                 if (!e.target.closest('#userMenuContainer')) {
                     dropdown.classList.remove('show');
@@ -617,7 +609,11 @@
                 const d = await r.json();
 
                 if (!r.ok) {
-                    st.textContent = '❌ ' + (d.detail || 'Ошибка');
+                    if (r.status === 403) {
+                        st.innerHTML = '🚫 ' + (d.detail || 'Доступ заблокирован');
+                    } else {
+                        st.textContent = '❌ ' + (d.detail || 'Ошибка');
+                    }
                     st.className = 'fb-status error';
                     return;
                 }
@@ -689,7 +685,7 @@
         }
 
         function openSettings() {
-            document.getElementById('userDropdown').classList.remove('show'); // Закрываем меню
+            document.getElementById('userDropdown').classList.remove('show');
             settingsModal.classList.remove('hidden');
             $('settingsStatus').textContent = '';
             $('settingsStatus').className = 'fb-status';
@@ -731,7 +727,7 @@
                 currentAvatar = b64;
                 updateAvatarPreview();
                 await fetch('/api/auth/avatar', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({token: authToken, avatar: b64}) });
-                renderTopbar(); // Обновляем аватарку в меню
+                renderTopbar();
             } catch (err) { alert('Ошибка: ' + err.message); }
             e.target.value = '';
         };
@@ -742,7 +738,7 @@
             updateAvatarPreview();
             try {
                 await fetch('/api/auth/avatar', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({token: authToken, avatar: ''}) });
-                renderTopbar(); // Обновляем меню
+                renderTopbar();
             } catch {}
         };
 
@@ -789,7 +785,6 @@
 
                 applyTheme(authUser.theme, authUser.bg_url);
 
-                // Обновляем имя и приветствие, если оно изменилось
                 updateGreeting();
                 renderTopbar();
 

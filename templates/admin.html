@@ -40,7 +40,6 @@
         html.has-token #adminContent { display: block; }
         html.no-token #adminContent { display: none; }
 
-        /* Стили для красивых кнопок тем */
         .theme-options {
             display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
             gap: 12px; margin-top: 10px;
@@ -68,7 +67,6 @@
         .custom-preview { background: linear-gradient(135deg, #e2e8f0 50%, #a0aec0 50%); }
         .auto-preview { background: linear-gradient(135deg, #ffffff 50%, #2d3748 50%); color: #ffffff; font-weight: 900; }
 
-        /* Темная тема для кнопок в админке */
         html.admin-theme-dark #tabSettings .theme-btn,
         html.theme-dark #tabSettings .theme-btn {
             background: rgba(45, 55, 72, 0.6) !important;
@@ -82,11 +80,18 @@
             color: #90cdf4 !important;
         }
 
-        /* Фикс заголовков в темной теме */
         html.admin-theme-dark #tabSettings .input-label,
         html.theme-dark #tabSettings .input-label {
             color: #f7fafc !important;
         }
+
+        /* Стили для кнопок блокировки */
+        .btn-block { background: #ed8936 !important; color: #fff !important; border: none; padding: 6px 10px; border-radius: 6px; cursor: pointer; font-size: 12px; }
+        .btn-block:hover { background: #dd6b20 !important; }
+        .btn-unblock { background: #48bb78 !important; color: #fff !important; border: none; padding: 6px 10px; border-radius: 6px; cursor: pointer; font-size: 12px; }
+        .btn-unblock:hover { background: #38a169 !important; }
+        .blocked-device-row { display: flex; justify-content: space-between; align-items: center; background: #f7fafc; border: 1px solid #e2e8f0; padding: 10px 15px; border-radius: 8px; margin-bottom: 8px; font-size: 13px; }
+        .admin-theme-dark .blocked-device-row { background: rgba(45,55,72,0.5); border-color: #4a5568; color: #e2e8f0; }
     </style>
     <link rel="stylesheet" href="/static/style.css">
 </head>
@@ -114,6 +119,7 @@
                 <button class="admin-tab active" data-tab="subjects">📚 Предметы</button>
                 <button class="admin-tab" data-tab="online">🟢 Онлайн</button>
                 <button class="admin-tab" data-tab="users">👥 Пользователи</button>
+                <button class="admin-tab" data-tab="blocked">🚫 Блокировки</button>
                 <button class="admin-tab" data-tab="messages">📬 Сообщения</button>
                 <button class="admin-tab" data-tab="logs">📋 Логи</button>
                 <button class="admin-tab" data-tab="settings">⚙️ Настройки</button>
@@ -152,6 +158,17 @@
                 <div id="emptyUsers" class="empty">Пока нет зарегистрированных</div>
             </div>
 
+            <!-- НОВАЯ ВКЛАДКА БЛОКИРОВОК -->
+            <div id="tabBlocked" class="hidden">
+                <div class="section-header">
+                    <h2>🚫 Заблокированные устройства</h2>
+                    <button id="refreshBlockedBtn" class="btn-small">🔄 Обновить</button>
+                </div>
+                <p class="hint" style="margin-bottom:12px;">Эти устройства не могут зайти на сайт, даже если создадут новый аккаунт.</p>
+                <div id="blockedList"></div>
+                <div id="emptyBlocked" class="empty">Нет заблокированных устройств</div>
+            </div>
+
             <div id="tabMessages" class="hidden">
                 <div class="section-header">
                     <h2>📬 Сообщения (<span id="count">0</span>)</h2>
@@ -172,12 +189,11 @@
                         <button id="refreshLogsBtn" class="btn-small">🔄 Обновить</button>
                     </div>
                 </div>
-                <p class="hint" style="margin-bottom:12px;">Последние 500 действий: входы, регистрации, поиски, изменения предметов.</p>
+                <p class="hint" style="margin-bottom:12px;">Последние 500 действий.</p>
                 <div id="logsList"></div>
                 <div id="emptyLogs" class="empty">Логов пока нет</div>
             </div>
 
-            <!-- ВКЛАДКА НАСТРОЕК -->
             <div id="tabSettings" class="hidden">
                 <div class="section-header">
                     <h2>⚙️ Настройки аккаунта</h2>
@@ -262,13 +278,13 @@
         let subjectsCache = [];
         let draggedId = null;
 
-        // ВОТ ОНИ, ПОТЕРЯННЫЕ ФУНКЦИИ!
         const ACTION_ICONS = {
             'register': '🆕', 'login': '🔑', 'login_fail': '⚠️', 'logout': '🚪',
             'parse': '🔍', 'profile_update': '⚙️', 'avatar_update': '🖼',
             'password_change': '🔐', 'account_delete': '❌',
             'subject_add': '➕', 'subject_update': '✏️', 'subject_delete': '🗑',
             'subject_reorder': '↕️', 'subjects_reset': '🔄', 'admin_delete_user': '👤',
+            'block_device': '🚫', 'unblock_device': '✅'
         };
 
         function getInitial(name, email) {
@@ -277,7 +293,6 @@
             if (email) return email[0].toUpperCase();
             return '?';
         }
-        // -----------------------------------
 
         const loginCard = document.getElementById('loginCard');
         const adminContent = document.getElementById('adminContent');
@@ -410,7 +425,7 @@
             document.documentElement.classList.add('has-token');
             loginCard.classList.add('hidden');
             adminContent.classList.remove('hidden');
-            loadSubjects(); loadOnline(); loadUsers(); loadMessages(); loadLogs();
+            loadSubjects(); loadOnline(); loadUsers(); loadBlockedDevices(); loadMessages(); loadLogs();
             if (onlineTimer) clearInterval(onlineTimer);
             onlineTimer = setInterval(loadOnline, 30000);
         }
@@ -433,7 +448,7 @@
             t.addEventListener('click', () => {
                 document.querySelectorAll('.admin-tab').forEach(x => x.classList.toggle('active', x === t));
                 const tab = t.dataset.tab;
-                ['subjects', 'online', 'users', 'messages', 'logs', 'settings'].forEach(name => {
+                ['subjects', 'online', 'users', 'blocked', 'messages', 'logs', 'settings'].forEach(name => {
                     const el = document.getElementById('tab' + name.charAt(0).toUpperCase() + name.slice(1));
                     if (el) el.classList.toggle('hidden', name !== tab);
                 });
@@ -626,8 +641,20 @@
                     div.className = 'user-card';
                     const badge = u.is_admin ? '<span class="admin-badge">👑 АДМИН</span>' : '';
                     const avatarHtml = u.avatar ? `<span class="user-avatar" style="background-image:url('${u.avatar}')"></span>` : `<span class="user-avatar">${getInitial(u.name, u.email)}</span>`;
+
+                    const safeDevice = (u.device || '').replace(/'/g, "\\'");
+                    const blockBtnHtml = u.device ? `<button class="btn-block user-block" data-device="${safeDevice}" title="Заблокировать это устройство">🚫 Устройство</button>` : '';
+
                     div.innerHTML = `
-                        <div class="user-head">${avatarHtml}<strong>${escapeHtml(u.name || 'Без имени')}</strong>${badge}<button class="msg-delete user-del" data-id="${u.id}">🗑</button></div>
+                        <div class="user-head">
+                            ${avatarHtml}
+                            <strong>${escapeHtml(u.name || 'Без имени')}</strong>
+                            ${badge}
+                            <div style="display:flex; gap:5px; margin-left:auto;">
+                                ${blockBtnHtml}
+                                <button class="msg-delete user-del" data-id="${u.id}" title="Удалить аккаунт">🗑</button>
+                            </div>
+                        </div>
                         <div class="user-row">📧 ${escapeHtml(u.email)}</div>
                         <div class="user-row">💻 ${escapeHtml(u.device || '—')}</div>
                         <div class="user-row small">📅 ${escapeHtml(u.created || '—')} · 🕐 ${escapeHtml(u.last_seen || '—')}</div>
@@ -638,14 +665,67 @@
         }
 
         document.getElementById('usersList').addEventListener('click', async (e) => {
-            const btn = e.target.closest('.user-del');
+            const delBtn = e.target.closest('.user-del');
+            if (delBtn) {
+                if (!confirm('Удалить пользователя?')) return;
+                delBtn.disabled = true;
+                try {
+                    const r = await fetch('/api/admin/delete-user/' + delBtn.dataset.id, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(getAuthPayload()) });
+                    if (!r.ok) throw new Error('Ошибка');
+                    loadUsers();
+                } catch (err) { delBtn.disabled = false; alert('Ошибка: ' + err.message); }
+            }
+
+            const blockBtn = e.target.closest('.user-block');
+            if (blockBtn) {
+                if (!confirm('Заблокировать это устройство? Пользователь больше не сможет зайти с него.')) return;
+                blockBtn.disabled = true;
+                try {
+                    const r = await fetch('/api/admin/block-device', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({...getAuthPayload(), device: blockBtn.dataset.device}) });
+                    if (!r.ok) throw new Error('Ошибка');
+                    alert('✅ Устройство заблокировано!');
+                    loadBlockedDevices();
+                } catch (err) { blockBtn.disabled = false; alert('Ошибка: ' + err.message); }
+            }
+        });
+
+        // ЛОГИКА БЛОКИРОВОК
+        document.getElementById('refreshBlockedBtn').onclick = loadBlockedDevices;
+        async function loadBlockedDevices() {
+            const list = document.getElementById('blockedList');
+            const empty = document.getElementById('emptyBlocked');
+            try {
+                const r = await fetch('/api/admin/blocked-devices', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(getAuthPayload()) });
+                if (!r.ok) return;
+                const d = await r.json();
+                list.innerHTML = '';
+                if (!d.devices.length) { empty.style.display = 'block'; return; }
+                empty.style.display = 'none';
+                d.devices.forEach(dev => {
+                    const safeDevice = dev.device.replace(/'/g, "\\'");
+                    const div = document.createElement('div');
+                    div.className = 'blocked-device-row';
+                    div.innerHTML = `
+                        <div style="flex:1; word-break:break-all; margin-right:10px;">
+                            <strong>${escapeHtml(dev.device)}</strong><br>
+                            <span style="font-size:11px; color:#a0aec0;">Заблокировано: ${escapeHtml(dev.blocked)}</span>
+                        </div>
+                        <button class="btn-unblock unblock-btn" data-device="${safeDevice}">✅ Разблокировать</button>
+                    `;
+                    list.appendChild(div);
+                });
+            } catch (e) { list.innerHTML = '<p class="empty">Ошибка: ' + e.message + '</p>'; }
+        }
+
+        document.getElementById('blockedList').addEventListener('click', async (e) => {
+            const btn = e.target.closest('.unblock-btn');
             if (!btn) return;
-            if (!confirm('Удалить пользователя?')) return;
+            if (!confirm('Разблокировать это устройство?')) return;
             btn.disabled = true;
             try {
-                const r = await fetch('/api/admin/delete-user/' + btn.dataset.id, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(getAuthPayload()) });
+                const r = await fetch('/api/admin/unblock-device', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({...getAuthPayload(), device: btn.dataset.device}) });
                 if (!r.ok) throw new Error('Ошибка');
-                loadUsers();
+                loadBlockedDevices();
             } catch (err) { btn.disabled = false; alert('Ошибка: ' + err.message); }
         });
 

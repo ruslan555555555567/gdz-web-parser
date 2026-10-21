@@ -16,7 +16,7 @@ import asyncpg
 
 from parser import parse_tasks
 
-VERSION = "33.0.0"
+VERSION = "35.0.0"
 ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "")
 ADMIN_EMAIL = os.getenv("ADMIN_EMAIL", "admin@gdz.ru").lower().strip()
 DATABASE_URL = os.getenv("DATABASE_URL")
@@ -91,6 +91,14 @@ async def init_db():
             await conn.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS admin_theme TEXT DEFAULT 'auto'")
             await conn.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS btn_style TEXT DEFAULT 'light'")
             await conn.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS is_verified BOOLEAN DEFAULT TRUE")
+
+            # НОВАЯ ТАБЛИЦА ДЛЯ БЛОКИРОВКИ УСТРОЙСТВ
+            await conn.execute("""
+                CREATE TABLE IF NOT EXISTS blocked_devices (
+                    device TEXT PRIMARY KEY,
+                    blocked_at TIMESTAMP DEFAULT NOW()
+                )
+            """)
 
             await conn.execute("""
                 CREATE TABLE IF NOT EXISTS sessions (
@@ -561,6 +569,13 @@ async def admin_reset_subjects(data: dict):
 async def register(req: RegisterRequest, request: Request):
     if db_pool is None:
         raise HTTPException(500, "БД не подключена")
+
+    # ПРОВЕРКА НА БЛОКИРОВКУ УСТРОЙСТВА
+    async with db_pool.acquire() as conn:
+        is_blocked = await conn.fetchval("SELECT 1 FROM blocked_devices WHERE device = $1", req.device.strip())
+        if is_blocked:
+            raise HTTPException(403, "Доступ с этого устройства заблокирован администратором.")
+
     email = req.email.lower().strip()
     if not email or "@" not in email:
         raise HTTPException(400, "Некорректный email")
@@ -595,6 +610,13 @@ async def register(req: RegisterRequest, request: Request):
 async def login(req: LoginRequest, request: Request):
     if db_pool is None:
         raise HTTPException(500, "БД не подключена")
+
+    # ПРОВЕРКА НА БЛОКИРОВКУ УСТРОЙСТВА
+    async with db_pool.acquire() as conn:
+        is_blocked = await conn.fetchval("SELECT 1 FROM blocked_devices WHERE device = $1", req.device.strip())
+        if is_blocked:
+            raise HTTPException(403, "Доступ с этого устройства заблокирован администратором.")
+
     email = req.email.lower().strip()
     async with db_pool.acquire() as conn:
         row = await conn.fetchrow(
@@ -952,6 +974,46 @@ async def admin_clear(data: dict):
         async with db_pool.acquire() as conn:
             await conn.execute("DELETE FROM feedback")
     return {"ok": True}
+
+
+# ═══════ БЛОКИРОВКА УСТРОЙСТВ ═══════
+
+@app.post("/api/admin/block-device")
+async def admin_block_device(data: dict):
+    if not await check_admin(data):
+        raise HTTPException(401, "Нет доступа")
+    device = (data.get("device") or "").strip()
+    if not device:
+        raise HTTPException(400, "Нет данных об устройстве")
+    if db_pool is not None:
+        async with db_pool.acquire() as conn:
+            await conn.execute("INSERT INTO blocked_devices (device) VALUES ($1) ON CONFLICT DO NOTHING", device)
+    await log_action(None, "block_device", device)
+    return {"ok": True}
+
+
+@app.post("/api/admin/unblock-device")
+async def admin_unblock_device(data: dict):
+    if not await check_admin(data):
+        raise HTTPException(401, "Нет доступа")
+    device = (data.get("device") or "").strip()
+    if db_pool is not None:
+        async with db_pool.acquire() as conn:
+            await conn.execute("DELETE FROM blocked_devices WHERE device = $1", device)
+    await log_action(None, "unblock_device", device)
+    return {"ok": True}
+
+
+@app.post("/api/admin/blocked-devices")
+async def admin_blocked_devices(data: dict):
+    if not await check_admin(data):
+        raise HTTPException(401, "Нет доступа")
+    if db_pool is None:
+        return {"devices": []}
+    async with db_pool.acquire() as conn:
+        rows = await conn.fetch(
+            "SELECT device, to_char(blocked_at, 'DD.MM.YY HH24:MI') AS blocked FROM blocked_devices ORDER BY blocked_at DESC")
+    return {"devices": [dict(r) for r in rows]}
 
 
 # ═══════ СМЕНА ПАРОЛЯ АДМИНА ═══════
