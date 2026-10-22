@@ -1,0 +1,521 @@
+/* ═══════════════════════════════════════════════════════════
+   КРАСИВЫЕ АНИМАЦИИ ДЛЯ GDZ ПАРСЕРА
+   ═══════════════════════════════════════════════════════════ */
+
+/* Летающие фигуры на фоне */
+.floating-shapes {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: -1;
+    overflow: hidden;
+}
+
+.shape {
+    position: absolute;
+    opacity: 0.08;
+    animation: float 8s infinite ease-in-out;
+}
+
+.shape-1 {
+    width: 120px;
+    height: 120px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 50%;
+    top: 15%;
+    left: 8%;
+    animation-delay: 0s;
+}
+
+.shape-2 {
+    width: 180px;
+    height: 180px;
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    border-radius: 30% 70% 70% 30% / 30% 30% 70% 70%;
+    top: 65%;
+    right: 12%;
+    animation-delay: 2.5s;
+}
+
+.shape-3 {
+    width: 100px;
+    height: 100px;
+    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    border-radius: 50%;
+    bottom: 25%;
+    left: 45%;
+    animation-delay: 5s;
+}
+
+.shape-4 {
+    width: 150px;
+    height: 150px;
+    background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+    border-radius: 70% 30% 30% 70% / 70% 70% 30% 30%;
+    top: 40%;
+    right: 35%;
+    animation-delay: 3.5s;
+}
+
+.theme-dark .shape {
+    opacity: 0.05;
+}
+
+@keyframes float {
+    0%, 100% {
+        transform: translateY(0px) translateX(0px) rotate(0deg);
+    }
+    25% {
+        transform: translateY(-25px) translateX(15px) rotate(90deg);
+    }
+    50% {
+        transform: translateY(-50px) translateX(-10px) rotate(180deg);
+    }
+    75% {
+        transform: translateY(-25px) translateX(-20px) rotate(270deg);
+    }
+}
+
+/* Мерцающие частицы */
+.particles {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: -1;
+}
+
+.particle {
+    position: absolute;
+    width: 3px;
+    height: 3px;
+    background: #4299e1;
+    border-radius: 50%;
+    opacity: 0.4;
+    animation: twinkle 3s infinite;
+}
+
+.theme-dark .particle {
+    background: #90cdf4;
+    opacity: 0.3;
+}
+
+@keyframes twinkle {
+    0%, 100% {
+        opacity: 0.2;
+        transform: scale(1);
+    }
+    50% {
+        opacity: 0.8;
+        transform: scale(1.5);
+    }
+}
+
+/* Анимация появления карточек */
+.card,
+.subject-block {
+    animation: fadeInUp 0.6s cubic-bezier(0.25, 0.8, 0.25, 1) backwards;
+}
+
+.card:nth-child(1) { animation-delay: 0.1s; }
+.card:nth-child(2) { animation-delay: 0.2s; }
+.card:nth-child(3) { animation-delay: 0.3s; }
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px) scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+/* Плавное появление заголовка */
+h1 {
+    animation: fadeInDown 0.8s cubic-bezier(0.25, 0.8, 0.25, 1) backwards;
+}
+
+@keyframes fadeInDown {
+    from {
+        opacity: 0;
+        transform: translateY(-30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Анимация для subtitle */
+.subtitle {
+    animation: fadeIn 1s ease-out 0.3s backwards;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+/* Улучшенный hover для карточек */
+.card,
+.subject-block {
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+.card:hover,
+.subject-block:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+}
+
+.theme-dark .card:hover,
+.theme-dark .subject-block:hover {
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+}
+
+.theme-custom .card:hover,
+.theme-custom .subject-block:hover {
+    background: rgba(255, 255, 255, 0.15) !important;
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3) !important;
+}
+
+/* Анимация кнопок */
+.btn-primary,
+.btn-secondary {
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+    position: relative;
+    overflow: hidden;
+}
+
+.btn-primary::before,
+.btn-secondary::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.2);
+    transform: translate(-50%, -50%);
+    transition: width 0.6s, height 0.6s;
+}
+
+.btn-primary:hover::before,
+.btn-secondary:hover::before {
+    width: 300px;
+    height: 300px;
+}
+
+.btn-primary:hover,
+.btn-secondary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(66, 153, 225, 0.3);
+}
+
+.btn-primary:active,
+.btn-secondary:active {
+    transform: translateY(0);
+}
+
+/* Пульсация для кнопки поиска */
+@keyframes pulse {
+    0%, 100% {
+        box-shadow: 0 0 0 0 rgba(66, 153, 225, 0.7);
+    }
+    50% {
+        box-shadow: 0 0 0 10px rgba(66, 153, 225, 0);
+    }
+}
+
+#btn:not(:disabled):hover {
+    animation: pulse 2s infinite;
+}
+
+/* Анимация для инпутов */
+.num-input,
+.text-input,
+input[type="text"],
+input[type="email"],
+input[type="password"],
+textarea {
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+.num-input:focus,
+.text-input:focus,
+input[type="text"]:focus,
+input[type="email"]:focus,
+input[type="password"]:focus,
+textarea:focus {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(66, 153, 225, 0.2);
+}
+
+/* Анимация загрузки */
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+.loading-spinner {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    border: 3px solid rgba(66, 153, 225, 0.2);
+    border-top-color: #4299e1;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+
+/* Плавное появление результатов */
+.task-card {
+    animation: slideIn 0.5s cubic-bezier(0.25, 0.8, 0.25, 1) backwards;
+}
+
+.task-card:nth-child(1) { animation-delay: 0.1s; }
+.task-card:nth-child(2) { animation-delay: 0.2s; }
+.task-card:nth-child(3) { animation-delay: 0.3s; }
+.task-card:nth-child(4) { animation-delay: 0.4s; }
+.task-card:nth-child(5) { animation-delay: 0.5s; }
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateX(-30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+/* Анимация для модальных окон */
+.modal {
+    transition: opacity 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+.modal:not(.hidden) .modal-content {
+    animation: modalBounce 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+@keyframes modalBounce {
+    0% {
+        opacity: 0;
+        transform: scale(0.7) translateY(-50px);
+    }
+    50% {
+        transform: scale(1.05);
+    }
+    100% {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+/* Анимация для иконок */
+.icon-btn {
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+.icon-btn:hover {
+    transform: scale(1.1) rotate(5deg);
+}
+
+.icon-btn:active {
+    transform: scale(0.95);
+}
+
+/* Градиентная анимация для заголовков */
+@keyframes gradient-shift {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
+h1 {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #667eea 100%);
+    background-size: 200% 200%;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    animation: gradient-shift 3s ease infinite, fadeInDown 0.8s cubic-bezier(0.25, 0.8, 0.25, 1) backwards;
+}
+
+.theme-dark h1 {
+    background: linear-gradient(135deg, #90cdf4 0%, #a78bfa 50%, #90cdf4 100%);
+    background-size: 200% 200%;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.theme-custom h1 {
+    background: linear-gradient(135deg, #ffffff 0%, #90cdf4 50%, #ffffff 100%);
+    background-size: 200% 200%;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+}
+
+/* Волновой эффект при клике */
+.ripple {
+    position: relative;
+    overflow: hidden;
+}
+
+.ripple::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.5);
+    transform: translate(-50%, -50%);
+    transition: width 0.6s, height 0.6s, opacity 0.6s;
+    opacity: 0;
+}
+
+.ripple:active::after {
+    width: 200px;
+    height: 200px;
+    opacity: 1;
+    transition: 0s;
+}
+
+/* Плавное появление элементов списка */
+.history-row,
+.message-card,
+.user-card {
+    animation: fadeInLeft 0.4s cubic-bezier(0.25, 0.8, 0.25, 1) backwards;
+}
+
+@keyframes fadeInLeft {
+    from {
+        opacity: 0;
+        transform: translateX(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+/* Hover эффект для аватара */
+.avatar-preview,
+.user-avatar-mini {
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+.avatar-preview:hover {
+    transform: scale(1.1);
+    box-shadow: 0 8px 20px rgba(66, 153, 225, 0.3);
+}
+
+/* Анимация версии */
+.version {
+    animation: fadeIn 1s ease-out 0.5s backwards;
+}
+
+/* Плавное появление топбара */
+.topbar {
+    animation: slideDown 0.5s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Анимация для dropdown меню */
+.dropdown-menu {
+    animation: dropdownSlide 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+@keyframes dropdownSlide {
+    from {
+        opacity: 0;
+        transform: translateY(-15px) scale(0.9);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+/* Анимация футера */
+.footer {
+    animation: fadeIn 1s ease-out 0.8s backwards;
+}
+
+/* Плавный скролл */
+html {
+    scroll-behavior: smooth;
+}
+
+/* Анимация для subject-group */
+.subject-group {
+    animation: fadeInUp 0.5s cubic-bezier(0.25, 0.8, 0.25, 1) backwards;
+}
+
+/* Красивая анимация загрузки для status */
+.status {
+    animation: fadeIn 0.3s ease-out;
+}
+
+/* Bounce анимация для важных элементов */
+@keyframes bounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
+}
+
+.auth-logo {
+    animation: bounce 2s ease-in-out infinite;
+}
+
+/* Стеклянный эффект с движением */
+@keyframes glass-shimmer {
+    0% { background-position: -200% center; }
+    100% { background-position: 200% center; }
+}
+
+.card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: linear-gradient(90deg,
+        transparent,
+        rgba(66, 153, 225, 0.5),
+        transparent
+    );
+    background-size: 200% 100%;
+    animation: glass-shimmer 3s linear infinite;
+    opacity: 0;
+    transition: opacity 0.3s;
+}
+
+.card:hover::before {
+    opacity: 1;
+}
