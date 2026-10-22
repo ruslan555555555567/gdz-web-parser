@@ -3,6 +3,7 @@ uvicorn
 asyncpg
 curl_cffi
 beautifulsoup4
+lxml
 pydantic
 Pillow
 jinja2
