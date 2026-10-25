@@ -108,12 +108,11 @@ body.theme-custom::before {
     content: '';
     position: fixed;
     inset: 0;
-    background: rgba(0,0,0,0.05); /* Почти нет затемнения */
+    background: rgba(0,0,0,0.05);
     z-index: -1;
     pointer-events: none;
 }
 
-/* Карточки — матовое стекло */
 .theme-custom .card,
 .theme-custom .subject-block,
 .theme-custom .subject-group,
@@ -135,7 +134,6 @@ body.theme-custom .image-modal-content {
     color: #1a202c;
 }
 
-/* Белый текст с чёрной обводкой */
 .theme-custom h1, .theme-custom h2, .theme-custom h3,
 body.theme-custom h1, body.theme-custom h2, body.theme-custom h3,
 .theme-custom .input-label, body.theme-custom .input-label,
@@ -168,7 +166,6 @@ body.theme-custom .version {
     border: 1px solid rgba(255,255,255,0.15);
 }
 
-/* ⚠️ ПОЛЯ ВВОДА — ПРОЗРАЧНЫЕ С ПОМОЩЬЮ ХАКОВ */
 .theme-custom .num-input,
 .theme-custom .text-input,
 .theme-custom textarea,
@@ -177,13 +174,13 @@ body.theme-custom .num-input,
 body.theme-custom .text-input,
 body.theme-custom textarea,
 body.theme-custom input {
-    background: rgba(255, 255, 255, 0.01) !important; /* Почти 0, чтобы браузер не красил в серый */
+    background: rgba(255, 255, 255, 0.01) !important;
     background-color: rgba(255, 255, 255, 0.01) !important;
     border: 1px solid rgba(255,255,255,0.4) !important;
     color: #ffffff !important;
     text-shadow: none !important;
     backdrop-filter: blur(5px);
-    -webkit-appearance: none !important; /* Убираем стандартный серый фон браузера */
+    -webkit-appearance: none !important;
     appearance: none !important;
     box-shadow: none !important;
     outline: none !important;
@@ -205,7 +202,6 @@ body.theme-custom .text-input:focus {
     border-color: #ffffff !important;
 }
 
-/* Меню профиля */
 .theme-custom .user-menu-btn,
 body.theme-custom .user-menu-btn {
     background: rgba(255, 255, 255, 0.1) !important;
@@ -924,4 +920,35 @@ h3 { font-size: 15px; color: #2d3748; }
     .avatar-block { flex-direction: column; align-items: flex-start; }
     .avatar-actions { width: 100%; }
     .avatar-actions .btn-small { flex: 1; text-align: center; }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   ФИКС ЧИТАЕМОСТИ КАРТОЧЕК ПОЛЬЗОВАТЕЛЕЙ В ТЕМНЫХ ТЕМАХ
+   ═══════════════════════════════════════════════════════════ */
+/* Текст в обычных карточках пользователей (тёмная тема) */
+.theme-dark .user-card .user-row, body.theme-dark .user-card .user-row,
+.admin-theme-dark .user-card .user-row, body.admin-theme-dark .user-card .user-row,
+.theme-dark .user-card .user-head strong, body.theme-dark .user-card .user-head strong,
+.admin-theme-dark .user-card .user-head strong, body.admin-theme-dark .user-card .user-head strong {
+    color: #e2e8f0 !important;
+}
+
+.theme-dark .user-card .user-row.small, body.theme-dark .user-card .user-row.small,
+.admin-theme-dark .user-card .user-row.small, body.admin-theme-dark .user-card .user-row.small {
+    color: #a0aec0 !important;
+}
+
+/* Карточка "Онлайн" (тёмно-зелёный фон вместо светло-зелёного) */
+.theme-dark .user-card.online-card, body.theme-dark .user-card.online-card,
+.admin-theme-dark .user-card.online-card, body.admin-theme-dark .user-card.online-card {
+    background: rgba(16, 100, 60, 0.4) !important;
+    border-left-color: #48bb78 !important;
+}
+
+/* Текст внутри карточки "Онлайн" в тёмной теме */
+.theme-dark .user-card.online-card .user-row, body.theme-dark .user-card.online-card .user-row,
+.admin-theme-dark .user-card.online-card .user-row, body.admin-theme-dark .user-card.online-card .user-row,
+.theme-dark .user-card.online-card .user-head strong, body.theme-dark .user-card.online-card .user-head strong,
+.admin-theme-dark .user-card.online-card .user-head strong, body.admin-theme-dark .user-card.online-card .user-head strong {
+    color: #e2e8f0 !important;
 }
