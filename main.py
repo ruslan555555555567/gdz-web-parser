@@ -16,7 +16,7 @@ import asyncpg
 
 from parser import parse_tasks
 
-VERSION = "48.0.0"
+VERSION = "49.0.0"
 ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "")
 ADMIN_EMAIL = os.getenv("ADMIN_EMAIL", "admin@gdz.ru").lower().strip()
 DATABASE_URL = os.getenv("DATABASE_URL")
@@ -92,7 +92,6 @@ async def init_db():
             await conn.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS btn_style TEXT DEFAULT 'light'")
             await conn.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS is_verified BOOLEAN DEFAULT TRUE")
 
-            # НОВАЯ ТАБЛИЦА ДЛЯ БЛОКИРОВКИ УСТРОЙСТВ
             await conn.execute("""
                 CREATE TABLE IF NOT EXISTS blocked_devices (
                     device TEXT PRIMARY KEY,
@@ -570,7 +569,6 @@ async def register(req: RegisterRequest, request: Request):
     if db_pool is None:
         raise HTTPException(500, "БД не подключена")
 
-    # ПРОВЕРКА НА БЛОКИРОВКУ УСТРОЙСТВА
     async with db_pool.acquire() as conn:
         is_blocked = await conn.fetchval("SELECT 1 FROM blocked_devices WHERE device = $1", req.device.strip())
         if is_blocked:
@@ -611,7 +609,6 @@ async def login(req: LoginRequest, request: Request):
     if db_pool is None:
         raise HTTPException(500, "БД не подключена")
 
-    # ПРОВЕРКА НА БЛОКИРОВКУ УСТРОЙСТВА
     async with db_pool.acquire() as conn:
         is_blocked = await conn.fetchval("SELECT 1 FROM blocked_devices WHERE device = $1", req.device.strip())
         if is_blocked:
@@ -664,7 +661,14 @@ async def logout(req: TokenRequest):
 
 
 @app.get("/api/auth/me")
-async def me(token: str = ""):
+async def me(token: str = "", device: str = ""):
+    # ПРОВЕРКА НА БЛОКИРОВКУ УСТРОЙСТВА (Даже если пользователь уже залогинен)
+    if device and db_pool is not None:
+        async with db_pool.acquire() as conn:
+            is_blocked = await conn.fetchval("SELECT 1 FROM blocked_devices WHERE device = $1", device.strip())
+            if is_blocked:
+                raise HTTPException(status_code=403, detail="Доступ с этого устройства заблокирован администратором.")
+
     user = await get_user_by_token(token)
     if not user:
         raise HTTPException(401, "Не авторизован")
@@ -680,28 +684,28 @@ async def update_profile(req: UpdateProfileRequest):
         raise HTTPException(500, "БД недоступна")
     updates, params, idx = [], [], 1
     if req.name.strip():
-        updates.append(f"name = ${idx}");
-        params.append(req.name.strip());
+        updates.append(f"name = ${idx}")
+        params.append(req.name.strip())
         idx += 1
     if req.theme in ('light', 'dark', 'custom'):
-        updates.append(f"theme = ${idx}");
-        params.append(req.theme);
+        updates.append(f"theme = ${idx}")
+        params.append(req.theme)
         idx += 1
         if req.theme != 'custom':
             updates.append("bg_url = NULL")
     if req.theme == 'custom' and req.bg_url:
         if len(req.bg_url) > 5_000_000:
             raise HTTPException(400, "Фон слишком большой (макс 5 МБ)")
-        updates.append(f"bg_url = ${idx}");
-        params.append(req.bg_url);
+        updates.append(f"bg_url = ${idx}")
+        params.append(req.bg_url)
         idx += 1
 
     if user.get("is_admin"):
         if req.admin_bg_url:
             if len(req.admin_bg_url) > 5_000_000:
                 raise HTTPException(400, "Фон админки слишком большой")
-            updates.append(f"admin_bg_url = ${idx}");
-            params.append(req.admin_bg_url);
+            updates.append(f"admin_bg_url = ${idx}")
+            params.append(req.admin_bg_url)
             idx += 1
         elif req.admin_bg_url == '':
             updates.append("admin_bg_url = NULL")
@@ -710,18 +714,18 @@ async def update_profile(req: UpdateProfileRequest):
             color = req.admin_btn_color.strip()
             import re as _re
             if _re.match(r'^#[0-9a-fA-F]{6}$', color):
-                updates.append(f"admin_btn_color = ${idx}");
-                params.append(color);
+                updates.append(f"admin_btn_color = ${idx}")
+                params.append(color)
                 idx += 1
 
         if req.admin_theme in ('auto', 'light', 'dark', 'custom'):
-            updates.append(f"admin_theme = ${idx}");
-            params.append(req.admin_theme);
+            updates.append(f"admin_theme = ${idx}")
+            params.append(req.admin_theme)
             idx += 1
 
     if req.btn_style in ('light', 'dark'):
-        updates.append(f"btn_style = ${idx}");
-        params.append(req.btn_style);
+        updates.append(f"btn_style = ${idx}")
+        params.append(req.btn_style)
         idx += 1
 
     if not updates:

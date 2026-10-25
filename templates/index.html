@@ -375,11 +375,12 @@
             else if (/safari/i.test(ua)) browser = 'Safari';
             else if (/yabrowser/i.test(ua)) browser = 'Yandex';
             let os = 'Unknown';
+            // ВАЖНО: Android проверяем ДО Linux!
             if (/windows/i.test(ua)) os = 'Windows';
             else if (/mac/i.test(ua)) os = 'macOS';
-            else if (/linux/i.test(ua)) os = 'Linux';
             else if (/android/i.test(ua)) os = 'Android';
             else if (/iphone|ipad|ios/i.test(ua)) os = 'iOS';
+            else if (/linux/i.test(ua)) os = 'Linux';
             return `${device} · ${os} · ${browser} · ${window.screen.width}×${window.screen.height} · ${navigator.language || 'unknown'}`;
         }
 
@@ -448,7 +449,8 @@
         async function init() {
             if (authToken) {
                 try {
-                    const r = await fetch('/api/auth/me?token=' + encodeURIComponent(authToken));
+                    const device = getDeviceInfo();
+                    const r = await fetch('/api/auth/me?token=' + encodeURIComponent(authToken) + '&device=' + encodeURIComponent(device));
                     if (r.ok) {
                         const d = await r.json();
                         authUser = d.user;
@@ -456,6 +458,16 @@
                         applyTheme(authUser.theme || 'light', authUser.bg_url);
                         setAuthState(true);
                         await showMain();
+                        return;
+                    } else if (r.status === 403) {
+                        // Если устройство заблокировано
+                        const d = await r.json();
+                        authToken = '';
+                        localStorage.removeItem('gdz_token');
+                        setAuthState(false);
+                        showAuth();
+                        $('authStatus').innerHTML = '🚫 ' + (d.detail || 'Доступ заблокирован');
+                        $('authStatus').className = 'fb-status error';
                         return;
                     } else {
                         authToken = '';
@@ -503,7 +515,7 @@
 
         async function loadSubjects() {
             try {
-                const r = await fetch('/api/subjects');
+                const r = await fetch('/api/subjects?t=' + Date.now());
                 const d = await r.json();
                 SUBJECTS = d.subjects || [];
                 renderSubjects();
