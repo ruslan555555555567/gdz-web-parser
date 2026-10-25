@@ -12,9 +12,8 @@
                 const token = localStorage.getItem('gdz_token');
                 const root = document.documentElement;
 
-                if (theme === 'dark') {
-                    root.classList.add('theme-dark');
-                } else if (theme === 'custom' && bg) {
+                if (theme === 'dark') root.classList.add('theme-dark');
+                else if (theme === 'custom' && bg) {
                     root.classList.add('theme-custom');
                     root.classList.add('btn-style-light');
                     root.style.backgroundImage = 'url("' + bg + '")';
@@ -33,27 +32,15 @@
 
         /* ═══ СТИЛИ ДЛЯ КРАСИВОГО ПРИВЕТСТВИЯ ═══ */
         .welcome-greeting {
-            text-align: center;
-            font-size: 22px;
-            font-weight: 700;
-            margin-bottom: 20px;
-            color: #2d3748;
-            opacity: 0;
-            transform: translateY(-20px);
+            text-align: center; font-size: 22px; font-weight: 700; margin-bottom: 20px;
+            color: #2d3748; opacity: 0; transform: translateY(-20px);
             animation: slideDownFade 0.8s cubic-bezier(0.25, 0.8, 0.25, 1) forwards;
         }
         .theme-dark .welcome-greeting { color: #e2e8f0; }
         .theme-custom .welcome-greeting { color: #ffffff; text-shadow: 0 2px 4px rgba(0,0,0,0.8); }
-
-        .welcome-greeting span {
-            color: #4299e1;
-            text-shadow: 0 0 10px rgba(66, 153, 225, 0.3);
-        }
+        .welcome-greeting span { color: #4299e1; text-shadow: 0 0 10px rgba(66, 153, 225, 0.3); }
         .theme-custom .welcome-greeting span { color: #90cdf4; }
-
-        @keyframes slideDownFade {
-            to { opacity: 1; transform: translateY(0); }
-        }
+        @keyframes slideDownFade { to { opacity: 1; transform: translateY(0); } }
 
         /* ═══ СТИЛИ ДЛЯ ВЫПАДАЮЩЕГО МЕНЮ ═══ */
         .user-menu-container { position: relative; display: inline-block; }
@@ -82,7 +69,6 @@
             z-index: 1000; overflow: hidden; border: 1px solid #e2e8f0;
         }
         .theme-dark .dropdown-menu { background: #2d3748; border-color: #4a5568; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
-
         .dropdown-menu.show { opacity: 1; visibility: visible; transform: translateY(0) scale(1); }
 
         .dropdown-header {
@@ -142,9 +128,7 @@
         }
 
         html.theme-custom textarea::placeholder,
-        html.theme-custom input::placeholder {
-            color: rgba(255, 255, 255, 0.6) !important;
-        }
+        html.theme-custom input::placeholder { color: rgba(255, 255, 255, 0.6) !important; }
 
         html.theme-custom .user-menu-btn {
             background: rgba(255, 255, 255, 0.1) !important;
@@ -152,24 +136,20 @@
             border: 1px solid rgba(255,255,255,0.3) !important;
             backdrop-filter: blur(10px);
         }
-        html.theme-custom .user-menu-btn:hover {
-            background: rgba(255, 255, 255, 0.2) !important;
-        }
+        html.theme-custom .user-menu-btn:hover { background: rgba(255, 255, 255, 0.2) !important; }
     </style>
     <link rel="stylesheet" href="/static/style.css">
     <link rel="stylesheet" href="/static/animations.css">
 </head>
 <body>
-    <!-- Летающие фигуры -->
     <div class="floating-shapes">
         <div class="shape shape-1"></div>
         <div class="shape shape-2"></div>
         <div class="shape shape-3"></div>
         <div class="shape shape-4"></div>
     </div>
-
-    <!-- Мерцающие частицы -->
     <div class="particles" id="particles"></div>
+
     <!-- ЭКРАН ВХОДА -->
     <div id="authScreen" class="auth-screen">
         <div class="auth-screen-box">
@@ -205,10 +185,7 @@
             <span class="version">v{{ version }}</span>
             <div class="topbar-right" id="topbarRight"></div>
         </div>
-
-        <!-- КРАСИВОЕ ПРИВЕТСТВИЕ -->
         <div class="welcome-greeting" id="welcomeGreeting"></div>
-
         <h1>📚 GDZ Парсер</h1>
         <p class="subtitle">7 класс · Введи номера или текст задания</p>
         <section class="card">
@@ -237,7 +214,6 @@
     <div id="settingsModal" class="modal hidden">
         <div class="modal-content">
             <h3>⚙️ Настройки аккаунта</h3>
-
             <div class="settings-section">
                 <label class="form-label">Аватарка</label>
                 <div class="avatar-block">
@@ -251,14 +227,12 @@
                     </div>
                 </div>
             </div>
-
             <div class="settings-section">
                 <label class="form-label">
                     Имя
                     <input type="text" id="setName" placeholder="Как тебя зовут">
                 </label>
             </div>
-
             <div class="settings-section">
                 <label class="form-label">Оформление главной</label>
                 <div class="theme-options">
@@ -286,20 +260,16 @@
                     <p class="hint" style="margin-top:6px;">Картинка сохранится в аккаунте.</p>
                 </div>
             </div>
-
             <div class="settings-section" id="passwordSection">
                 <label class="form-label">Смена пароля</label>
                 <input type="password" id="setOldPwd" class="num-input" placeholder="Текущий пароль" style="margin-bottom:8px;">
                 <input type="password" id="setNewPwd" class="num-input" placeholder="Новый пароль (мин. 6 символов)">
             </div>
-
             <div class="settings-section" id="logoutSection">
                 <label class="form-label">Сессия</label>
                 <button type="button" id="logoutBtn" class="btn-logout">🚪 Выйти из аккаунта</button>
             </div>
-
             <div id="settingsStatus" class="fb-status"></div>
-
             <div class="modal-actions" style="justify-content:space-between;">
                 <button type="button" id="deleteAccountBtn" class="btn-danger">🗑 Удалить аккаунт</button>
                 <div style="display:flex; gap:10px;">
@@ -348,7 +318,6 @@
         let currentBgUrl = localStorage.getItem('gdz_bg') || null;
         let currentAvatar = null;
         let SUBJECTS = [];
-
         let originalTheme = 'light';
         let originalBgUrl = null;
 
@@ -375,7 +344,6 @@
             else if (/safari/i.test(ua)) browser = 'Safari';
             else if (/yabrowser/i.test(ua)) browser = 'Yandex';
             let os = 'Unknown';
-            // ВАЖНО: Android проверяем ДО Linux!
             if (/windows/i.test(ua)) os = 'Windows';
             else if (/mac/i.test(ua)) os = 'macOS';
             else if (/android/i.test(ua)) os = 'Android';
@@ -488,7 +456,6 @@
             setAuthState(true);
             authScreen.classList.add('hidden');
             mainScreen.classList.remove('hidden');
-
             updateGreeting();
             renderTopbar();
             await loadSubjects();
@@ -514,7 +481,8 @@
 
         async function loadSubjects() {
             try {
-                const r = await fetch('/api/subjects?t=' + Date.now());
+                // Передаем токен, чтобы сервер знал, какие предметы показывать
+                const r = await fetch('/api/subjects?token=' + encodeURIComponent(authToken) + '&t=' + Date.now());
                 const d = await r.json();
                 SUBJECTS = d.subjects || [];
                 renderSubjects();
@@ -553,9 +521,7 @@
                     ta.dataset.subject = s.name;
                     ta.dataset.type = s.type || 'numbers';
                     ta.dataset.url = s.url || '';
-                    ta.placeholder = s.type === 'text'
-                        ? 'Вставь текст задания...'
-                        : '447, 449, 451 — или текст задания';
+                    ta.placeholder = s.type === 'text' ? 'Вставь текст задания...' : '447, 449, 451 — или текст задания';
                     row.appendChild(ta);
                     groupDiv.appendChild(row);
                 });
@@ -638,11 +604,8 @@
                 const d = await r.json();
 
                 if (!r.ok) {
-                    if (r.status === 403) {
-                        st.innerHTML = '🚫 ' + (d.detail || 'Доступ заблокирован');
-                    } else {
-                        st.textContent = '❌ ' + (d.detail || 'Ошибка');
-                    }
+                    if (r.status === 403) st.innerHTML = '🚫 ' + (d.detail || 'Доступ заблокирован');
+                    else st.textContent = '❌ ' + (d.detail || 'Ошибка');
                     st.className = 'fb-status error';
                     return;
                 }
@@ -722,10 +685,8 @@
             $('setOldPwd').value = '';
             $('setNewPwd').value = '';
             updateAvatarPreview();
-
             originalTheme = authUser.theme || 'light';
             originalBgUrl = authUser.bg_url || null;
-
             document.querySelectorAll('.theme-btn').forEach(t => t.classList.toggle('active', t.dataset.theme === currentTheme));
             $('customBgBlock').style.display = currentTheme === 'custom' ? 'block' : 'none';
         }
@@ -799,24 +760,18 @@
             const newPwd = $('setNewPwd').value;
             st.textContent = '⏳ Применяем...';
             st.className = 'fb-status loading';
-            const payload = {
-                token: authToken, name: newName, theme: newTheme, bg_url: bgToSave
-            };
+            const payload = { token: authToken, name: newName, theme: newTheme, bg_url: bgToSave };
             try {
                 const r1 = await fetch('/api/auth/update', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload) });
                 const d1 = await r1.json();
                 if (!r1.ok) { st.textContent = '❌ ' + (d1.detail || 'Ошибка'); st.className = 'fb-status error'; return; }
                 authUser = d1.user;
                 if (authUser.bg_url) currentBgUrl = authUser.bg_url;
-
                 originalTheme = authUser.theme;
                 originalBgUrl = authUser.bg_url;
-
                 applyTheme(authUser.theme, authUser.bg_url);
-
                 updateGreeting();
                 renderTopbar();
-
                 if (oldPwd && newPwd) {
                     const r2 = await fetch('/api/auth/change-password', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({token: authToken, old_password: oldPwd, new_password: newPwd}) });
                     const d2 = await r2.json();
@@ -975,14 +930,11 @@
         async function downloadAllImages() {
             const images = Array.from(document.querySelectorAll('.solution-img'));
             const validImages = images.filter(img => img.src && img.src.includes('/api/image'));
-
             if (validImages.length === 0) {
                 alert('Нет загруженных решений. Подождите, пока картинки загрузятся, или найдите новые.');
                 return;
             }
-
             if (!confirm(`Найдено ${validImages.length} решений.\nБраузер может спросить разрешение на скачивание нескольких файлов. Нажмите "Разрешить".\n\nСкачиваем?`)) return;
-
             for (let i = 0; i < validImages.length; i++) {
                 await downloadSingleImage(validImages[i].src, `GDZ_Решение_${i + 1}.jpg`);
                 await new Promise(r => setTimeout(r, 500));
@@ -1017,7 +969,6 @@
                         fetch('/api/history/save', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({token: authToken, subject: j.subject, numbers: j.numbers}) }).catch(() => {});
                     }
                 }
-
                 const globalDlBtn = document.createElement('button');
                 globalDlBtn.className = 'btn-download-all';
                 globalDlBtn.innerHTML = '⬇️ Скачать все решения';
@@ -1044,20 +995,16 @@
                         const card = document.createElement('div');
                         card.className = 'task-card';
                         card.innerHTML = `<div class="task-header"><h3>№${r.number}</h3></div>`;
-
                         r.images.forEach((u, index) => {
                             const wrapper = document.createElement('div');
                             wrapper.style.cssText = 'display: flex; flex-direction: column; gap: 8px; margin-bottom: 15px;';
-
                             const img = document.createElement('img');
                             img.className = 'solution-img img-loading';
                             img.style.marginTop = '0';
                             img.alt = 'Загрузка...';
                             loadImage(img, u);
-
                             const controls = document.createElement('div');
                             controls.style.cssText = 'display: flex; gap: 10px; justify-content: flex-end;';
-
                             const refreshBtn = document.createElement('button');
                             refreshBtn.innerHTML = '🔄 Обновить';
                             refreshBtn.title = 'Обновить картинку';
@@ -1071,7 +1018,6 @@
                                 img.src = '';
                                 loadImage(img, u);
                             };
-
                             const dlBtn = document.createElement('button');
                             dlBtn.innerHTML = '⬇️ Скачать';
                             dlBtn.title = 'Скачать решение';
@@ -1087,14 +1033,12 @@
                                     alert('Картинка еще не загрузилась, подождите...');
                                 }
                             };
-
                             controls.appendChild(refreshBtn);
                             controls.appendChild(dlBtn);
                             wrapper.appendChild(img);
                             wrapper.appendChild(controls);
                             card.appendChild(wrapper);
                         });
-
                         if (r.raw_text) {
                             const textDiv = document.createElement('div');
                             textDiv.className = 'task-text';
@@ -1113,13 +1057,10 @@
         function showStatus(text, type) { status.textContent = text; status.className = 'status ' + type; }
         function escapeHtml(t) { const d = document.createElement('div'); d.textContent = t || ''; return d.innerHTML; }
 
-        // Создание мерцающих частиц
         function createParticles() {
             const particlesContainer = document.getElementById('particles');
             if (!particlesContainer) return;
-
-            const particleCount = 40;
-            for (let i = 0; i < particleCount; i++) {
+            for (let i = 0; i < 40; i++) {
                 const particle = document.createElement('div');
                 particle.className = 'particle';
                 particle.style.left = Math.random() * 100 + '%';
@@ -1130,26 +1071,17 @@
             }
         }
 
-        // Анимация движения фигур за курсором
         document.addEventListener('mousemove', (e) => {
             const shapes = document.querySelectorAll('.shape');
             const x = e.clientX / window.innerWidth;
             const y = e.clientY / window.innerHeight;
-
             shapes.forEach((shape, index) => {
                 const speed = (index + 1) * 15;
-                const moveX = x * speed;
-                const moveY = y * speed;
-                shape.style.transform = `translate(${moveX}px, ${moveY}px)`;
+                shape.style.transform = `translate(${x * speed}px, ${y * speed}px)`;
             });
         });
 
-        // Добавление класса ripple к кнопкам
-        document.querySelectorAll('.btn-primary, .btn-secondary').forEach(btn => {
-            btn.classList.add('ripple');
-        });
-
-        // Инициализация частиц
+        document.querySelectorAll('.btn-primary, .btn-secondary').forEach(btn => btn.classList.add('ripple'));
         createParticles();
 
         init();

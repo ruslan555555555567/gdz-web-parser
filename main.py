@@ -16,7 +16,7 @@ import asyncpg
 
 from parser import parse_tasks
 
-VERSION = "51.0.0"
+VERSION = "52.0.0"
 ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "")
 ADMIN_EMAIL = os.getenv("ADMIN_EMAIL", "admin@gdz.ru").lower().strip()
 DATABASE_URL = os.getenv("DATABASE_URL")
@@ -99,6 +99,15 @@ async def init_db():
                 )
             """)
 
+            # НОВАЯ ТАБЛИЦА: Предметы для конкретных пользователей
+            await conn.execute("""
+                CREATE TABLE IF NOT EXISTS user_subjects (
+                    user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+                    subject_id INTEGER REFERENCES subjects(id) ON DELETE CASCADE,
+                    PRIMARY KEY (user_id, subject_id)
+                )
+            """)
+
             await conn.execute("""
                 CREATE TABLE IF NOT EXISTS sessions (
                     token TEXT PRIMARY KEY,
@@ -167,8 +176,7 @@ async def init_db():
                         INSERT INTO subjects (name, url, type, group_name, sort_order, max_number, note)
                         VALUES ($1, $2, $3, $4, $5, $6, $7)
                         ON CONFLICT (name) DO NOTHING
-                    """, s["name"], s["url"], s["type"], s["group_name"],
-                                       s["sort_order"], s["max_number"], s["note"])
+                    """, s["name"], s["url"], s["type"], s["group_name"], s["sort_order"], s["max_number"], s["note"])
                 print(f"[main] Добавлено {len(DEFAULT_SUBJECTS)} предметов")
 
         print("[main] PostgreSQL подключена")
@@ -186,11 +194,7 @@ async def log_action(user_id, action: str, details: str = "", ip: str = ""):
                 "INSERT INTO logs (user_id, action, details, ip) VALUES ($1, $2, $3, $4)",
                 user_id, action, details[:500], ip[:50]
             )
-            await conn.execute("""
-                DELETE FROM logs WHERE id NOT IN (
-                    SELECT id FROM logs ORDER BY id DESC LIMIT 5000
-                )
-            """)
+            await conn.execute("DELETE FROM logs WHERE id NOT IN (SELECT id FROM logs ORDER BY id DESC LIMIT 5000)")
     except Exception as e:
         print(f"[log] {e}")
 
@@ -230,9 +234,7 @@ async def get_admin_password_hash():
         return None
     try:
         async with db_pool.acquire() as conn:
-            return await conn.fetchval(
-                "SELECT value FROM settings WHERE key = 'admin_password_hash'"
-            )
+            return await conn.fetchval("SELECT value FROM settings WHERE key = 'admin_password_hash'")
     except Exception:
         return None
 
@@ -362,16 +364,12 @@ async def startup():
     await init_db()
 
 
-# ═══════ РЕНДЕР ШАБЛОНОВ (БД → файл) ═══════
-
 async def render_page(request: Request, name: str, context: dict):
     html = None
     if db_pool is not None:
         try:
             async with db_pool.acquire() as conn:
-                html = await conn.fetchval(
-                    "SELECT content FROM templates WHERE name = $1", name
-                )
+                html = await conn.fetchval("SELECT content FROM templates WHERE name = $1", name)
         except Exception:
             pass
     if html:
@@ -398,8 +396,6 @@ async def get_version():
     return {"version": VERSION}
 
 
-# ═══════ HEALTHCHECK ДЛЯ KEEP-ALIVE ═══════
-
 @app.get("/health")
 async def health():
     db_status = "no_pool"
@@ -411,12 +407,7 @@ async def health():
         except Exception as e:
             db_status = f"error: {type(e).__name__}"
 
-    return {
-        "status": "ok",
-        "db": db_status,
-        "version": VERSION,
-        "time": datetime.utcnow().isoformat() + "Z",
-    }
+    return {"status": "ok", "db": db_status, "version": VERSION, "time": datetime.utcnow().isoformat() + "Z"}
 
 
 @app.head("/health")
@@ -432,14 +423,34 @@ async def ping():
 # ═══════ ПРЕДМЕТЫ ═══════
 
 @app.get("/api/subjects")
-async def get_subjects():
+async def get_subjects(token: str = ""):
     if db_pool is None:
         return {"subjects": DEFAULT_SUBJECTS}
+
+    user = await get_user_by_token(token) if token else None
+
     async with db_pool.acquire() as conn:
-        rows = await conn.fetch("""
-            SELECT id, name, url, type, group_name, sort_order, max_number, note
-            FROM subjects ORDER BY sort_order, id
-        """)
+        if not user or user.get("is_admin"):
+            # Админы и гости видят всё
+            rows = await conn.fetch("""
+                SELECT id, name, url, type, group_name, sort_order, max_number, note
+                FROM subjects ORDER BY sort_order, id
+            """)
+        else:
+            # Обычные пользователи видят только свои предметы (если они заданы)
+            assigned = await conn.fetch("SELECT subject_id FROM user_subjects WHERE user_id = $1", user["id"])
+            if assigned:
+                s_ids = [r["subject_id"] for r in assigned]
+                rows = await conn.fetch("""
+                    SELECT id, name, url, type, group_name, sort_order, max_number, note
+                    FROM subjects WHERE id = ANY($1::int[]) ORDER BY sort_order, id
+                """, s_ids)
+            else:
+                # Если ничего не назначено — видит всё (по умолчанию)
+                rows = await conn.fetch("""
+                    SELECT id, name, url, type, group_name, sort_order, max_number, note
+                    FROM subjects ORDER BY sort_order, id
+                """)
     return {"subjects": [dict(r) for r in rows]}
 
 
@@ -533,10 +544,7 @@ async def admin_reorder_subjects(data: dict):
     async with db_pool.acquire() as conn:
         for index, subj_id in enumerate(ids, start=1):
             try:
-                await conn.execute(
-                    "UPDATE subjects SET sort_order = $1 WHERE id = $2",
-                    index, int(subj_id)
-                )
+                await conn.execute("UPDATE subjects SET sort_order = $1 WHERE id = $2", index, int(subj_id))
             except (ValueError, TypeError):
                 continue
     await log_action(None, "subject_reorder", f"count={len(ids)}")
@@ -556,8 +564,7 @@ async def admin_reset_subjects(data: dict):
                 INSERT INTO subjects (name, url, type, group_name, sort_order, max_number, note)
                 VALUES ($1, $2, $3, $4, $5, $6, $7)
                 ON CONFLICT (name) DO NOTHING
-            """, s["name"], s["url"], s["type"], s["group_name"],
-                               s["sort_order"], s["max_number"], s["note"])
+            """, s["name"], s["url"], s["type"], s["group_name"], s["sort_order"], s["max_number"], s["note"])
     await log_action(None, "subjects_reset")
     return {"ok": True, "count": len(DEFAULT_SUBJECTS)}
 
@@ -568,7 +575,6 @@ async def admin_reset_subjects(data: dict):
 async def register(req: RegisterRequest, request: Request):
     if db_pool is None:
         raise HTTPException(500, "БД не подключена")
-
     async with db_pool.acquire() as conn:
         is_blocked = await conn.fetchval("SELECT 1 FROM blocked_devices WHERE device = $1", req.device.strip())
         if is_blocked:
@@ -589,8 +595,7 @@ async def register(req: RegisterRequest, request: Request):
         user_id = await conn.fetchval(
             "INSERT INTO users (email, password_hash, name, is_admin, device, theme, is_verified) "
             "VALUES ($1, $2, $3, $4, $5, 'light', TRUE) RETURNING id",
-            email, hash_password(req.password), req.name.strip(),
-            is_admin, req.device.strip()
+            email, hash_password(req.password), req.name.strip(), is_admin, req.device.strip()
         )
 
         token = secrets.token_urlsafe(32)
@@ -599,8 +604,7 @@ async def register(req: RegisterRequest, request: Request):
     return {"ok": True, "token": token, "user": {
         "id": user_id, "email": email, "name": req.name.strip(),
         "is_admin": is_admin, "theme": "light", "bg_url": None, "avatar": None,
-        "admin_bg_url": None, "admin_btn_color": "#4299e1",
-        "admin_theme": "auto", "btn_style": "light"
+        "admin_bg_url": None, "admin_btn_color": "#4299e1", "admin_theme": "auto", "btn_style": "light"
     }}
 
 
@@ -608,7 +612,6 @@ async def register(req: RegisterRequest, request: Request):
 async def login(req: LoginRequest, request: Request):
     if db_pool is None:
         raise HTTPException(500, "БД не подключена")
-
     async with db_pool.acquire() as conn:
         is_blocked = await conn.fetchval("SELECT 1 FROM blocked_devices WHERE device = $1", req.device.strip())
         if is_blocked:
@@ -621,17 +624,14 @@ async def login(req: LoginRequest, request: Request):
             "admin_bg_url, admin_btn_color, admin_theme, btn_style "
             "FROM users WHERE email = $1", email
         )
-
         if not row or not verify_password(req.password, row["password_hash"]):
             ip = request.client.host if request.client else ""
             await log_action(None, "login_fail", email, ip)
             raise HTTPException(401, "Неверный email или пароль")
 
         if req.device.strip():
-            await conn.execute(
-                "UPDATE users SET device = $1, last_seen = NOW() WHERE id = $2",
-                req.device.strip(), row["id"]
-            )
+            await conn.execute("UPDATE users SET device = $1, last_seen = NOW() WHERE id = $2", req.device.strip(),
+                               row["id"])
         else:
             await conn.execute("UPDATE users SET last_seen = NOW() WHERE id = $1", row["id"])
         token = secrets.token_urlsafe(32)
@@ -642,10 +642,8 @@ async def login(req: LoginRequest, request: Request):
         "id": row["id"], "email": row["email"], "name": row["name"],
         "is_admin": row["is_admin"], "theme": row["theme"] or "light",
         "bg_url": row["bg_url"], "avatar": row["avatar"],
-        "admin_bg_url": row["admin_bg_url"],
-        "admin_btn_color": row["admin_btn_color"] or "#4299e1",
-        "admin_theme": row["admin_theme"] or "auto",
-        "btn_style": row["btn_style"] or "light"
+        "admin_bg_url": row["admin_bg_url"], "admin_btn_color": row["admin_btn_color"] or "#4299e1",
+        "admin_theme": row["admin_theme"] or "auto", "btn_style": row["btn_style"] or "light"
     }}
 
 
@@ -662,7 +660,6 @@ async def logout(req: TokenRequest):
 
 @app.get("/api/auth/me")
 async def me(token: str = "", device: str = ""):
-    # ПРОВЕРКА НА БЛОКИРОВКУ УСТРОЙСТВА
     if device and db_pool is not None:
         async with db_pool.acquire() as conn:
             is_blocked = await conn.fetchval("SELECT 1 FROM blocked_devices WHERE device = $1", device.strip())
@@ -736,8 +733,7 @@ async def update_profile(req: UpdateProfileRequest):
         row = await conn.fetchrow(
             "SELECT id, email, name, is_admin, theme, bg_url, avatar, "
             "admin_bg_url, admin_btn_color, admin_theme, btn_style "
-            "FROM users WHERE id = $1",
-            user["id"]
+            "FROM users WHERE id = $1", user["id"]
         )
     await log_action(user["id"], "profile_update", f"{req.theme} / {req.btn_style}")
     return {"ok": True, "user": dict(row)}
@@ -776,10 +772,8 @@ async def change_password(req: ChangePasswordRequest):
         row = await conn.fetchrow("SELECT password_hash FROM users WHERE id = $1", user["id"])
         if not verify_password(req.old_password, row["password_hash"]):
             raise HTTPException(401, "Старый пароль неверный")
-        await conn.execute(
-            "UPDATE users SET password_hash = $1 WHERE id = $2",
-            hash_password(req.new_password), user["id"]
-        )
+        await conn.execute("UPDATE users SET password_hash = $1 WHERE id = $2", hash_password(req.new_password),
+                           user["id"])
     await log_action(user["id"], "password_change")
     return {"ok": True}
 
@@ -802,15 +796,11 @@ async def delete_account(req: TokenRequest):
 @app.post("/api/history/save")
 async def history_save(req: HistorySaveRequest):
     user = await get_user_by_token(req.token)
-    if not user:
-        return {"ok": False}
-    if db_pool is None:
+    if not user or db_pool is None:
         return {"ok": False}
     async with db_pool.acquire() as conn:
-        await conn.execute(
-            "INSERT INTO history (user_id, subject, numbers) VALUES ($1, $2, $3)",
-            user["id"], req.subject, req.numbers
-        )
+        await conn.execute("INSERT INTO history (user_id, subject, numbers) VALUES ($1, $2, $3)", user["id"],
+                           req.subject, req.numbers)
         await conn.execute("""
             DELETE FROM history WHERE user_id = $1 AND id NOT IN (
                 SELECT id FROM history WHERE user_id = $1 ORDER BY id DESC LIMIT 20
@@ -828,8 +818,7 @@ async def history_list(token: str = ""):
         return {"items": []}
     async with db_pool.acquire() as conn:
         rows = await conn.fetch("""
-            SELECT id, subject, numbers,
-                   to_char(created_at, 'DD.MM HH24:MI') AS created
+            SELECT id, subject, numbers, to_char(created_at, 'DD.MM HH24:MI') AS created
             FROM history WHERE user_id = $1 ORDER BY id DESC LIMIT 20
         """, user["id"])
     return {"items": [dict(r) for r in rows]}
@@ -856,10 +845,8 @@ async def feedback(req: FeedbackRequest):
         try:
             async with db_pool.acquire() as conn:
                 await conn.execute(
-                    "INSERT INTO feedback (date, message, contact, version) "
-                    "VALUES ($1, $2, $3, $4)",
-                    datetime.now().strftime("%d.%m.%Y %H:%M"),
-                    req.message.strip(), req.contact.strip(), VERSION
+                    "INSERT INTO feedback (date, message, contact, version) VALUES ($1, $2, $3, $4)",
+                    datetime.now().strftime("%d.%m.%Y %H:%M"), req.message.strip(), req.contact.strip(), VERSION
                 )
         except Exception as e:
             print(f"[main] Ошибка feedback: {e}")
@@ -882,9 +869,7 @@ async def admin_messages(data: dict):
     if db_pool is None:
         return {"messages": [], "total": 0}
     async with db_pool.acquire() as conn:
-        rows = await conn.fetch(
-            "SELECT id, date, message, contact, version FROM feedback ORDER BY id DESC"
-        )
+        rows = await conn.fetch("SELECT id, date, message, contact, version FROM feedback ORDER BY id DESC")
     return {"messages": [dict(r) for r in rows], "total": len(rows)}
 
 
@@ -914,9 +899,7 @@ async def admin_online(data: dict):
         rows = await conn.fetch("""
             SELECT id, email, name, device, is_admin, avatar,
                    to_char(last_seen, 'HH24:MI:SS') AS last_seen
-            FROM users
-            WHERE last_seen > NOW() - INTERVAL '5 minutes'
-            ORDER BY last_seen DESC
+            FROM users WHERE last_seen > NOW() - INTERVAL '5 minutes' ORDER BY last_seen DESC
         """)
     return {"users": [dict(r) for r in rows], "total": len(rows)}
 
@@ -932,8 +915,7 @@ async def admin_logs(data: dict):
             SELECT l.id, l.action, l.details, l.ip,
                    to_char(l.created_at, 'DD.MM HH24:MI:SS') AS created,
                    u.email, u.name, u.avatar
-            FROM logs l
-            LEFT JOIN users u ON u.id = l.user_id
+            FROM logs l LEFT JOIN users u ON u.id = l.user_id
             ORDER BY l.id DESC LIMIT 500
         """)
     return {"logs": [dict(r) for r in rows]}
@@ -977,6 +959,51 @@ async def admin_clear(data: dict):
     if db_pool is not None:
         async with db_pool.acquire() as conn:
             await conn.execute("DELETE FROM feedback")
+    return {"ok": True}
+
+
+# ═══════ УПРАВЛЕНИЕ АДМИНАМИ И ПРЕДМЕТАМИ (НОВЫЕ) ═══════
+
+@app.post("/api/admin/toggle-admin")
+async def admin_toggle_admin(data: dict):
+    if not await check_admin(data):
+        raise HTTPException(401, "Нет доступа")
+    user_id = data.get("user_id")
+    if not user_id:
+        raise HTTPException(400, "Нет ID пользователя")
+    async with db_pool.acquire() as conn:
+        current = await conn.fetchval("SELECT is_admin FROM users WHERE id = $1", user_id)
+        if current is None:
+            raise HTTPException(404, "Пользователь не найден")
+
+        new_status = not current
+        await conn.execute("UPDATE users SET is_admin = $1 WHERE id = $2", new_status, user_id)
+
+    await log_action(None, "toggle_admin", f"id={user_id} -> {new_status}")
+    return {"ok": True, "is_admin": new_status}
+
+
+@app.post("/api/admin/get-user-subjects")
+async def admin_get_user_subjects(data: dict):
+    if not await check_admin(data):
+        raise HTTPException(401, "Нет доступа")
+    user_id = data.get("user_id")
+    async with db_pool.acquire() as conn:
+        rows = await conn.fetch("SELECT subject_id FROM user_subjects WHERE user_id = $1", user_id)
+    return {"subject_ids": [r["subject_id"] for r in rows]}
+
+
+@app.post("/api/admin/save-user-subjects")
+async def admin_save_user_subjects(data: dict):
+    if not await check_admin(data):
+        raise HTTPException(401, "Нет доступа")
+    user_id = data.get("user_id")
+    subject_ids = data.get("subject_ids", [])
+    async with db_pool.acquire() as conn:
+        await conn.execute("DELETE FROM user_subjects WHERE user_id = $1", user_id)
+        for sid in subject_ids:
+            await conn.execute("INSERT INTO user_subjects (user_id, subject_id) VALUES ($1, $2)", user_id, sid)
+    await log_action(None, "save_user_subjects", f"id={user_id}, count={len(subject_ids)}")
     return {"ok": True}
 
 
@@ -1027,46 +1054,35 @@ async def admin_password_status(data: dict):
     if not await check_admin(data):
         raise HTTPException(401, "Нет доступа")
     stored_hash = await get_admin_password_hash()
-    return {
-        "source": "database" if stored_hash else "render_env",
-        "has_custom_password": bool(stored_hash),
-    }
+    return {"source": "database" if stored_hash else "render_env", "has_custom_password": bool(stored_hash)}
 
 
 @app.post("/api/admin/password/change")
 async def admin_change_password(req: ChangeAdminPasswordRequest):
     if db_pool is None:
         raise HTTPException(500, "БД недоступна")
-
     allowed = False
     if req.token:
         user = await get_user_by_token(req.token)
-        if user and user.get("is_admin"):
-            allowed = True
+        if user and user.get("is_admin"): allowed = True
     if not allowed and req.current_password:
         stored_hash = await get_admin_password_hash()
         if stored_hash and verify_password(req.current_password, stored_hash):
             allowed = True
         elif not stored_hash and ADMIN_PASSWORD and req.current_password == ADMIN_PASSWORD:
             allowed = True
-
     if not allowed:
         raise HTTPException(401, "Неверный текущий пароль или нет прав")
-
     if len(req.new_password) < 8:
         raise HTTPException(400, "Новый пароль минимум 8 символов")
     if req.new_password == req.current_password:
         raise HTTPException(400, "Новый пароль должен отличаться от старого")
-
     new_hash = hash_password(req.new_password)
     async with db_pool.acquire() as conn:
         await conn.execute("""
-            INSERT INTO settings (key, value, updated_at)
-            VALUES ('admin_password_hash', $1, NOW())
-            ON CONFLICT (key) DO UPDATE
-            SET value = $1, updated_at = NOW()
+            INSERT INTO settings (key, value, updated_at) VALUES ('admin_password_hash', $1, NOW())
+            ON CONFLICT (key) DO UPDATE SET value = $1, updated_at = NOW()
         """, new_hash)
-
     await log_action(None, "admin_password_change", "changed")
     return {"ok": True, "message": "Пароль обновлён. В следующий раз используй новый."}
 
@@ -1081,8 +1097,7 @@ async def public_settings():
             async with db_pool.acquire() as conn:
                 rows = await conn.fetch("SELECT key, value FROM settings")
                 for row in rows:
-                    if row["key"] in result:
-                        result[row["key"]] = row["value"] or ""
+                    if row["key"] in result: result[row["key"]] = row["value"] or ""
         except Exception:
             pass
     return result
@@ -1096,8 +1111,7 @@ async def admin_settings_get(data: dict):
     if db_pool is not None:
         async with db_pool.acquire() as conn:
             rows = await conn.fetch("SELECT key, value FROM settings")
-            for row in rows:
-                result[row["key"]] = row["value"] or ""
+            for row in rows: result[row["key"]] = row["value"] or ""
     return {"settings": result}
 
 
@@ -1109,13 +1123,10 @@ async def admin_settings_save(req: SettingsSaveRequest):
         raise HTTPException(500, "БД недоступна")
     async with db_pool.acquire() as conn:
         for key, value in req.settings.items():
-            if key not in DEFAULT_SETTINGS:
-                continue
+            if key not in DEFAULT_SETTINGS: continue
             await conn.execute("""
-                INSERT INTO settings (key, value, updated_at)
-                VALUES ($1, $2, NOW())
-                ON CONFLICT (key) DO UPDATE
-                SET value = $2, updated_at = NOW()
+                INSERT INTO settings (key, value, updated_at) VALUES ($1, $2, NOW())
+                ON CONFLICT (key) DO UPDATE SET value = $2, updated_at = NOW()
             """, key, str(value or ""))
     await log_action(None, "settings_save", ",".join(req.settings.keys())[:200])
     return {"ok": True}
@@ -1130,11 +1141,8 @@ async def admin_templates_list(data: dict):
     if db_pool is None:
         return {"templates": []}
     async with db_pool.acquire() as conn:
-        rows = await conn.fetch("""
-            SELECT name, length(content) AS size,
-                   to_char(updated_at, 'DD.MM.YY HH24:MI') AS updated
-            FROM templates ORDER BY name
-        """)
+        rows = await conn.fetch(
+            "SELECT name, length(content) AS size, to_char(updated_at, 'DD.MM.YY HH24:MI') AS updated FROM templates ORDER BY name")
     return {"templates": [dict(r) for r in rows]}
 
 
@@ -1145,15 +1153,11 @@ async def admin_templates_get(data: dict):
     name = (data.get("name") or "").strip()
     if name not in ALLOWED_TEMPLATES:
         raise HTTPException(400, "Недопустимое имя шаблона")
-    content = None
-    source = "file"
+    content, source = None, "file"
     if db_pool is not None:
         async with db_pool.acquire() as conn:
-            content = await conn.fetchval(
-                "SELECT content FROM templates WHERE name = $1", name
-            )
-        if content:
-            source = "db"
+            content = await conn.fetchval("SELECT content FROM templates WHERE name = $1", name)
+        if content: source = "db"
     if content is None:
         path = os.path.join("templates", name)
         if os.path.exists(path):
@@ -1178,10 +1182,8 @@ async def admin_templates_save(req: TemplateSaveRequest):
         raise HTTPException(500, "БД недоступна")
     async with db_pool.acquire() as conn:
         await conn.execute("""
-            INSERT INTO templates (name, content, updated_at)
-            VALUES ($1, $2, NOW())
-            ON CONFLICT (name) DO UPDATE
-            SET content = $2, updated_at = NOW()
+            INSERT INTO templates (name, content, updated_at) VALUES ($1, $2, NOW())
+            ON CONFLICT (name) DO UPDATE SET content = $2, updated_at = NOW()
         """, req.name, req.content)
     await log_action(None, "template_save", req.name)
     return {"ok": True, "size": len(req.content)}
@@ -1227,8 +1229,7 @@ async def proxy_image(url: str, w: int = 1000):
     w = max(400, min(w, 2000))
 
     def fetch_and_compress():
-        r = cffi_requests.get(url, impersonate="chrome", timeout=8,
-                              headers={"Referer": "https://gdz.ru/"})
+        r = cffi_requests.get(url, impersonate="chrome", timeout=8, headers={"Referer": "https://gdz.ru/"})
         if r.status_code != 200:
             raise Exception(f"HTTP {r.status_code}")
         try:
@@ -1252,8 +1253,7 @@ async def proxy_image(url: str, w: int = 1000):
     try:
         data, content_type = await asyncio.to_thread(fetch_and_compress)
     except Exception:
-        return Response(content=PLACEHOLDER_JPEG, media_type="image/jpeg",
-                        headers={"Cache-Control": "no-cache"})
+        return Response(content=PLACEHOLDER_JPEG, media_type="image/jpeg", headers={"Cache-Control": "no-cache"})
 
     return Response(content=data, media_type=content_type or "image/jpeg",
                     headers={"Cache-Control": "public, max-age=86400"})

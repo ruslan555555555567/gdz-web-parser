@@ -13,9 +13,8 @@
                 const token = localStorage.getItem('gdz_token');
                 const root = document.documentElement;
 
-                if (adminTheme === 'dark') {
-                    root.classList.add('admin-theme-dark');
-                } else if (adminTheme === 'custom' && adminBg) {
+                if (adminTheme === 'dark') root.classList.add('admin-theme-dark');
+                else if (adminTheme === 'custom' && adminBg) {
                     root.classList.add('admin-theme-custom');
                     root.style.setProperty('--admin-bg-image', 'url("' + adminBg + '")');
                 } else {
@@ -85,13 +84,34 @@
             color: #f7fafc !important;
         }
 
-        /* Стили для кнопок блокировки */
+        /* Стили для кнопок */
         .btn-block { background: #ed8936 !important; color: #fff !important; border: none; padding: 6px 10px; border-radius: 6px; cursor: pointer; font-size: 12px; }
         .btn-block:hover { background: #dd6b20 !important; }
         .btn-unblock { background: #48bb78 !important; color: #fff !important; border: none; padding: 6px 10px; border-radius: 6px; cursor: pointer; font-size: 12px; }
         .btn-unblock:hover { background: #38a169 !important; }
         .blocked-device-row { display: flex; justify-content: space-between; align-items: center; background: #f7fafc; border: 1px solid #e2e8f0; padding: 10px 15px; border-radius: 8px; margin-bottom: 8px; font-size: 13px; }
         .admin-theme-dark .blocked-device-row { background: rgba(45,55,72,0.5); border-color: #4a5568; color: #e2e8f0; }
+
+        /* ФИКС КОРЗИНЫ */
+        .user-del {
+            background: rgba(229, 62, 62, 0.1) !important;
+            border: 1px solid #e53e3e !important;
+            color: #e53e3e !important;
+            border-radius: 6px; padding: 4px 8px; cursor: pointer; font-size: 16px;
+            transition: all 0.2s;
+        }
+        .user-del:hover { background: rgba(229, 62, 62, 0.3) !important; }
+        .admin-theme-dark .user-del, .theme-dark .user-del {
+            background: rgba(229, 62, 62, 0.2) !important;
+            color: #fc8181 !important;
+            border-color: #fc8181 !important;
+        }
+        .admin-theme-dark .user-del:hover, .theme-dark .user-del:hover {
+            background: rgba(229, 62, 62, 0.4) !important;
+        }
+
+        .btn-admin-toggle { background: #ecc94b !important; color: #1a202c !important; border: none; padding: 6px 10px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600; }
+        .btn-subjects { background: #9f7aea !important; color: #fff !important; border: none; padding: 6px 10px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600;}
     </style>
     <link rel="stylesheet" href="/static/style.css">
 </head>
@@ -241,6 +261,7 @@
         </section>
     </div>
 
+    <!-- Модалка редактирования предмета -->
     <div id="editModal" class="modal hidden">
         <div class="modal-content">
             <h3 id="editModalTitle">✏️ Редактировать предмет</h3>
@@ -271,12 +292,26 @@
         </div>
     </div>
 
+    <!-- Модалка выбора предметов для пользователя -->
+    <div id="userSubjectsModal" class="modal hidden">
+        <div class="modal-content">
+            <h3>📚 Предметы пользователя</h3>
+            <p class="hint" style="margin-bottom:15px;">Выберите, какие предметы будет видеть этот пользователь. Если ничего не выбрано, он видит все.</p>
+            <div id="userSubjectsList" style="display:flex; flex-direction:column; gap:8px; max-height:50vh; overflow-y:auto; margin-bottom:15px;"></div>
+            <div class="modal-actions">
+                <button type="button" onclick="document.getElementById('userSubjectsModal').classList.add('hidden')" class="btn-secondary">Отмена</button>
+                <button type="button" id="saveUserSubjectsBtn" class="btn-primary" style="width:auto;">💾 Сохранить</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         let authData = { token: '', password: '' };
         let onlineTimer = null;
         let subjectsCache = [];
         let usersCache = [];
         let draggedId = null;
+        let currentEditingUserId = null;
 
         const ACTION_ICONS = {
             'register': '🆕', 'login': '🔑', 'login_fail': '⚠️', 'logout': '🚪',
@@ -284,7 +319,7 @@
             'password_change': '🔐', 'account_delete': '❌',
             'subject_add': '➕', 'subject_update': '✏️', 'subject_delete': '🗑',
             'subject_reorder': '↕️', 'subjects_reset': '🔄', 'admin_delete_user': '👤',
-            'block_device': '🚫', 'unblock_device': '✅'
+            'block_device': '🚫', 'unblock_device': '✅', 'toggle_admin': '👑'
         };
 
         function getInitial(name, email) {
@@ -356,11 +391,7 @@
                 btn.classList.toggle('active', btn.dataset.theme === currentAdminTheme);
             });
             const uploadSec = document.getElementById('adminBgUploadSection');
-            if (currentAdminTheme === 'custom') {
-                uploadSec.style.display = 'block';
-            } else {
-                uploadSec.style.display = 'none';
-            }
+            uploadSec.style.display = currentAdminTheme === 'custom' ? 'block' : 'none';
             const preview = document.getElementById('adminCustomPreviewBg');
             if (currentAdminBgUrl) {
                 preview.style.backgroundImage = `url('${currentAdminBgUrl}')`;
@@ -457,6 +488,7 @@
 
         function getAuthPayload() { return authData.token ? {token: authData.token} : {password: authData.password}; }
 
+        // === ПРЕДМЕТЫ ===
         document.getElementById('refreshSubjectsBtn').onclick = loadSubjects;
         document.getElementById('resetSubjectsBtn').onclick = async () => {
             if (!confirm('Восстановить список по умолчанию?')) return;
@@ -596,6 +628,7 @@
             } catch (e) { st.textContent = '❌ ' + e.message; st.className = 'fb-status error'; }
         };
 
+        // === ОНЛАЙН ===
         document.getElementById('refreshOnlineBtn').onclick = loadOnline;
         async function loadOnline() {
             try {
@@ -624,6 +657,7 @@
             } catch {}
         }
 
+        // === ПОЛЬЗОВАТЕЛИ ===
         document.getElementById('refreshUsersBtn').onclick = loadUsers;
         async function loadUsers() {
             const list = document.getElementById('usersList');
@@ -643,7 +677,9 @@
                     const badge = u.is_admin ? '<span class="admin-badge">👑 АДМИН</span>' : '';
                     const avatarHtml = u.avatar ? `<span class="user-avatar" style="background-image:url('${u.avatar}')"></span>` : `<span class="user-avatar">${getInitial(u.name, u.email)}</span>`;
 
-                    const blockBtnHtml = u.device ? `<button class="btn-block user-block" data-index="${index}" title="Заблокировать это устройство">🚫 Устройство</button>` : '';
+                    const blockBtnHtml = u.device ? `<button class="btn-block user-block" data-index="${index}" title="Заблокировать это устройство">🚫</button>` : '';
+                    const adminBtnHtml = `<button class="btn-admin-toggle user-admin" data-index="${index}" title="${u.is_admin ? 'Снять админа' : 'Сделать админом'}">👑</button>`;
+                    const subjBtnHtml = `<button class="btn-subjects user-subj" data-index="${index}" title="Настроить предметы">📚</button>`;
 
                     div.innerHTML = `
                         <div class="user-head">
@@ -651,8 +687,10 @@
                             <strong>${escapeHtml(u.name || 'Без имени')}</strong>
                             ${badge}
                             <div style="display:flex; gap:5px; margin-left:auto;">
+                                ${adminBtnHtml}
+                                ${subjBtnHtml}
                                 ${blockBtnHtml}
-                                <button class="msg-delete user-del" data-id="${u.id}" title="Удалить аккаунт">🗑</button>
+                                <button class="user-del" data-id="${u.id}" title="Удалить аккаунт">🗑</button>
                             </div>
                         </div>
                         <div class="user-row">📧 ${escapeHtml(u.email)}</div>
@@ -665,6 +703,7 @@
         }
 
         document.getElementById('usersList').addEventListener('click', async (e) => {
+            // Удаление
             const delBtn = e.target.closest('.user-del');
             if (delBtn) {
                 if (!confirm('Удалить пользователя?')) return;
@@ -676,12 +715,12 @@
                 } catch (err) { delBtn.disabled = false; alert('Ошибка: ' + err.message); }
             }
 
+            // Блокировка
             const blockBtn = e.target.closest('.user-block');
             if (blockBtn) {
                 const index = parseInt(blockBtn.dataset.index);
                 const user = usersCache[index];
                 if (!user || !user.device) return;
-
                 if (!confirm(`Заблокировать устройство?\n\n${user.device}`)) return;
                 blockBtn.disabled = true;
                 try {
@@ -691,9 +730,73 @@
                     loadBlockedDevices();
                 } catch (err) { blockBtn.disabled = false; alert('Ошибка: ' + err.message); }
             }
+
+            // Выдача админки
+            const adminBtn = e.target.closest('.user-admin');
+            if (adminBtn) {
+                const index = parseInt(adminBtn.dataset.index);
+                const user = usersCache[index];
+                if (!confirm(`Изменить права администратора для ${user.email}?`)) return;
+                adminBtn.disabled = true;
+                try {
+                    const r = await fetch('/api/admin/toggle-admin', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({...getAuthPayload(), user_id: user.id}) });
+                    if (!r.ok) throw new Error('Ошибка');
+                    loadUsers();
+                } catch (err) { adminBtn.disabled = false; alert('Ошибка: ' + err.message); }
+            }
+
+            // Настройка предметов
+            const subjBtn = e.target.closest('.user-subj');
+            if (subjBtn) {
+                const index = parseInt(subjBtn.dataset.index);
+                const user = usersCache[index];
+                currentEditingUserId = user.id;
+
+                const list = document.getElementById('userSubjectsList');
+                list.innerHTML = '<p class="empty">Загрузка...</p>';
+                document.getElementById('userSubjectsModal').classList.remove('hidden');
+
+                try {
+                    const r = await fetch('/api/admin/get-user-subjects', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({...getAuthPayload(), user_id: user.id}) });
+                    const d = await r.json();
+                    const selected = d.subject_ids || [];
+
+                    list.innerHTML = '';
+                    subjectsCache.forEach(s => {
+                        const isChecked = selected.includes(s.id);
+                        list.innerHTML += `
+                            <label style="display:flex; align-items:center; gap:10px; padding:8px; border-radius:8px; background: rgba(255,255,255,0.05); cursor:pointer;">
+                                <input type="checkbox" value="${s.id}" ${isChecked ? 'checked' : ''} style="width:18px; height:18px;">
+                                <span>${escapeHtml(s.name)}</span>
+                            </label>
+                        `;
+                    });
+                } catch (err) { list.innerHTML = '<p class="empty">Ошибка загрузки</p>'; }
+            }
         });
 
-        // ЛОГИКА БЛОКИРОВОК
+        document.getElementById('saveUserSubjectsBtn').onclick = async () => {
+            if (!currentEditingUserId) return;
+            const checkboxes = document.querySelectorAll('#userSubjectsList input[type="checkbox"]:checked');
+            const subject_ids = Array.from(checkboxes).map(cb => parseInt(cb.value));
+
+            const btn = document.getElementById('saveUserSubjectsBtn');
+            btn.disabled = true;
+            btn.textContent = 'Сохранение...';
+
+            try {
+                const r = await fetch('/api/admin/save-user-subjects', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({...getAuthPayload(), user_id: currentEditingUserId, subject_ids}) });
+                if (!r.ok) throw new Error('Ошибка');
+                document.getElementById('userSubjectsModal').classList.add('hidden');
+                alert('✅ Предметы сохранены!');
+            } catch (err) { alert('Ошибка: ' + err.message); }
+            finally {
+                btn.disabled = false;
+                btn.textContent = '💾 Сохранить';
+            }
+        };
+
+        // === БЛОКИРОВКИ ===
         document.getElementById('refreshBlockedBtn').onclick = loadBlockedDevices;
         async function loadBlockedDevices() {
             const list = document.getElementById('blockedList');
@@ -732,6 +835,7 @@
             } catch (err) { btn.disabled = false; alert('Ошибка: ' + err.message); }
         });
 
+        // === СООБЩЕНИЯ ===
         document.getElementById('refreshBtn').onclick = loadMessages;
         async function loadMessages() {
             const list = document.getElementById('messagesList');
@@ -784,6 +888,7 @@
             } catch (err) { alert('Ошибка: ' + err.message); }
         };
 
+        // === ЛОГИ ===
         document.getElementById('refreshLogsBtn').onclick = loadLogs;
         async function loadLogs() {
             const list = document.getElementById('logsList');
@@ -824,6 +929,7 @@
             } catch (err) { alert('Ошибка: ' + err.message); }
         };
 
+        // === НАСТРОЙКИ ===
         document.getElementById('saveSettingsBtn').onclick = async () => {
             const st = document.getElementById('settingsStatus');
             const token = localStorage.getItem('gdz_token');
@@ -846,11 +952,7 @@
             };
 
             try {
-                const r = await fetch('/api/auth/update', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify(payload)
-                });
+                const r = await fetch('/api/auth/update', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload) });
                 if (!r.ok) throw new Error('Ошибка сервера');
 
                 st.textContent = '✅ Настройки применены!';
