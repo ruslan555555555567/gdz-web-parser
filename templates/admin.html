@@ -158,7 +158,6 @@
                 <div id="emptyUsers" class="empty">Пока нет зарегистрированных</div>
             </div>
 
-            <!-- ВКЛАДКА БЛОКИРОВОК -->
             <div id="tabBlocked" class="hidden">
                 <div class="section-header">
                     <h2>🚫 Заблокированные устройства</h2>
@@ -276,8 +275,8 @@
         let authData = { token: '', password: '' };
         let onlineTimer = null;
         let subjectsCache = [];
-        let draggedId = null;
         let usersCache = [];
+        let draggedId = null;
 
         const ACTION_ICONS = {
             'register': '🆕', 'login': '🔑', 'login_fail': '⚠️', 'logout': '🚪',
@@ -475,7 +474,6 @@
             const list = document.getElementById('subjectsList');
             const empty = document.getElementById('emptySubjects');
             try {
-                // ?t=Date.now() - это защита от кэша браузера!
                 const r = await fetch('/api/subjects?t=' + Date.now());
                 const d = await r.json();
                 subjectsCache = d.subjects;
@@ -634,7 +632,7 @@
                 const r = await fetch('/api/admin/users', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(getAuthPayload()) });
                 if (!r.ok) return;
                 const d = await r.json();
-                usersCache = d.users; // СОХРАНЯЕМ ПОЛЬЗОВАТЕЛЕЙ В ПАМЯТЬ
+                usersCache = d.users;
                 document.getElementById('usersCount').textContent = d.users.length;
                 list.innerHTML = '';
                 if (!d.users.length) { empty.style.display = 'block'; return; }

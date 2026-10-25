@@ -16,7 +16,7 @@ import asyncpg
 
 from parser import parse_tasks
 
-VERSION = "49.0.0"
+VERSION = "50.0.0"
 ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "")
 ADMIN_EMAIL = os.getenv("ADMIN_EMAIL", "admin@gdz.ru").lower().strip()
 DATABASE_URL = os.getenv("DATABASE_URL")
@@ -662,7 +662,7 @@ async def logout(req: TokenRequest):
 
 @app.get("/api/auth/me")
 async def me(token: str = "", device: str = ""):
-    # ПРОВЕРКА НА БЛОКИРОВКУ УСТРОЙСТВА (Даже если пользователь уже залогинен)
+    # ПРОВЕРКА НА БЛОКИРОВКУ УСТРОЙСТВА
     if device and db_pool is not None:
         async with db_pool.acquire() as conn:
             is_blocked = await conn.fetchval("SELECT 1 FROM blocked_devices WHERE device = $1", device.strip())

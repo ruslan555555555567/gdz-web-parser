@@ -450,7 +450,7 @@
             if (authToken) {
                 try {
                     const device = getDeviceInfo();
-                    const r = await fetch('/api/auth/me?token=' + encodeURIComponent(authToken) + '&device=' + encodeURIComponent(device));
+                    const r = await fetch('/api/auth/me?token=' + encodeURIComponent(authToken) + '&device=' + encodeURIComponent(device) + '&t=' + Date.now());
                     if (r.ok) {
                         const d = await r.json();
                         authUser = d.user;
@@ -460,7 +460,6 @@
                         await showMain();
                         return;
                     } else if (r.status === 403) {
-                        // Если устройство заблокировано
                         const d = await r.json();
                         authToken = '';
                         localStorage.removeItem('gdz_token');
