@@ -16,7 +16,7 @@ import asyncpg
 
 from parser import parse_tasks
 
-VERSION = "52.0.0"
+VERSION = "53.0.0"
 ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "")
 ADMIN_EMAIL = os.getenv("ADMIN_EMAIL", "admin@gdz.ru").lower().strip()
 DATABASE_URL = os.getenv("DATABASE_URL")
@@ -99,7 +99,22 @@ async def init_db():
                 )
             """)
 
-            # НОВАЯ ТАБЛИЦА: Предметы для конкретных пользователей
+            # ВАЖНО: Сначала создаем предметы!
+            await conn.execute("""
+                CREATE TABLE IF NOT EXISTS subjects (
+                    id SERIAL PRIMARY KEY,
+                    name TEXT UNIQUE NOT NULL,
+                    url TEXT DEFAULT '',
+                    type TEXT DEFAULT 'numbers',
+                    group_name TEXT DEFAULT '',
+                    sort_order INTEGER DEFAULT 0,
+                    created_at TIMESTAMP DEFAULT NOW()
+                )
+            """)
+            await conn.execute("ALTER TABLE subjects ADD COLUMN IF NOT EXISTS max_number INTEGER DEFAULT 0")
+            await conn.execute("ALTER TABLE subjects ADD COLUMN IF NOT EXISTS note TEXT DEFAULT ''")
+
+            # И только потом user_subjects (так как она ссылается на subjects)
             await conn.execute("""
                 CREATE TABLE IF NOT EXISTS user_subjects (
                     user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
@@ -130,20 +145,6 @@ async def init_db():
                 )
             """)
             await conn.execute("""
-                CREATE TABLE IF NOT EXISTS subjects (
-                    id SERIAL PRIMARY KEY,
-                    name TEXT UNIQUE NOT NULL,
-                    url TEXT DEFAULT '',
-                    type TEXT DEFAULT 'numbers',
-                    group_name TEXT DEFAULT '',
-                    sort_order INTEGER DEFAULT 0,
-                    created_at TIMESTAMP DEFAULT NOW()
-                )
-            """)
-            await conn.execute("ALTER TABLE subjects ADD COLUMN IF NOT EXISTS max_number INTEGER DEFAULT 0")
-            await conn.execute("ALTER TABLE subjects ADD COLUMN IF NOT EXISTS note TEXT DEFAULT ''")
-
-            await conn.execute("""
                 CREATE TABLE IF NOT EXISTS logs (
                     id SERIAL PRIMARY KEY,
                     user_id INTEGER,
@@ -153,7 +154,6 @@ async def init_db():
                     created_at TIMESTAMP DEFAULT NOW()
                 )
             """)
-
             await conn.execute("""
                 CREATE TABLE IF NOT EXISTS templates (
                     name TEXT PRIMARY KEY,
@@ -431,13 +431,11 @@ async def get_subjects(token: str = ""):
 
     async with db_pool.acquire() as conn:
         if not user or user.get("is_admin"):
-            # Админы и гости видят всё
             rows = await conn.fetch("""
                 SELECT id, name, url, type, group_name, sort_order, max_number, note
                 FROM subjects ORDER BY sort_order, id
             """)
         else:
-            # Обычные пользователи видят только свои предметы (если они заданы)
             assigned = await conn.fetch("SELECT subject_id FROM user_subjects WHERE user_id = $1", user["id"])
             if assigned:
                 s_ids = [r["subject_id"] for r in assigned]
@@ -446,7 +444,6 @@ async def get_subjects(token: str = ""):
                     FROM subjects WHERE id = ANY($1::int[]) ORDER BY sort_order, id
                 """, s_ids)
             else:
-                # Если ничего не назначено — видит всё (по умолчанию)
                 rows = await conn.fetch("""
                     SELECT id, name, url, type, group_name, sort_order, max_number, note
                     FROM subjects ORDER BY sort_order, id
@@ -962,7 +959,7 @@ async def admin_clear(data: dict):
     return {"ok": True}
 
 
-# ═══════ УПРАВЛЕНИЕ АДМИНАМИ И ПРЕДМЕТАМИ (НОВЫЕ) ═══════
+# ═══════ УПРАВЛЕНИЕ АДМИНАМИ И ПРЕДМЕТАМИ ═══════
 
 @app.post("/api/admin/toggle-admin")
 async def admin_toggle_admin(data: dict):
