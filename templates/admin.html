@@ -34,7 +34,22 @@
         })();
     </script>
     <style>
-        /* Модалка редактирования всегда сверху */
+        /* ═══ ФИКС ПРОЗРАЧНОСТИ ОКОН ═══ */
+        .modal-content {
+            background: #ffffff !important;
+            color: #1a202c !important;
+            opacity: 1 !important;
+        }
+        .theme-dark .modal-content, .admin-theme-dark .modal-content {
+            background: #2d3748 !important;
+            color: #e2e8f0 !important;
+            border: 1px solid #4a5568;
+        }
+        .theme-custom .modal-content {
+            background: #ffffff !important;
+            color: #1a202c !important;
+        }
+
         #editModal { z-index: 9999 !important; }
 
         html.has-token #loginCard { display: none !important; }
@@ -346,7 +361,20 @@
             </div>
 
             <div id="globalSubjectsSection" style="display: none;">
-                <span class="hint" style="display: block; margin-bottom: 10px;">Выберите, какие общие предметы разрешить этому пользователю.</span>
+                <!-- НОВОЕ: Переключатель -->
+                <div style="margin-bottom: 15px; background: rgba(66, 153, 225, 0.1); padding: 10px; border-radius: 8px; border: 1px solid #4299e1;">
+                    <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                        <input type="checkbox" id="toggleAllSubjects" style="width: 18px; height: 18px; cursor: pointer;">
+                        <span style="font-weight: 600;">Показывать все общие предметы</span>
+                    </label>
+                    <p class="hint" style="margin-top: 5px; margin-left: 28px;">Если снять галочку, у пользователя будут <b>только</b> выбранные ниже.</p>
+                </div>
+
+                <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                    <span class="hint">Выберите, какие общие предметы разрешить.</span>
+                    <button type="button" id="deselectAllBtn" class="btn-small" style="background: #e53e3e; padding: 2px 8px; font-size: 12px;">Снять все</button>
+                </div>
+
                 <div id="userSubjectsList" style="display:flex; flex-direction:column; gap:8px; max-height:40vh; overflow-y:auto; margin-bottom:15px; padding-right:5px;"></div>
                 <div id="emptyGlobalSubjects" class="empty" style="padding: 20px;">Нет общих предметов</div>
             </div>
@@ -364,29 +392,16 @@
         let subjectsCache = [];
         let usersCache = [];
         let draggedId = null;
-        let isMainAdmin = false; // НОВОЕ: проверяем главный ли это админ
+        let isMainAdmin = false;
 
         let currentEditingUserId = null;
         let currentEditingUserEmail = null;
-
         let editingId = null;
         let editingTargetUserId = null;
 
-        const ACTION_ICONS = {
-            'register': '🆕', 'login': '🔑', 'login_fail': '⚠️', 'logout': '🚪',
-            'parse': '🔍', 'profile_update': '⚙️', 'avatar_update': '🖼',
-            'password_change': '🔐', 'account_delete': '❌',
-            'subject_add': '➕', 'subject_update': '✏️', 'subject_delete': '🗑',
-            'subject_reorder': '↕️', 'subjects_reset': '🔄', 'admin_delete_user': '👤',
-            'block_device': '🚫', 'unblock_device': '✅', 'toggle_admin': '👑'
-        };
+        const ACTION_ICONS = { 'register': '🆕', 'login': '🔑', 'login_fail': '⚠️', 'logout': '🚪', 'parse': '🔍', 'profile_update': '⚙️', 'avatar_update': '🖼', 'password_change': '🔐', 'account_delete': '❌', 'subject_add': '➕', 'subject_update': '✏️', 'subject_delete': '🗑', 'subject_reorder': '↕️', 'subjects_reset': '🔄', 'admin_delete_user': '👤', 'block_device': '🚫', 'unblock_device': '✅', 'toggle_admin': '👑' };
 
-        function getInitial(name, email) {
-            const n = (name || '').trim();
-            if (n) return n[0].toUpperCase();
-            if (email) return email[0].toUpperCase();
-            return '?';
-        }
+        function getInitial(name, email) { const n = (name || '').trim(); if (n) return n[0].toUpperCase(); if (email) return email[0].toUpperCase(); return '?'; }
 
         const loginCard = document.getElementById('loginCard');
         const adminContent = document.getElementById('adminContent');
@@ -394,10 +409,7 @@
         const pwd = document.getElementById('pwd');
         const loginStatus = document.getElementById('loginStatus');
 
-        let currentAdminTheme = 'auto';
-        let currentAdminBgUrl = '';
-        let originalAdminTheme = 'auto';
-        let originalAdminBgUrl = '';
+        let currentAdminTheme = 'auto', currentAdminBgUrl = '', originalAdminTheme = 'auto', originalAdminBgUrl = '';
 
         async function loadAdminSettings() {
             const token = localStorage.getItem('gdz_token') || '';
@@ -408,14 +420,10 @@
                 const d = await r.json();
                 const u = d.user;
                 if (!u || (!u.is_admin && !u.is_main_admin)) return;
+                isMainAdmin = u.is_main_admin;
 
-                isMainAdmin = u.is_main_admin; // Сохраняем статус
-
-                if (u.is_main_admin) {
-                    document.getElementById('downloadDbSection').style.display = 'block';
-                } else {
-                    document.getElementById('downloadDbSection').style.display = 'none';
-                }
+                if (u.is_main_admin) document.getElementById('downloadDbSection').style.display = 'block';
+                else document.getElementById('downloadDbSection').style.display = 'none';
 
                 currentAdminTheme = u.admin_theme || 'auto';
                 currentAdminBgUrl = u.admin_bg_url || '';
@@ -436,67 +444,35 @@
             root.classList.remove('admin-theme-dark', 'admin-theme-custom', 'theme-dark', 'theme-custom');
             root.style.removeProperty('--admin-bg-image');
             root.style.backgroundImage = '';
-
-            if (theme === 'dark') {
-                root.classList.add('admin-theme-dark');
-            } else if (theme === 'custom' && bg) {
-                root.classList.add('admin-theme-custom');
-                root.style.setProperty('--admin-bg-image', 'url("' + bg + '")');
-            } else if (theme === 'auto') {
+            if (theme === 'dark') root.classList.add('admin-theme-dark');
+            else if (theme === 'custom' && bg) { root.classList.add('admin-theme-custom'); root.style.setProperty('--admin-bg-image', 'url("' + bg + '")'); }
+            else if (theme === 'auto') {
                 const mainTheme = localStorage.getItem('gdz_theme') || 'light';
                 const mainBg = localStorage.getItem('gdz_bg');
                 if (mainTheme === 'dark') root.classList.add('theme-dark');
-                else if (mainTheme === 'custom' && mainBg) {
-                    root.classList.add('theme-custom');
-                    root.style.backgroundImage = 'url("' + mainBg + '")';
-                }
+                else if (mainTheme === 'custom' && mainBg) { root.classList.add('theme-custom'); root.style.backgroundImage = 'url("' + mainBg + '")'; }
             }
         }
 
         function updateAdminSettingsUI() {
-            document.querySelectorAll('#tabSettings .theme-btn').forEach(btn => {
-                btn.classList.toggle('active', btn.dataset.theme === currentAdminTheme);
-            });
+            document.querySelectorAll('#tabSettings .theme-btn').forEach(btn => btn.classList.toggle('active', btn.dataset.theme === currentAdminTheme));
             const uploadSec = document.getElementById('adminBgUploadSection');
             uploadSec.style.display = currentAdminTheme === 'custom' ? 'block' : 'none';
             const preview = document.getElementById('adminCustomPreviewBg');
-            if (currentAdminBgUrl) {
-                preview.style.backgroundImage = `url('${currentAdminBgUrl}')`;
-                preview.style.backgroundSize = 'cover';
-                preview.style.backgroundPosition = 'center';
-                preview.textContent = '';
-            } else {
-                preview.style.backgroundImage = 'none';
-                preview.textContent = '🖼';
-            }
+            if (currentAdminBgUrl) { preview.style.backgroundImage = `url('${currentAdminBgUrl}')`; preview.style.backgroundSize = 'cover'; preview.style.backgroundPosition = 'center'; preview.textContent = ''; }
+            else { preview.style.backgroundImage = 'none'; preview.textContent = '🖼'; }
         }
 
-        function selectAdminTheme(theme) {
-            currentAdminTheme = theme;
-            updateAdminSettingsUI();
-            applyAdminThemeToPage(theme, currentAdminTheme === 'custom' ? currentAdminBgUrl : null);
-        }
+        function selectAdminTheme(theme) { currentAdminTheme = theme; updateAdminSettingsUI(); applyAdminThemeToPage(theme, currentAdminTheme === 'custom' ? currentAdminBgUrl : null); }
 
         function handleAdminBgUpload(event) {
-            const file = event.target.files[0];
-            if (!file) return;
+            const file = event.target.files[0]; if (!file) return;
             const reader = new FileReader();
-            reader.onload = function(e) {
-                currentAdminBgUrl = e.target.result;
-                updateAdminSettingsUI();
-                applyAdminThemeToPage('custom', currentAdminBgUrl);
-            };
+            reader.onload = function(e) { currentAdminBgUrl = e.target.result; updateAdminSettingsUI(); applyAdminThemeToPage('custom', currentAdminBgUrl); };
             reader.readAsDataURL(file);
         }
 
-        function removeAdminBg() {
-            currentAdminBgUrl = '';
-            document.getElementById('adminBgFileInput').value = '';
-            updateAdminSettingsUI();
-            applyAdminThemeToPage('light', null);
-            currentAdminTheme = 'light';
-            updateAdminSettingsUI();
-        }
+        function removeAdminBg() { currentAdminBgUrl = ''; document.getElementById('adminBgFileInput').value = ''; updateAdminSettingsUI(); applyAdminThemeToPage('light', null); currentAdminTheme = 'light'; updateAdminSettingsUI(); }
 
         async function init() {
             await loadAdminSettings();
@@ -504,13 +480,7 @@
             if (token) {
                 try {
                     const r = await fetch('/api/admin/check', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({token}) });
-                    if (r.ok) {
-                        authData.token = token;
-                        document.documentElement.classList.remove('no-token');
-                        document.documentElement.classList.add('has-token');
-                        openAdmin();
-                        return;
-                    }
+                    if (r.ok) { authData.token = token; document.documentElement.classList.remove('no-token'); document.documentElement.classList.add('has-token'); openAdmin(); return; }
                 } catch {}
             }
             document.documentElement.classList.remove('has-token');
@@ -530,17 +500,14 @@
 
         loginForm.addEventListener('submit', async (e) => {
             e.preventDefault();
-            const password = pwd.value;
-            if (!password) return;
-            loginStatus.textContent = '⏳ Проверяем...';
-            loginStatus.className = 'fb-status loading';
+            const password = pwd.value; if (!password) return;
+            loginStatus.textContent = '⏳ Проверяем...'; loginStatus.className = 'fb-status loading';
             try {
                 const r = await fetch('/api/admin/check', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({password}) });
                 if (!r.ok) { loginStatus.textContent = '❌ Неверный пароль'; loginStatus.className = 'fb-status error'; return; }
                 authData.password = password;
                 document.getElementById('downloadDbSection').style.display = 'block';
-                isMainAdmin = true; // Если зашли по паролю, то мы главный админ
-                openAdmin();
+                isMainAdmin = true; openAdmin();
             } catch (err) { loginStatus.textContent = '❌ ' + err.message; loginStatus.className = 'fb-status error'; }
         });
 
@@ -564,18 +531,15 @@
             try {
                 const r = await fetch('/api/admin/subjects/reset', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(getAuthPayload()) });
                 if (!r.ok) throw new Error('Ошибка');
-                await loadSubjects();
-                alert('✅ Список восстановлен!');
+                await loadSubjects(); alert('✅ Список восстановлен!');
             } catch (e) { alert('Ошибка: ' + e.message); }
         };
         document.getElementById('addSubjectBtn').onclick = () => openEditModal(null, null);
 
         async function loadSubjects() {
-            const list = document.getElementById('subjectsList');
-            const empty = document.getElementById('emptySubjects');
+            const list = document.getElementById('subjectsList'); const empty = document.getElementById('emptySubjects');
             try {
-                const r = await fetch('/api/subjects?t=' + Date.now());
-                const d = await r.json();
+                const r = await fetch('/api/subjects?t=' + Date.now()); const d = await r.json();
                 subjectsCache = d.subjects;
                 document.getElementById('subjectsCount').textContent = d.subjects.length;
                 list.innerHTML = '';
@@ -583,52 +547,33 @@
                 empty.style.display = 'none';
                 d.subjects.forEach(s => {
                     const div = document.createElement('div');
-                    div.className = 'subject-card';
-                    div.draggable = true;
-                    div.dataset.id = s.id;
+                    div.className = 'subject-card'; div.draggable = true; div.dataset.id = s.id;
                     const typeLabel = s.type === 'text' ? '<span class="type-badge type-text">📝 текст</span>' : '<span class="type-badge type-num">🔍 номера</span>';
                     const maxNum = s.max_number ? `${s.max_number}` : '—';
                     div.innerHTML = `
-                        <div class="subj-head">
-                            <span class="drag-handle" title="Перетащи">⠿</span>
-                            <strong>${escapeHtml(s.name)}</strong>
-                            ${typeLabel}
-                        </div>
+                        <div class="subj-head"><span class="drag-handle" title="Перетащи">⠿</span><strong>${escapeHtml(s.name)}</strong>${typeLabel}</div>
                         <div class="subj-row">📁 ${escapeHtml(s.group_name || '—')}</div>
                         <div class="subj-row">🔗 ${escapeHtml(s.url || '—')}</div>
-                        <div class="subj-row">
-                            <span class="stat-pill">📊 Макс: <b>${maxNum}</b></span>
-                            <span class="stat-pill">📍 Порядок: <b>${s.sort_order}</b></span>
-                        </div>
+                        <div class="subj-row"><span class="stat-pill">📊 Макс: <b>${maxNum}</b></span><span class="stat-pill">📍 Порядок: <b>${s.sort_order}</b></span></div>
                         ${s.note ? `<div class="subj-row small">📝 ${escapeHtml(s.note)}</div>` : ''}
-                        <div class="subj-actions">
-                            <button class="btn-small subj-edit">✏️ Изменить</button>
-                            <button class="msg-delete subj-del">🗑</button>
-                        </div>
+                        <div class="subj-actions"><button class="btn-small subj-edit">✏️ Изменить</button><button class="msg-delete subj-del">🗑</button></div>
                     `;
                     div.addEventListener('dragstart', (e) => { draggedId = s.id; div.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; });
                     div.addEventListener('dragend', () => { div.classList.remove('dragging'); document.querySelectorAll('.subject-card').forEach(c => c.classList.remove('drag-over')); });
                     div.addEventListener('dragover', (e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; if (draggedId !== s.id) div.classList.add('drag-over'); });
                     div.addEventListener('dragleave', () => div.classList.remove('drag-over'));
                     div.addEventListener('drop', async (e) => {
-                        e.preventDefault();
-                        div.classList.remove('drag-over');
+                        e.preventDefault(); div.classList.remove('drag-over');
                         if (!draggedId || draggedId === s.id) return;
-                        const draggedEl = document.querySelector(`.subject-card[data-id="${draggedId}"]`);
-                        if (!draggedEl) return;
+                        const draggedEl = document.querySelector(`.subject-card[data-id="${draggedId}"]`); if (!draggedEl) return;
                         const allCards = Array.from(document.querySelectorAll('.subject-card'));
-                        const draggedIdx = allCards.indexOf(draggedEl);
-                        const targetIdx = allCards.indexOf(div);
-                        if (draggedIdx < targetIdx) div.parentNode.insertBefore(draggedEl, div.nextSibling);
-                        else div.parentNode.insertBefore(draggedEl, div);
+                        const draggedIdx = allCards.indexOf(draggedEl); const targetIdx = allCards.indexOf(div);
+                        if (draggedIdx < targetIdx) div.parentNode.insertBefore(draggedEl, div.nextSibling); else div.parentNode.insertBefore(draggedEl, div);
                         const newOrder = Array.from(document.querySelectorAll('.subject-card')).map(c => parseInt(c.dataset.id));
                         try {
                             const r = await fetch('/api/admin/subjects/reorder', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({...getAuthPayload(), ids: newOrder}) });
                             if (!r.ok) throw new Error('Ошибка сохранения');
-                            newOrder.forEach((id, i) => {
-                                const el = document.querySelector(`.subject-card[data-id="${id}"]`);
-                                if (el) { const pill = el.querySelectorAll('.stat-pill b'); if (pill[1]) pill[1].textContent = i + 1; }
-                            });
+                            newOrder.forEach((id, i) => { const el = document.querySelector(`.subject-card[data-id="${id}"]`); if (el) { const pill = el.querySelectorAll('.stat-pill b'); if (pill[1]) pill[1].textContent = i + 1; } });
                         } catch (err) { alert('Не удалось сохранить порядок: ' + err.message); loadSubjects(); }
                     });
                     div.querySelector('.subj-edit').onclick = () => openEditModal(s, null);
@@ -646,13 +591,11 @@
         }
 
         const editModal = document.getElementById('editModal');
-
         function openEditModal(subject, targetUserId) {
             document.getElementById('userSubjectsModal').classList.add('hidden');
             editModal.classList.remove('hidden');
             editingId = subject ? subject.id : null;
             editingTargetUserId = targetUserId;
-
             document.getElementById('editModalTitle').textContent = subject ? '✏️ Редактировать: ' + subject.name : '➕ Новый предмет';
             document.getElementById('editName').value = subject ? subject.name : '';
             document.getElementById('editUrl').value = subject ? (subject.url || '') : '';
@@ -661,63 +604,30 @@
             document.getElementById('editMaxNum').value = subject ? (subject.max_number || 0) : 0;
             document.getElementById('editSort').value = subject ? subject.sort_order : 99;
             document.getElementById('editNote').value = subject ? (subject.note || '') : '';
-            document.getElementById('editStatus').textContent = '';
-            document.getElementById('editStatus').className = 'fb-status';
+            document.getElementById('editStatus').textContent = ''; document.getElementById('editStatus').className = 'fb-status';
         }
-
-        document.getElementById('editCancelBtn').onclick = () => {
-            editModal.classList.add('hidden');
-            if (editingTargetUserId) {
-                document.getElementById('userSubjectsModal').classList.remove('hidden');
-            }
-        };
-
-        editModal.onclick = (e) => {
-            if (e.target === editModal) {
-                editModal.classList.add('hidden');
-                if (editingTargetUserId) document.getElementById('userSubjectsModal').classList.remove('hidden');
-            }
-        };
+        document.getElementById('editCancelBtn').onclick = () => { editModal.classList.add('hidden'); if (editingTargetUserId) document.getElementById('userSubjectsModal').classList.remove('hidden'); };
+        editModal.onclick = (e) => { if (e.target === editModal) { editModal.classList.add('hidden'); if (editingTargetUserId) document.getElementById('userSubjectsModal').classList.remove('hidden'); } };
 
         document.getElementById('editSaveBtn').onclick = async () => {
             const st = document.getElementById('editStatus');
-            const name = document.getElementById('editName').value.trim();
-            const url = document.getElementById('editUrl').value.trim();
-            const type = document.getElementById('editType').value;
-            const group_name = document.getElementById('editGroup').value;
-            const max_number = parseInt(document.getElementById('editMaxNum').value) || 0;
-            const sort_order = parseInt(document.getElementById('editSort').value) || 999;
+            const name = document.getElementById('editName').value.trim(); const url = document.getElementById('editUrl').value.trim();
+            const type = document.getElementById('editType').value; const group_name = document.getElementById('editGroup').value;
+            const max_number = parseInt(document.getElementById('editMaxNum').value) || 0; const sort_order = parseInt(document.getElementById('editSort').value) || 999;
             const note = document.getElementById('editNote').value.trim();
-
             if (!name) { st.textContent = '⚠️ Нужно название'; st.className = 'fb-status error'; return; }
             if (type === 'numbers' && !url) { st.textContent = '⚠️ Для поиска номеров нужна ссылка'; st.className = 'fb-status error'; return; }
-
-            st.textContent = '⏳ Сохраняем...';
-            st.className = 'fb-status loading';
-
+            st.textContent = '⏳ Сохраняем...'; st.className = 'fb-status loading';
             const payload = { ...getAuthPayload(), name, url, type, group_name, max_number, sort_order, note };
             if (editingTargetUserId) payload.user_id = editingTargetUserId;
-
             try {
                 let r;
-                if (editingId) {
-                    payload.id = editingId;
-                    r = await fetch('/api/admin/subjects/update', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload) });
-                } else {
-                    r = await fetch('/api/admin/subjects/add', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload) });
-                }
+                if (editingId) { payload.id = editingId; r = await fetch('/api/admin/subjects/update', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload) }); }
+                else { r = await fetch('/api/admin/subjects/add', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload) }); }
                 const d = await r.json();
                 if (!r.ok) { st.textContent = '❌ ' + (d.detail || 'Ошибка'); st.className = 'fb-status error'; return; }
-                st.textContent = '✅ Сохранено';
-                st.className = 'fb-status success';
-                setTimeout(() => {
-                    editModal.classList.add('hidden');
-                    if (editingTargetUserId) {
-                        openUserSubjectsModal(currentEditingUserId, currentEditingUserEmail);
-                    } else {
-                        loadSubjects();
-                    }
-                }, 500);
+                st.textContent = '✅ Сохранено'; st.className = 'fb-status success';
+                setTimeout(() => { editModal.classList.add('hidden'); if (editingTargetUserId) openUserSubjectsModal(currentEditingUserId, currentEditingUserEmail); else loadSubjects(); }, 500);
             } catch (e) { st.textContent = '❌ ' + e.message; st.className = 'fb-status error'; }
         };
 
@@ -725,25 +635,14 @@
         async function loadOnline() {
             try {
                 const r = await fetch('/api/admin/online', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(getAuthPayload()) });
-                if (!r.ok) return;
-                const d = await r.json();
-                document.getElementById('onlineCount').textContent = d.total;
-                const list = document.getElementById('onlineList');
-                const empty = document.getElementById('emptyOnline');
-                list.innerHTML = '';
-                if (!d.users.length) { empty.style.display = 'block'; return; }
-                empty.style.display = 'none';
+                if (!r.ok) return; const d = await r.json(); document.getElementById('onlineCount').textContent = d.total;
+                const list = document.getElementById('onlineList'); const empty = document.getElementById('emptyOnline'); list.innerHTML = '';
+                if (!d.users.length) { empty.style.display = 'block'; return; } empty.style.display = 'none';
                 d.users.forEach(u => {
-                    const div = document.createElement('div');
-                    div.className = 'user-card online-card';
+                    const div = document.createElement('div'); div.className = 'user-card online-card';
                     const badge = u.is_admin ? '<span class="admin-badge">👑 АДМИН</span>' : '';
                     const avatarHtml = u.avatar ? `<span class="user-avatar" style="background-image:url('${u.avatar}')"></span>` : `<span class="user-avatar">${getInitial(u.name, u.email)}</span>`;
-                    div.innerHTML = `
-                        <div class="user-head">${avatarHtml}<span class="online-dot"></span><strong>${escapeHtml(u.name || 'Без имени')}</strong>${badge}</div>
-                        <div class="user-row">📧 ${escapeHtml(u.email)}</div>
-                        <div class="user-row">💻 ${escapeHtml(u.device || '—')}</div>
-                        <div class="user-row small">🕐 ${escapeHtml(u.last_seen || '—')}</div>
-                    `;
+                    div.innerHTML = `<div class="user-head">${avatarHtml}<span class="online-dot"></span><strong>${escapeHtml(u.name || 'Без имени')}</strong>${badge}</div><div class="user-row">📧 ${escapeHtml(u.email)}</div><div class="user-row">💻 ${escapeHtml(u.device || '—')}</div><div class="user-row small">🕐 ${escapeHtml(u.last_seen || '—')}</div>`;
                     list.appendChild(div);
                 });
             } catch {}
@@ -751,43 +650,23 @@
 
         document.getElementById('refreshUsersBtn').onclick = loadUsers;
         async function loadUsers() {
-            const list = document.getElementById('usersList');
-            const empty = document.getElementById('emptyUsers');
+            const list = document.getElementById('usersList'); const empty = document.getElementById('emptyUsers');
             try {
                 const r = await fetch('/api/admin/users', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(getAuthPayload()) });
-                if (!r.ok) return;
-                const d = await r.json();
-                usersCache = d.users;
-                document.getElementById('usersCount').textContent = d.users.length;
-                list.innerHTML = '';
-                if (!d.users.length) { empty.style.display = 'block'; return; }
-                empty.style.display = 'none';
+                if (!r.ok) return; const d = await r.json(); usersCache = d.users; document.getElementById('usersCount').textContent = d.users.length;
+                list.innerHTML = ''; if (!d.users.length) { empty.style.display = 'block'; return; } empty.style.display = 'none';
                 d.users.forEach((u, index) => {
-                    const div = document.createElement('div');
-                    div.className = 'user-card';
+                    const div = document.createElement('div'); div.className = 'user-card';
                     const badge = u.is_admin ? '<span class="admin-badge">👑 АДМИН</span>' : '';
                     const avatarHtml = u.avatar ? `<span class="user-avatar" style="background-image:url('${u.avatar}')"></span>` : `<span class="user-avatar">${getInitial(u.name, u.email)}</span>`;
-
                     const blockBtnHtml = u.device ? `<button class="btn-block user-block" data-index="${index}" title="Заблокировать это устройство">🚫</button>` : '';
                     const adminBtnHtml = `<button class="btn-admin-toggle user-admin" data-index="${index}" title="${u.is_admin ? 'Снять админа' : 'Сделать админом'}">👑</button>`;
-                    // СКРЫВАЕМ КНОПКУ ПРЕДМЕТОВ ДЛЯ ОБЫЧНЫХ АДМИНОВ
                     const subjBtnHtml = isMainAdmin ? `<button class="btn-subjects user-subj" data-index="${index}" title="Настроить предметы">📚</button>` : '';
-
                     div.innerHTML = `
-                        <div class="user-head">
-                            ${avatarHtml}
-                            <strong>${escapeHtml(u.name || 'Без имени')}</strong>
-                            ${badge}
-                            <div style="display:flex; gap:5px; margin-left:auto;">
-                                ${adminBtnHtml}
-                                ${subjBtnHtml}
-                                ${blockBtnHtml}
-                                <button class="user-del" data-id="${u.id}" title="Удалить аккаунт">🗑</button>
-                            </div>
+                        <div class="user-head">${avatarHtml}<strong>${escapeHtml(u.name || 'Без имени')}</strong>${badge}
+                            <div style="display:flex; gap:5px; margin-left:auto;">${adminBtnHtml}${subjBtnHtml}${blockBtnHtml}<button class="user-del" data-id="${u.id}" title="Удалить аккаунт">🗑</button></div>
                         </div>
-                        <div class="user-row">📧 ${escapeHtml(u.email)}</div>
-                        <div class="user-row">💻 ${escapeHtml(u.device || '—')}</div>
-                        <div class="user-row small">📅 ${escapeHtml(u.created || '—')} · 🕐 ${escapeHtml(u.last_seen || '—')}</div>
+                        <div class="user-row">📧 ${escapeHtml(u.email)}</div><div class="user-row">💻 ${escapeHtml(u.device || '—')}</div><div class="user-row small">📅 ${escapeHtml(u.created || '—')} · 🕐 ${escapeHtml(u.last_seen || '—')}</div>
                     `;
                     list.appendChild(div);
                 });
@@ -797,284 +676,149 @@
         document.getElementById('usersList').addEventListener('click', async (e) => {
             const delBtn = e.target.closest('.user-del');
             if (delBtn) {
-                if (!confirm('Удалить пользователя?')) return;
-                delBtn.disabled = true;
-                try {
-                    const r = await fetch('/api/admin/delete-user/' + delBtn.dataset.id, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(getAuthPayload()) });
-                    if (!r.ok) throw new Error('Ошибка');
-                    loadUsers();
-                } catch (err) { delBtn.disabled = false; alert('Ошибка: ' + err.message); }
+                if (!confirm('Удалить пользователя?')) return; delBtn.disabled = true;
+                try { const r = await fetch('/api/admin/delete-user/' + delBtn.dataset.id, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(getAuthPayload()) }); if (!r.ok) throw new Error('Ошибка'); loadUsers(); }
+                catch (err) { delBtn.disabled = false; alert('Ошибка: ' + err.message); }
             }
-
             const blockBtn = e.target.closest('.user-block');
             if (blockBtn) {
-                const index = parseInt(blockBtn.dataset.index);
-                const user = usersCache[index];
-                if (!user || !user.device) return;
-                if (!confirm(`Заблокировать устройство?\n\n${user.device}`)) return;
-                blockBtn.disabled = true;
-                try {
-                    const r = await fetch('/api/admin/block-device', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({...getAuthPayload(), device: user.device}) });
-                    if (!r.ok) throw new Error('Ошибка');
-                    alert('✅ Устройство заблокировано!');
-                    loadBlockedDevices();
-                } catch (err) { blockBtn.disabled = false; alert('Ошибка: ' + err.message); }
+                const index = parseInt(blockBtn.dataset.index); const user = usersCache[index]; if (!user || !user.device) return;
+                if (!confirm(`Заблокировать устройство?\n\n${user.device}`)) return; blockBtn.disabled = true;
+                try { const r = await fetch('/api/admin/block-device', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({...getAuthPayload(), device: user.device}) }); if (!r.ok) throw new Error('Ошибка'); alert('✅ Устройство заблокировано!'); loadBlockedDevices(); }
+                catch (err) { blockBtn.disabled = false; alert('Ошибка: ' + err.message); }
             }
-
             const adminBtn = e.target.closest('.user-admin');
             if (adminBtn) {
-                const index = parseInt(adminBtn.dataset.index);
-                const user = usersCache[index];
-                if (!confirm(`Изменить права администратора для ${user.email}?`)) return;
-                adminBtn.disabled = true;
-                try {
-                    const r = await fetch('/api/admin/toggle-admin', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({...getAuthPayload(), user_id: user.id}) });
-                    if (!r.ok) throw new Error('Ошибка');
-                    loadUsers();
-                } catch (err) { adminBtn.disabled = false; alert('Ошибка: ' + err.message); }
+                const index = parseInt(adminBtn.dataset.index); const user = usersCache[index];
+                if (!confirm(`Изменить права администратора для ${user.email}?`)) return; adminBtn.disabled = true;
+                try { const r = await fetch('/api/admin/toggle-admin', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({...getAuthPayload(), user_id: user.id}) }); if (!r.ok) throw new Error('Ошибка'); loadUsers(); }
+                catch (err) { adminBtn.disabled = false; alert('Ошибка: ' + err.message); }
             }
-
             const subjBtn = e.target.closest('.user-subj');
-            if (subjBtn) {
-                const index = parseInt(subjBtn.dataset.index);
-                const user = usersCache[index];
-                openUserSubjectsModal(user.id, user.email);
-            }
+            if (subjBtn) { const index = parseInt(subjBtn.dataset.index); const user = usersCache[index]; openUserSubjectsModal(user.id, user.email); }
         });
 
         async function openUserSubjectsModal(userId, email) {
-            currentEditingUserId = userId;
-            currentEditingUserEmail = email;
-
+            currentEditingUserId = userId; currentEditingUserEmail = email;
             document.getElementById('userSubjectsModalSubtitle').textContent = `Пользователь: ${email}`;
             document.getElementById('userSubjectsModal').classList.remove('hidden');
-
             document.getElementById('showCustomBtn').click();
-
             try {
-                const r = await fetch('/api/admin/get-user-subjects', {
-                    method: 'POST', headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({...getAuthPayload(), user_id: userId})
-                });
+                const r = await fetch('/api/admin/get-user-subjects', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({...getAuthPayload(), user_id: userId}) });
                 const d = await r.json();
 
-                const customList = document.getElementById('customSubjectsList');
-                const emptyCustom = document.getElementById('emptyCustomSubjects');
-                customList.innerHTML = '';
+                document.getElementById('toggleAllSubjects').checked = !d.subjects_configured; // Если false - значит все включены
+
+                const customList = document.getElementById('customSubjectsList'); const emptyCustom = document.getElementById('emptyCustomSubjects'); customList.innerHTML = '';
                 if (!d.custom_subjects.length) { emptyCustom.style.display = 'block'; }
                 else {
                     emptyCustom.style.display = 'none';
                     d.custom_subjects.forEach(s => {
-                        const div = document.createElement('div');
-                        div.className = 'custom-subject-card';
-                        div.innerHTML = `
-                            <div style="flex:1;">
-                                <strong>${escapeHtml(s.name)}</strong><br>
-                                <span style="font-size:11px; color:#a0aec0;">🔗 ${escapeHtml(s.url || '—')}</span>
-                            </div>
-                            <div style="display:flex; gap:5px;">
-                                <button class="btn-small" style="background:#4299e1; padding:4px 8px;" onclick="editCustomSubject(${s.id})">✏️</button>
-                                <button class="btn-small" style="background:#e53e3e; padding:4px 8px;" onclick="deleteCustomSubject(${s.id})">🗑</button>
-                            </div>
-                        `;
+                        const div = document.createElement('div'); div.className = 'custom-subject-card';
+                        div.innerHTML = `<div style="flex:1;"><strong>${escapeHtml(s.name)}</strong><br><span style="font-size:11px; color:#a0aec0;">🔗 ${escapeHtml(s.url || '—')}</span></div><div style="display:flex; gap:5px;"><button class="btn-small" style="background:#4299e1; padding:4px 8px;" onclick="editCustomSubject(${s.id})">✏️</button><button class="btn-small" style="background:#e53e3e; padding:4px 8px;" onclick="deleteCustomSubject(${s.id})">🗑</button></div>`;
                         customList.appendChild(div);
                     });
                 }
 
-                const checkList = document.getElementById('userSubjectsList');
-                const emptyGlobal = document.getElementById('emptyGlobalSubjects');
-                checkList.innerHTML = '';
-
+                const checkList = document.getElementById('userSubjectsList'); const emptyGlobal = document.getElementById('emptyGlobalSubjects'); checkList.innerHTML = '';
                 const globalSubjs = subjectsCache.filter(s => !s.user_id);
-
                 if (!globalSubjs.length) { emptyGlobal.style.display = 'block'; }
                 else {
                     emptyGlobal.style.display = 'none';
                     globalSubjs.forEach(s => {
-                        const isChecked = d.assigned_global_ids.includes(s.id);
-                        checkList.innerHTML += `
-                            <label class="subj-checkbox-label">
-                                <input type="checkbox" value="${s.id}" ${isChecked ? 'checked' : ''}>
-                                <div class="subj-checkmark"></div>
-                                <span>${escapeHtml(s.name)}</span>
-                            </label>
-                        `;
+                        const isChecked = d.assigned_global_ids.includes(s.id) || !d.subjects_configured; // Если не настроено - всё включено
+                        checkList.innerHTML += `<label class="subj-checkbox-label"><input type="checkbox" value="${s.id}" ${isChecked ? 'checked' : ''}><div class="subj-checkmark"></div><span>${escapeHtml(s.name)}</span></label>`;
                     });
                 }
-
-            } catch (err) {
-                document.getElementById('customSubjectsList').innerHTML = '<p class="empty">Ошибка загрузки</p>';
-            }
+            } catch (err) { document.getElementById('customSubjectsList').innerHTML = '<p class="empty">Ошибка загрузки</p>'; }
         }
 
-        document.getElementById('showCustomBtn').onclick = () => {
-            document.getElementById('customSubjectsSection').style.display = 'block';
-            document.getElementById('globalSubjectsSection').style.display = 'none';
-            document.getElementById('showCustomBtn').style.background = '#9f7aea';
-            document.getElementById('showCustomBtn').style.color = 'white';
-            document.getElementById('showGlobalBtn').style.background = 'transparent';
-            document.getElementById('showGlobalBtn').style.color = 'inherit';
-        };
-        document.getElementById('showGlobalBtn').onclick = () => {
-            document.getElementById('customSubjectsSection').style.display = 'none';
-            document.getElementById('globalSubjectsSection').style.display = 'block';
-            document.getElementById('showCustomBtn').style.background = 'transparent';
-            document.getElementById('showCustomBtn').style.color = 'inherit';
-            document.getElementById('showGlobalBtn').style.background = '#9f7aea';
-            document.getElementById('showGlobalBtn').style.color = 'white';
+        // Кнопка "Снять все"
+        document.getElementById('deselectAllBtn').onclick = () => {
+            document.querySelectorAll('#userSubjectsList input[type="checkbox"]').forEach(cb => cb.checked = false);
         };
 
-        document.getElementById('addCustomSubjectBtn').onclick = () => {
-            openEditModal(null, currentEditingUserId);
+        // Переключатель "Показывать все"
+        document.getElementById('toggleAllSubjects').onchange = (e) => {
+            const isChecked = e.target.checked;
+            document.querySelectorAll('#userSubjectsList input[type="checkbox"]').forEach(cb => cb.checked = isChecked);
         };
 
-        window.editCustomSubject = (id) => {
-            const s = subjectsCache.find(x => x.id === id);
-            if (s) openEditModal(s, currentEditingUserId);
-        };
+        document.getElementById('showCustomBtn').onclick = () => { document.getElementById('customSubjectsSection').style.display = 'block'; document.getElementById('globalSubjectsSection').style.display = 'none'; document.getElementById('showCustomBtn').style.background = '#9f7aea'; document.getElementById('showCustomBtn').style.color = 'white'; document.getElementById('showGlobalBtn').style.background = 'transparent'; document.getElementById('showGlobalBtn').style.color = 'inherit'; };
+        document.getElementById('showGlobalBtn').onclick = () => { document.getElementById('customSubjectsSection').style.display = 'none'; document.getElementById('globalSubjectsSection').style.display = 'block'; document.getElementById('showCustomBtn').style.background = 'transparent'; document.getElementById('showCustomBtn').style.color = 'inherit'; document.getElementById('showGlobalBtn').style.background = '#9f7aea'; document.getElementById('showGlobalBtn').style.color = 'white'; };
 
+        document.getElementById('addCustomSubjectBtn').onclick = () => { openEditModal(null, currentEditingUserId); };
+        window.editCustomSubject = (id) => { const s = subjectsCache.find(x => x.id === id); if (s) openEditModal(s, currentEditingUserId); };
         window.deleteCustomSubject = async (id) => {
             if (!confirm('Удалить этот личный предмет?')) return;
-            try {
-                const r = await fetch('/api/admin/subjects/delete', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({...getAuthPayload(), id}) });
-                if (!r.ok) throw new Error('Ошибка');
-                await loadSubjects();
-                openUserSubjectsModal(currentEditingUserId, currentEditingUserEmail);
-            } catch (err) { alert('Ошибка: ' + err.message); }
+            try { const r = await fetch('/api/admin/subjects/delete', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({...getAuthPayload(), id}) }); if (!r.ok) throw new Error('Ошибка'); await loadSubjects(); openUserSubjectsModal(currentEditingUserId, currentEditingUserEmail); }
+            catch (err) { alert('Ошибка: ' + err.message); }
         };
 
+        // СОХРАНЕНИЕ ОБЩИХ ПРЕДМЕТОВ
         document.getElementById('saveUserSubjectsBtn').onclick = async () => {
             if (!currentEditingUserId) return;
 
             const checkboxes = document.querySelectorAll('#userSubjectsList input[type="checkbox"]:checked');
             const subject_ids = Array.from(checkboxes).map(cb => parseInt(cb.value));
+            // subjects_configured = True, если галочка "Показывать все" СНЯТА (то есть мы ограничиваем)
+            const showAll = document.getElementById('toggleAllSubjects').checked;
+            const subjects_configured = !showAll;
 
             const btn = document.getElementById('saveUserSubjectsBtn');
-            btn.disabled = true;
-            btn.textContent = 'Сохранение...';
+            btn.disabled = true; btn.textContent = 'Сохранение...';
 
             try {
-                const r = await fetch('/api/admin/save-user-subjects', {
-                    method: 'POST', headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({...getAuthPayload(), user_id: currentEditingUserId, subject_ids})
-                });
-
-                if (!r.ok) {
-                    const errData = await r.json().catch(()=>({detail:'Ошибка сервера'}));
-                    throw new Error(errData.detail || 'Ошибка сервера');
-                }
-
-                alert('✅ Доступ к общим предметам сохранен!');
-            } catch (err) {
-                alert('Ошибка: ' + err.message);
-            } finally {
-                btn.disabled = false;
-                btn.textContent = '💾 Сохранить общие';
-            }
+                const r = await fetch('/api/admin/save-user-subjects', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({...getAuthPayload(), user_id: currentEditingUserId, subject_ids, subjects_configured}) });
+                if (!r.ok) { const errData = await r.json().catch(()=>({detail:'Ошибка сервера'})); throw new Error(errData.detail || 'Ошибка сервера'); }
+                alert('✅ Настройки предметов сохранены!');
+            } catch (err) { alert('Ошибка: ' + err.message); }
+            finally { btn.disabled = false; btn.textContent = '💾 Сохранить общие'; }
         };
 
         async function loadBlockedDevices() {
-            const list = document.getElementById('blockedList');
-            const empty = document.getElementById('emptyBlocked');
-            if (!list || !empty) return;
+            const list = document.getElementById('blockedList'); const empty = document.getElementById('emptyBlocked'); if (!list || !empty) return;
             try {
-                const r = await fetch('/api/admin/blocked-devices', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(getAuthPayload()) });
-                if (!r.ok) return;
-                const d = await r.json();
-                list.innerHTML = '';
-                if (!d.devices || !d.devices.length) { empty.style.display = 'block'; return; }
-                empty.style.display = 'none';
-                d.devices.forEach(dev => {
-                    const div = document.createElement('div');
-                    div.className = 'blocked-device-row';
-                    div.innerHTML = `
-                        <span style="font-family: monospace; font-size: 12px; word-break: break-all;">${escapeHtml(dev.device)}</span>
-                        <button class="btn-unblock" onclick="unblockDevice('${dev.device.replace(/'/g, "\\'")}')">Разблокировать</button>
-                    `;
-                    list.appendChild(div);
-                });
+                const r = await fetch('/api/admin/blocked-devices', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(getAuthPayload()) }); if (!r.ok) return; const d = await r.json();
+                list.innerHTML = ''; if (!d.devices || !d.devices.length) { empty.style.display = 'block'; return; } empty.style.display = 'none';
+                d.devices.forEach(dev => { const div = document.createElement('div'); div.className = 'blocked-device-row'; div.innerHTML = `<span style="font-family: monospace; font-size: 12px; word-break: break-all;">${escapeHtml(dev.device)}</span><button class="btn-unblock" onclick="unblockDevice('${dev.device.replace(/'/g, "\\'")}')">Разблокировать</button>`; list.appendChild(div); });
             } catch (e) { console.error(e); }
         }
-
         async function unblockDevice(device) {
             if (!confirm('Разблокировать это устройство?')) return;
-            try {
-                await fetch('/api/admin/unblock-device', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({...getAuthPayload(), device}) });
-                loadBlockedDevices();
-            } catch (e) { alert('Ошибка: ' + e.message); }
+            try { await fetch('/api/admin/unblock-device', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({...getAuthPayload(), device}) }); loadBlockedDevices(); }
+            catch (e) { alert('Ошибка: ' + e.message); }
         }
 
         async function loadMessages() {
-            const list = document.getElementById('messagesList');
-            const empty = document.getElementById('emptyMsg');
-            if (!list || !empty) return;
+            const list = document.getElementById('messagesList'); const empty = document.getElementById('emptyMsg'); if (!list || !empty) return;
             try {
-                const r = await fetch('/api/admin/messages', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(getAuthPayload()) });
-                if (!r.ok) return;
-                const d = await r.json();
-                document.getElementById('count').textContent = d.total;
-                list.innerHTML = '';
-                if (!d.messages || !d.messages.length) { empty.style.display = 'block'; return; }
-                empty.style.display = 'none';
+                const r = await fetch('/api/admin/messages', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(getAuthPayload()) }); if (!r.ok) return; const d = await r.json();
+                document.getElementById('count').textContent = d.total; list.innerHTML = ''; if (!d.messages || !d.messages.length) { empty.style.display = 'block'; return; } empty.style.display = 'none';
                 d.messages.forEach(m => {
-                    const div = document.createElement('div');
-                    div.className = 'message-card';
-                    // НОВОЕ: Отображение фото из поддержки
+                    const div = document.createElement('div'); div.className = 'message-card';
                     const imgHtml = m.image ? `<div style="margin-top:10px;"><img src="${m.image}" style="max-width:100%; border-radius:8px; max-height:300px; cursor:zoom-in;" onclick="window.open(this.src)"></div>` : '';
-                    div.innerHTML = `
-                        <div class="msg-head">
-                            <span class="msg-date">📅 ${escapeHtml(m.date)}</span>
-                            <div class="msg-actions">
-                                <span class="msg-ver">v${escapeHtml(m.version)}</span>
-                                <button class="msg-delete" onclick="deleteMessage(${m.id})">🗑</button>
-                            </div>
-                        </div>
-                        <div class="msg-body">${escapeHtml(m.message)}</div>
-                        ${imgHtml}
-                        ${m.contact ? `<div class="msg-contact">📞 ${escapeHtml(m.contact)}</div>` : ''}
-                    `;
+                    div.innerHTML = `<div class="msg-head"><span class="msg-date">📅 ${escapeHtml(m.date)}</span><div class="msg-actions"><span class="msg-ver">v${escapeHtml(m.version)}</span><button class="msg-delete" onclick="deleteMessage(${m.id})">🗑</button></div></div><div class="msg-body">${escapeHtml(m.message)}</div>${imgHtml}${m.contact ? `<div class="msg-contact">📞 ${escapeHtml(m.contact)}</div>` : ''}`;
                     list.appendChild(div);
                 });
             } catch (e) { console.error(e); }
         }
-
         async function deleteMessage(id) {
             if (!confirm('Удалить сообщение?')) return;
-            try {
-                await fetch('/api/admin/delete/' + id, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(getAuthPayload()) });
-                loadMessages();
-            } catch (e) { alert('Ошибка: ' + e.message); }
+            try { await fetch('/api/admin/delete/' + id, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(getAuthPayload()) }); loadMessages(); }
+            catch (e) { alert('Ошибка: ' + e.message); }
         }
 
         async function loadLogs() {
-            const list = document.getElementById('logsList');
-            const empty = document.getElementById('emptyLogs');
-            if (!list || !empty) return;
+            const list = document.getElementById('logsList'); const empty = document.getElementById('emptyLogs'); if (!list || !empty) return;
             try {
-                const r = await fetch('/api/admin/logs', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(getAuthPayload()) });
-                if (!r.ok) return;
-                const d = await r.json();
-                document.getElementById('logsCount').textContent = d.logs.length;
-                list.innerHTML = '';
-                if (!d.logs || !d.logs.length) { empty.style.display = 'block'; return; }
-                empty.style.display = 'none';
+                const r = await fetch('/api/admin/logs', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(getAuthPayload()) }); if (!r.ok) return; const d = await r.json();
+                document.getElementById('logsCount').textContent = d.logs.length; list.innerHTML = ''; if (!d.logs || !d.logs.length) { empty.style.display = 'block'; return; } empty.style.display = 'none';
                 d.logs.forEach(l => {
-                    const div = document.createElement('div');
-                    div.className = 'log-row';
+                    const div = document.createElement('div'); div.className = 'log-row';
                     const icon = ACTION_ICONS[l.action] || '📌';
                     const avatarHtml = l.avatar ? `<span class="log-avatar" style="background-image:url('${l.avatar}')"></span>` : `<span class="log-avatar">${getInitial(l.name, l.email)}</span>`;
-                    div.innerHTML = `
-                        <div class="log-icon">${icon}</div>
-                        <div class="log-content">
-                            <div class="log-head">
-                                ${avatarHtml}
-                                <strong>${escapeHtml(l.name || l.email || 'Гость')}</strong>
-                                <span class="log-action">${escapeHtml(l.action)}</span>
-                            </div>
-                            <div class="log-details">${escapeHtml(l.details || '')}</div>
-                            <div class="log-meta">${escapeHtml(l.created)} · IP: ${escapeHtml(l.ip || '—')}</div>
-                        </div>
-                    `;
+                    div.innerHTML = `<div class="log-icon">${icon}</div><div class="log-content"><div class="log-head">${avatarHtml}<strong>${escapeHtml(l.name || l.email || 'Гость')}</strong><span class="log-action">${escapeHtml(l.action)}</span></div><div class="log-details">${escapeHtml(l.details || '')}</div><div class="log-meta">${escapeHtml(l.created)} · IP: ${escapeHtml(l.ip || '—')}</div></div>`;
                     list.appendChild(div);
                 });
             } catch (e) { console.error(e); }
@@ -1083,66 +827,37 @@
         document.getElementById('refreshBlockedBtn').onclick = loadBlockedDevices;
         document.getElementById('refreshBtn').onclick = loadMessages;
         document.getElementById('refreshLogsBtn').onclick = loadLogs;
-
-        document.getElementById('clearBtn').onclick = async () => {
-            if (!confirm('Удалить все сообщения?')) return;
-            try {
-                await fetch('/api/admin/clear', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(getAuthPayload()) });
-                loadMessages();
-            } catch (e) { alert('Ошибка: ' + e.message); }
-        };
-
-        document.getElementById('clearLogsBtn').onclick = async () => {
-            if (!confirm('Очистить все логи?')) return;
-            try {
-                await fetch('/api/admin/logs/clear', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(getAuthPayload()) });
-                loadLogs();
-            } catch (e) { alert('Ошибка: ' + e.message); }
-        };
+        document.getElementById('clearBtn').onclick = async () => { if (!confirm('Удалить все сообщения?')) return; try { await fetch('/api/admin/clear', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(getAuthPayload()) }); loadMessages(); } catch (e) { alert('Ошибка: ' + e.message); } };
+        document.getElementById('clearLogsBtn').onclick = async () => { if (!confirm('Очистить все логи?')) return; try { await fetch('/api/admin/logs/clear', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(getAuthPayload()) }); loadLogs(); } catch (e) { alert('Ошибка: ' + e.message); } };
 
         function escapeHtml(t) { const d = document.createElement('div'); d.textContent = t || ''; return d.innerHTML; }
 
         document.getElementById('downloadDbBtn').onclick = async () => {
-            const st = document.getElementById('downloadStatus');
-            st.textContent = '⏳ Создаем резервную копию...';
-            st.className = 'fb-status loading';
+            const st = document.getElementById('downloadStatus'); st.textContent = '⏳ Создаем резервную копию...'; st.className = 'fb-status loading';
             try {
-                const r = await fetch('/api/admin/export-db', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(getAuthPayload()) });
-                if (!r.ok) throw new Error('Ошибка сервера');
-                const blob = await r.blob();
-                const url = window.URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `gdz_backup_${new Date().toISOString().slice(0, 10)}.sql`;
-                document.body.appendChild(a); a.click(); a.remove();
-                window.URL.revokeObjectURL(url);
+                const r = await fetch('/api/admin/export-db', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(getAuthPayload()) }); if (!r.ok) throw new Error('Ошибка сервера');
+                const blob = await r.blob(); const url = window.URL.createObjectURL(blob); const a = document.createElement('a');
+                a.href = url; a.download = `gdz_backup_${new Date().toISOString().slice(0, 10)}.sql`;
+                document.body.appendChild(a); a.click(); a.remove(); window.URL.revokeObjectURL(url);
                 st.textContent = '✅ Файл скачан!'; st.className = 'fb-status success';
             } catch (e) { st.textContent = '❌ ' + e.message; st.className = 'fb-status error'; }
         };
 
         document.getElementById('saveSettingsBtn').onclick = async () => {
-            const st = document.getElementById('settingsStatus');
-            const token = localStorage.getItem('gdz_token');
+            const st = document.getElementById('settingsStatus'); const token = localStorage.getItem('gdz_token');
             if (!token) { st.textContent = '❌ Нужно войти на главной странице'; st.className = 'fb-status error'; return; }
             st.textContent = '⏳ Применяем...'; st.className = 'fb-status loading';
             const payload = { token: token, admin_theme: currentAdminTheme, admin_bg_url: currentAdminBgUrl, theme: localStorage.getItem('gdz_theme') || 'light', name: '', bg_url: '', admin_btn_color: '', btn_style: '' };
             try {
-                const r = await fetch('/api/auth/update', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload) });
-                if (!r.ok) throw new Error('Ошибка сервера');
+                const r = await fetch('/api/auth/update', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload) }); if (!r.ok) throw new Error('Ошибка сервера');
                 st.textContent = '✅ Настройки применены!'; st.className = 'fb-status success';
-                localStorage.setItem('gdz_admin_theme', currentAdminTheme);
-                if (currentAdminTheme === 'custom') localStorage.setItem('gdz_admin_bg', currentAdminBgUrl);
+                localStorage.setItem('gdz_admin_theme', currentAdminTheme); if (currentAdminTheme === 'custom') localStorage.setItem('gdz_admin_bg', currentAdminBgUrl);
                 originalAdminTheme = currentAdminTheme; originalAdminBgUrl = currentAdminBgUrl;
                 setTimeout(() => location.reload(), 1000);
             } catch (e) { st.textContent = '❌ ' + e.message; st.className = 'fb-status error'; }
         };
 
-        document.getElementById('cancelSettingsBtn').onclick = () => {
-            currentAdminTheme = originalAdminTheme;
-            currentAdminBgUrl = originalAdminBgUrl;
-            updateAdminSettingsUI();
-            applyAdminThemeToPage(currentAdminTheme, originalAdminBgUrl);
-        };
+        document.getElementById('cancelSettingsBtn').onclick = () => { currentAdminTheme = originalAdminTheme; currentAdminBgUrl = originalAdminBgUrl; updateAdminSettingsUI(); applyAdminThemeToPage(currentAdminTheme, originalAdminBgUrl); };
 
         init();
     </script>
