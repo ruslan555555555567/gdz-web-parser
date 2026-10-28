@@ -811,7 +811,11 @@
         });
 
         document.getElementById('saveUserSubjectsBtn').onclick = async () => {
-            if (!currentEditingUserId) return;
+            if (!currentEditingUserId) {
+                alert("Ошибка: не выбран пользователь для настройки. Закройте и откройте окно заново.");
+                return;
+            }
+
             const checkboxes = document.querySelectorAll('#userSubjectsList input[type="checkbox"]:checked');
             const subject_ids = Array.from(checkboxes).map(cb => parseInt(cb.value));
 
@@ -820,12 +824,22 @@
             btn.textContent = 'Сохранение...';
 
             try {
-                const r = await fetch('/api/admin/save-user-subjects', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({...getAuthPayload(), user_id: currentEditingUserId, subject_ids}) });
-                if (!r.ok) throw new Error('Ошибка');
+                const r = await fetch('/api/admin/save-user-subjects', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({...getAuthPayload(), user_id: currentEditingUserId, subject_ids})
+                });
+
+                if (!r.ok) {
+                    const errData = await r.json().catch(()=>({detail:'Сервер не отвечает'}));
+                    throw new Error(errData.detail || 'Ошибка сервера');
+                }
+
                 document.getElementById('userSubjectsModal').classList.add('hidden');
                 alert('✅ Предметы сохранены!');
-            } catch (err) { alert('Ошибка: ' + err.message); }
-            finally {
+            } catch (err) {
+                alert('Ошибка: ' + err.message);
+            } finally {
                 btn.disabled = false;
                 btn.textContent = '💾 Сохранить';
             }
