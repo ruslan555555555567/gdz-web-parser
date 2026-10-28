@@ -34,20 +34,29 @@
         })();
     </script>
     <style>
-        /* ═══ ФИКС ПРОЗРАЧНОСТИ ОКОН ═══ */
+        /* ═══ ФИКС ПРОЗРАЧНОСТИ ОКОН (ЯДЕРНЫЙ) ═══ */
+        .modal {
+            background: rgba(0, 0, 0, 0.85) !important;
+            backdrop-filter: blur(5px) !important;
+        }
         .modal-content {
             background: #ffffff !important;
             color: #1a202c !important;
             opacity: 1 !important;
+            box-shadow: 0 10px 50px rgba(0,0,0,0.5) !important;
+            border: none !important;
         }
-        .theme-dark .modal-content, .admin-theme-dark .modal-content {
+        html.theme-dark .modal-content,
+        html.admin-theme-dark .modal-content {
             background: #2d3748 !important;
             color: #e2e8f0 !important;
-            border: 1px solid #4a5568;
+            border: 1px solid #4a5568 !important;
         }
-        .theme-custom .modal-content {
-            background: #ffffff !important;
-            color: #1a202c !important;
+        html.theme-custom .modal-content,
+        html.admin-theme-custom .modal-content {
+            background: #1a202c !important;
+            color: #ffffff !important;
+            border: 1px solid rgba(255,255,255,0.2) !important;
         }
 
         #editModal { z-index: 9999 !important; }
@@ -361,7 +370,6 @@
             </div>
 
             <div id="globalSubjectsSection" style="display: none;">
-                <!-- НОВОЕ: Переключатель -->
                 <div style="margin-bottom: 15px; background: rgba(66, 153, 225, 0.1); padding: 10px; border-radius: 8px; border: 1px solid #4299e1;">
                     <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
                         <input type="checkbox" id="toggleAllSubjects" style="width: 18px; height: 18px; cursor: pointer;">
@@ -372,7 +380,7 @@
 
                 <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
                     <span class="hint">Выберите, какие общие предметы разрешить.</span>
-                    <button type="button" id="deselectAllBtn" class="btn-small" style="background: #e53e3e; padding: 2px 8px; font-size: 12px;">Снять все</button>
+                    <!-- Убрана кнопка "Снять все" -->
                 </div>
 
                 <div id="userSubjectsList" style="display:flex; flex-direction:column; gap:8px; max-height:40vh; overflow-y:auto; margin-bottom:15px; padding-right:5px;"></div>
@@ -393,6 +401,9 @@
         let usersCache = [];
         let draggedId = null;
         let isMainAdmin = false;
+
+        // НОВОЕ: Кэш для личных предметов пользователя, чтобы работал карандаш
+        let currentCustomSubjects = [];
 
         let currentEditingUserId = null;
         let currentEditingUserEmail = null;
@@ -707,7 +718,10 @@
                 const r = await fetch('/api/admin/get-user-subjects', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({...getAuthPayload(), user_id: userId}) });
                 const d = await r.json();
 
-                document.getElementById('toggleAllSubjects').checked = !d.subjects_configured; // Если false - значит все включены
+                document.getElementById('toggleAllSubjects').checked = !d.subjects_configured;
+
+                // Сохраняем в кэш для карандаша
+                currentCustomSubjects = d.custom_subjects;
 
                 const customList = document.getElementById('customSubjectsList'); const emptyCustom = document.getElementById('emptyCustomSubjects'); customList.innerHTML = '';
                 if (!d.custom_subjects.length) { emptyCustom.style.display = 'block'; }
@@ -726,17 +740,12 @@
                 else {
                     emptyGlobal.style.display = 'none';
                     globalSubjs.forEach(s => {
-                        const isChecked = d.assigned_global_ids.includes(s.id) || !d.subjects_configured; // Если не настроено - всё включено
+                        const isChecked = d.assigned_global_ids.includes(s.id) || !d.subjects_configured;
                         checkList.innerHTML += `<label class="subj-checkbox-label"><input type="checkbox" value="${s.id}" ${isChecked ? 'checked' : ''}><div class="subj-checkmark"></div><span>${escapeHtml(s.name)}</span></label>`;
                     });
                 }
             } catch (err) { document.getElementById('customSubjectsList').innerHTML = '<p class="empty">Ошибка загрузки</p>'; }
         }
-
-        // Кнопка "Снять все"
-        document.getElementById('deselectAllBtn').onclick = () => {
-            document.querySelectorAll('#userSubjectsList input[type="checkbox"]').forEach(cb => cb.checked = false);
-        };
 
         // Переключатель "Показывать все"
         document.getElementById('toggleAllSubjects').onchange = (e) => {
@@ -748,7 +757,9 @@
         document.getElementById('showGlobalBtn').onclick = () => { document.getElementById('customSubjectsSection').style.display = 'none'; document.getElementById('globalSubjectsSection').style.display = 'block'; document.getElementById('showCustomBtn').style.background = 'transparent'; document.getElementById('showCustomBtn').style.color = 'inherit'; document.getElementById('showGlobalBtn').style.background = '#9f7aea'; document.getElementById('showGlobalBtn').style.color = 'white'; };
 
         document.getElementById('addCustomSubjectBtn').onclick = () => { openEditModal(null, currentEditingUserId); };
-        window.editCustomSubject = (id) => { const s = subjectsCache.find(x => x.id === id); if (s) openEditModal(s, currentEditingUserId); };
+
+        // ИСПРАВЛЕНО: Ищем в currentCustomSubjects
+        window.editCustomSubject = (id) => { const s = currentCustomSubjects.find(x => x.id === id); if (s) openEditModal(s, currentEditingUserId); };
         window.deleteCustomSubject = async (id) => {
             if (!confirm('Удалить этот личный предмет?')) return;
             try { const r = await fetch('/api/admin/subjects/delete', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({...getAuthPayload(), id}) }); if (!r.ok) throw new Error('Ошибка'); await loadSubjects(); openUserSubjectsModal(currentEditingUserId, currentEditingUserEmail); }
@@ -761,7 +772,6 @@
 
             const checkboxes = document.querySelectorAll('#userSubjectsList input[type="checkbox"]:checked');
             const subject_ids = Array.from(checkboxes).map(cb => parseInt(cb.value));
-            // subjects_configured = True, если галочка "Показывать все" СНЯТА (то есть мы ограничиваем)
             const showAll = document.getElementById('toggleAllSubjects').checked;
             const subjects_configured = !showAll;
 
@@ -843,6 +853,7 @@
             } catch (e) { st.textContent = '❌ ' + e.message; st.className = 'fb-status error'; }
         };
 
+        // ИСПРАВЛЕНО: Четкое сохранение настроек
         document.getElementById('saveSettingsBtn').onclick = async () => {
             const st = document.getElementById('settingsStatus'); const token = localStorage.getItem('gdz_token');
             if (!token) { st.textContent = '❌ Нужно войти на главной странице'; st.className = 'fb-status error'; return; }
