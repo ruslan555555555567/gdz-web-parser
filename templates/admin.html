@@ -84,7 +84,6 @@
             color: #f7fafc !important;
         }
 
-        /* Стили для кнопок */
         .btn-block { background: #ed8936 !important; color: #fff !important; border: none; padding: 6px 10px; border-radius: 6px; cursor: pointer; font-size: 12px; }
         .btn-block:hover { background: #dd6b20 !important; }
         .btn-unblock { background: #48bb78 !important; color: #fff !important; border: none; padding: 6px 10px; border-radius: 6px; cursor: pointer; font-size: 12px; }
@@ -92,7 +91,6 @@
         .blocked-device-row { display: flex; justify-content: space-between; align-items: center; background: #f7fafc; border: 1px solid #e2e8f0; padding: 10px 15px; border-radius: 8px; margin-bottom: 8px; font-size: 13px; }
         .admin-theme-dark .blocked-device-row { background: rgba(45,55,72,0.5); border-color: #4a5568; color: #e2e8f0; }
 
-        /* ФИКС КОРЗИНЫ */
         .user-del {
             background: rgba(229, 62, 62, 0.1) !important;
             border: 1px solid #e53e3e !important;
@@ -252,6 +250,14 @@
 
                 <div id="settingsStatus" class="fb-status"></div>
 
+                <!-- БЛОК СКАЧИВАНИЯ БАЗЫ (Изначально скрыт!) -->
+                <div id="downloadDbSection" style="margin-bottom: 20px; padding-top: 20px; border-top: 1px dashed #4a5568; display: none;">
+                    <button id="downloadDbBtn" class="btn-small" style="background: #805ad5; font-size: 14px; padding: 10px 15px; width: 100%;">
+                        📥 Скачать базу данных (SQL)
+                    </button>
+                    <span id="downloadStatus" class="fb-status" style="margin-top: 10px; display: block;"></span>
+                </div>
+
                 <div class="modal-actions" style="justify-content: flex-end; gap: 10px; margin-top: 30px;">
                     <button id="cancelSettingsBtn" class="btn-secondary">Отмена</button>
                     <button id="saveSettingsBtn" class="btn-primary" style="width:auto;">💾 Применить</button>
@@ -261,7 +267,6 @@
         </section>
     </div>
 
-    <!-- Модалка редактирования предмета -->
     <div id="editModal" class="modal hidden">
         <div class="modal-content">
             <h3 id="editModalTitle">✏️ Редактировать предмет</h3>
@@ -292,7 +297,6 @@
         </div>
     </div>
 
-    <!-- Модалка выбора предметов для пользователя -->
     <div id="userSubjectsModal" class="modal hidden">
         <div class="modal-content">
             <h3>📚 Предметы пользователя</h3>
@@ -349,6 +353,13 @@
                 const d = await r.json();
                 const u = d.user;
                 if (!u || !u.is_admin) return;
+
+                // Показываем кнопку скачивания ТОЛЬКО для главного админа
+                if (u.is_main_admin) {
+                    document.getElementById('downloadDbSection').style.display = 'block';
+                } else {
+                    document.getElementById('downloadDbSection').style.display = 'none';
+                }
 
                 currentAdminTheme = u.admin_theme || 'auto';
                 currentAdminBgUrl = u.admin_bg_url || '';
@@ -471,6 +482,7 @@
                 const r = await fetch('/api/admin/check', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({password}) });
                 if (!r.ok) { loginStatus.textContent = '❌ Неверный пароль'; loginStatus.className = 'fb-status error'; return; }
                 authData.password = password;
+                document.getElementById('downloadDbSection').style.display = 'block'; // Показываем, т.к. вошли по мастер-паролю
                 openAdmin();
             } catch (err) { loginStatus.textContent = '❌ ' + err.message; loginStatus.className = 'fb-status error'; }
         });
@@ -929,7 +941,42 @@
             } catch (err) { alert('Ошибка: ' + err.message); }
         };
 
-        // === НАСТРОЙКИ ===
+        // === НАСТРОЙКИ И БЭКАП ===
+        document.getElementById('downloadDbBtn').onclick = async () => {
+            const st = document.getElementById('downloadStatus');
+            st.textContent = '⏳ Создаем резервную копию...';
+            st.className = 'fb-status loading';
+
+            try {
+                const r = await fetch('/api/admin/export-db', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(getAuthPayload())
+                });
+
+                if (!r.ok) {
+                    const err = await r.json().catch(()=>({detail: 'Ошибка сервера'}));
+                    throw new Error(err.detail || 'Ошибка сервера');
+                }
+
+                const blob = await r.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `gdz_backup_${new Date().toISOString().slice(0, 10)}.sql`;
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                window.URL.revokeObjectURL(url);
+
+                st.textContent = '✅ Файл скачан! Сохрани его на компьютер.';
+                st.className = 'fb-status success';
+            } catch (e) {
+                st.textContent = '❌ ' + e.message;
+                st.className = 'fb-status error';
+            }
+        };
+
         document.getElementById('saveSettingsBtn').onclick = async () => {
             const st = document.getElementById('settingsStatus');
             const token = localStorage.getItem('gdz_token');
@@ -975,7 +1022,7 @@
             currentAdminTheme = originalAdminTheme;
             currentAdminBgUrl = originalAdminBgUrl;
             updateAdminSettingsUI();
-            applyAdminThemeToPage(currentAdminTheme, currentAdminBgUrl);
+            applyAdminThemeToPage(currentAdminTheme, originalAdminBgUrl);
         };
 
         function escapeHtml(t) { const d = document.createElement('div'); d.textContent = t || ''; return d.innerHTML; }

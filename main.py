@@ -16,7 +16,7 @@ import asyncpg
 
 from parser import parse_tasks
 
-VERSION = "53.0.0"
+VERSION = "54.0.0"
 ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "")
 ADMIN_EMAIL = os.getenv("ADMIN_EMAIL", "admin@gdz.ru").lower().strip()
 DATABASE_URL = os.getenv("DATABASE_URL")
@@ -99,7 +99,6 @@ async def init_db():
                 )
             """)
 
-            # ВАЖНО: Сначала создаем предметы!
             await conn.execute("""
                 CREATE TABLE IF NOT EXISTS subjects (
                     id SERIAL PRIMARY KEY,
@@ -114,7 +113,6 @@ async def init_db():
             await conn.execute("ALTER TABLE subjects ADD COLUMN IF NOT EXISTS max_number INTEGER DEFAULT 0")
             await conn.execute("ALTER TABLE subjects ADD COLUMN IF NOT EXISTS note TEXT DEFAULT ''")
 
-            # И только потом user_subjects (так как она ссылается на subjects)
             await conn.execute("""
                 CREATE TABLE IF NOT EXISTS user_subjects (
                     user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
@@ -666,6 +664,10 @@ async def me(token: str = "", device: str = ""):
     user = await get_user_by_token(token)
     if not user:
         raise HTTPException(401, "Не авторизован")
+
+    # Устанавливаем флаг, что это главный админ
+    user["is_main_admin"] = (user["email"] == ADMIN_EMAIL)
+
     return {"user": user}
 
 
@@ -957,6 +959,67 @@ async def admin_clear(data: dict):
         async with db_pool.acquire() as conn:
             await conn.execute("DELETE FROM feedback")
     return {"ok": True}
+
+
+# ═══════ ЭКСПОРТ БАЗЫ ДАННЫХ ═══════
+
+@app.post("/api/admin/export-db")
+async def admin_export_db(data: dict):
+    token = data.get("token")
+    password = data.get("password")
+
+    # Проверка: только главный админ или мастер-пароль
+    allowed = False
+    if password and password == ADMIN_PASSWORD:
+        allowed = True
+    elif token:
+        user = await get_user_by_token(token)
+        if user and user.get("email") == ADMIN_EMAIL:
+            allowed = True
+
+    if not allowed:
+        raise HTTPException(401, "Экспорт базы доступен только главному администратору.")
+
+    if db_pool is None:
+        raise HTTPException(500, "БД недоступна")
+
+    sql_dump = "-- GDZ Parser DB Backup\n"
+    sql_dump += f"-- Дата: {datetime.now().isoformat()}\n\n"
+
+    async with db_pool.acquire() as conn:
+        tables = ['users', 'sessions', 'subjects', 'user_subjects', 'settings', 'templates', 'history', 'feedback',
+                  'blocked_devices', 'logs']
+        for table in tables:
+            sql_dump += f"-- Данные таблицы {table}\n"
+            try:
+                rows = await conn.fetch(f"SELECT * FROM {table}")
+                for row in rows:
+                    row_dict = dict(row)
+                    cols = ", ".join(row_dict.keys())
+                    vals = []
+                    for v in row_dict.values():
+                        if v is None:
+                            vals.append("NULL")
+                        elif isinstance(v, bool):
+                            vals.append("TRUE" if v else "FALSE")
+                        elif isinstance(v, (int, float)):
+                            vals.append(str(v))
+                        elif isinstance(v, datetime):
+                            vals.append(f"'{v.isoformat()}'")
+                        else:
+                            safe_v = str(v).replace("'", "''")
+                            vals.append(f"'{safe_v}'")
+                    vals_str = ", ".join(vals)
+                    sql_dump += f"INSERT INTO {table} ({cols}) VALUES ({vals_str});\n"
+            except Exception as e:
+                sql_dump += f"-- Ошибка при выгрузке таблицы {table}: {e}\n"
+            sql_dump += "\n"
+
+    return Response(
+        content=sql_dump.encode('utf-8'),
+        media_type="application/sql",
+        headers={"Content-Disposition": "attachment; filename=gdz_backup.sql"}
+    )
 
 
 # ═══════ УПРАВЛЕНИЕ АДМИНАМИ И ПРЕДМЕТАМИ ═══════
