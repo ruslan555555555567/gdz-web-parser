@@ -34,7 +34,7 @@
         })();
     </script>
     <style>
-        /* ПРАВКА: Модалка редактирования всегда сверху */
+        /* Модалка редактирования всегда сверху */
         #editModal { z-index: 9999 !important; }
 
         html.has-token #loginCard { display: none !important; }
@@ -364,6 +364,7 @@
         let subjectsCache = [];
         let usersCache = [];
         let draggedId = null;
+        let isMainAdmin = false; // НОВОЕ: проверяем главный ли это админ
 
         let currentEditingUserId = null;
         let currentEditingUserEmail = null;
@@ -407,6 +408,8 @@
                 const d = await r.json();
                 const u = d.user;
                 if (!u || (!u.is_admin && !u.is_main_admin)) return;
+
+                isMainAdmin = u.is_main_admin; // Сохраняем статус
 
                 if (u.is_main_admin) {
                     document.getElementById('downloadDbSection').style.display = 'block';
@@ -536,6 +539,7 @@
                 if (!r.ok) { loginStatus.textContent = '❌ Неверный пароль'; loginStatus.className = 'fb-status error'; return; }
                 authData.password = password;
                 document.getElementById('downloadDbSection').style.display = 'block';
+                isMainAdmin = true; // Если зашли по паролю, то мы главный админ
                 openAdmin();
             } catch (err) { loginStatus.textContent = '❌ ' + err.message; loginStatus.className = 'fb-status error'; }
         });
@@ -644,9 +648,7 @@
         const editModal = document.getElementById('editModal');
 
         function openEditModal(subject, targetUserId) {
-            // ПРАВКА: Скрываем окно настроек пользователя, если оно открыто
             document.getElementById('userSubjectsModal').classList.add('hidden');
-
             editModal.classList.remove('hidden');
             editingId = subject ? subject.id : null;
             editingTargetUserId = targetUserId;
@@ -663,7 +665,6 @@
             document.getElementById('editStatus').className = 'fb-status';
         }
 
-        // ПРАВКА: При отмене возвращаем окно пользователя
         document.getElementById('editCancelBtn').onclick = () => {
             editModal.classList.add('hidden');
             if (editingTargetUserId) {
@@ -769,7 +770,8 @@
 
                     const blockBtnHtml = u.device ? `<button class="btn-block user-block" data-index="${index}" title="Заблокировать это устройство">🚫</button>` : '';
                     const adminBtnHtml = `<button class="btn-admin-toggle user-admin" data-index="${index}" title="${u.is_admin ? 'Снять админа' : 'Сделать админом'}">👑</button>`;
-                    const subjBtnHtml = `<button class="btn-subjects user-subj" data-index="${index}" title="Настроить предметы">📚</button>`;
+                    // СКРЫВАЕМ КНОПКУ ПРЕДМЕТОВ ДЛЯ ОБЫЧНЫХ АДМИНОВ
+                    const subjBtnHtml = isMainAdmin ? `<button class="btn-subjects user-subj" data-index="${index}" title="Настроить предметы">📚</button>` : '';
 
                     div.innerHTML = `
                         <div class="user-head">
@@ -1017,6 +1019,8 @@
                 d.messages.forEach(m => {
                     const div = document.createElement('div');
                     div.className = 'message-card';
+                    // НОВОЕ: Отображение фото из поддержки
+                    const imgHtml = m.image ? `<div style="margin-top:10px;"><img src="${m.image}" style="max-width:100%; border-radius:8px; max-height:300px; cursor:zoom-in;" onclick="window.open(this.src)"></div>` : '';
                     div.innerHTML = `
                         <div class="msg-head">
                             <span class="msg-date">📅 ${escapeHtml(m.date)}</span>
@@ -1026,6 +1030,7 @@
                             </div>
                         </div>
                         <div class="msg-body">${escapeHtml(m.message)}</div>
+                        ${imgHtml}
                         ${m.contact ? `<div class="msg-contact">📞 ${escapeHtml(m.contact)}</div>` : ''}
                     `;
                     list.appendChild(div);

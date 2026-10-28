@@ -16,7 +16,7 @@ import asyncpg
 
 from parser import parse_tasks
 
-VERSION = "57.0.0"
+VERSION = "58.0.0"
 ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "")
 ADMIN_EMAIL = os.getenv("ADMIN_EMAIL", "admin@gdz.ru").lower().strip()
 DATABASE_URL = os.getenv("DATABASE_URL")
@@ -63,6 +63,7 @@ DEFAULT_SETTINGS = {
 
 ALLOWED_TEMPLATES = ("index.html", "admin.html")
 MAX_TEMPLATE_SIZE = 2_000_000
+
 
 async def init_db():
     global db_pool
@@ -143,6 +144,9 @@ async def init_db():
                     contact TEXT, version TEXT
                 )
             """)
+            # НОВОЕ: Добавляем колонку для фото в жалобы
+            await conn.execute("ALTER TABLE feedback ADD COLUMN IF NOT EXISTS image TEXT")
+
             await conn.execute("""
                 CREATE TABLE IF NOT EXISTS logs (
                     id SERIAL PRIMARY KEY,
@@ -183,6 +187,7 @@ async def init_db():
         print(f"[main] Ошибка PostgreSQL: {e}")
         db_pool = None
 
+
 async def log_action(user_id, action: str, details: str = "", ip: str = ""):
     if db_pool is None:
         return
@@ -196,10 +201,12 @@ async def log_action(user_id, action: str, details: str = "", ip: str = ""):
     except Exception as e:
         print(f"[log] {e}")
 
+
 def hash_password(password: str) -> str:
     salt = secrets.token_hex(16)
     h = hashlib.pbkdf2_hmac('sha256', password.encode(), salt.encode(), 100000)
     return f"{salt}${h.hex()}"
+
 
 def verify_password(password: str, stored: str) -> bool:
     try:
@@ -208,6 +215,7 @@ def verify_password(password: str, stored: str) -> bool:
         return check.hex() == h
     except Exception:
         return False
+
 
 async def get_user_by_token(token: str):
     if not db_pool or not token:
@@ -223,6 +231,7 @@ async def get_user_by_token(token: str):
             await conn.execute("UPDATE users SET last_seen = NOW() WHERE id = $1", row["id"])
     return dict(row) if row else None
 
+
 async def get_admin_password_hash():
     if db_pool is None:
         return None
@@ -232,13 +241,13 @@ async def get_admin_password_hash():
     except Exception:
         return None
 
+
 async def check_admin(data: dict):
     password = (data or {}).get("password", "")
     token = (data or {}).get("token", "")
 
     if token:
         user = await get_user_by_token(token)
-        # РАЗРЕШАЕМ ДОСТУП, ЕСЛИ ЭТО АДМИН ИЛИ ЕСЛИ ЕГО EMAIL СОВПАДАЕТ
         if user and (user.get("is_admin") or user.get("email") == ADMIN_EMAIL):
             return True
 
@@ -250,6 +259,28 @@ async def check_admin(data: dict):
             return True
 
     return False
+
+
+# НОВОЕ: Проверка только для главного админа
+async def check_main_admin(data: dict):
+    password = (data or {}).get("password", "")
+    token = (data or {}).get("token", "")
+
+    if token:
+        user = await get_user_by_token(token)
+        if user and user.get("email") == ADMIN_EMAIL:
+            return True
+        return False
+
+    if password:
+        stored_hash = await get_admin_password_hash()
+        if stored_hash and verify_password(password, stored_hash):
+            return True
+        if not stored_hash and ADMIN_PASSWORD and password == ADMIN_PASSWORD:
+            return True
+
+    return False
+
 
 app = FastAPI(title="GDZ Парсер")
 app.mount("/static", StaticFiles(directory="static"), name="static")
@@ -270,6 +301,7 @@ PLACEHOLDER_JPEG = bytes.fromhex(
     "f2f3f4f5f6f7f8f9faffda000c03010002110311003f00fefa28a2803fffd9"
 )
 
+
 class Job(BaseModel):
     subject: str
     url: str = ""
@@ -277,12 +309,16 @@ class Job(BaseModel):
     raw_text: str = ""
     type: str = "numbers"
 
+
 class ParseRequest(BaseModel):
     jobs: List[Job]
+
 
 class FeedbackRequest(BaseModel):
     message: str
     contact: str = ""
+    image: str = ""  # НОВОЕ
+
 
 class RegisterRequest(BaseModel):
     email: str
@@ -290,18 +326,22 @@ class RegisterRequest(BaseModel):
     name: str = ""
     device: str = ""
 
+
 class LoginRequest(BaseModel):
     email: str
     password: str
     device: str = ""
 
+
 class TokenRequest(BaseModel):
     token: str
+
 
 class HistorySaveRequest(BaseModel):
     token: str
     subject: str
     numbers: str
+
 
 class UpdateProfileRequest(BaseModel):
     token: str
@@ -313,19 +353,23 @@ class UpdateProfileRequest(BaseModel):
     admin_theme: str = ""
     btn_style: str = ""
 
+
 class ChangePasswordRequest(BaseModel):
     token: str
     old_password: str
     new_password: str
 
+
 class AvatarRequest(BaseModel):
     token: str
     avatar: str
+
 
 class ChangeAdminPasswordRequest(BaseModel):
     current_password: str = ""
     new_password: str
     token: str = ""
+
 
 class TemplateSaveRequest(BaseModel):
     password: str = ""
@@ -333,14 +377,17 @@ class TemplateSaveRequest(BaseModel):
     name: str
     content: str
 
+
 class SettingsSaveRequest(BaseModel):
     password: str = ""
     token: str = ""
     settings: dict
 
+
 @app.on_event("startup")
 async def startup():
     await init_db()
+
 
 async def render_page(request: Request, name: str, context: dict):
     html = None
@@ -358,17 +405,21 @@ async def render_page(request: Request, name: str, context: dict):
             print(f"[template] ошибка рендера {name}: {e}")
     return templates.TemplateResponse(request, name, context)
 
+
 @app.get("/", response_class=HTMLResponse)
 async def index(request: Request):
     return await render_page(request, "index.html", {"version": VERSION})
+
 
 @app.get("/admin", response_class=HTMLResponse)
 async def admin_page(request: Request):
     return await render_page(request, "admin.html", {"version": VERSION})
 
+
 @app.get("/api/version")
 async def get_version():
     return {"version": VERSION}
+
 
 @app.get("/health")
 async def health():
@@ -383,15 +434,17 @@ async def health():
 
     return {"status": "ok", "db": db_status, "version": VERSION, "time": datetime.utcnow().isoformat() + "Z"}
 
+
 @app.head("/health")
 async def health_head():
     return Response(status_code=200)
+
 
 @app.get("/ping")
 async def ping():
     return await health()
 
-# ═══════ ПРЕДМЕТЫ ═══════
+
 @app.get("/api/subjects")
 async def get_subjects(token: str = ""):
     if db_pool is None:
@@ -423,10 +476,13 @@ async def get_subjects(token: str = ""):
             rows = list(global_rows) + list(custom_rows)
     return {"subjects": [dict(r) for r in rows]}
 
+
 @app.post("/api/admin/subjects/add")
 async def admin_add_subject(data: dict):
     if not await check_admin(data):
         raise HTTPException(401, "Нет доступа")
+    if data.get("user_id") and not await check_main_admin(data):
+        raise HTTPException(403, "Только главный админ может добавлять личные предметы")
     if db_pool is None:
         raise HTTPException(500, "БД недоступна")
     name = (data.get("name") or "").strip()
@@ -453,6 +509,7 @@ async def admin_add_subject(data: dict):
             raise HTTPException(400, "Такой предмет уже есть")
     await log_action(None, "subject_add", name)
     return {"ok": True, "id": new_id}
+
 
 @app.post("/api/admin/subjects/update")
 async def admin_update_subject(data: dict):
@@ -486,6 +543,7 @@ async def admin_update_subject(data: dict):
     await log_action(None, "subject_update", f"id={subj_id}")
     return {"ok": True}
 
+
 @app.post("/api/admin/subjects/delete")
 async def admin_delete_subject(data: dict):
     if not await check_admin(data):
@@ -498,6 +556,7 @@ async def admin_delete_subject(data: dict):
             await conn.execute("DELETE FROM subjects WHERE id = $1", int(subj_id))
     await log_action(None, "subject_delete", f"id={subj_id}")
     return {"ok": True}
+
 
 @app.post("/api/admin/subjects/reorder")
 async def admin_reorder_subjects(data: dict):
@@ -517,6 +576,7 @@ async def admin_reorder_subjects(data: dict):
     await log_action(None, "subject_reorder", f"count={len(ids)}")
     return {"ok": True, "updated": len(ids)}
 
+
 @app.post("/api/admin/subjects/reset")
 async def admin_reset_subjects(data: dict):
     if not await check_admin(data):
@@ -534,7 +594,7 @@ async def admin_reset_subjects(data: dict):
     await log_action(None, "subjects_reset")
     return {"ok": True, "count": len(DEFAULT_SUBJECTS)}
 
-# ═══════ АВТОРИЗАЦИЯ ═══════
+
 @app.post("/api/auth/register")
 async def register(req: RegisterRequest, request: Request):
     if db_pool is None:
@@ -571,6 +631,7 @@ async def register(req: RegisterRequest, request: Request):
         "admin_bg_url": None, "admin_btn_color": "#4299e1", "admin_theme": "auto", "btn_style": "light"
     }}
 
+
 @app.post("/api/auth/login")
 async def login(req: LoginRequest, request: Request):
     if db_pool is None:
@@ -593,7 +654,8 @@ async def login(req: LoginRequest, request: Request):
             raise HTTPException(401, "Неверный email или пароль")
 
         if req.device.strip():
-            await conn.execute("UPDATE users SET device = $1, last_seen = NOW() WHERE id = $2", req.device.strip(), row["id"])
+            await conn.execute("UPDATE users SET device = $1, last_seen = NOW() WHERE id = $2", req.device.strip(),
+                               row["id"])
         else:
             await conn.execute("UPDATE users SET last_seen = NOW() WHERE id = $1", row["id"])
         token = secrets.token_urlsafe(32)
@@ -608,6 +670,7 @@ async def login(req: LoginRequest, request: Request):
         "admin_theme": row["admin_theme"] or "auto", "btn_style": row["btn_style"] or "light"
     }}
 
+
 @app.post("/api/auth/logout")
 async def logout(req: TokenRequest):
     user = await get_user_by_token(req.token)
@@ -617,6 +680,7 @@ async def logout(req: TokenRequest):
         async with db_pool.acquire() as conn:
             await conn.execute("DELETE FROM sessions WHERE token = $1", req.token)
     return {"ok": True}
+
 
 @app.get("/api/auth/me")
 async def me(token: str = "", device: str = ""):
@@ -632,6 +696,7 @@ async def me(token: str = "", device: str = ""):
 
     user["is_main_admin"] = (user["email"] == ADMIN_EMAIL)
     return {"user": user}
+
 
 @app.post("/api/auth/update")
 async def update_profile(req: UpdateProfileRequest):
@@ -699,6 +764,7 @@ async def update_profile(req: UpdateProfileRequest):
     await log_action(user["id"], "profile_update", f"{req.theme} / {req.btn_style}")
     return {"ok": True, "user": dict(row)}
 
+
 @app.post("/api/auth/avatar")
 async def set_avatar(req: AvatarRequest):
     user = await get_user_by_token(req.token)
@@ -720,6 +786,7 @@ async def set_avatar(req: AvatarRequest):
     await log_action(user["id"], "avatar_update")
     return {"ok": True, "avatar": req.avatar}
 
+
 @app.post("/api/auth/change-password")
 async def change_password(req: ChangePasswordRequest):
     user = await get_user_by_token(req.token)
@@ -731,9 +798,11 @@ async def change_password(req: ChangePasswordRequest):
         row = await conn.fetchrow("SELECT password_hash FROM users WHERE id = $1", user["id"])
         if not verify_password(req.old_password, row["password_hash"]):
             raise HTTPException(401, "Старый пароль неверный")
-        await conn.execute("UPDATE users SET password_hash = $1 WHERE id = $2", hash_password(req.new_password), user["id"])
+        await conn.execute("UPDATE users SET password_hash = $1 WHERE id = $2", hash_password(req.new_password),
+                           user["id"])
     await log_action(user["id"], "password_change")
     return {"ok": True}
+
 
 @app.post("/api/auth/delete")
 async def delete_account(req: TokenRequest):
@@ -747,20 +816,22 @@ async def delete_account(req: TokenRequest):
         await conn.execute("DELETE FROM users WHERE id = $1", user["id"])
     return {"ok": True}
 
-# ═══════ ИСТОРИЯ ═══════
+
 @app.post("/api/history/save")
 async def history_save(req: HistorySaveRequest):
     user = await get_user_by_token(req.token)
     if not user or db_pool is None:
         return {"ok": False}
     async with db_pool.acquire() as conn:
-        await conn.execute("INSERT INTO history (user_id, subject, numbers) VALUES ($1, $2, $3)", user["id"], req.subject, req.numbers)
+        await conn.execute("INSERT INTO history (user_id, subject, numbers) VALUES ($1, $2, $3)", user["id"],
+                           req.subject, req.numbers)
         await conn.execute("""
             DELETE FROM history WHERE user_id = $1 AND id NOT IN (
                 SELECT id FROM history WHERE user_id = $1 ORDER BY id DESC LIMIT 20
             )
         """, user["id"])
     return {"ok": True}
+
 
 @app.get("/api/history/list")
 async def history_list(token: str = ""):
@@ -776,6 +847,7 @@ async def history_list(token: str = ""):
         """, user["id"])
     return {"items": [dict(r) for r in rows]}
 
+
 @app.post("/api/history/clear")
 async def history_clear(req: TokenRequest):
     user = await get_user_by_token(req.token)
@@ -786,7 +858,7 @@ async def history_clear(req: TokenRequest):
             await conn.execute("DELETE FROM history WHERE user_id = $1", user["id"])
     return {"ok": True}
 
-# ═══════ ОБРАТНАЯ СВЯЗЬ ═══════
+
 @app.post("/api/feedback")
 async def feedback(req: FeedbackRequest):
     if not req.message.strip():
@@ -795,19 +867,21 @@ async def feedback(req: FeedbackRequest):
         try:
             async with db_pool.acquire() as conn:
                 await conn.execute(
-                    "INSERT INTO feedback (date, message, contact, version) VALUES ($1, $2, $3, $4)",
-                    datetime.now().strftime("%d.%m.%Y %H:%M"), req.message.strip(), req.contact.strip(), VERSION
+                    "INSERT INTO feedback (date, message, contact, version, image) VALUES ($1, $2, $3, $4, $5)",
+                    datetime.now().strftime("%d.%m.%Y %H:%M"), req.message.strip(), req.contact.strip(), VERSION,
+                    req.image
                 )
         except Exception as e:
             print(f"[main] Ошибка feedback: {e}")
     return {"ok": True}
 
-# ═══════ АДМИНКА ═══════
+
 @app.post("/api/admin/check")
 async def admin_check(data: dict):
     if await check_admin(data):
         return {"ok": True, "is_admin": True}
     raise HTTPException(401, "Не админ")
+
 
 @app.post("/api/admin/messages")
 async def admin_messages(data: dict):
@@ -816,8 +890,9 @@ async def admin_messages(data: dict):
     if db_pool is None:
         return {"messages": [], "total": 0}
     async with db_pool.acquire() as conn:
-        rows = await conn.fetch("SELECT id, date, message, contact, version FROM feedback ORDER BY id DESC")
+        rows = await conn.fetch("SELECT id, date, message, contact, version, image FROM feedback ORDER BY id DESC")
     return {"messages": [dict(r) for r in rows], "total": len(rows)}
+
 
 @app.post("/api/admin/users")
 async def admin_users(data: dict):
@@ -834,6 +909,7 @@ async def admin_users(data: dict):
         """)
     return {"users": [dict(r) for r in rows]}
 
+
 @app.post("/api/admin/online")
 async def admin_online(data: dict):
     if not await check_admin(data):
@@ -847,6 +923,7 @@ async def admin_online(data: dict):
             FROM users WHERE last_seen > NOW() - INTERVAL '5 minutes' ORDER BY last_seen DESC
         """)
     return {"users": [dict(r) for r in rows], "total": len(rows)}
+
 
 @app.post("/api/admin/logs")
 async def admin_logs(data: dict):
@@ -864,6 +941,7 @@ async def admin_logs(data: dict):
         """)
     return {"logs": [dict(r) for r in rows]}
 
+
 @app.post("/api/admin/logs/clear")
 async def admin_logs_clear(data: dict):
     if not await check_admin(data):
@@ -873,6 +951,7 @@ async def admin_logs_clear(data: dict):
             await conn.execute("DELETE FROM logs")
     return {"ok": True}
 
+
 @app.post("/api/admin/delete/{msg_id}")
 async def admin_delete(msg_id: int, data: dict):
     if not await check_admin(data):
@@ -881,6 +960,7 @@ async def admin_delete(msg_id: int, data: dict):
         async with db_pool.acquire() as conn:
             await conn.execute("DELETE FROM feedback WHERE id = $1", msg_id)
     return {"ok": True}
+
 
 @app.post("/api/admin/delete-user/{user_id}")
 async def admin_delete_user(user_id: int, data: dict):
@@ -892,6 +972,7 @@ async def admin_delete_user(user_id: int, data: dict):
     await log_action(None, "admin_delete_user", f"id={user_id}")
     return {"ok": True}
 
+
 @app.post("/api/admin/clear")
 async def admin_clear(data: dict):
     if not await check_admin(data):
@@ -901,7 +982,7 @@ async def admin_clear(data: dict):
             await conn.execute("DELETE FROM feedback")
     return {"ok": True}
 
-# ═══════ ЭКСПОРТ БАЗЫ ДАННЫХ ═══════
+
 @app.post("/api/admin/export-db")
 async def admin_export_db(data: dict):
     token = data.get("token")
@@ -925,7 +1006,8 @@ async def admin_export_db(data: dict):
     sql_dump += f"-- Дата: {datetime.now().isoformat()}\n\n"
 
     async with db_pool.acquire() as conn:
-        tables = ['users', 'sessions', 'subjects', 'user_subjects', 'settings', 'templates', 'history', 'feedback', 'blocked_devices', 'logs']
+        tables = ['users', 'sessions', 'subjects', 'user_subjects', 'settings', 'templates', 'history', 'feedback',
+                  'blocked_devices', 'logs']
         for table in tables:
             sql_dump += f"-- Данные таблицы {table}\n"
             try:
@@ -958,7 +1040,7 @@ async def admin_export_db(data: dict):
         headers={"Content-Disposition": "attachment; filename=gdz_backup.sql"}
     )
 
-# ═══════ УПРАВЛЕНИЕ АДМИНАМИ И ПРЕДМЕТАМИ ═══════
+
 @app.post("/api/admin/toggle-admin")
 async def admin_toggle_admin(data: dict):
     if not await check_admin(data):
@@ -975,10 +1057,12 @@ async def admin_toggle_admin(data: dict):
     await log_action(None, "toggle_admin", f"id={user_id} -> {new_status}")
     return {"ok": True, "is_admin": new_status}
 
+
+# НОВОЕ: Ограничение для главного админа
 @app.post("/api/admin/get-user-subjects")
 async def admin_get_user_subjects(data: dict):
-    if not await check_admin(data):
-        raise HTTPException(401, "Нет доступа")
+    if not await check_main_admin(data):
+        raise HTTPException(403, "Только главный админ может просматривать предметы пользователей")
     user_id = data.get("user_id")
     async with db_pool.acquire() as conn:
         assigned_rows = await conn.fetch("SELECT subject_id FROM user_subjects WHERE user_id = $1", user_id)
@@ -992,10 +1076,12 @@ async def admin_get_user_subjects(data: dict):
         "custom_subjects": [dict(r) for r in custom_rows]
     }
 
+
+# НОВОЕ: Ограничение для главного админа
 @app.post("/api/admin/save-user-subjects")
 async def admin_save_user_subjects(data: dict):
-    if not await check_admin(data):
-        raise HTTPException(401, "Нет доступа")
+    if not await check_main_admin(data):
+        raise HTTPException(403, "Только главный админ может сохранять предметы пользователей")
     user_id = data.get("user_id")
     subject_ids = data.get("subject_ids", [])
     async with db_pool.acquire() as conn:
@@ -1005,7 +1091,7 @@ async def admin_save_user_subjects(data: dict):
     await log_action(None, "save_user_subjects", f"id={user_id}, count={len(subject_ids)}")
     return {"ok": True}
 
-# ═══════ БЛОКИРОВКА УСТРОЙСТВ ═══════
+
 @app.post("/api/admin/block-device")
 async def admin_block_device(data: dict):
     if not await check_admin(data):
@@ -1019,6 +1105,7 @@ async def admin_block_device(data: dict):
     await log_action(None, "block_device", device)
     return {"ok": True}
 
+
 @app.post("/api/admin/unblock-device")
 async def admin_unblock_device(data: dict):
     if not await check_admin(data):
@@ -1029,6 +1116,7 @@ async def admin_unblock_device(data: dict):
             await conn.execute("DELETE FROM blocked_devices WHERE device = $1", device)
     await log_action(None, "unblock_device", device)
     return {"ok": True}
+
 
 @app.post("/api/admin/blocked-devices")
 async def admin_blocked_devices(data: dict):
@@ -1041,13 +1129,14 @@ async def admin_blocked_devices(data: dict):
             "SELECT device, to_char(blocked_at, 'DD.MM.YY HH24:MI') AS blocked FROM blocked_devices ORDER BY blocked_at DESC")
     return {"devices": [dict(r) for r in rows]}
 
-# ═══════ СМЕНА ПАРОЛЯ АДМИНА ═══════
+
 @app.post("/api/admin/password/status")
 async def admin_password_status(data: dict):
     if not await check_admin(data):
         raise HTTPException(401, "Нет доступа")
     stored_hash = await get_admin_password_hash()
     return {"source": "database" if stored_hash else "render_env", "has_custom_password": bool(stored_hash)}
+
 
 @app.post("/api/admin/password/change")
 async def admin_change_password(req: ChangeAdminPasswordRequest):
@@ -1079,7 +1168,7 @@ async def admin_change_password(req: ChangeAdminPasswordRequest):
     await log_action(None, "admin_password_change", "changed")
     return {"ok": True, "message": "Пароль обновлён."}
 
-# ═══════ НАСТРОЙКИ САЙТА ═══════
+
 @app.get("/api/settings/public")
 async def public_settings():
     result = dict(DEFAULT_SETTINGS)
@@ -1093,6 +1182,7 @@ async def public_settings():
             pass
     return result
 
+
 @app.post("/api/admin/settings/get")
 async def admin_settings_get(data: dict):
     if not await check_admin(data):
@@ -1103,6 +1193,7 @@ async def admin_settings_get(data: dict):
             rows = await conn.fetch("SELECT key, value FROM settings")
             for row in rows: result[row["key"]] = row["value"] or ""
     return {"settings": result}
+
 
 @app.post("/api/admin/settings/save")
 async def admin_settings_save(req: SettingsSaveRequest):
@@ -1120,7 +1211,7 @@ async def admin_settings_save(req: SettingsSaveRequest):
     await log_action(None, "settings_save", ",".join(req.settings.keys())[:200])
     return {"ok": True}
 
-# ═══════ РЕДАКТОР ШАБЛОНОВ ═══════
+
 @app.post("/api/admin/templates/list")
 async def admin_templates_list(data: dict):
     if not await check_admin(data):
@@ -1128,8 +1219,10 @@ async def admin_templates_list(data: dict):
     if db_pool is None:
         return {"templates": []}
     async with db_pool.acquire() as conn:
-        rows = await conn.fetch("SELECT name, length(content) AS size, to_char(updated_at, 'DD.MM.YY HH24:MI') AS updated FROM templates ORDER BY name")
+        rows = await conn.fetch(
+            "SELECT name, length(content) AS size, to_char(updated_at, 'DD.MM.YY HH24:MI') AS updated FROM templates ORDER BY name")
     return {"templates": [dict(r) for r in rows]}
+
 
 @app.post("/api/admin/templates/get")
 async def admin_templates_get(data: dict):
@@ -1152,6 +1245,7 @@ async def admin_templates_get(data: dict):
             raise HTTPException(404, "Шаблон не найден")
     return {"name": name, "content": content, "source": source}
 
+
 @app.post("/api/admin/templates/save")
 async def admin_templates_save(req: TemplateSaveRequest):
     if not await check_admin({"password": req.password, "token": req.token}):
@@ -1172,6 +1266,7 @@ async def admin_templates_save(req: TemplateSaveRequest):
     await log_action(None, "template_save", req.name)
     return {"ok": True, "size": len(req.content)}
 
+
 @app.post("/api/admin/templates/reset")
 async def admin_templates_reset(data: dict):
     if not await check_admin(data):
@@ -1185,7 +1280,7 @@ async def admin_templates_reset(data: dict):
     await log_action(None, "template_reset", name)
     return {"ok": True}
 
-# ═══════ ПАРСИНГ ═══════
+
 @app.post("/api/parse")
 async def parse(req: ParseRequest, request: Request):
     jobs = [j for j in req.jobs if (j.numbers.strip() or j.raw_text.strip())]
@@ -1200,7 +1295,7 @@ async def parse(req: ParseRequest, request: Request):
     await log_action(None, "parse", subjects, ip)
     return {"results": results, "total": len(results)}
 
-# ═══════ ПРОКСИ КАРТИНОК ═══════
+
 @app.get("/api/image")
 async def proxy_image(url: str, w: int = 1000):
     if not url.startswith("https://gdz.ru/"):
