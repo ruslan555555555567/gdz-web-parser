@@ -34,6 +34,9 @@
         })();
     </script>
     <style>
+        /* ПРАВКА: Модалка редактирования всегда сверху */
+        #editModal { z-index: 9999 !important; }
+
         html.has-token #loginCard { display: none !important; }
         html.no-token #loginCard { display: block !important; }
         html.has-token #adminContent { display: block; }
@@ -641,6 +644,9 @@
         const editModal = document.getElementById('editModal');
 
         function openEditModal(subject, targetUserId) {
+            // ПРАВКА: Скрываем окно настроек пользователя, если оно открыто
+            document.getElementById('userSubjectsModal').classList.add('hidden');
+
             editModal.classList.remove('hidden');
             editingId = subject ? subject.id : null;
             editingTargetUserId = targetUserId;
@@ -657,8 +663,20 @@
             document.getElementById('editStatus').className = 'fb-status';
         }
 
-        document.getElementById('editCancelBtn').onclick = () => editModal.classList.add('hidden');
-        editModal.onclick = (e) => { if (e.target === editModal) editModal.classList.add('hidden'); };
+        // ПРАВКА: При отмене возвращаем окно пользователя
+        document.getElementById('editCancelBtn').onclick = () => {
+            editModal.classList.add('hidden');
+            if (editingTargetUserId) {
+                document.getElementById('userSubjectsModal').classList.remove('hidden');
+            }
+        };
+
+        editModal.onclick = (e) => {
+            if (e.target === editModal) {
+                editModal.classList.add('hidden');
+                if (editingTargetUserId) document.getElementById('userSubjectsModal').classList.remove('hidden');
+            }
+        };
 
         document.getElementById('editSaveBtn').onclick = async () => {
             const st = document.getElementById('editStatus');
