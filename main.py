@@ -246,7 +246,7 @@ async def check_admin(data: dict):
 
     if token:
         user = await get_user_by_token(token)
-        if user and user.get("is_admin"):
+        if user and (user.get("is_admin") or user.get("email") == ADMIN_EMAIL):
             return True
 
     if password:
