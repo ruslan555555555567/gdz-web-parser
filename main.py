@@ -16,7 +16,7 @@ import asyncpg
 
 from parser import parse_tasks
 
-VERSION = "54.0.0"
+VERSION = "56.0.0"
 ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "")
 ADMIN_EMAIL = os.getenv("ADMIN_EMAIL", "admin@gdz.ru").lower().strip()
 DATABASE_URL = os.getenv("DATABASE_URL")
@@ -112,6 +112,9 @@ async def init_db():
             """)
             await conn.execute("ALTER TABLE subjects ADD COLUMN IF NOT EXISTS max_number INTEGER DEFAULT 0")
             await conn.execute("ALTER TABLE subjects ADD COLUMN IF NOT EXISTS note TEXT DEFAULT ''")
+            # НОВОЕ: Добавляем колонку user_id для личных предметов
+            await conn.execute(
+                "ALTER TABLE subjects ADD COLUMN IF NOT EXISTS user_id INTEGER REFERENCES users(id) ON DELETE CASCADE")
 
             await conn.execute("""
                 CREATE TABLE IF NOT EXISTS user_subjects (
@@ -167,7 +170,7 @@ async def init_db():
                 )
             """)
 
-            count = await conn.fetchval("SELECT COUNT(*) FROM subjects")
+            count = await conn.fetchval("SELECT COUNT(*) FROM subjects WHERE user_id IS NULL")
             if count == 0:
                 for s in DEFAULT_SUBJECTS:
                     await conn.execute("""
@@ -428,24 +431,36 @@ async def get_subjects(token: str = ""):
     user = await get_user_by_token(token) if token else None
 
     async with db_pool.acquire() as conn:
-        if not user or user.get("is_admin"):
+        if not user:
+            # Гости видят только глобальные предметы
             rows = await conn.fetch("""
                 SELECT id, name, url, type, group_name, sort_order, max_number, note
-                FROM subjects ORDER BY sort_order, id
+                FROM subjects WHERE user_id IS NULL ORDER BY sort_order, id
             """)
         else:
+            # 1. Получаем глобальные, которые назначены пользователю (или все, если ничего не назначено)
             assigned = await conn.fetch("SELECT subject_id FROM user_subjects WHERE user_id = $1", user["id"])
             if assigned:
                 s_ids = [r["subject_id"] for r in assigned]
-                rows = await conn.fetch("""
+                global_rows = await conn.fetch("""
                     SELECT id, name, url, type, group_name, sort_order, max_number, note
-                    FROM subjects WHERE id = ANY($1::int[]) ORDER BY sort_order, id
+                    FROM subjects WHERE user_id IS NULL AND id = ANY($1::int[]) ORDER BY sort_order, id
                 """, s_ids)
             else:
-                rows = await conn.fetch("""
+                global_rows = await conn.fetch("""
                     SELECT id, name, url, type, group_name, sort_order, max_number, note
-                    FROM subjects ORDER BY sort_order, id
+                    FROM subjects WHERE user_id IS NULL ORDER BY sort_order, id
                 """)
+
+            # 2. Получаем ЛИЧНЫЕ предметы этого пользователя
+            custom_rows = await conn.fetch("""
+                SELECT id, name, url, type, group_name, sort_order, max_number, note
+                FROM subjects WHERE user_id = $1 ORDER BY sort_order, id
+            """, user["id"])
+
+            # Объединяем списки
+            rows = list(global_rows) + list(custom_rows)
+
     return {"subjects": [dict(r) for r in rows]}
 
 
@@ -462,20 +477,23 @@ async def admin_add_subject(data: dict):
     sort_order = int(data.get("sort_order") or 999)
     max_number = int(data.get("max_number") or 0)
     note = (data.get("note") or "").strip()
+    user_id = data.get("user_id")  # Если передан ID, значит предмет личный
+
     if not name:
         raise HTTPException(400, "Нужно название")
     if s_type not in ("numbers", "text"):
         raise HTTPException(400, "type должен быть 'numbers' или 'text'")
     if s_type == "numbers" and not url:
         raise HTTPException(400, "Для типа 'numbers' нужна ссылка")
+
     async with db_pool.acquire() as conn:
         try:
             new_id = await conn.fetchval("""
-                INSERT INTO subjects (name, url, type, group_name, sort_order, max_number, note)
-                VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id
-            """, name, url, s_type, group_name, sort_order, max_number, note)
+                INSERT INTO subjects (name, url, type, group_name, sort_order, max_number, note, user_id)
+                VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id
+            """, name, url, s_type, group_name, sort_order, max_number, note, user_id)
         except asyncpg.UniqueViolationError:
-            raise HTTPException(400, "Такой предмет уже есть")
+            raise HTTPException(400, "Такой предмет уже есть (или такое имя занято у другого пользователя)")
     await log_action(None, "subject_add", name)
     return {"ok": True, "id": new_id}
 
@@ -553,7 +571,8 @@ async def admin_reset_subjects(data: dict):
     if db_pool is None:
         raise HTTPException(500, "БД недоступна")
     async with db_pool.acquire() as conn:
-        await conn.execute("DELETE FROM subjects")
+        # Удаляем только глобальные предметы
+        await conn.execute("DELETE FROM subjects WHERE user_id IS NULL")
         for s in DEFAULT_SUBJECTS:
             await conn.execute("""
                 INSERT INTO subjects (name, url, type, group_name, sort_order, max_number, note)
@@ -665,7 +684,6 @@ async def me(token: str = "", device: str = ""):
     if not user:
         raise HTTPException(401, "Не авторизован")
 
-    # Устанавливаем флаг, что это главный админ
     user["is_main_admin"] = (user["email"] == ADMIN_EMAIL)
 
     return {"user": user}
@@ -968,7 +986,6 @@ async def admin_export_db(data: dict):
     token = data.get("token")
     password = data.get("password")
 
-    # Проверка: только главный админ или мастер-пароль
     allowed = False
     if password and password == ADMIN_PASSWORD:
         allowed = True
@@ -1048,9 +1065,22 @@ async def admin_get_user_subjects(data: dict):
     if not await check_admin(data):
         raise HTTPException(401, "Нет доступа")
     user_id = data.get("user_id")
+
     async with db_pool.acquire() as conn:
-        rows = await conn.fetch("SELECT subject_id FROM user_subjects WHERE user_id = $1", user_id)
-    return {"subject_ids": [r["subject_id"] for r in rows]}
+        # 1. Получаем ID глобальных предметов, назначенных пользователю
+        assigned_rows = await conn.fetch("SELECT subject_id FROM user_subjects WHERE user_id = $1", user_id)
+        assigned_ids = [r["subject_id"] for r in assigned_rows]
+
+        # 2. Получаем список ЛИЧНЫХ предметов пользователя
+        custom_rows = await conn.fetch("""
+            SELECT id, name, url, type, group_name, sort_order, max_number, note
+            FROM subjects WHERE user_id = $1 ORDER BY sort_order, id
+        """, user_id)
+
+    return {
+        "assigned_global_ids": assigned_ids,
+        "custom_subjects": [dict(r) for r in custom_rows]
+    }
 
 
 @app.post("/api/admin/save-user-subjects")
