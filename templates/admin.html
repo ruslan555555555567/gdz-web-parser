@@ -84,7 +84,6 @@
             color: #f7fafc !important;
         }
 
-        /* Стили для кнопок */
         .btn-block { background: #ed8936 !important; color: #fff !important; border: none; padding: 6px 10px; border-radius: 6px; cursor: pointer; font-size: 12px; }
         .btn-block:hover { background: #dd6b20 !important; }
         .btn-unblock { background: #48bb78 !important; color: #fff !important; border: none; padding: 6px 10px; border-radius: 6px; cursor: pointer; font-size: 12px; }
@@ -112,7 +111,6 @@
         .btn-admin-toggle { background: #ecc94b !important; color: #1a202c !important; border: none; padding: 6px 10px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600; }
         .btn-subjects { background: #9f7aea !important; color: #fff !important; border: none; padding: 6px 10px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600;}
 
-        /* КРАСИВЫЕ ЧЕКБОКСЫ ДЛЯ МОДАЛКИ ПРЕДМЕТОВ */
         .subj-checkbox-label {
             display: flex; align-items: center; gap: 10px; padding: 10px;
             border-radius: 8px; background: rgba(255,255,255,0.05);
@@ -133,7 +131,6 @@
             content: '✔'; color: white; font-size: 14px; font-weight: bold;
         }
 
-        /* Стили для карточек личных предметов */
         .custom-subject-card {
             display: flex; justify-content: space-between; align-items: center;
             background: rgba(159, 122, 234, 0.15); border: 1px solid #9f7aea;
@@ -173,7 +170,6 @@
                 <button class="admin-tab" data-tab="settings">⚙️ Настройки</button>
             </div>
 
-            <!-- ... Вкладки Предметы, Онлайн, Блокировки, Сообщения, Логи, Настройки остаются прежними ... -->
             <div id="tabSubjects">
                 <div class="section-header">
                     <h2>📚 Общие предметы (<span id="subjectsCount">0</span>)</h2>
@@ -212,7 +208,7 @@
                     <h2>🚫 Заблокированные устройства</h2>
                     <button id="refreshBlockedBtn" class="btn-small">🔄 Обновить</button>
                 </div>
-                <p class="hint" style="margin-bottom:12px;">Эти устройства не могут зайти на сайт, даже если создадут новый аккаунт.</p>
+                <p class="hint" style="margin-bottom:12px;">Эти устройства не могут зайти на сайт.</p>
                 <div id="blockedList"></div>
                 <div id="emptyBlocked" class="empty">Нет заблокированных устройств</div>
             </div>
@@ -297,7 +293,6 @@
         </section>
     </div>
 
-    <!-- Модалка редактирования ПРЕДМЕТА (Общая или Личная) -->
     <div id="editModal" class="modal hidden">
         <div class="modal-content">
             <h3 id="editModalTitle">✏️ Редактировать предмет</h3>
@@ -328,7 +323,6 @@
         </div>
     </div>
 
-    <!-- МОДАЛКА НАСТРОЙКИ ПРЕДМЕТОВ ПОЛЬЗОВАТЕЛЯ (Обновленная!) -->
     <div id="userSubjectsModal" class="modal hidden">
         <div class="modal-content" style="max-width: 600px;">
             <h3>📚 Настройка предметов</h3>
@@ -339,7 +333,6 @@
                 <button id="showGlobalBtn" class="btn-small">Общие предметы</button>
             </div>
 
-            <!-- СЕКЦИЯ: ЛИЧНЫЕ ПРЕДМЕТЫ -->
             <div id="customSubjectsSection">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
                     <span class="hint">Эти предметы видит только этот пользователь.</span>
@@ -349,7 +342,6 @@
                 <div id="emptyCustomSubjects" class="empty" style="padding: 20px;">Нет личных предметов</div>
             </div>
 
-            <!-- СЕКЦИЯ: ГЛОБАЛЬНЫЕ ПРЕДМЕТЫ (ЧЕКБОКСЫ) -->
             <div id="globalSubjectsSection" style="display: none;">
                 <span class="hint" style="display: block; margin-bottom: 10px;">Выберите, какие общие предметы разрешить этому пользователю.</span>
                 <div id="userSubjectsList" style="display:flex; flex-direction:column; gap:8px; max-height:40vh; overflow-y:auto; margin-bottom:15px; padding-right:5px;"></div>
@@ -370,13 +362,11 @@
         let usersCache = [];
         let draggedId = null;
 
-        // Переменные для модалки пользователя
         let currentEditingUserId = null;
         let currentEditingUserEmail = null;
 
-        // Переменные для редактирования предметов (общих или личных)
         let editingId = null;
-        let editingTargetUserId = null; // Если задано, значит редактируем личный предмет
+        let editingTargetUserId = null;
 
         const ACTION_ICONS = {
             'register': '🆕', 'login': '🔑', 'login_fail': '⚠️', 'logout': '🚪',
@@ -413,7 +403,7 @@
                 if (!r.ok) return;
                 const d = await r.json();
                 const u = d.user;
-                if (!u || !u.is_admin) return;
+                if (!u || (!u.is_admin && !u.is_main_admin)) return;
 
                 if (u.is_main_admin) {
                     document.getElementById('downloadDbSection').style.display = 'block';
@@ -519,7 +509,7 @@
             }
             document.documentElement.classList.remove('has-token');
             document.documentElement.classList.add('no-token');
-            loginCard.classList.remove('hidden');
+            if (loginCard) loginCard.classList.remove('hidden');
         }
 
         function openAdmin() {
@@ -560,7 +550,6 @@
 
         function getAuthPayload() { return authData.token ? {token: authData.token} : {password: authData.password}; }
 
-        // === ОБЩИЕ ПРЕДМЕТЫ ===
         document.getElementById('refreshSubjectsBtn').onclick = loadSubjects;
         document.getElementById('resetSubjectsBtn').onclick = async () => {
             if (!confirm('Восстановить список по умолчанию?')) return;
@@ -580,7 +569,7 @@
             try {
                 const r = await fetch('/api/subjects?t=' + Date.now());
                 const d = await r.json();
-                subjectsCache = d.subjects; // Кэшируем для модалки
+                subjectsCache = d.subjects;
                 document.getElementById('subjectsCount').textContent = d.subjects.length;
                 list.innerHTML = '';
                 if (!d.subjects.length) { empty.style.display = 'block'; return; }
@@ -654,7 +643,7 @@
         function openEditModal(subject, targetUserId) {
             editModal.classList.remove('hidden');
             editingId = subject ? subject.id : null;
-            editingTargetUserId = targetUserId; // Запоминаем, для кого создаем
+            editingTargetUserId = targetUserId;
 
             document.getElementById('editModalTitle').textContent = subject ? '✏️ Редактировать: ' + subject.name : '➕ Новый предмет';
             document.getElementById('editName').value = subject ? subject.name : '';
@@ -688,7 +677,7 @@
             st.className = 'fb-status loading';
 
             const payload = { ...getAuthPayload(), name, url, type, group_name, max_number, sort_order, note };
-            if (editingTargetUserId) payload.user_id = editingTargetUserId; // Передаем ID, если это личный предмет
+            if (editingTargetUserId) payload.user_id = editingTargetUserId;
 
             try {
                 let r;
@@ -705,7 +694,6 @@
                 setTimeout(() => {
                     editModal.classList.add('hidden');
                     if (editingTargetUserId) {
-                        // Если сохранили личный предмет, перезагружаем его модалку
                         openUserSubjectsModal(currentEditingUserId, currentEditingUserEmail);
                     } else {
                         loadSubjects();
@@ -714,7 +702,6 @@
             } catch (e) { st.textContent = '❌ ' + e.message; st.className = 'fb-status error'; }
         };
 
-        // === ОНЛАЙН ===
         document.getElementById('refreshOnlineBtn').onclick = loadOnline;
         async function loadOnline() {
             try {
@@ -743,7 +730,6 @@
             } catch {}
         }
 
-        // === ПОЛЬЗОВАТЕЛИ ===
         document.getElementById('refreshUsersBtn').onclick = loadUsers;
         async function loadUsers() {
             const list = document.getElementById('usersList');
@@ -789,7 +775,6 @@
         }
 
         document.getElementById('usersList').addEventListener('click', async (e) => {
-            // Удаление
             const delBtn = e.target.closest('.user-del');
             if (delBtn) {
                 if (!confirm('Удалить пользователя?')) return;
@@ -801,7 +786,6 @@
                 } catch (err) { delBtn.disabled = false; alert('Ошибка: ' + err.message); }
             }
 
-            // Блокировка
             const blockBtn = e.target.closest('.user-block');
             if (blockBtn) {
                 const index = parseInt(blockBtn.dataset.index);
@@ -817,7 +801,6 @@
                 } catch (err) { blockBtn.disabled = false; alert('Ошибка: ' + err.message); }
             }
 
-            // Выдача админки
             const adminBtn = e.target.closest('.user-admin');
             if (adminBtn) {
                 const index = parseInt(adminBtn.dataset.index);
@@ -831,7 +814,6 @@
                 } catch (err) { adminBtn.disabled = false; alert('Ошибка: ' + err.message); }
             }
 
-            // Настройка предметов (Кнопка 📚)
             const subjBtn = e.target.closest('.user-subj');
             if (subjBtn) {
                 const index = parseInt(subjBtn.dataset.index);
@@ -840,7 +822,6 @@
             }
         });
 
-        // === МОДАЛКА ПРЕДМЕТОВ ПОЛЬЗОВАТЕЛЯ ===
         async function openUserSubjectsModal(userId, email) {
             currentEditingUserId = userId;
             currentEditingUserEmail = email;
@@ -848,10 +829,8 @@
             document.getElementById('userSubjectsModalSubtitle').textContent = `Пользователь: ${email}`;
             document.getElementById('userSubjectsModal').classList.remove('hidden');
 
-            // По умолчанию показываем личные предметы
             document.getElementById('showCustomBtn').click();
 
-            // Загружаем данные
             try {
                 const r = await fetch('/api/admin/get-user-subjects', {
                     method: 'POST', headers: {'Content-Type': 'application/json'},
@@ -859,7 +838,6 @@
                 });
                 const d = await r.json();
 
-                // Рендер личных
                 const customList = document.getElementById('customSubjectsList');
                 const emptyCustom = document.getElementById('emptyCustomSubjects');
                 customList.innerHTML = '';
@@ -883,18 +861,11 @@
                     });
                 }
 
-                // Рендер галочек для общих
                 const checkList = document.getElementById('userSubjectsList');
                 const emptyGlobal = document.getElementById('emptyGlobalSubjects');
                 checkList.innerHTML = '';
 
-                // Используем subjectsCache, но нам нужны только глобальные (user_id == null)
-                // Для простоты будем использовать те, которые пришли с бэка, но get-subjects возвращает и личные тоже.
-                // Поэтому делаем отдельный запрос к /api/subjects, чтобы взять только общие.
-                const globalRes = await fetch('/api/subjects?token=' + encodeURIComponent(authData.token));
-                // Ой, тут нюанс: если залогинен админ, он видит свои. Нам нужны АБСОЛЮТНО ВСЕ общие.
-                // Но так как в базе глобальные (user_id is null), мы можем просто использовать subjectsCache, отфильтровав.
-                const globalSubjs = subjectsCache.filter(s => !s.user_id); // Наш кэш обновляется в loadSubjects
+                const globalSubjs = subjectsCache.filter(s => !s.user_id);
 
                 if (!globalSubjs.length) { emptyGlobal.style.display = 'block'; }
                 else {
@@ -916,7 +887,6 @@
             }
         }
 
-        // Переключение вкладок в модалке
         document.getElementById('showCustomBtn').onclick = () => {
             document.getElementById('customSubjectsSection').style.display = 'block';
             document.getElementById('globalSubjectsSection').style.display = 'none';
@@ -934,36 +904,28 @@
             document.getElementById('showGlobalBtn').style.color = 'white';
         };
 
-        // Добавление личного предмета
         document.getElementById('addCustomSubjectBtn').onclick = () => {
             openEditModal(null, currentEditingUserId);
         };
 
-        // Редактирование личного предмета
         window.editCustomSubject = (id) => {
-            // Находим предмет в кэше (придется поискать, так как subjectsCache обновляется только при загрузке общей вкладки)
-            // Лучше найти его прямо в DOM или запросить заново. Но проще найти в subjectsCache, если он полный.
             const s = subjectsCache.find(x => x.id === id);
             if (s) openEditModal(s, currentEditingUserId);
         };
 
-        // Удаление личного предмета
         window.deleteCustomSubject = async (id) => {
             if (!confirm('Удалить этот личный предмет?')) return;
             try {
                 const r = await fetch('/api/admin/subjects/delete', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({...getAuthPayload(), id}) });
                 if (!r.ok) throw new Error('Ошибка');
-                // Перезагружаем модалку и общий список
                 await loadSubjects();
                 openUserSubjectsModal(currentEditingUserId, currentEditingUserEmail);
             } catch (err) { alert('Ошибка: ' + err.message); }
         };
 
-        // Сохранение галочек (Общие предметы)
         document.getElementById('saveUserSubjectsBtn').onclick = async () => {
             if (!currentEditingUserId) return;
 
-            // Собираем галочки ТОЛЬКО из секции с общими предметами
             const checkboxes = document.querySelectorAll('#userSubjectsList input[type="checkbox"]:checked');
             const subject_ids = Array.from(checkboxes).map(cb => parseInt(cb.value));
 
@@ -991,13 +953,132 @@
             }
         };
 
-        // ... ОСТАЛЬНЫЕ ФУНКЦИИ (БЛОКИРОВКИ, СООБЩЕНИЯ, ЛОГИ, НАСТРОЙКИ) ...
-        // Я оставил их без изменений, чтобы не растягивать код. Скопируй их из предыдущей версии (v55.0.0).
-        // Убедись, что в конце скрипта вызывается init();
+        async function loadBlockedDevices() {
+            const list = document.getElementById('blockedList');
+            const empty = document.getElementById('emptyBlocked');
+            if (!list || !empty) return;
+            try {
+                const r = await fetch('/api/admin/blocked-devices', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(getAuthPayload()) });
+                if (!r.ok) return;
+                const d = await r.json();
+                list.innerHTML = '';
+                if (!d.devices || !d.devices.length) { empty.style.display = 'block'; return; }
+                empty.style.display = 'none';
+                d.devices.forEach(dev => {
+                    const div = document.createElement('div');
+                    div.className = 'blocked-device-row';
+                    div.innerHTML = `
+                        <span style="font-family: monospace; font-size: 12px; word-break: break-all;">${escapeHtml(dev.device)}</span>
+                        <button class="btn-unblock" onclick="unblockDevice('${dev.device.replace(/'/g, "\\'")}')">Разблокировать</button>
+                    `;
+                    list.appendChild(div);
+                });
+            } catch (e) { console.error(e); }
+        }
+
+        async function unblockDevice(device) {
+            if (!confirm('Разблокировать это устройство?')) return;
+            try {
+                await fetch('/api/admin/unblock-device', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({...getAuthPayload(), device}) });
+                loadBlockedDevices();
+            } catch (e) { alert('Ошибка: ' + e.message); }
+        }
+
+        async function loadMessages() {
+            const list = document.getElementById('messagesList');
+            const empty = document.getElementById('emptyMsg');
+            if (!list || !empty) return;
+            try {
+                const r = await fetch('/api/admin/messages', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(getAuthPayload()) });
+                if (!r.ok) return;
+                const d = await r.json();
+                document.getElementById('count').textContent = d.total;
+                list.innerHTML = '';
+                if (!d.messages || !d.messages.length) { empty.style.display = 'block'; return; }
+                empty.style.display = 'none';
+                d.messages.forEach(m => {
+                    const div = document.createElement('div');
+                    div.className = 'message-card';
+                    div.innerHTML = `
+                        <div class="msg-head">
+                            <span class="msg-date">📅 ${escapeHtml(m.date)}</span>
+                            <div class="msg-actions">
+                                <span class="msg-ver">v${escapeHtml(m.version)}</span>
+                                <button class="msg-delete" onclick="deleteMessage(${m.id})">🗑</button>
+                            </div>
+                        </div>
+                        <div class="msg-body">${escapeHtml(m.message)}</div>
+                        ${m.contact ? `<div class="msg-contact">📞 ${escapeHtml(m.contact)}</div>` : ''}
+                    `;
+                    list.appendChild(div);
+                });
+            } catch (e) { console.error(e); }
+        }
+
+        async function deleteMessage(id) {
+            if (!confirm('Удалить сообщение?')) return;
+            try {
+                await fetch('/api/admin/delete/' + id, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(getAuthPayload()) });
+                loadMessages();
+            } catch (e) { alert('Ошибка: ' + e.message); }
+        }
+
+        async function loadLogs() {
+            const list = document.getElementById('logsList');
+            const empty = document.getElementById('emptyLogs');
+            if (!list || !empty) return;
+            try {
+                const r = await fetch('/api/admin/logs', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(getAuthPayload()) });
+                if (!r.ok) return;
+                const d = await r.json();
+                document.getElementById('logsCount').textContent = d.logs.length;
+                list.innerHTML = '';
+                if (!d.logs || !d.logs.length) { empty.style.display = 'block'; return; }
+                empty.style.display = 'none';
+                d.logs.forEach(l => {
+                    const div = document.createElement('div');
+                    div.className = 'log-row';
+                    const icon = ACTION_ICONS[l.action] || '📌';
+                    const avatarHtml = l.avatar ? `<span class="log-avatar" style="background-image:url('${l.avatar}')"></span>` : `<span class="log-avatar">${getInitial(l.name, l.email)}</span>`;
+                    div.innerHTML = `
+                        <div class="log-icon">${icon}</div>
+                        <div class="log-content">
+                            <div class="log-head">
+                                ${avatarHtml}
+                                <strong>${escapeHtml(l.name || l.email || 'Гость')}</strong>
+                                <span class="log-action">${escapeHtml(l.action)}</span>
+                            </div>
+                            <div class="log-details">${escapeHtml(l.details || '')}</div>
+                            <div class="log-meta">${escapeHtml(l.created)} · IP: ${escapeHtml(l.ip || '—')}</div>
+                        </div>
+                    `;
+                    list.appendChild(div);
+                });
+            } catch (e) { console.error(e); }
+        }
+
+        document.getElementById('refreshBlockedBtn').onclick = loadBlockedDevices;
+        document.getElementById('refreshBtn').onclick = loadMessages;
+        document.getElementById('refreshLogsBtn').onclick = loadLogs;
+
+        document.getElementById('clearBtn').onclick = async () => {
+            if (!confirm('Удалить все сообщения?')) return;
+            try {
+                await fetch('/api/admin/clear', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(getAuthPayload()) });
+                loadMessages();
+            } catch (e) { alert('Ошибка: ' + e.message); }
+        };
+
+        document.getElementById('clearLogsBtn').onclick = async () => {
+            if (!confirm('Очистить все логи?')) return;
+            try {
+                await fetch('/api/admin/logs/clear', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(getAuthPayload()) });
+                loadLogs();
+            } catch (e) { alert('Ошибка: ' + e.message); }
+        };
 
         function escapeHtml(t) { const d = document.createElement('div'); d.textContent = t || ''; return d.innerHTML; }
 
-        // Вставляем сохранение настроек и экспорт БД
         document.getElementById('downloadDbBtn').onclick = async () => {
             const st = document.getElementById('downloadStatus');
             st.textContent = '⏳ Создаем резервную копию...';
