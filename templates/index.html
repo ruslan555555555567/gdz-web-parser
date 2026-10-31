@@ -93,8 +93,7 @@
         .theme-dark .dropdown-item.logout:hover { background: rgba(229,62,62,0.2); }
 
         html.theme-custom .card,
-        html.theme-custom .subject-block,
-        html.theme-custom .modal-content {
+        html.theme-custom .subject-block {
             background: rgba(255, 255, 255, 0.05) !important;
             backdrop-filter: blur(30px) !important;
             -webkit-backdrop-filter: blur(30px) !important;
@@ -134,6 +133,7 @@
         }
         html.theme-custom .user-menu-btn:hover { background: rgba(255, 255, 255, 0.2) !important; }
 
+        /* Стили для расписания */
         .schedule-tabs { display: flex; gap: 5px; margin-bottom: 15px; flex-wrap: wrap; }
         .schedule-tab {
             flex: 1; padding: 8px 12px; border-radius: 8px; border: 1px solid #e2e8f0;
@@ -149,21 +149,17 @@
         }
         .theme-dark .toggle-container { background: rgba(66,153,225,0.1); border-color: #2b6cb0; }
 
-        #dailyModal .modal-content {
-            background: #ffffff !important;
-            color: #1a202c !important;
+        #dailySingleInputContainer {
+            display: none;
+            margin-bottom: 20px;
         }
-        html.theme-dark #dailyModal .modal-content,
-        html.admin-theme-dark #dailyModal .modal-content {
-            background: #2d3748 !important;
-            color: #e2e8f0 !important;
-            border: 1px solid #4a5568 !important;
+        #dailySingleInputContainer.active {
+            display: block;
         }
-        html.theme-custom #dailyModal .modal-content {
-            background: #1a202c !important;
-            color: #ffffff !important;
-            border: 1px solid rgba(255,255,255,0.2) !important;
+        #dailyHint {
+            margin-bottom: 10px; font-size: 14px; color: #4a5568; font-weight: 500;
         }
+        .theme-dark #dailyHint { color: #cbd5e0; }
     </style>
     <link rel="stylesheet" href="/static/style.css">
     <link rel="stylesheet" href="/static/animations.css">
@@ -224,7 +220,18 @@
                 </label>
             </div>
 
+            <!-- ОБЫЧНЫЙ РЕЖИМ -->
             <div id="subjectsContainer"><p class="empty">Загрузка предметов...</p></div>
+
+            <!-- ДНЕВНОЙ РЕЖИМ (ОДНО БОЛЬШОЕ ОКНО) -->
+            <div id="dailySingleInputContainer">
+                <div id="dailyHint"></div>
+                <textarea id="dailyAllTasksInput" class="text-input" rows="10" placeholder="Вставь задания на сегодня целиком. Например:
+Алгебра: 447, 449
+Геометрия: 123
+Русский язык: упражнение 45" style="resize: vertical; font-family: inherit; font-size: 15px; width: 100%; padding: 12px;"></textarea>
+            </div>
+
             <button id="btn" class="btn-primary">🔍 Найти решения</button>
         </section>
         <div id="status" class="status"></div>
@@ -252,28 +259,6 @@
                 <button type="button" id="closeScheduleBtn" class="btn-secondary">Отмена</button>
                 <button type="button" id="saveScheduleBtn" class="btn-primary" style="width:auto;">💾 Сохранить</button>
             </div>
-        </div>
-    </div>
-
-    <!-- МОДАЛКА ДНЕВНОГО РЕЖИМА (ОДНО ОКНО) -->
-    <div id="dailyModal" class="modal hidden">
-        <div class="modal-content" style="max-width: 650px;">
-            <h3 id="dailyModalTitle">📚 Домашка на сегодня</h3>
-
-            <div id="dailySubjectsHint" style="margin-bottom: 10px; font-size: 14px; color: #4a5568;"></div>
-
-            <div style="display:flex; flex-direction:column; gap:12px; margin-bottom: 15px;">
-                <textarea id="dailyAllTasksInput" class="text-input" rows="8" placeholder="Вставь задания целиком. Например:
-Алгебра: 447, 449
-Геометрия: 123
-Русский язык: упражнение 45" style="resize: vertical; font-family: inherit; font-size: 15px; width: 100%; padding: 12px;"></textarea>
-            </div>
-
-            <div class="modal-actions" style="justify-content: space-between;">
-                <button type="button" id="closeDailyBtn" class="btn-secondary">Закрыть</button>
-                <button type="button" id="dailySearchBtn" class="btn-primary" style="width:auto;">🔍 Найти решения</button>
-            </div>
-            <div id="dailyResult" class="result" style="margin-top: 20px;"></div>
         </div>
     </div>
 
@@ -401,6 +386,7 @@
         let SUBJECTS = [];
         let SCHEDULE = {};
         let currentScheduleDay = 1;
+        let dailyMode = false;
         let originalTheme = 'light';
         let originalBgUrl = null;
         let fbImageBase64 = "";
@@ -416,11 +402,11 @@
         const imageModalImg = $('imageModalImg');
         const topbarRight = $('topbarRight');
         const scheduleModal = $('scheduleModal');
-        const dailyModal = $('dailyModal');
-        const dailyModalTitle = $('dailyModalTitle');
-        const dailySubjectsHint = $('dailySubjectsHint');
+        const dailySingleInputContainer = $('dailySingleInputContainer');
+        const subjectsContainer = $('subjectsContainer');
         const dailyAllTasksInput = $('dailyAllTasksInput');
-        const dailyResult = $('dailyResult');
+        const dailyHint = $('dailyHint');
+        const dailyModeToggle = $('dailyModeToggle');
 
         function getDeviceInfo() {
             const ua = navigator.userAgent;
@@ -577,7 +563,7 @@
                 const d = await r.json();
                 SUBJECTS = d.subjects || [];
             } catch (e) {
-                $('subjectsContainer').innerHTML = '<p class="empty">Не удалось загрузить предметы</p>';
+                subjectsContainer.innerHTML = '<p class="empty">Не удалось загрузить предметы</p>';
             }
         }
 
@@ -590,8 +576,8 @@
         }
 
         function renderSubjects() {
-            const container = $('subjectsContainer');
-            container.innerHTML = '';
+            // Рендер обычных полей (скрыты, если включен дневной режим)
+            subjectsContainer.innerHTML = '';
             const groups = {};
             SUBJECTS.forEach(s => {
                 const g = s.group_name || 'Прочее';
@@ -623,11 +609,45 @@
                     row.appendChild(ta);
                     groupDiv.appendChild(row);
                 });
-                container.appendChild(groupDiv);
+                subjectsContainer.appendChild(groupDiv);
             });
+
+            // Управление видимостью в зависимости от режима
+            if (dailyMode) {
+                subjectsContainer.classList.add('hidden');
+                dailySingleInputContainer.classList.add('active');
+                updateDailyHint();
+            } else {
+                subjectsContainer.classList.remove('hidden');
+                dailySingleInputContainer.classList.remove('active');
+            }
         }
 
-        // Логика дневного режима
+        function updateDailyHint() {
+            let tDay = new Date().getDay();
+            if (tDay === 0) tDay = 7;
+            const todaySubjectIds = SCHEDULE[tDay.toString()] || [];
+            const todaySubjects = SUBJECTS.filter(s => todaySubjectIds.includes(s.id));
+
+            if (todaySubjects.length === 0) {
+                dailyHint.innerHTML = '<span style="color:#e53e3e;">На сегодня нет предметов в расписании. Настрой расписание.</span>';
+                dailyAllTasksInput.disabled = true;
+                btn.disabled = true;
+            } else {
+                const names = todaySubjects.map(s => `<b>${s.name}</b>`).join(', ');
+                dailyHint.innerHTML = `Сегодня у тебя: ${names}. Напиши задания с названиями предметов, и я всё пойму.`;
+                dailyAllTasksInput.disabled = false;
+                btn.disabled = false;
+            }
+        }
+
+        // Переключатель режима
+        dailyModeToggle.onchange = (e) => {
+            dailyMode = e.target.checked;
+            renderSubjects();
+        };
+
+        // Логика расписания
         $('openScheduleBtn').onclick = () => {
             scheduleModal.classList.remove('hidden');
             renderScheduleList();
@@ -681,6 +701,7 @@
                 });
                 if (!r.ok) throw new Error('Ошибка сохранения');
                 scheduleModal.classList.add('hidden');
+                if (dailyMode) updateDailyHint(); // Обновить подсказку, если дневной режим включен
                 alert('✅ Расписание сохранено!');
             } catch (e) {
                 alert('❌ ' + e.message);
@@ -689,205 +710,76 @@
             }
         };
 
-        // Открытие модалки "Домашка на сегодня"
-        function openDailyModal() {
-            dailyModal.classList.remove('hidden');
-            dailyResult.innerHTML = '';
-            dailyAllTasksInput.value = ''; // очищаем поле
-
-            const today = new Date();
-            const options = { weekday: 'long', day: 'numeric', month: 'long' };
-            const dateStr = today.toLocaleDateString('ru-RU', options);
-            dailyModalTitle.textContent = `📚 Домашка на ${dateStr}`;
-
-            let tDay = today.getDay();
-            if (tDay === 0) tDay = 7;
-            const todaySubjectIds = SCHEDULE[tDay.toString()] || [];
-            const todaySubjects = SUBJECTS.filter(s => todaySubjectIds.includes(s.id));
-
-            if (todaySubjects.length === 0) {
-                dailySubjectsHint.innerHTML = '<span style="color:#e53e3e;">На сегодня нет предметов. Настрой расписание.</span>';
-                dailyAllTasksInput.disabled = true;
-                $('dailySearchBtn').disabled = true;
-            } else {
-                const names = todaySubjects.map(s => `<b>${s.name}</b>`).join(', ');
-                dailySubjectsHint.innerHTML = `Сегодня у тебя: ${names}. Напиши задания с названиями предметов, и я всё пойму.`;
-                dailyAllTasksInput.disabled = false;
-                $('dailySearchBtn').disabled = false;
-            }
-        }
-
-        $('dailyModeToggle').onchange = (e) => {
-            if (e.target.checked) {
-                openDailyModal();
-            } else {
-                dailyModal.classList.add('hidden');
-            }
-        };
-
-        $('closeDailyBtn').onclick = () => {
-            dailyModal.classList.add('hidden');
-            $('dailyModeToggle').checked = false;
-        };
-
-        // УМНЫЙ ПАРСИНГ ТЕКСТА ИЗ ОДНОГО ПОЛЯ
-        $('dailySearchBtn').onclick = async () => {
-            const text = dailyAllTasksInput.value.trim();
-            if (!text) return alert('⚠️ Вставь задания в поле');
-
-            let tDay = new Date().getDay();
-            if (tDay === 0) tDay = 7;
-            const todaySubjectIds = SCHEDULE[tDay.toString()] || [];
-            const todaySubjects = SUBJECTS.filter(s => todaySubjectIds.includes(s.id));
-
-            const jobs = [];
-            const lines = text.split('\n');
-            let currentSubj = null;
-            let currentNumbers = [];
-
-            // Если сегодня только один предмет, кидаем весь текст туда
-            if (todaySubjects.length === 1) {
-                jobs.push({
-                    subject: todaySubjects[0].name,
-                    url: todaySubjects[0].url || '',
-                    type: todaySubjects[0].type || 'numbers',
-                    numbers: text,
-                    raw_text: text
-                });
-            } else {
-                // Если предметов несколько — ищем их названия в тексте
-                for (let line of lines) {
-                    line = line.trim();
-                    if (!line) continue;
-
-                    let matchedSubj = null;
-                    for (let s of todaySubjects) {
-                        // Проверяем, начинается ли строка с названия предмета
-                        if (line.toLowerCase().startsWith(s.name.toLowerCase())) {
-                            matchedSubj = s;
-                            break;
-                        }
-                    }
-
-                    if (matchedSubj) {
-                        // Если был предыдущий предмет, сохраняем его
-                        if (currentSubj && currentNumbers.length > 0) {
-                            jobs.push({ subject: currentSubj.name, url: currentSubj.url, type: currentSubj.type, numbers: currentNumbers.join(' '), raw_text: currentNumbers.join(' ') });
-                        }
-                        currentSubj = matchedSubj;
-                        // Отрезаем название предмета от строки
-                        let rest = line.substring(matchedSubj.name.length).replace(/^[:\-\s]+/, '');
-                        currentNumbers = rest ? [rest] : [];
-                    } else if (currentSubj) {
-                        // Если не нашли новое название, добавляем к текущему
-                        currentNumbers.push(line);
-                    } else {
-                        // Если совсем не поняли, к чему это, кидаем в первый предмет
-                        if (todaySubjects.length > 0) {
-                            currentSubj = todaySubjects[0];
-                            currentNumbers.push(line);
-                        }
-                    }
-                }
-                // Сохраняем последний
-                if (currentSubj && currentNumbers.length > 0) {
-                    jobs.push({ subject: currentSubj.name, url: currentSubj.url, type: currentSubj.type, numbers: currentNumbers.join(' '), raw_text: currentNumbers.join(' ') });
-                }
-            }
-
-            if (!jobs.length) return alert('⚠️ Не удалось распознать задания. Убедись, что пишешь названия предметов (например: "Алгебра: 123").');
-
-            const searchBtn = $('dailySearchBtn');
-            searchBtn.disabled = true;
-            dailyResult.innerHTML = '<div class="status loading">⏳ Ищу решения...</div>';
-
-            try {
-                const resp = await fetch('/api/parse', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({jobs}) });
-                const data = await resp.json();
-                if (!resp.ok) throw new Error(data.detail || 'Ошибка');
-                if (data.total === 0) { dailyResult.innerHTML = '<div class="status error">🤷 Ничего не найдено</div>'; return; }
-
-                if (authToken) {
-                    for (const j of jobs) {
-                        if (!j.numbers) continue;
-                        fetch('/api/history/save', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({token: authToken, subject: j.subject, numbers: j.numbers}) }).catch(() => {});
-                    }
-                }
-
-                dailyResult.innerHTML = `<div class="status success">✅ Обработано ${data.total} заданий</div>`;
-                const container = document.createElement('div');
-                container.className = 'result';
-
-                const bySubject = {};
-                data.results.forEach(r => { (bySubject[r.subject] = bySubject[r.subject] || []).push(r); });
-
-                Object.entries(bySubject).forEach(([subject, items]) => {
-                    const sec = document.createElement('section');
-                    sec.className = 'subject-block';
-                    sec.innerHTML = `<h2>${escapeHtml(subject)}</h2>`;
-                    items.forEach(r => {
-                        if (r.is_text || !r.found) {
-                            const textCard = document.createElement('div');
-                            textCard.className = 'task-card text-task';
-                            let headerText = '📝 Задание';
-                            if (r.number) headerText = `№${r.number} — не найдено`;
-                            textCard.innerHTML = `<div class="task-header"><h3>${escapeHtml(headerText)}</h3></div><div class="task-text">${escapeHtml(r.raw_text || '')}</div>`;
-                            sec.appendChild(textCard);
-                            return;
-                        }
-                        const card = document.createElement('div');
-                        card.className = 'task-card';
-                        card.innerHTML = `<div class="task-header"><h3>№${r.number}</h3></div>`;
-                        r.images.forEach((u, index) => {
-                            const wrapper = document.createElement('div');
-                            wrapper.style.cssText = 'display: flex; flex-direction: column; gap: 8px; margin-bottom: 15px;';
-                            const img = document.createElement('img');
-                            img.className = 'solution-img img-loading';
-                            img.style.marginTop = '0';
-                            img.alt = 'Загрузка...';
-                            loadImage(img, u);
-                            const controls = document.createElement('div');
-                            controls.style.cssText = 'display: flex; gap: 10px; justify-content: flex-end;';
-                            const dlBtn = document.createElement('button');
-                            dlBtn.innerHTML = '⬇️ Скачать';
-                            dlBtn.style.cssText = 'padding: 8px 16px; display: flex; align-items: center; gap: 6px; background: #4299e1; color: #ffffff; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer;';
-                            dlBtn.onclick = (e) => {
-                                e.stopPropagation();
-                                if (img.src && img.src.includes('/api/image')) {
-                                    const filename = `GDZ_${r.subject || 'Предмет'}_№${r.number || index + 1}.jpg`.replace(/\s+/g, '_');
-                                    downloadSingleImage(img.src, filename);
-                                }
-                            };
-                            controls.appendChild(dlBtn);
-                            wrapper.appendChild(img);
-                            wrapper.appendChild(controls);
-                            card.appendChild(wrapper);
-                        });
-                        sec.appendChild(card);
-                    });
-                    container.appendChild(sec);
-                });
-                dailyResult.appendChild(container);
-            } catch (e) {
-                dailyResult.innerHTML = `<div class="status error">❌ ${e.message}</div>`;
-            } finally {
-                searchBtn.disabled = false;
-            }
-        };
-
         // Основной парсинг (на главной)
         btn.addEventListener('click', async () => {
-            const jobs = [];
-            const visibleTextareas = document.querySelectorAll('.text-input');
-            visibleTextareas.forEach(el => {
-                const v = el.value.trim();
-                if (!v) return;
-                const id = el.id.replace('subj_', '');
-                const subject = SUBJECTS.find(s => s.id == id);
-                if (subject) {
-                    jobs.push({ subject: subject.name, url: subject.url || '', type: subject.type || 'numbers', numbers: v, raw_text: v });
+            let jobs = [];
+
+            if (dailyMode) {
+                // ЛОГИКА ДЛЯ ОДНОГО БОЛЬШОГО ОКНА
+                const text = dailyAllTasksInput.value.trim();
+                if (!text) return showStatus('⚠️ Вставь задания в окно', 'error');
+
+                let tDay = new Date().getDay();
+                if (tDay === 0) tDay = 7;
+                const todaySubjectIds = SCHEDULE[tDay.toString()] || [];
+                const todaySubjects = SUBJECTS.filter(s => todaySubjectIds.includes(s.id));
+
+                if (todaySubjects.length === 0) return showStatus('⚠️ На сегодня нет предметов', 'error');
+
+                if (todaySubjects.length === 1) {
+                    // Если сегодня один предмет, кидаем весь текст в него
+                    jobs.push({ subject: todaySubjects[0].name, url: todaySubjects[0].url, type: todaySubjects[0].type, numbers: text, raw_text: text });
+                } else {
+                    // Если несколько, умный парсер по строкам
+                    const lines = text.split('\n');
+                    let currentSubj = null;
+                    let currentNums = [];
+
+                    for (let line of lines) {
+                        line = line.trim();
+                        if (!line) continue;
+
+                        let matchedSubj = null;
+                        for (let s of todaySubjects) {
+                            const regex = new RegExp('^' + s.name + '[:\\-\\s]*(.*)$', 'i');
+                            const match = line.match(regex);
+                            if (match) {
+                                matchedSubj = s;
+                                line = match[1];
+                                break;
+                            }
+                        }
+
+                        if (matchedSubj) {
+                            if (currentSubj && currentNums.length > 0) {
+                                jobs.push({ subject: currentSubj.name, url: currentSubj.url, type: currentSubj.type, numbers: currentNums.join(' '), raw_text: currentNums.join(' ') });
+                            }
+                            currentSubj = matchedSubj;
+                            currentNums = line ? [line] : [];
+                        } else if (currentSubj) {
+                            currentNums.push(line);
+                        } else {
+                            currentSubj = todaySubjects[0];
+                            currentNums.push(line);
+                        }
+                    }
+                    if (currentSubj && currentNums.length > 0) {
+                        jobs.push({ subject: currentSubj.name, url: currentSubj.url, type: currentSubj.type, numbers: currentNums.join(' '), raw_text: currentNums.join(' ') });
+                    }
                 }
-            });
+            } else {
+                // ОБЫЧНАЯ ЛОГИКА
+                const visibleTextareas = document.querySelectorAll('.text-input');
+                visibleTextareas.forEach(el => {
+                    const v = el.value.trim();
+                    if (!v) return;
+                    const id = el.id.replace('subj_', '');
+                    const subject = SUBJECTS.find(s => s.id == id);
+                    if (subject) {
+                        jobs.push({ subject: subject.name, url: subject.url || '', type: subject.type || 'numbers', numbers: v, raw_text: v });
+                    }
+                });
+            }
 
             if (!jobs.length) return showStatus('⚠️ Заполни хотя бы одно поле', 'error');
             btn.disabled = true;
