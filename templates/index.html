@@ -656,18 +656,12 @@
             }
         };
 
-        // ПОИСК ПРЕДМЕТА В СТРОКЕ
         function findSubjectInLine(line, subjectsList) {
             const lowerLine = line.toLowerCase();
-
-            // 1. Прямое совпадение
             for (let s of subjectsList) {
                 if (lowerLine.includes(s.name.toLowerCase())) return s;
             }
-
-            // 2. Умное совпадение (по ключевым словам)
             for (let s of subjectsList) {
-                // Берем первые слова из названия (например, "Английский" из "Английский язык")
                 const keywords = s.name.toLowerCase().replace(/[()]/g, '').split(' ').filter(w => w.length > 3 && w !== 'язык' && w !== 'класс');
                 for (let kw of keywords) {
                     if (lowerLine.includes(kw)) return s;
@@ -691,17 +685,37 @@
 
             if (allowedSubjects.length === 0) return showStatus('⚠️ Нет доступных предметов', 'error');
 
-            // 1. Чистим текст от дат ("на 26.10 (Пн):")
             let cleanText = rawText.replace(/на\s*\d{1,2}[./]\d{1,2}\s*(\([А-Яа-я]+\))?:?/gi, '');
             cleanText = cleanText.replace(/\b\d{1,2}[./]\d{1,2}([./]\d{2,4})?\b/g, '');
 
-            // 2. Функция извлечения номеров
             function extractNumbers(str) {
-                let clean = str.toLowerCase();
-                clean = clean.replace(/(?:страниц[ыа]?|стр\.?)\s*\d+(?:\s*,\s*\d+)*/g, ''); // Убираем страницы
+                let clean = str;
 
-                const specificRegex = /(?:№|номер|упражнение|задание|задача|упр\.?|вар\.?|вариант|параграф|п\.)\s*([\d,\s]+)/gi;
+                // 1. Удаляем URL-ссылки
+                clean = clean.replace(/(?:https?:\/\/|www\.)\S+/gi, '');
+
+                // 2. Удаляем даты (26.10, 26/10/2023, 30 октября)
+                clean = clean.replace(/\b\d{1,2}[./]\d{1,2}([./]\d{2,4})?\b/g, '');
+                clean = clean.replace(/\b\d{1,2}\s+(января|февраля|марта|апреля|мая|июня|июля|августа|сентября|октября|ноября|декабря)\b/gi, '');
+
+                // 3. Удаляем параграфы и пункты (п.7, пункт 12, параграф 5)
+                clean = clean.replace(/(?:п\.|пункт|параграф|пар\.)\s*\d+/gi, '');
+
+                // 4. Удаляем классы (7 класс)
+                clean = clean.replace(/\b([5-9]|1[0-1])\s*(класс|кл)\b/gi, '');
+
+                // 5. Удаляем страницы (стр 90, страницы 90, 91)
+                clean = clean.replace(/(?:страниц[ыа]?|стр\.?)\s*\d+(?:\s*,\s*\d+)*/gi, '');
+
+                // 6. Убираем скобки, чтобы числа вроде 125(1) нормально парсились
+                clean = clean.replace(/[\(\)]/g, ' ');
+
+                // 7. Убираем цифру в начале строки, если она стоит перед запятой (например: "1 , повторить...")
+                clean = clean.replace(/^\d+\s*,\s*/g, '');
+
                 let matches = [];
+
+                const specificRegex = /(?:№|номер|упражнение|задание|задача|упр\.?|вар\.?|вариант)\s*([\d,\s]+)/gi;
                 let match;
                 while ((match = specificRegex.exec(clean)) !== null) {
                     const nums = match[1].match(/\d+/g);
@@ -709,14 +723,15 @@
                 }
 
                 if (matches.length === 0) {
-                    let tempClean = clean.replace(/\b([5-9]|1[0-1])\s*класс\b/g, '');
-                    const generalRegex = /\b([1-9]|[1-9]\d|[1-9]\d{2}|1[0-4]\d{2}|1500)\b/g;
-                    let generalMatches = tempClean.match(generalRegex);
-                    if (generalMatches) matches = generalMatches;
+                    const trimmed = clean.trim();
+                    if (/^[\d\s,]+$/.test(trimmed)) {
+                        const generalMatches = trimmed.match(/\b\d+\b/g);
+                        if (generalMatches) matches = generalMatches;
+                    }
                 }
 
                 if (matches.length === 0) return "";
-                return [...new Set(matches)].join(', ');
+                return [...new Set(matches)].filter(n => n !== '').join(', ');
             }
 
             let jobs = [];
@@ -724,7 +739,6 @@
             let currentSubj = null;
             let currentText = [];
 
-            // 3. Построчный разбор
             for (let line of lines) {
                 line = line.trim();
                 if (!line) continue;
@@ -736,7 +750,6 @@
                         jobs.push({ subject: currentSubj.name, url: currentSubj.url, type: currentSubj.type, numbers: extractNumbers(currentText.join(' ')), raw_text: currentText.join('\n') });
                     }
                     currentSubj = matchedSubj;
-                    // Заменяем название предмета в строке на пустоту, чтобы оно не мешало
                     let cleanLine = line.replace(new RegExp(matchedSubj.name, 'gi'), '').replace(/^[:\-\s]+/, '').trim();
                     currentText = cleanLine ? [cleanLine] : [];
                 } else if (currentSubj) {
@@ -749,7 +762,6 @@
                 jobs.push({ subject: currentSubj.name, url: currentSubj.url, type: currentSubj.type, numbers: extractNumbers(currentText.join(' ')), raw_text: currentText.join('\n') });
             }
 
-            // Fallback
             if (jobs.length === 0 && currentText.length > 0) {
                 const nums = extractNumbers(currentText.join(' '));
                 const fallbackSubj = allowedSubjects[0];
@@ -870,7 +882,7 @@
         function showStatus(text, type) { status.textContent = text; status.className = 'status ' + type; }
         function escapeHtml(t) { const d = document.createElement('div'); d.textContent = t || ''; return d.innerHTML; }
 
-        // Остальные функции
+        // Остальные функции (аватар, история, поддержка, настройки)
         function renderTopbar() {
             topbarRight.innerHTML = '';
             const name = authUser.name || authUser.email.split('@')[0];
