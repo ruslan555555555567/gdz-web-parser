@@ -656,7 +656,7 @@
             }
         };
 
-        // УМНЫЙ ПАРСИНГ (Исправленный)
+        // УМНЫЙ ПАРСИНГ (Улучшенный)
         btn.addEventListener('click', async () => {
             const text = dailyAllTasksInput.value.trim();
             if (!text) return showStatus('⚠️ Вставь задания в окно', 'error');
@@ -671,12 +671,33 @@
 
             if (allowedSubjects.length === 0) return showStatus('⚠️ Нет доступных предметов', 'error');
 
-            // Функция для извлечения номеров из текста (игнорируем даты)
+            // ФУНКЦИЯ УМНОГО ИЗВЛЕЧЕНИЯ НОМЕРОВ
             function extractNumbers(str) {
-                let clean = str.replace(/\b\d{1,2}[./]\d{1,2}([./]\d{2,4})?\b/g, ''); // Убираем даты
-                const nums = clean.match(/\b([1-9]|[1-9]\d{1,2}|1[0-4]\d{2}|1500)\b/g); // Ищем числа от 1 до 1500
-                if (!nums) return str; // Если чисел нет, возвращаем исходный текст
-                return [...new Set(nums)].join(', '); // Удаляем дубликаты
+                let clean = str.toLowerCase();
+
+                // 1. Убираем даты (26.10, 26.10.2023, 26/10)
+                clean = clean.replace(/\b\d{1,2}[./]\d{1,2}([./]\d{2,4})?\b/g, '');
+
+                // 2. Убираем страницы (страницы 90, 91 / стр 90)
+                clean = clean.replace(/(?:страниц[ыа]?|стр\.?)\s*\d+(?:\s*,\s*\d+)*/g, '');
+
+                // 3. Убираем годы (2023 год, 2023г)
+                clean = clean.replace(/\b(19|20)\d{2}\s*(?:год|г\.?)\b/g, '');
+
+                // 4. Ищем числа после ключевых слов (упражнение 161, номер 5, №7)
+                const specificRegex = /(?:№|номер|упражнение|задание|задача|упр\.?|вар\.?|вариант)\s*(\d+)/gi;
+                let matches = [...clean.matchAll(specificRegex)].map(m => m[1]);
+
+                // 5. Если ничего не нашли по ключевым словам, ищем просто числа
+                if (matches.length === 0) {
+                    // Убираем "класс" (7 класс)
+                    let tempClean = clean.replace(/\b([5-9]|1[0-1])\s*класс\b/g, '');
+                    const generalRegex = /\b([1-9]|[1-9]\d|[1-9]\d{2}|1[0-4]\d{2}|1500)\b/g;
+                    matches = [...tempClean.matchAll(generalRegex)].map(m => m[1]);
+                }
+
+                if (matches.length === 0) return str; // Если чисел нет, возвращаем исходный текст
+                return [...new Set(matches)].join(', '); // Удаляем дубликаты
             }
 
             let jobs = [];
@@ -699,7 +720,6 @@
                     }
                 }
 
-                // Если не нашли среди разрешенных, ищем во всех
                 if (!matchedSubj) {
                     for (let s of SUBJECTS) {
                         const regex = new RegExp('(^|\\s)' + s.name + '(\\s|:|$)', 'i');
@@ -726,11 +746,11 @@
                 jobs.push({ subject: currentSubj.name, url: currentSubj.url, type: currentSubj.type, numbers: extractNumbers(currentText.join(' ')), raw_text: currentText.join('\n') });
             }
 
-            // Fallback: если предмет не найден, но есть текст и числа
+            // Fallback: если предмет не найден
             if (jobs.length === 0 && currentText.length > 0) {
                 const nums = extractNumbers(currentText.join(' '));
                 const fallbackSubj = allowedSubjects[0];
-                if (nums && nums !== currentText.join(' ')) { // Если числа найдены
+                if (nums && nums !== currentText.join(' ')) {
                     jobs.push({ subject: fallbackSubj.name, url: fallbackSubj.url, type: fallbackSubj.type, numbers: nums, raw_text: currentText.join('\n') });
                 } else {
                     jobs.push({ subject: fallbackSubj.name, url: fallbackSubj.url, type: 'text', numbers: "", raw_text: currentText.join('\n') });
@@ -847,7 +867,7 @@
         function showStatus(text, type) { status.textContent = text; status.className = 'status ' + type; }
         function escapeHtml(t) { const d = document.createElement('div'); d.textContent = t || ''; return d.innerHTML; }
 
-        // Остальные функции (аватар, история, поддержка, настройки) остались без изменений
+        // Остальные функции (аватар, история, поддержка, настройки)
         function renderTopbar() {
             topbarRight.innerHTML = '';
             const name = authUser.name || authUser.email.split('@')[0];
