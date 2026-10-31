@@ -93,7 +93,8 @@
         .theme-dark .dropdown-item.logout:hover { background: rgba(229,62,62,0.2); }
 
         html.theme-custom .card,
-        html.theme-custom .subject-block {
+        html.theme-custom .subject-block,
+        html.theme-custom .modal-content {
             background: rgba(255, 255, 255, 0.05) !important;
             backdrop-filter: blur(30px) !important;
             -webkit-backdrop-filter: blur(30px) !important;
@@ -133,7 +134,6 @@
         }
         html.theme-custom .user-menu-btn:hover { background: rgba(255, 255, 255, 0.2) !important; }
 
-        /* НОВОЕ: Стили для расписания */
         .schedule-tabs { display: flex; gap: 5px; margin-bottom: 15px; flex-wrap: wrap; }
         .schedule-tab {
             flex: 1; padding: 8px 12px; border-radius: 8px; border: 1px solid #e2e8f0;
@@ -148,6 +148,22 @@
             background: #ebf8ff; padding: 10px 15px; border-radius: 10px; border: 1px solid #bee3f8;
         }
         .theme-dark .toggle-container { background: rgba(66,153,225,0.1); border-color: #2b6cb0; }
+
+        #dailyModal .modal-content {
+            background: #ffffff !important;
+            color: #1a202c !important;
+        }
+        html.theme-dark #dailyModal .modal-content,
+        html.admin-theme-dark #dailyModal .modal-content {
+            background: #2d3748 !important;
+            color: #e2e8f0 !important;
+            border: 1px solid #4a5568 !important;
+        }
+        html.theme-custom #dailyModal .modal-content {
+            background: #1a202c !important;
+            color: #ffffff !important;
+            border: 1px solid rgba(255,255,255,0.2) !important;
+        }
     </style>
     <link rel="stylesheet" href="/static/style.css">
     <link rel="stylesheet" href="/static/animations.css">
@@ -200,7 +216,6 @@
         <section class="card">
             <h2>📝 Домашка</h2>
 
-            <!-- НОВОЕ: Переключатель режима -->
             <div class="toggle-container">
                 <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; font-weight: 600; width: 100%;">
                     <input type="checkbox" id="dailyModeToggle" style="width: 18px; height: 18px; cursor: pointer;">
@@ -232,12 +247,26 @@
                 <button class="schedule-tab" data-day="7">Вс</button>
             </div>
             <div id="scheduleList" style="margin-bottom: 15px;">
-                <!-- Сюда будут рендериться чекбоксы для выбранного дня -->
             </div>
             <div class="modal-actions">
                 <button type="button" id="closeScheduleBtn" class="btn-secondary">Отмена</button>
                 <button type="button" id="saveScheduleBtn" class="btn-primary" style="width:auto;">💾 Сохранить</button>
             </div>
+        </div>
+    </div>
+
+    <!-- МОДАЛКА ДНЕВНОГО РЕЖИМА (НОВОЕ) -->
+    <div id="dailyModal" class="modal hidden">
+        <div class="modal-content" style="max-width: 650px;">
+            <h3 id="dailyModalTitle">📚 Домашка на сегодня</h3>
+            <div id="dailySubjectsContainer" style="display:flex; flex-direction:column; gap:12px; max-height: 50vh; overflow-y:auto; margin-bottom: 15px;">
+                <!-- Сюда будут рендериться предметы на сегодня -->
+            </div>
+            <div class="modal-actions" style="justify-content: space-between;">
+                <button type="button" id="closeDailyBtn" class="btn-secondary">Закрыть</button>
+                <button type="button" id="dailySearchBtn" class="btn-primary" style="width:auto;">🔍 Найти решения</button>
+            </div>
+            <div id="dailyResult" class="result" style="margin-top: 20px;"></div>
         </div>
     </div>
 
@@ -363,9 +392,8 @@
         let currentBgUrl = localStorage.getItem('gdz_bg') || null;
         let currentAvatar = null;
         let SUBJECTS = [];
-        let SCHEDULE = {}; // {"1": [id1, id2], ...}
-        let dailyMode = localStorage.getItem('gdz_daily_mode') === 'true'; // Запоминаем режим
-        let currentScheduleDay = 1; // Для модалки расписания
+        let SCHEDULE = {};
+        let currentScheduleDay = 1;
         let originalTheme = 'light';
         let originalBgUrl = null;
         let fbImageBase64 = "";
@@ -381,6 +409,10 @@
         const imageModalImg = $('imageModalImg');
         const topbarRight = $('topbarRight');
         const scheduleModal = $('scheduleModal');
+        const dailyModal = $('dailyModal');
+        const dailySubjectsContainer = $('dailySubjectsContainer');
+        const dailyResult = $('dailyResult');
+        const dailyModalTitle = $('dailyModalTitle');
 
         function getDeviceInfo() {
             const ua = navigator.userAgent;
@@ -508,9 +540,9 @@
             mainScreen.classList.remove('hidden');
             updateGreeting();
             renderTopbar();
-            await loadSubjects(); // Сначала предметы
-            await loadSchedule(); // Потом расписание
-            renderSubjects();     // И только потом рендерим
+            await loadSubjects();
+            await loadSchedule();
+            renderSubjects();
         }
 
         function updateGreeting() {
@@ -541,7 +573,6 @@
             }
         }
 
-        // НОВОЕ: Загрузка расписания
         async function loadSchedule() {
             try {
                 const r = await fetch('/api/schedule?token=' + encodeURIComponent(authToken));
@@ -553,28 +584,8 @@
         function renderSubjects() {
             const container = $('subjectsContainer');
             container.innerHTML = '';
-
-            // НОВОЕ: Фильтрация по дневному режиму
-            let filteredSubjects = SUBJECTS;
-
-            if (dailyMode) {
-                // Получаем сегодняшний день недели (0 - Вс, 1 - Пн...)
-                let today = new Date().getDay();
-                if (today === 0) today = 7; // Делаем Вс = 7
-
-                const todaySubjectIds = SCHEDULE[today.toString()] || [];
-                filteredSubjects = SUBJECTS.filter(s => todaySubjectIds.includes(s.id));
-
-                if (filteredSubjects.length === 0) {
-                    container.innerHTML = `<p class="empty" style="padding: 20px; background: rgba(237, 137, 54, 0.1); border-radius: 8px; border: 1px solid #ed8936;">
-                        На сегодня нет предметов в расписании. Настрой расписание или отключи "Дневной режим".
-                    </p>`;
-                    return;
-                }
-            }
-
             const groups = {};
-            filteredSubjects.forEach(s => {
+            SUBJECTS.forEach(s => {
                 const g = s.group_name || 'Прочее';
                 if (!groups[g]) groups[g] = [];
                 groups[g].push(s);
@@ -608,22 +619,13 @@
             });
         }
 
-        // НОВОЕ: Обработка переключателя дневного режима
-        $('dailyModeToggle').checked = dailyMode;
-        $('dailyModeToggle').onchange = (e) => {
-            dailyMode = e.target.checked;
-            localStorage.setItem('gdz_daily_mode', dailyMode);
-            renderSubjects();
-        };
-
-        // НОВОЕ: Логика модалки расписания
+        // Логика дневного режима
         $('openScheduleBtn').onclick = () => {
             scheduleModal.classList.remove('hidden');
             renderScheduleList();
         };
         $('closeScheduleBtn').onclick = () => scheduleModal.classList.add('hidden');
 
-        // Переключение дней
         document.querySelectorAll('.schedule-tab').forEach(tab => {
             tab.onclick = () => {
                 document.querySelectorAll('.schedule-tab').forEach(t => t.classList.remove('active'));
@@ -638,7 +640,6 @@
             list.innerHTML = '';
             const dayStr = currentScheduleDay.toString();
             const daySubjects = SCHEDULE[dayStr] || [];
-
             SUBJECTS.forEach(s => {
                 const isChecked = daySubjects.includes(s.id);
                 const label = document.createElement('label');
@@ -652,11 +653,9 @@
             });
         }
 
-        // Временное сохранение в память при клике
         window.updateLocalSchedule = (subjectId, isChecked) => {
             const dayStr = currentScheduleDay.toString();
             if (!SCHEDULE[dayStr]) SCHEDULE[dayStr] = [];
-
             if (isChecked) {
                 if (!SCHEDULE[dayStr].includes(subjectId)) SCHEDULE[dayStr].push(subjectId);
             } else {
@@ -664,7 +663,6 @@
             }
         };
 
-        // Сохранение расписания на сервер
         $('saveScheduleBtn').onclick = async () => {
             const btn = $('saveScheduleBtn');
             btn.disabled = true; btn.textContent = 'Сохранение...';
@@ -675,7 +673,6 @@
                 });
                 if (!r.ok) throw new Error('Ошибка сохранения');
                 scheduleModal.classList.add('hidden');
-                renderSubjects(); // Перерисовываем, если включен дневной режим
                 alert('✅ Расписание сохранено!');
             } catch (e) {
                 alert('❌ ' + e.message);
@@ -684,6 +681,274 @@
             }
         };
 
+        // Открытие модалки "Домашка на сегодня"
+        function openDailyModal() {
+            dailyModal.classList.remove('hidden');
+            dailyResult.innerHTML = '';
+            renderDailySubjects();
+            const today = new Date();
+            const options = { weekday: 'long', day: 'numeric', month: 'long' };
+            const dateStr = today.toLocaleDateString('ru-RU', options);
+            dailyModalTitle.textContent = `📚 Домашка на ${dateStr}`;
+        }
+
+        function renderDailySubjects() {
+            dailySubjectsContainer.innerHTML = '';
+            let today = new Date().getDay();
+            if (today === 0) today = 7;
+            const todaySubjectIds = SCHEDULE[today.toString()] || [];
+            const todaySubjects = SUBJECTS.filter(s => todaySubjectIds.includes(s.id));
+
+            if (todaySubjects.length === 0) {
+                dailySubjectsContainer.innerHTML = `<p class="empty" style="padding: 20px; background: rgba(237, 137, 54, 0.1); border-radius: 8px; border: 1px solid #ed8936;">
+                    На сегодня нет предметов в расписании. Настрой расписание или отключи "Дневной режим".
+                </p>`;
+                $('dailySearchBtn').disabled = true;
+                return;
+            }
+            $('dailySearchBtn').disabled = false;
+
+            todaySubjects.forEach(s => {
+                const row = document.createElement('div');
+                row.className = 'input-row';
+                row.innerHTML = `
+                    <label class="input-label">${escapeHtml(s.name)}</label>
+                    <textarea class="text-input daily-input" id="daily_subj_${s.id}" rows="2" placeholder="${s.type === 'text' ? 'Вставь текст задания...' : '447, 449, 451 — или текст задания'}"></textarea>
+                `;
+                dailySubjectsContainer.appendChild(row);
+            });
+        }
+
+        $('dailyModeToggle').onchange = (e) => {
+            if (e.target.checked) {
+                openDailyModal();
+            } else {
+                dailyModal.classList.add('hidden');
+            }
+        };
+
+        $('closeDailyBtn').onclick = () => {
+            dailyModal.classList.add('hidden');
+            $('dailyModeToggle').checked = false;
+        };
+
+        // Парсинг из модалки
+        $('dailySearchBtn').onclick = async () => {
+            const jobs = [];
+            const textareas = dailySubjectsContainer.querySelectorAll('.daily-input');
+            textareas.forEach(el => {
+                const v = el.value.trim();
+                if (!v) return;
+                const id = el.id.replace('daily_subj_', '');
+                const subject = SUBJECTS.find(s => s.id == id);
+                if (subject) {
+                    jobs.push({ subject: subject.name, url: subject.url || '', type: subject.type || 'numbers', numbers: v, raw_text: v });
+                }
+            });
+
+            if (!jobs.length) return alert('⚠️ Заполни хотя бы одно поле');
+
+            const searchBtn = $('dailySearchBtn');
+            searchBtn.disabled = true;
+            dailyResult.innerHTML = '<div class="status loading">⏳ Ищу решения...</div>';
+
+            try {
+                const resp = await fetch('/api/parse', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({jobs}) });
+                const data = await resp.json();
+                if (!resp.ok) throw new Error(data.detail || 'Ошибка');
+                if (data.total === 0) { dailyResult.innerHTML = '<div class="status error">🤷 Ничего не найдено</div>'; return; }
+
+                // Сохраняем в историю
+                if (authToken) {
+                    for (const j of jobs) {
+                        if (!j.numbers) continue;
+                        fetch('/api/history/save', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({token: authToken, subject: j.subject, numbers: j.numbers}) }).catch(() => {});
+                    }
+                }
+
+                dailyResult.innerHTML = `<div class="status success">✅ Обработано ${data.total} заданий</div>`;
+                const container = document.createElement('div');
+                container.className = 'result';
+
+                const bySubject = {};
+                data.results.forEach(r => { (bySubject[r.subject] = bySubject[r.subject] || []).push(r); });
+
+                Object.entries(bySubject).forEach(([subject, items]) => {
+                    const sec = document.createElement('section');
+                    sec.className = 'subject-block';
+                    sec.innerHTML = `<h2>${escapeHtml(subject)}</h2>`;
+                    items.forEach(r => {
+                        if (r.is_text || !r.found) {
+                            const textCard = document.createElement('div');
+                            textCard.className = 'task-card text-task';
+                            let headerText = '📝 Задание';
+                            if (r.number) headerText = `№${r.number} — не найдено`;
+                            textCard.innerHTML = `<div class="task-header"><h3>${escapeHtml(headerText)}</h3></div><div class="task-text">${escapeHtml(r.raw_text || '')}</div>`;
+                            sec.appendChild(textCard);
+                            return;
+                        }
+                        const card = document.createElement('div');
+                        card.className = 'task-card';
+                        card.innerHTML = `<div class="task-header"><h3>№${r.number}</h3></div>`;
+                        r.images.forEach((u, index) => {
+                            const wrapper = document.createElement('div');
+                            wrapper.style.cssText = 'display: flex; flex-direction: column; gap: 8px; margin-bottom: 15px;';
+                            const img = document.createElement('img');
+                            img.className = 'solution-img img-loading';
+                            img.style.marginTop = '0';
+                            img.alt = 'Загрузка...';
+                            loadImage(img, u);
+                            const controls = document.createElement('div');
+                            controls.style.cssText = 'display: flex; gap: 10px; justify-content: flex-end;';
+                            const dlBtn = document.createElement('button');
+                            dlBtn.innerHTML = '⬇️ Скачать';
+                            dlBtn.style.cssText = 'padding: 8px 16px; display: flex; align-items: center; gap: 6px; background: #4299e1; color: #ffffff; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer;';
+                            dlBtn.onclick = (e) => {
+                                e.stopPropagation();
+                                if (img.src && img.src.includes('/api/image')) {
+                                    const filename = `GDZ_${r.subject || 'Предмет'}_№${r.number || index + 1}.jpg`.replace(/\s+/g, '_');
+                                    downloadSingleImage(img.src, filename);
+                                }
+                            };
+                            controls.appendChild(dlBtn);
+                            wrapper.appendChild(img);
+                            wrapper.appendChild(controls);
+                            card.appendChild(wrapper);
+                        });
+                        sec.appendChild(card);
+                    });
+                    container.appendChild(sec);
+                });
+                dailyResult.appendChild(container);
+            } catch (e) {
+                dailyResult.innerHTML = `<div class="status error">❌ ${e.message}</div>`;
+            } finally {
+                searchBtn.disabled = false;
+            }
+        };
+
+        // Основной парсинг (на главной)
+        btn.addEventListener('click', async () => {
+            const jobs = [];
+            const visibleTextareas = document.querySelectorAll('.text-input');
+            visibleTextareas.forEach(el => {
+                const v = el.value.trim();
+                if (!v) return;
+                const id = el.id.replace('subj_', '');
+                const subject = SUBJECTS.find(s => s.id == id);
+                if (subject) {
+                    jobs.push({ subject: subject.name, url: subject.url || '', type: subject.type || 'numbers', numbers: v, raw_text: v });
+                }
+            });
+
+            if (!jobs.length) return showStatus('⚠️ Заполни хотя бы одно поле', 'error');
+            btn.disabled = true;
+            result.innerHTML = '';
+            let seconds = 0;
+            showStatus('⏳ Ищу решения... 0 сек', 'loading');
+            const timer = setInterval(() => { seconds++; showStatus(`⏳ Ищу решения... ${seconds} сек`, 'loading'); }, 1000);
+            try {
+                const resp = await fetch('/api/parse', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({jobs}) });
+                const data = await resp.json();
+                clearInterval(timer);
+                if (!resp.ok) return showStatus('❌ ' + (data.detail || 'Ошибка'), 'error');
+                if (data.total === 0) return showStatus('🤷 Ничего не найдено', 'error');
+                showStatus(`✅ Обработано ${data.total} заданий`, 'success');
+                if (authToken) {
+                    for (const j of jobs) {
+                        if (!j.numbers) continue;
+                        fetch('/api/history/save', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({token: authToken, subject: j.subject, numbers: j.numbers}) }).catch(() => {});
+                    }
+                }
+                const globalDlBtn = document.createElement('button');
+                globalDlBtn.className = 'btn-download-all';
+                globalDlBtn.innerHTML = '⬇️ Скачать все решения';
+                globalDlBtn.style.cssText = 'display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; padding: 16px 24px; margin: 25px 0; background: linear-gradient(135deg, #48bb78 0%, #38a169 100%); color: #ffffff; border: none; border-radius: 12px; font-size: 17px; font-weight: 700; cursor: pointer; box-shadow: 0 4px 15px rgba(72, 187, 120, 0.4); transition: all 0.3s;';
+                globalDlBtn.onclick = downloadAllImages;
+                result.appendChild(globalDlBtn);
+
+                const bySubject = {};
+                data.results.forEach(r => { (bySubject[r.subject] = bySubject[r.subject] || []).push(r); });
+                Object.entries(bySubject).forEach(([subject, items]) => {
+                    const sec = document.createElement('section');
+                    sec.className = 'subject-block';
+                    sec.innerHTML = `<h2>${escapeHtml(subject)}</h2>`;
+                    items.forEach(r => {
+                        if (r.is_text || !r.found) {
+                            const textCard = document.createElement('div');
+                            textCard.className = 'task-card text-task';
+                            let headerText = '📝 Задание';
+                            if (r.number) headerText = `№${r.number} — не найдено`;
+                            textCard.innerHTML = `<div class="task-header"><h3>${escapeHtml(headerText)}</h3></div><div class="task-text">${escapeHtml(r.raw_text || '')}</div>`;
+                            sec.appendChild(textCard);
+                            return;
+                        }
+                        const card = document.createElement('div');
+                        card.className = 'task-card';
+                        card.innerHTML = `<div class="task-header"><h3>№${r.number}</h3></div>`;
+                        r.images.forEach((u, index) => {
+                            const wrapper = document.createElement('div');
+                            wrapper.style.cssText = 'display: flex; flex-direction: column; gap: 8px; margin-bottom: 15px;';
+                            const img = document.createElement('img');
+                            img.className = 'solution-img img-loading';
+                            img.style.marginTop = '0';
+                            img.alt = 'Загрузка...';
+                            loadImage(img, u);
+                            const controls = document.createElement('div');
+                            controls.style.cssText = 'display: flex; gap: 10px; justify-content: flex-end;';
+                            const refreshBtn = document.createElement('button');
+                            refreshBtn.innerHTML = '🔄 Обновить';
+                            refreshBtn.title = 'Обновить картинку';
+                            refreshBtn.style.cssText = 'padding: 8px 16px; display: flex; align-items: center; gap: 6px; background: rgba(150, 150, 150, 0.15); color: inherit; border: 1px solid rgba(150, 150, 150, 0.3); border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s;';
+                            refreshBtn.onmouseenter = () => refreshBtn.style.background = 'rgba(150, 150, 150, 0.25)';
+                            refreshBtn.onmouseleave = () => refreshBtn.style.background = 'rgba(150, 150, 150, 0.15)';
+                            refreshBtn.onclick = (e) => {
+                                e.stopPropagation();
+                                img.classList.remove('img-tall', 'img-retrying');
+                                img.classList.add('img-loading');
+                                img.src = '';
+                                loadImage(img, u);
+                            };
+                            const dlBtn = document.createElement('button');
+                            dlBtn.innerHTML = '⬇️ Скачать';
+                            dlBtn.title = 'Скачать решение';
+                            dlBtn.style.cssText = 'padding: 8px 16px; display: flex; align-items: center; gap: 6px; background: #4299e1; color: #ffffff; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s; box-shadow: 0 2px 5px rgba(66, 153, 225, 0.3);';
+                            dlBtn.onmouseenter = () => dlBtn.style.background = '#3182ce';
+                            dlBtn.onmouseleave = () => dlBtn.style.background = '#4299e1';
+                            dlBtn.onclick = (e) => {
+                                e.stopPropagation();
+                                if (img.src && img.src.includes('/api/image')) {
+                                    const filename = `GDZ_${r.subject || 'Предмет'}_№${r.number || index + 1}.jpg`.replace(/\s+/g, '_');
+                                    downloadSingleImage(img.src, filename);
+                                } else {
+                                    alert('Картинка еще не загрузилась, подождите...');
+                                }
+                            };
+                            controls.appendChild(refreshBtn);
+                            controls.appendChild(dlBtn);
+                            wrapper.appendChild(img);
+                            wrapper.appendChild(controls);
+                            card.appendChild(wrapper);
+                        });
+                        if (r.raw_text) {
+                            const textDiv = document.createElement('div');
+                            textDiv.className = 'task-text';
+                            textDiv.style.marginTop = '10px';
+                            textDiv.textContent = r.raw_text;
+                            card.appendChild(textDiv);
+                        }
+                        sec.appendChild(card);
+                    });
+                    result.appendChild(sec);
+                });
+            } catch (err) { clearInterval(timer); showStatus('❌ Ошибка: ' + err.message, 'error'); }
+            finally { btn.disabled = false; }
+        });
+
+        function showStatus(text, type) { status.textContent = text; status.className = 'status ' + type; }
+        function escapeHtml(t) { const d = document.createElement('div'); d.textContent = t || ''; return d.innerHTML; }
+
+        // Остальные функции (аватар, история, поддержка, настройки) остались без изменений
         function renderTopbar() {
             topbarRight.innerHTML = '';
             const name = authUser.name || authUser.email.split('@')[0];
@@ -1110,127 +1375,6 @@
                 await new Promise(r => setTimeout(r, 500));
             }
         }
-
-        btn.addEventListener('click', async () => {
-            const jobs = [];
-            // Собираем только те предметы, которые сейчас на экране
-            const visibleTextareas = document.querySelectorAll('.text-input');
-            visibleTextareas.forEach(el => {
-                const v = el.value.trim();
-                if (!v) return;
-                const id = el.id.replace('subj_', '');
-                const subject = SUBJECTS.find(s => s.id == id);
-                if (subject) {
-                    jobs.push({ subject: subject.name, url: subject.url || '', type: subject.type || 'numbers', numbers: v, raw_text: v });
-                }
-            });
-
-            if (!jobs.length) return showStatus('⚠️ Заполни хотя бы одно поле', 'error');
-            btn.disabled = true;
-            result.innerHTML = '';
-            let seconds = 0;
-            showStatus('⏳ Ищу решения... 0 сек', 'loading');
-            const timer = setInterval(() => { seconds++; showStatus(`⏳ Ищу решения... ${seconds} сек`, 'loading'); }, 1000);
-            try {
-                const resp = await fetch('/api/parse', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({jobs}) });
-                const data = await resp.json();
-                clearInterval(timer);
-                if (!resp.ok) return showStatus('❌ ' + (data.detail || 'Ошибка'), 'error');
-                if (data.total === 0) return showStatus('🤷 Ничего не найдено', 'error');
-                showStatus(`✅ Обработано ${data.total} заданий`, 'success');
-                if (authToken) {
-                    for (const j of jobs) {
-                        if (!j.numbers) continue;
-                        fetch('/api/history/save', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({token: authToken, subject: j.subject, numbers: j.numbers}) }).catch(() => {});
-                    }
-                }
-                const globalDlBtn = document.createElement('button');
-                globalDlBtn.className = 'btn-download-all';
-                globalDlBtn.innerHTML = '⬇️ Скачать все решения';
-                globalDlBtn.style.cssText = 'display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; padding: 16px 24px; margin: 25px 0; background: linear-gradient(135deg, #48bb78 0%, #38a169 100%); color: #ffffff; border: none; border-radius: 12px; font-size: 17px; font-weight: 700; cursor: pointer; box-shadow: 0 4px 15px rgba(72, 187, 120, 0.4); transition: all 0.3s;';
-                globalDlBtn.onclick = downloadAllImages;
-                result.appendChild(globalDlBtn);
-
-                const bySubject = {};
-                data.results.forEach(r => { (bySubject[r.subject] = bySubject[r.subject] || []).push(r); });
-                Object.entries(bySubject).forEach(([subject, items]) => {
-                    const sec = document.createElement('section');
-                    sec.className = 'subject-block';
-                    sec.innerHTML = `<h2>${escapeHtml(subject)}</h2>`;
-                    items.forEach(r => {
-                        if (r.is_text || !r.found) {
-                            const textCard = document.createElement('div');
-                            textCard.className = 'task-card text-task';
-                            let headerText = '📝 Задание';
-                            if (r.number) headerText = `№${r.number} — не найдено`;
-                            textCard.innerHTML = `<div class="task-header"><h3>${escapeHtml(headerText)}</h3></div><div class="task-text">${escapeHtml(r.raw_text || '')}</div>`;
-                            sec.appendChild(textCard);
-                            return;
-                        }
-                        const card = document.createElement('div');
-                        card.className = 'task-card';
-                        card.innerHTML = `<div class="task-header"><h3>№${r.number}</h3></div>`;
-                        r.images.forEach((u, index) => {
-                            const wrapper = document.createElement('div');
-                            wrapper.style.cssText = 'display: flex; flex-direction: column; gap: 8px; margin-bottom: 15px;';
-                            const img = document.createElement('img');
-                            img.className = 'solution-img img-loading';
-                            img.style.marginTop = '0';
-                            img.alt = 'Загрузка...';
-                            loadImage(img, u);
-                            const controls = document.createElement('div');
-                            controls.style.cssText = 'display: flex; gap: 10px; justify-content: flex-end;';
-                            const refreshBtn = document.createElement('button');
-                            refreshBtn.innerHTML = '🔄 Обновить';
-                            refreshBtn.title = 'Обновить картинку';
-                            refreshBtn.style.cssText = 'padding: 8px 16px; display: flex; align-items: center; gap: 6px; background: rgba(150, 150, 150, 0.15); color: inherit; border: 1px solid rgba(150, 150, 150, 0.3); border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s;';
-                            refreshBtn.onmouseenter = () => refreshBtn.style.background = 'rgba(150, 150, 150, 0.25)';
-                            refreshBtn.onmouseleave = () => refreshBtn.style.background = 'rgba(150, 150, 150, 0.15)';
-                            refreshBtn.onclick = (e) => {
-                                e.stopPropagation();
-                                img.classList.remove('img-tall', 'img-retrying');
-                                img.classList.add('img-loading');
-                                img.src = '';
-                                loadImage(img, u);
-                            };
-                            const dlBtn = document.createElement('button');
-                            dlBtn.innerHTML = '⬇️ Скачать';
-                            dlBtn.title = 'Скачать решение';
-                            dlBtn.style.cssText = 'padding: 8px 16px; display: flex; align-items: center; gap: 6px; background: #4299e1; color: #ffffff; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s; box-shadow: 0 2px 5px rgba(66, 153, 225, 0.3);';
-                            dlBtn.onmouseenter = () => dlBtn.style.background = '#3182ce';
-                            dlBtn.onmouseleave = () => dlBtn.style.background = '#4299e1';
-                            dlBtn.onclick = (e) => {
-                                e.stopPropagation();
-                                if (img.src && img.src.includes('/api/image')) {
-                                    const filename = `GDZ_${r.subject || 'Предмет'}_№${r.number || index + 1}.jpg`.replace(/\s+/g, '_');
-                                    downloadSingleImage(img.src, filename);
-                                } else {
-                                    alert('Картинка еще не загрузилась, подождите...');
-                                }
-                            };
-                            controls.appendChild(refreshBtn);
-                            controls.appendChild(dlBtn);
-                            wrapper.appendChild(img);
-                            wrapper.appendChild(controls);
-                            card.appendChild(wrapper);
-                        });
-                        if (r.raw_text) {
-                            const textDiv = document.createElement('div');
-                            textDiv.className = 'task-text';
-                            textDiv.style.marginTop = '10px';
-                            textDiv.textContent = r.raw_text;
-                            card.appendChild(textDiv);
-                        }
-                        sec.appendChild(card);
-                    });
-                    result.appendChild(sec);
-                });
-            } catch (err) { clearInterval(timer); showStatus('❌ Ошибка: ' + err.message, 'error'); }
-            finally { btn.disabled = false; }
-        });
-
-        function showStatus(text, type) { status.textContent = text; status.className = 'status ' + type; }
-        function escapeHtml(t) { const d = document.createElement('div'); d.textContent = t || ''; return d.innerHTML; }
 
         function createParticles() {
             const particlesContainer = document.getElementById('particles');
