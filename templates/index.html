@@ -656,11 +656,26 @@
             }
         };
 
+        // НЕВИДИМЫЕ ПРЕДМЕТЫ
+        const INVISIBLE_SUBJECTS = [
+            { name: 'Разговоры о важном', url: '', type: 'text', keywords: ['разговоры о важном', 'ров'] }
+        ];
+
         function findSubjectInLine(line, subjectsList) {
             const lowerLine = line.toLowerCase();
+
+            // 1. Ищем невидимые предметы
+            for (let s of INVISIBLE_SUBJECTS) {
+                for (let kw of s.keywords) {
+                    if (lowerLine.includes(kw)) return s;
+                }
+            }
+
+            // 2. Ищем обычные предметы
             for (let s of subjectsList) {
                 if (lowerLine.includes(s.name.toLowerCase())) return s;
             }
+
             for (let s of subjectsList) {
                 const keywords = s.name.toLowerCase().replace(/[()]/g, '').split(' ').filter(w => w.length > 3 && w !== 'язык' && w !== 'класс');
                 for (let kw of keywords) {
@@ -691,31 +706,30 @@
             function extractNumbers(str) {
                 let clean = str;
 
-                // 1. Удаляем URL-ссылки
+                // 1. САМОЕ ВАЖНОЕ: Удаляем ВСЁ, что в скобках (чтобы 125(1) стало 125)
+                clean = clean.replace(/\([^)]*\)/g, '');
+
+                // 2. Удаляем URL-ссылки
                 clean = clean.replace(/(?:https?:\/\/|www\.)\S+/gi, '');
 
-                // 2. Удаляем даты (26.10, 26/10/2023, 30 октября)
+                // 3. Удаляем даты (26.10, 26/10/2023, 30 октября)
                 clean = clean.replace(/\b\d{1,2}[./]\d{1,2}([./]\d{2,4})?\b/g, '');
                 clean = clean.replace(/\b\d{1,2}\s+(января|февраля|марта|апреля|мая|июня|июля|августа|сентября|октября|ноября|декабря)\b/gi, '');
 
-                // 3. Удаляем параграфы и пункты (п.7, пункт 12, параграф 5)
+                // 4. Удаляем параграфы и пункты (п.7, пункт 12, параграф 5)
                 clean = clean.replace(/(?:п\.|пункт|параграф|пар\.)\s*\d+/gi, '');
 
-                // 4. Удаляем классы (7 класс)
+                // 5. Удаляем классы (7 класс)
                 clean = clean.replace(/\b([5-9]|1[0-1])\s*(класс|кл)\b/gi, '');
 
-                // 5. Удаляем страницы (стр 90, страницы 90, 91)
+                // 6. Удаляем страницы (стр 90, страницы 90, 91)
                 clean = clean.replace(/(?:страниц[ыа]?|стр\.?)\s*\d+(?:\s*,\s*\d+)*/gi, '');
 
-                // 6. Убираем скобки, чтобы числа вроде 125(1) нормально парсились
-                clean = clean.replace(/[\(\)]/g, ' ');
-
-                // 7. Убираем цифру в начале строки, если она стоит перед запятой (например: "1 , повторить...")
-                clean = clean.replace(/^\d+\s*,\s*/g, '');
+                // 7. Убираем цифру в начале строки, если она стоит перед запятой или точкой
+                clean = clean.replace(/^\s*\d+[.):,\-]?\s+/g, '');
 
                 let matches = [];
-
-                const specificRegex = /(?:№|номер|упражнение|задание|задача|упр\.?|вар\.?|вариант)\s*([\d,\s]+)/gi;
+                const specificRegex = /(?:№|номер|упражнение|задание|задача|упр\.?|вар\.?|вариант)\s*(\d+(?:\s*,\s*\d+)*)/gi;
                 let match;
                 while ((match = specificRegex.exec(clean)) !== null) {
                     const nums = match[1].match(/\d+/g);
@@ -747,7 +761,13 @@
 
                 if (matchedSubj) {
                     if (currentSubj && currentText.length > 0) {
-                        jobs.push({ subject: currentSubj.name, url: currentSubj.url, type: currentSubj.type, numbers: extractNumbers(currentText.join(' ')), raw_text: currentText.join('\n') });
+                        jobs.push({
+                            subject: currentSubj.name,
+                            url: currentSubj.url,
+                            type: currentSubj.type,
+                            numbers: currentSubj.name === 'Разговоры о важном' ? '' : extractNumbers(currentText.join(' ')),
+                            raw_text: currentText.join('\n')
+                        });
                     }
                     currentSubj = matchedSubj;
                     let cleanLine = line.replace(new RegExp(matchedSubj.name, 'gi'), '').replace(/^[:\-\s]+/, '').trim();
@@ -759,7 +779,13 @@
                 }
             }
             if (currentSubj && currentText.length > 0) {
-                jobs.push({ subject: currentSubj.name, url: currentSubj.url, type: currentSubj.type, numbers: extractNumbers(currentText.join(' ')), raw_text: currentText.join('\n') });
+                jobs.push({
+                    subject: currentSubj.name,
+                    url: currentSubj.url,
+                    type: currentSubj.type,
+                    numbers: currentSubj.name === 'Разговоры о важном' ? '' : extractNumbers(currentText.join(' ')),
+                    raw_text: currentText.join('\n')
+                });
             }
 
             if (jobs.length === 0 && currentText.length > 0) {
