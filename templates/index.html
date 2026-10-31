@@ -236,7 +236,6 @@
         <footer class="footer"><span>GDZ Парсер · v{{ version }}</span></footer>
     </div>
 
-    <!-- МОДАЛКА РАСПИСАНИЯ -->
     <div id="scheduleModal" class="modal hidden">
         <div class="modal-content" style="max-width: 500px;">
             <h3>📅 Расписание</h3>
@@ -250,8 +249,7 @@
                 <button class="schedule-tab" data-day="6">Сб</button>
                 <button class="schedule-tab" data-day="7">Вс</button>
             </div>
-            <div id="scheduleList" style="margin-bottom: 15px;">
-            </div>
+            <div id="scheduleList" style="margin-bottom: 15px;"></div>
             <div class="modal-actions">
                 <button type="button" id="closeScheduleBtn" class="btn-secondary">Отмена</button>
                 <button type="button" id="saveScheduleBtn" class="btn-primary" style="width:auto;">💾 Сохранить</button>
@@ -259,7 +257,6 @@
         </div>
     </div>
 
-    <!-- ИСТОРИЯ -->
     <div id="historyModal" class="modal hidden">
         <div class="modal-content">
             <h3>📜 История поисков</h3>
@@ -271,7 +268,6 @@
         </div>
     </div>
 
-    <!-- НАСТРОЙКИ АККАУНТА -->
     <div id="settingsModal" class="modal hidden">
         <div class="modal-content">
             <h3>⚙️ Настройки аккаунта</h3>
@@ -593,7 +589,6 @@
             updateDailyHint();
         };
 
-        // Расписание
         $('openScheduleBtn').onclick = () => {
             scheduleModal.classList.remove('hidden');
             renderScheduleList();
@@ -656,7 +651,6 @@
             }
         };
 
-        // НЕВИДИМЫЕ ПРЕДМЕТЫ
         const INVISIBLE_SUBJECTS = [
             { name: 'Разговоры о важном', url: '', type: 'text', keywords: ['разговоры о важном'] }
         ];
@@ -664,14 +658,12 @@
         function findSubjectInLine(line, subjectsList) {
             const lowerLine = line.toLowerCase();
 
-            // 1. Ищем невидимые предметы
             for (let s of INVISIBLE_SUBJECTS) {
                 for (let kw of s.keywords) {
                     if (lowerLine.includes(kw)) return s;
                 }
             }
 
-            // 2. Ищем обычные предметы
             for (let s of subjectsList) {
                 if (lowerLine.includes(s.name.toLowerCase())) return s;
             }
@@ -685,7 +677,6 @@
             return null;
         }
 
-        // УМНЫЙ ПАРСИНГ
         btn.addEventListener('click', async () => {
             const rawText = dailyAllTasksInput.value.trim();
             if (!rawText) return showStatus('⚠️ Вставь задания в окно', 'error');
@@ -706,26 +697,13 @@
             function extractNumbers(str) {
                 let clean = str;
 
-                // 1. САМОЕ ВАЖНОЕ: Удаляем ВСЁ, что в скобках (чтобы 125(1) стало 125)
                 clean = clean.replace(/\([^)]*\)/g, '');
-
-                // 2. Удаляем URL-ссылки
                 clean = clean.replace(/(?:https?:\/\/|www\.)\S+/gi, '');
-
-                // 3. Удаляем даты (26.10, 26/10/2023, 30 октября)
                 clean = clean.replace(/\b\d{1,2}[./]\d{1,2}([./]\d{2,4})?\b/g, '');
                 clean = clean.replace(/\b\d{1,2}\s+(января|февраля|марта|апреля|мая|июня|июля|августа|сентября|октября|ноября|декабря)\b/gi, '');
-
-                // 4. Удаляем параграфы и пункты (п.7, пункт 12, параграф 5)
                 clean = clean.replace(/(?:п\.|пункт|параграф|пар\.)\s*\d+/gi, '');
-
-                // 5. Удаляем классы (7 класс)
                 clean = clean.replace(/\b([5-9]|1[0-1])\s*(класс|кл)\b/gi, '');
-
-                // 6. Удаляем страницы (стр 90, страницы 90, 91)
                 clean = clean.replace(/(?:страниц[ыа]?|стр\.?)\s*\d+(?:\s*,\s*\d+)*/gi, '');
-
-                // 7. Убираем цифру в начале строки, если она стоит перед запятой или точкой
                 clean = clean.replace(/^\s*\d+[.):,\-]?\s+/g, '');
 
                 let matches = [];
@@ -757,8 +735,9 @@
                 line = line.trim();
                 if (!line) continue;
 
-                // ФИКС: Убираем не только цифры, но и буквы классов в начале строки (1., 7б, 7а)
-                let sanitizedLine = line.replace(/^\s*\d+[а-яa-z]?[.):\-\s]*/i, '').trim();
+                // ФИКС: буква класса (7б, 7а) срезается только если после неё пробел/точка/скобка/запятая/тире или конец строки.
+                // Заглавная "А" в "1Алгебра" больше не срезается.
+                let sanitizedLine = line.replace(/^\s*\d+(?:[а-яa-z](?=[\s.):,\-]|$))?[.):\-\s]*/i, '').trim();
                 if (!sanitizedLine) continue;
 
                 let matchedSubj = findSubjectInLine(sanitizedLine, allowedSubjects) || findSubjectInLine(sanitizedLine, SUBJECTS);
@@ -770,17 +749,14 @@
                             url: currentSubj.url,
                             type: currentSubj.type,
                             numbers: currentSubj.name === 'Разговоры о важном' ? '' : extractNumbers(currentText.join(' ')),
-                            // ДОБАВЛЯЕМ НАЗВАНИЕ ПРЕДМЕТА В ТЕКСТ
                             raw_text: currentSubj.name + ': ' + currentText.join('\n').trim()
                         });
                     }
                     currentSubj = matchedSubj;
 
-                    // Очищаем строку от названия предмета
                     let cleanLine = sanitizedLine.replace(new RegExp(matchedSubj.name, 'gi'), '');
                     cleanLine = cleanLine.replace(/иностранный|язык|[()]/gi, '').replace(/^[:\-\s]+/, '').trim();
 
-                    // Убираем даты из текста
                     cleanLine = cleanLine.replace(/на\s*\d{1,2}[./]\d{1,2}\s*(\([А-Яа-я]+\))?:?/gi, '').trim();
 
                     currentText = cleanLine ? [cleanLine] : [];
@@ -921,7 +897,6 @@
         function showStatus(text, type) { status.textContent = text; status.className = 'status ' + type; }
         function escapeHtml(t) { const d = document.createElement('div'); d.textContent = t || ''; return d.innerHTML; }
 
-        // Остальные функции (аватар, история, поддержка, настройки)
         function renderTopbar() {
             topbarRight.innerHTML = '';
             const name = authUser.name || authUser.email.split('@')[0];
