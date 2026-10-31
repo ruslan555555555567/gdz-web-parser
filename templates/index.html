@@ -656,7 +656,7 @@
             }
         };
 
-        // ПАРСИНГ ИЗ БОЛЬШОГО ОКНА
+        // УМНЫЙ ПАРСИНГ (Исправленный)
         btn.addEventListener('click', async () => {
             const text = dailyAllTasksInput.value.trim();
             if (!text) return showStatus('⚠️ Вставь задания в окно', 'error');
@@ -669,49 +669,75 @@
                 allowedSubjects = SUBJECTS.filter(s => todaySubjectIds.includes(s.id));
             }
 
+            if (allowedSubjects.length === 0) return showStatus('⚠️ Нет доступных предметов', 'error');
+
+            // Функция для извлечения номеров из текста (игнорируем даты)
+            function extractNumbers(str) {
+                let clean = str.replace(/\b\d{1,2}[./]\d{1,2}([./]\d{2,4})?\b/g, ''); // Убираем даты
+                const nums = clean.match(/\b([1-9]|[1-9]\d{1,2}|1[0-4]\d{2}|1500)\b/g); // Ищем числа от 1 до 1500
+                if (!nums) return str; // Если чисел нет, возвращаем исходный текст
+                return [...new Set(nums)].join(', '); // Удаляем дубликаты
+            }
+
             let jobs = [];
             const lines = text.split('\n');
             let currentSubj = null;
-            let currentNums = [];
+            let currentText = [];
 
+            // Построчный разбор
             for (let line of lines) {
                 line = line.trim();
                 if (!line) continue;
 
                 let matchedSubj = null;
+                // Ищем название предмета в строке
                 for (let s of allowedSubjects) {
-                    // Ищем название предмета в начале строки
-                    const regex = new RegExp('(^|\\s)' + s.name + '[:\\-\\s]*(.*)$', 'i');
-                    const match = line.match(regex);
-                    if (match) {
+                    const regex = new RegExp('(^|\\s)' + s.name + '(\\s|:|$)', 'i');
+                    if (regex.test(line)) {
                         matchedSubj = s;
-                        line = match[2]; // Берем только номера/текст после названия
                         break;
                     }
                 }
 
+                // Если не нашли среди разрешенных, ищем во всех
+                if (!matchedSubj) {
+                    for (let s of SUBJECTS) {
+                        const regex = new RegExp('(^|\\s)' + s.name + '(\\s|:|$)', 'i');
+                        if (regex.test(line)) {
+                            matchedSubj = s;
+                            break;
+                        }
+                    }
+                }
+
                 if (matchedSubj) {
-                    if (currentSubj && currentNums.length > 0) {
-                        jobs.push({ subject: currentSubj.name, url: currentSubj.url, type: currentSubj.type, numbers: currentNums.join(' '), raw_text: currentNums.join(' ') });
+                    if (currentSubj && currentText.length > 0) {
+                        jobs.push({ subject: currentSubj.name, url: currentSubj.url, type: currentSubj.type, numbers: extractNumbers(currentText.join(' ')), raw_text: currentText.join('\n') });
                     }
                     currentSubj = matchedSubj;
-                    currentNums = line ? [line] : [];
+                    currentText = [line];
                 } else if (currentSubj) {
-                    currentNums.push(line);
+                    currentText.push(line);
+                } else {
+                    currentText.push(line);
                 }
             }
-            if (currentSubj && currentNums.length > 0) {
-                jobs.push({ subject: currentSubj.name, url: currentSubj.url, type: currentSubj.type, numbers: currentNums.join(' '), raw_text: currentNums.join(' ') });
+            if (currentSubj && currentText.length > 0) {
+                jobs.push({ subject: currentSubj.name, url: currentSubj.url, type: currentSubj.type, numbers: extractNumbers(currentText.join(' ')), raw_text: currentText.join('\n') });
             }
 
-            if (!jobs.length) {
-                // Если предмет не указан в тексте, но сегодня только один доступный предмет
-                if (allowedSubjects.length === 1) {
-                    jobs.push({ subject: allowedSubjects[0].name, url: allowedSubjects[0].url, type: allowedSubjects[0].type, numbers: text, raw_text: text });
+            // Fallback: если предмет не найден, но есть текст и числа
+            if (jobs.length === 0 && currentText.length > 0) {
+                const nums = extractNumbers(currentText.join(' '));
+                const fallbackSubj = allowedSubjects[0];
+                if (nums && nums !== currentText.join(' ')) { // Если числа найдены
+                    jobs.push({ subject: fallbackSubj.name, url: fallbackSubj.url, type: fallbackSubj.type, numbers: nums, raw_text: currentText.join('\n') });
                 } else {
-                    return showStatus('⚠️ Не удалось распознать. Укажи предмет (например: "Алгебра: 447")', 'error');
+                    jobs.push({ subject: fallbackSubj.name, url: fallbackSubj.url, type: 'text', numbers: "", raw_text: currentText.join('\n') });
                 }
             }
+
+            if (!jobs.length) return showStatus('⚠️ Не удалось распознать текст', 'error');
 
             btn.disabled = true;
             result.innerHTML = '';
