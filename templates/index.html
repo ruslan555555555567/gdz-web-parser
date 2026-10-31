@@ -133,7 +133,6 @@
         }
         html.theme-custom .user-menu-btn:hover { background: rgba(255, 255, 255, 0.2) !important; }
 
-        /* Стили для расписания */
         .schedule-tabs { display: flex; gap: 5px; margin-bottom: 15px; flex-wrap: wrap; }
         .schedule-tab {
             flex: 1; padding: 8px 12px; border-radius: 8px; border: 1px solid #e2e8f0;
@@ -149,17 +148,20 @@
         }
         .theme-dark .toggle-container { background: rgba(66,153,225,0.1); border-color: #2b6cb0; }
 
-        #dailySingleInputContainer {
-            display: none;
-            margin-bottom: 20px;
+        .divider-text {
+            display: flex; align-items: center; text-align: center; color: #a0aec0; margin: 25px 0; font-weight: 600; font-size: 14px;
         }
-        #dailySingleInputContainer.active {
-            display: block;
+        .divider-text::before, .divider-text::after {
+            content: ''; flex: 1; border-bottom: 1px solid #e2e8f0;
         }
-        #dailyHint {
-            margin-bottom: 10px; font-size: 14px; color: #4a5568; font-weight: 500;
+        .theme-dark .divider-text::before, .theme-dark .divider-text::after { border-color: #4a5568; }
+        .divider-text::before { margin-right: 15px; }
+        .divider-text::after { margin-left: 15px; }
+
+        .daily-box {
+            background: rgba(66, 153, 225, 0.05); border: 1px solid #bee3f8; padding: 15px; border-radius: 10px;
         }
-        .theme-dark #dailyHint { color: #cbd5e0; }
+        .theme-dark .daily-box { background: rgba(66, 153, 225, 0.1); border-color: #2b6cb0; }
     </style>
     <link rel="stylesheet" href="/static/style.css">
     <link rel="stylesheet" href="/static/animations.css">
@@ -220,19 +222,22 @@
                 </label>
             </div>
 
-            <!-- ОБЫЧНЫЙ РЕЖИМ -->
+            <!-- ОБЫЧНЫЙ РЕЖИМ (Поля по предметам) -->
             <div id="subjectsContainer"><p class="empty">Загрузка предметов...</p></div>
 
-            <!-- ДНЕВНОЙ РЕЖИМ (ОДНО БОЛЬШОЕ ОКНО) -->
-            <div id="dailySingleInputContainer">
-                <div id="dailyHint"></div>
-                <textarea id="dailyAllTasksInput" class="text-input" rows="10" placeholder="Вставь задания на сегодня целиком. Например:
+            <!-- Разделитель -->
+            <div class="divider-text">ИЛИ ВСТАВЬ ВЕСЬ ТЕКСТ СРАЗУ</div>
+
+            <!-- ОДНО БОЛЬШОЕ ОКНО -->
+            <div class="daily-box">
+                <div id="dailyHint" style="margin-bottom: 10px; font-size: 14px; color: #4a5568; font-weight: 500;">Умный парсер сам разберет, где какой предмет.</div>
+                <textarea id="dailyAllTasksInput" class="text-input" rows="5" placeholder="Например:
 Алгебра: 447, 449
 Геометрия: 123
 Русский язык: упражнение 45" style="resize: vertical; font-family: inherit; font-size: 15px; width: 100%; padding: 12px;"></textarea>
             </div>
 
-            <button id="btn" class="btn-primary">🔍 Найти решения</button>
+            <button id="btn" class="btn-primary" style="margin-top: 20px;">🔍 Найти решения</button>
         </section>
         <div id="status" class="status"></div>
         <div id="result" class="result"></div>
@@ -386,7 +391,6 @@
         let SUBJECTS = [];
         let SCHEDULE = {};
         let currentScheduleDay = 1;
-        let dailyMode = false;
         let originalTheme = 'light';
         let originalBgUrl = null;
         let fbImageBase64 = "";
@@ -402,7 +406,6 @@
         const imageModalImg = $('imageModalImg');
         const topbarRight = $('topbarRight');
         const scheduleModal = $('scheduleModal');
-        const dailySingleInputContainer = $('dailySingleInputContainer');
         const subjectsContainer = $('subjectsContainer');
         const dailyAllTasksInput = $('dailyAllTasksInput');
         const dailyHint = $('dailyHint');
@@ -576,10 +579,27 @@
         }
 
         function renderSubjects() {
-            // Рендер обычных полей (скрыты, если включен дневной режим)
             subjectsContainer.innerHTML = '';
+            let filteredSubjects = SUBJECTS;
+
+            // Если включен режим "Только на сегодня", фильтруем список
+            if (dailyModeToggle.checked) {
+                let today = new Date().getDay();
+                if (today === 0) today = 7;
+                const todaySubjectIds = SCHEDULE[today.toString()] || [];
+                filteredSubjects = SUBJECTS.filter(s => todaySubjectIds.includes(s.id));
+                dailyHint.innerHTML = `Показаны только предметы на сегодня.`;
+
+                if (filteredSubjects.length === 0) {
+                    subjectsContainer.innerHTML = `<p class="empty" style="padding: 20px; background: rgba(237, 137, 54, 0.1); border-radius: 8px; border: 1px solid #ed8936;">На сегодня нет предметов в расписании.</p>`;
+                    return;
+                }
+            } else {
+                dailyHint.innerHTML = `Умный парсер сам разберет, где какой предмет.`;
+            }
+
             const groups = {};
-            SUBJECTS.forEach(s => {
+            filteredSubjects.forEach(s => {
                 const g = s.group_name || 'Прочее';
                 if (!groups[g]) groups[g] = [];
                 groups[g].push(s);
@@ -611,39 +631,9 @@
                 });
                 subjectsContainer.appendChild(groupDiv);
             });
-
-            // Управление видимостью в зависимости от режима
-            if (dailyMode) {
-                subjectsContainer.classList.add('hidden');
-                dailySingleInputContainer.classList.add('active');
-                updateDailyHint();
-            } else {
-                subjectsContainer.classList.remove('hidden');
-                dailySingleInputContainer.classList.remove('active');
-            }
         }
 
-        function updateDailyHint() {
-            let tDay = new Date().getDay();
-            if (tDay === 0) tDay = 7;
-            const todaySubjectIds = SCHEDULE[tDay.toString()] || [];
-            const todaySubjects = SUBJECTS.filter(s => todaySubjectIds.includes(s.id));
-
-            if (todaySubjects.length === 0) {
-                dailyHint.innerHTML = '<span style="color:#e53e3e;">На сегодня нет предметов в расписании. Настрой расписание.</span>';
-                dailyAllTasksInput.disabled = true;
-                btn.disabled = true;
-            } else {
-                const names = todaySubjects.map(s => `<b>${s.name}</b>`).join(', ');
-                dailyHint.innerHTML = `Сегодня у тебя: ${names}. Напиши задания с названиями предметов, и я всё пойму.`;
-                dailyAllTasksInput.disabled = false;
-                btn.disabled = false;
-            }
-        }
-
-        // Переключатель режима
-        dailyModeToggle.onchange = (e) => {
-            dailyMode = e.target.checked;
+        dailyModeToggle.onchange = () => {
             renderSubjects();
         };
 
@@ -701,7 +691,7 @@
                 });
                 if (!r.ok) throw new Error('Ошибка сохранения');
                 scheduleModal.classList.add('hidden');
-                if (dailyMode) updateDailyHint(); // Обновить подсказку, если дневной режим включен
+                renderSubjects(); // Обновить список на главной, если включен фильтр
                 alert('✅ Расписание сохранено!');
             } catch (e) {
                 alert('❌ ' + e.message);
@@ -710,67 +700,60 @@
             }
         };
 
-        // Основной парсинг (на главной)
+        // УМНЫЙ ПАРСИНГ (Основная логика)
         btn.addEventListener('click', async () => {
             let jobs = [];
+            const bigText = dailyAllTasksInput.value.trim();
 
-            if (dailyMode) {
-                // ЛОГИКА ДЛЯ ОДНОГО БОЛЬШОГО ОКНА
-                const text = dailyAllTasksInput.value.trim();
-                if (!text) return showStatus('⚠️ Вставь задания в окно', 'error');
+            if (bigText) {
+                // Если заполнено большое окно, используем умный парсинг
+                const lines = bigText.split('\n');
+                let currentSubj = null;
+                let currentNums = [];
 
-                let tDay = new Date().getDay();
-                if (tDay === 0) tDay = 7;
-                const todaySubjectIds = SCHEDULE[tDay.toString()] || [];
-                const todaySubjects = SUBJECTS.filter(s => todaySubjectIds.includes(s.id));
+                for (let line of lines) {
+                    line = line.trim();
+                    if (!line) continue;
 
-                if (todaySubjects.length === 0) return showStatus('⚠️ На сегодня нет предметов', 'error');
-
-                if (todaySubjects.length === 1) {
-                    // Если сегодня один предмет, кидаем весь текст в него
-                    jobs.push({ subject: todaySubjects[0].name, url: todaySubjects[0].url, type: todaySubjects[0].type, numbers: text, raw_text: text });
-                } else {
-                    // Если несколько, умный парсер по строкам
-                    const lines = text.split('\n');
-                    let currentSubj = null;
-                    let currentNums = [];
-
-                    for (let line of lines) {
-                        line = line.trim();
-                        if (!line) continue;
-
-                        let matchedSubj = null;
-                        for (let s of todaySubjects) {
-                            const regex = new RegExp('^' + s.name + '[:\\-\\s]*(.*)$', 'i');
-                            const match = line.match(regex);
-                            if (match) {
-                                matchedSubj = s;
-                                line = match[1];
-                                break;
-                            }
-                        }
-
-                        if (matchedSubj) {
-                            if (currentSubj && currentNums.length > 0) {
-                                jobs.push({ subject: currentSubj.name, url: currentSubj.url, type: currentSubj.type, numbers: currentNums.join(' '), raw_text: currentNums.join(' ') });
-                            }
-                            currentSubj = matchedSubj;
-                            currentNums = line ? [line] : [];
-                        } else if (currentSubj) {
-                            currentNums.push(line);
-                        } else {
-                            currentSubj = todaySubjects[0];
-                            currentNums.push(line);
+                    let matchedSubj = null;
+                    for (let s of SUBJECTS) {
+                        const regex = new RegExp('^' + s.name + '[:\\-\\s]*(.*)$', 'i');
+                        const match = line.match(regex);
+                        if (match) {
+                            matchedSubj = s;
+                            line = match[1];
+                            break;
                         }
                     }
-                    if (currentSubj && currentNums.length > 0) {
-                        jobs.push({ subject: currentSubj.name, url: currentSubj.url, type: currentSubj.type, numbers: currentNums.join(' '), raw_text: currentNums.join(' ') });
+
+                    if (matchedSubj) {
+                        if (currentSubj && currentNums.length > 0) {
+                            jobs.push({ subject: currentSubj.name, url: currentSubj.url, type: currentSubj.type, numbers: currentNums.join(' '), raw_text: currentNums.join(' ') });
+                        }
+                        currentSubj = matchedSubj;
+                        currentNums = line ? [line] : [];
+                    } else if (currentSubj) {
+                        currentNums.push(line);
+                    } else {
+                        // Если не нашли предмет в строке, кидаем в первый доступный
+                        if (SUBJECTS.length > 0) {
+                            currentSubj = SUBJECTS[0];
+                            currentNums.push(line);
+                        }
                     }
                 }
+                if (currentSubj && currentNums.length > 0) {
+                    jobs.push({ subject: currentSubj.name, url: currentSubj.url, type: currentSubj.type, numbers: currentNums.join(' '), raw_text: currentNums.join(' ') });
+                }
+
+                if (!jobs.length) return showStatus('⚠️ Не удалось распознать текст', 'error');
+                dailyAllTasksInput.value = ''; // Очистить после парсинга
+
             } else {
-                // ОБЫЧНАЯ ЛОГИКА
+                // Если большое окно пустое, берем данные из полей по предметам
                 const visibleTextareas = document.querySelectorAll('.text-input');
                 visibleTextareas.forEach(el => {
+                    if (el.id === 'dailyAllTasksInput') return; // Пропускаем большое окно
                     const v = el.value.trim();
                     if (!v) return;
                     const id = el.id.replace('subj_', '');
@@ -781,12 +764,14 @@
                 });
             }
 
-            if (!jobs.length) return showStatus('⚠️ Заполни хотя бы одно поле', 'error');
+            if (!jobs.length) return showStatus('⚠️ Введи задания в поля или в большое окно', 'error');
+
             btn.disabled = true;
             result.innerHTML = '';
             let seconds = 0;
             showStatus('⏳ Ищу решения... 0 сек', 'loading');
             const timer = setInterval(() => { seconds++; showStatus(`⏳ Ищу решения... ${seconds} сек`, 'loading'); }, 1000);
+
             try {
                 const resp = await fetch('/api/parse', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({jobs}) });
                 const data = await resp.json();
@@ -794,6 +779,7 @@
                 if (!resp.ok) return showStatus('❌ ' + (data.detail || 'Ошибка'), 'error');
                 if (data.total === 0) return showStatus('🤷 Ничего не найдено', 'error');
                 showStatus(`✅ Обработано ${data.total} заданий`, 'success');
+
                 if (authToken) {
                     for (const j of jobs) {
                         if (!j.numbers) continue;
