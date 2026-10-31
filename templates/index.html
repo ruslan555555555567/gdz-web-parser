@@ -656,9 +656,9 @@
             }
         };
 
-        // НЕВИДИМЫЕ ПРЕДМЕТЫ
+        // НЕВИДИМЫЕ ПРЕДМЕТЫ (ИСПРАВЛЕНО: убрано 'ров')
         const INVISIBLE_SUBJECTS = [
-            { name: 'Разговоры о важном', url: '', type: 'text', keywords: ['разговоры о важном', 'ров'] }
+            { name: 'Разговоры о важном', url: '', type: 'text', keywords: ['разговоры о важном'] }
         ];
 
         function findSubjectInLine(line, subjectsList) {
@@ -757,7 +757,10 @@
                 line = line.trim();
                 if (!line) continue;
 
-                let matchedSubj = findSubjectInLine(line, allowedSubjects) || findSubjectInLine(line, SUBJECTS);
+                // ФИКС: Удаляем списковые номера в начале строки (1Алгебра -> Алгебра)
+                let sanitizedLine = line.replace(/^\s*\d+[.):\-\s]*/, '');
+
+                let matchedSubj = findSubjectInLine(sanitizedLine, allowedSubjects) || findSubjectInLine(sanitizedLine, SUBJECTS);
 
                 if (matchedSubj) {
                     if (currentSubj && currentText.length > 0) {
@@ -770,10 +773,14 @@
                         });
                     }
                     currentSubj = matchedSubj;
-                    let cleanLine = line.replace(new RegExp(matchedSubj.name, 'gi'), '').replace(/^[:\-\s]+/, '').trim();
+
+                    // ФИКС: Тщательно очищаем строку от названия предмета и мусора вроде "Иностранный ()"
+                    let cleanLine = sanitizedLine.replace(new RegExp(matchedSubj.name, 'gi'), '');
+                    cleanLine = cleanLine.replace(/иностранный|язык|[()]/gi, '').replace(/^[:\-\s]+/, '').trim();
+
                     currentText = cleanLine ? [cleanLine] : [];
                 } else if (currentSubj) {
-                    currentText.push(line);
+                    currentText.push(line); // Добавляем оригинальную строку (с номерами), чтобы extractNumbers её распарсил
                 } else {
                     currentText.push(line);
                 }
