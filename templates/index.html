@@ -255,13 +255,20 @@
         </div>
     </div>
 
-    <!-- МОДАЛКА ДНЕВНОГО РЕЖИМА (НОВОЕ) -->
+    <!-- МОДАЛКА ДНЕВНОГО РЕЖИМА (ОДНО ОКНО) -->
     <div id="dailyModal" class="modal hidden">
         <div class="modal-content" style="max-width: 650px;">
             <h3 id="dailyModalTitle">📚 Домашка на сегодня</h3>
-            <div id="dailySubjectsContainer" style="display:flex; flex-direction:column; gap:12px; max-height: 50vh; overflow-y:auto; margin-bottom: 15px;">
-                <!-- Сюда будут рендериться предметы на сегодня -->
+
+            <div id="dailySubjectsHint" style="margin-bottom: 10px; font-size: 14px; color: #4a5568;"></div>
+
+            <div style="display:flex; flex-direction:column; gap:12px; margin-bottom: 15px;">
+                <textarea id="dailyAllTasksInput" class="text-input" rows="8" placeholder="Вставь задания целиком. Например:
+Алгебра: 447, 449
+Геометрия: 123
+Русский язык: упражнение 45" style="resize: vertical; font-family: inherit; font-size: 15px; width: 100%; padding: 12px;"></textarea>
             </div>
+
             <div class="modal-actions" style="justify-content: space-between;">
                 <button type="button" id="closeDailyBtn" class="btn-secondary">Закрыть</button>
                 <button type="button" id="dailySearchBtn" class="btn-primary" style="width:auto;">🔍 Найти решения</button>
@@ -410,9 +417,10 @@
         const topbarRight = $('topbarRight');
         const scheduleModal = $('scheduleModal');
         const dailyModal = $('dailyModal');
-        const dailySubjectsContainer = $('dailySubjectsContainer');
-        const dailyResult = $('dailyResult');
         const dailyModalTitle = $('dailyModalTitle');
+        const dailySubjectsHint = $('dailySubjectsHint');
+        const dailyAllTasksInput = $('dailyAllTasksInput');
+        const dailyResult = $('dailyResult');
 
         function getDeviceInfo() {
             const ua = navigator.userAgent;
@@ -685,38 +693,28 @@
         function openDailyModal() {
             dailyModal.classList.remove('hidden');
             dailyResult.innerHTML = '';
-            renderDailySubjects();
+            dailyAllTasksInput.value = ''; // очищаем поле
+
             const today = new Date();
             const options = { weekday: 'long', day: 'numeric', month: 'long' };
             const dateStr = today.toLocaleDateString('ru-RU', options);
             dailyModalTitle.textContent = `📚 Домашка на ${dateStr}`;
-        }
 
-        function renderDailySubjects() {
-            dailySubjectsContainer.innerHTML = '';
-            let today = new Date().getDay();
-            if (today === 0) today = 7;
-            const todaySubjectIds = SCHEDULE[today.toString()] || [];
+            let tDay = today.getDay();
+            if (tDay === 0) tDay = 7;
+            const todaySubjectIds = SCHEDULE[tDay.toString()] || [];
             const todaySubjects = SUBJECTS.filter(s => todaySubjectIds.includes(s.id));
 
             if (todaySubjects.length === 0) {
-                dailySubjectsContainer.innerHTML = `<p class="empty" style="padding: 20px; background: rgba(237, 137, 54, 0.1); border-radius: 8px; border: 1px solid #ed8936;">
-                    На сегодня нет предметов в расписании. Настрой расписание или отключи "Дневной режим".
-                </p>`;
+                dailySubjectsHint.innerHTML = '<span style="color:#e53e3e;">На сегодня нет предметов. Настрой расписание.</span>';
+                dailyAllTasksInput.disabled = true;
                 $('dailySearchBtn').disabled = true;
-                return;
+            } else {
+                const names = todaySubjects.map(s => `<b>${s.name}</b>`).join(', ');
+                dailySubjectsHint.innerHTML = `Сегодня у тебя: ${names}. Напиши задания с названиями предметов, и я всё пойму.`;
+                dailyAllTasksInput.disabled = false;
+                $('dailySearchBtn').disabled = false;
             }
-            $('dailySearchBtn').disabled = false;
-
-            todaySubjects.forEach(s => {
-                const row = document.createElement('div');
-                row.className = 'input-row';
-                row.innerHTML = `
-                    <label class="input-label">${escapeHtml(s.name)}</label>
-                    <textarea class="text-input daily-input" id="daily_subj_${s.id}" rows="2" placeholder="${s.type === 'text' ? 'Вставь текст задания...' : '447, 449, 451 — или текст задания'}"></textarea>
-                `;
-                dailySubjectsContainer.appendChild(row);
-            });
         }
 
         $('dailyModeToggle').onchange = (e) => {
@@ -732,21 +730,72 @@
             $('dailyModeToggle').checked = false;
         };
 
-        // Парсинг из модалки
+        // УМНЫЙ ПАРСИНГ ТЕКСТА ИЗ ОДНОГО ПОЛЯ
         $('dailySearchBtn').onclick = async () => {
-            const jobs = [];
-            const textareas = dailySubjectsContainer.querySelectorAll('.daily-input');
-            textareas.forEach(el => {
-                const v = el.value.trim();
-                if (!v) return;
-                const id = el.id.replace('daily_subj_', '');
-                const subject = SUBJECTS.find(s => s.id == id);
-                if (subject) {
-                    jobs.push({ subject: subject.name, url: subject.url || '', type: subject.type || 'numbers', numbers: v, raw_text: v });
-                }
-            });
+            const text = dailyAllTasksInput.value.trim();
+            if (!text) return alert('⚠️ Вставь задания в поле');
 
-            if (!jobs.length) return alert('⚠️ Заполни хотя бы одно поле');
+            let tDay = new Date().getDay();
+            if (tDay === 0) tDay = 7;
+            const todaySubjectIds = SCHEDULE[tDay.toString()] || [];
+            const todaySubjects = SUBJECTS.filter(s => todaySubjectIds.includes(s.id));
+
+            const jobs = [];
+            const lines = text.split('\n');
+            let currentSubj = null;
+            let currentNumbers = [];
+
+            // Если сегодня только один предмет, кидаем весь текст туда
+            if (todaySubjects.length === 1) {
+                jobs.push({
+                    subject: todaySubjects[0].name,
+                    url: todaySubjects[0].url || '',
+                    type: todaySubjects[0].type || 'numbers',
+                    numbers: text,
+                    raw_text: text
+                });
+            } else {
+                // Если предметов несколько — ищем их названия в тексте
+                for (let line of lines) {
+                    line = line.trim();
+                    if (!line) continue;
+
+                    let matchedSubj = null;
+                    for (let s of todaySubjects) {
+                        // Проверяем, начинается ли строка с названия предмета
+                        if (line.toLowerCase().startsWith(s.name.toLowerCase())) {
+                            matchedSubj = s;
+                            break;
+                        }
+                    }
+
+                    if (matchedSubj) {
+                        // Если был предыдущий предмет, сохраняем его
+                        if (currentSubj && currentNumbers.length > 0) {
+                            jobs.push({ subject: currentSubj.name, url: currentSubj.url, type: currentSubj.type, numbers: currentNumbers.join(' '), raw_text: currentNumbers.join(' ') });
+                        }
+                        currentSubj = matchedSubj;
+                        // Отрезаем название предмета от строки
+                        let rest = line.substring(matchedSubj.name.length).replace(/^[:\-\s]+/, '');
+                        currentNumbers = rest ? [rest] : [];
+                    } else if (currentSubj) {
+                        // Если не нашли новое название, добавляем к текущему
+                        currentNumbers.push(line);
+                    } else {
+                        // Если совсем не поняли, к чему это, кидаем в первый предмет
+                        if (todaySubjects.length > 0) {
+                            currentSubj = todaySubjects[0];
+                            currentNumbers.push(line);
+                        }
+                    }
+                }
+                // Сохраняем последний
+                if (currentSubj && currentNumbers.length > 0) {
+                    jobs.push({ subject: currentSubj.name, url: currentSubj.url, type: currentSubj.type, numbers: currentNumbers.join(' '), raw_text: currentNumbers.join(' ') });
+                }
+            }
+
+            if (!jobs.length) return alert('⚠️ Не удалось распознать задания. Убедись, что пишешь названия предметов (например: "Алгебра: 123").');
 
             const searchBtn = $('dailySearchBtn');
             searchBtn.disabled = true;
@@ -758,7 +807,6 @@
                 if (!resp.ok) throw new Error(data.detail || 'Ошибка');
                 if (data.total === 0) { dailyResult.innerHTML = '<div class="status error">🤷 Ничего не найдено</div>'; return; }
 
-                // Сохраняем в историю
                 if (authToken) {
                     for (const j of jobs) {
                         if (!j.numbers) continue;
