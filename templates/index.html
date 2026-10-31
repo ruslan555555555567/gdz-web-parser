@@ -656,7 +656,7 @@
             }
         };
 
-        // НЕВИДИМЫЕ ПРЕДМЕТЫ (ИСПРАВЛЕНО: убрано 'ров')
+        // НЕВИДИМЫЕ ПРЕДМЕТЫ
         const INVISIBLE_SUBJECTS = [
             { name: 'Разговоры о важном', url: '', type: 'text', keywords: ['разговоры о важном'] }
         ];
@@ -757,8 +757,9 @@
                 line = line.trim();
                 if (!line) continue;
 
-                // ФИКС: Удаляем списковые номера в начале строки (1Алгебра -> Алгебра)
-                let sanitizedLine = line.replace(/^\s*\d+[.):\-\s]*/, '');
+                // ФИКС: Убираем не только цифры, но и буквы классов в начале строки (1., 7б, 7а)
+                let sanitizedLine = line.replace(/^\s*\d+[а-яa-z]?[.):\-\s]*/i, '').trim();
+                if (!sanitizedLine) continue;
 
                 let matchedSubj = findSubjectInLine(sanitizedLine, allowedSubjects) || findSubjectInLine(sanitizedLine, SUBJECTS);
 
@@ -769,18 +770,22 @@
                             url: currentSubj.url,
                             type: currentSubj.type,
                             numbers: currentSubj.name === 'Разговоры о важном' ? '' : extractNumbers(currentText.join(' ')),
-                            raw_text: currentText.join('\n')
+                            // ДОБАВЛЯЕМ НАЗВАНИЕ ПРЕДМЕТА В ТЕКСТ
+                            raw_text: currentSubj.name + ': ' + currentText.join('\n').trim()
                         });
                     }
                     currentSubj = matchedSubj;
 
-                    // ФИКС: Тщательно очищаем строку от названия предмета и мусора вроде "Иностранный ()"
+                    // Очищаем строку от названия предмета
                     let cleanLine = sanitizedLine.replace(new RegExp(matchedSubj.name, 'gi'), '');
                     cleanLine = cleanLine.replace(/иностранный|язык|[()]/gi, '').replace(/^[:\-\s]+/, '').trim();
 
+                    // Убираем даты из текста
+                    cleanLine = cleanLine.replace(/на\s*\d{1,2}[./]\d{1,2}\s*(\([А-Яа-я]+\))?:?/gi, '').trim();
+
                     currentText = cleanLine ? [cleanLine] : [];
                 } else if (currentSubj) {
-                    currentText.push(line); // Добавляем оригинальную строку (с номерами), чтобы extractNumbers её распарсил
+                    currentText.push(line);
                 } else {
                     currentText.push(line);
                 }
@@ -791,17 +796,18 @@
                     url: currentSubj.url,
                     type: currentSubj.type,
                     numbers: currentSubj.name === 'Разговоры о важном' ? '' : extractNumbers(currentText.join(' ')),
-                    raw_text: currentText.join('\n')
+                    raw_text: currentSubj.name + ': ' + currentText.join('\n').trim()
                 });
             }
 
             if (jobs.length === 0 && currentText.length > 0) {
                 const nums = extractNumbers(currentText.join(' '));
                 const fallbackSubj = allowedSubjects[0];
+                let rawTxt = fallbackSubj.name + ': ' + currentText.join('\n').trim();
                 if (nums) {
-                    jobs.push({ subject: fallbackSubj.name, url: fallbackSubj.url, type: fallbackSubj.type, numbers: nums, raw_text: currentText.join('\n') });
+                    jobs.push({ subject: fallbackSubj.name, url: fallbackSubj.url, type: fallbackSubj.type, numbers: nums, raw_text: rawTxt });
                 } else {
-                    jobs.push({ subject: fallbackSubj.name, url: fallbackSubj.url, type: 'text', numbers: "", raw_text: currentText.join('\n') });
+                    jobs.push({ subject: fallbackSubj.name, url: fallbackSubj.url, type: 'text', numbers: "", raw_text: rawTxt });
                 }
             }
 
