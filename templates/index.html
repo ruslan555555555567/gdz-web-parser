@@ -157,7 +157,7 @@
         <footer class="footer"><span>GDZ Парсер · v{{ version }}</span></footer>
     </div>
 
-    <!-- ИСТОРИЯ -->
+    <!-- Модалки -->
     <div id="historyModal" class="modal hidden">
         <div class="modal-content">
             <h3>📜 История поисков</h3>
@@ -169,7 +169,6 @@
         </div>
     </div>
 
-    <!-- НАСТРОЙКИ АККАУНТА -->
     <div id="settingsModal" class="modal hidden">
         <div class="modal-content">
             <h3>⚙️ Настройки аккаунта</h3>
@@ -544,7 +543,6 @@
             }
 
             // --- СТАНДАРТНАЯ ЛОГИКА ДЛЯ ОСТАЛЬНЫХ ПРЕДМЕТОВ ---
-            // Убираем года (2023, 2024), чтобы не путать с номерами
             clean = clean.replace(/\b(19|20)\d{2}\s*(год|г\.)?\b/gi, '');
 
             clean = clean.replace(/\([^)]*\)/g, '');
@@ -596,7 +594,6 @@
                 if (subject) {
                     let subjUrls = (subject.url || "").split(',').map(u => u.trim()).filter(u => u);
                     let currentUrl = subjUrls[0] || "";
-                    // Если это верхнее поле, просто шлем текст
                     jobs.push({ subject: subject.name, url: currentUrl, type: subject.type || 'numbers', numbers: extractNumbers(v, subject.name), raw_text: v });
                 }
             });
@@ -708,12 +705,23 @@
             const timer = setInterval(() => { seconds++; showStatus(`⏳ Обрабатываю... ${seconds} сек`, 'loading'); }, 1000);
 
             try {
-                const resp = await fetch('/api/parse', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({jobs}) });
-                const data = await resp.json();
+                // ОТПРАВЛЯЕМ КАЖДУЮ ЗАДАЧУ ОТДЕЛЬНО, ЧТОБЫ СЕРВЕР НЕ ПЕРЕЗАПИСЫВАЛ КАРТИНКИ
+                let allResults = [];
+                for (const job of jobs) {
+                    const resp = await fetch('/api/parse', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({jobs: [job]}) // шлем по одному
+                    });
+                    const data = await resp.json();
+                    if (data.results && data.results.length > 0) {
+                        allResults.push(...data.results);
+                    }
+                }
+
                 clearInterval(timer);
-                if (!resp.ok) return showStatus('❌ ' + (data.detail || 'Ошибка'), 'error');
-                if (data.total === 0) return showStatus('🤷 Ничего не найдено', 'error');
-                showStatus(`✅ Обработано ${data.total} заданий`, 'success');
+                if (allResults.length === 0) return showStatus('🤷 Ничего не найдено', 'error');
+                showStatus(`✅ Обработано заданий: ${allResults.length}`, 'success');
 
                 if (authToken) {
                     for (const j of jobs) {
@@ -726,7 +734,7 @@
                 let textResults = [];
                 let seenTexts = new Set();
 
-                data.results.forEach(r => {
+                allResults.forEach(r => {
                     let isText = r.is_text || !r.found;
                     const subjObj = SUBJECTS.find(s => s.name === r.subject);
                     if (subjObj && subjObj.type === 'text') isText = true;
