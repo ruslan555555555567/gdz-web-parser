@@ -157,7 +157,7 @@
         <footer class="footer"><span>GDZ Парсер · v{{ version }}</span></footer>
     </div>
 
-    <!-- Модалки -->
+    <!-- ИСТОРИЯ -->
     <div id="historyModal" class="modal hidden">
         <div class="modal-content">
             <h3>📜 История поисков</h3>
@@ -169,6 +169,7 @@
         </div>
     </div>
 
+    <!-- НАСТРОЙКИ АККАУНТА -->
     <div id="settingsModal" class="modal hidden">
         <div class="modal-content">
             <h3>⚙️ Настройки аккаунта</h3>
@@ -522,12 +523,10 @@
             return null;
         }
 
-        // ИСПРАВЛЕННАЯ ФУНКЦИЯ ИЗВЛЕЧЕНИЯ НОМЕРОВ
         function extractNumbers(str, subjectName) {
             let clean = str;
             const isPageBased = /английск|географ/i.test(subjectName);
 
-            // Для английского и географии ищем ТОЛЬКО страницы (слово "стр." или "страница")
             if (isPageBased) {
                 let pageMatches = [];
                 const pageRegex = /(?:стр\.?|страниц[ыа]?)\s*(\d+)/gi;
@@ -538,13 +537,10 @@
                 if (pageMatches.length > 0) {
                     return [...new Set(pageMatches)].join(', ');
                 }
-                // Если страниц нет, возвращаем пустоту (номера упражнений игнорируются)
                 return "";
             }
 
-            // --- СТАНДАРТНАЯ ЛОГИКА ДЛЯ ОСТАЛЬНЫХ ПРЕДМЕТОВ ---
             clean = clean.replace(/\b(19|20)\d{2}\s*(год|г\.)?\b/gi, '');
-
             clean = clean.replace(/\([^)]*\)/g, '');
             clean = clean.replace(/(?:https?:\/\/|www\.)\S+/gi, '');
             clean = clean.replace(/\b\d{1,2}[./]\d{1,2}([./]\d{2,4})?\b/g, '');
@@ -592,9 +588,7 @@
                 const id = el.id.replace('subj_', '');
                 const subject = SUBJECTS.find(s => s.id == id);
                 if (subject) {
-                    let subjUrls = (subject.url || "").split(',').map(u => u.trim()).filter(u => u);
-                    let currentUrl = subjUrls[0] || "";
-                    jobs.push({ subject: subject.name, url: currentUrl, type: subject.type || 'numbers', numbers: extractNumbers(v, subject.name), raw_text: v });
+                    jobs.push({ subject: subject.name, url: subject.url || '', type: subject.type || 'numbers', numbers: extractNumbers(v, subject.name), raw_text: v });
                 }
             });
 
@@ -618,32 +612,13 @@
 
                     if (matchedSubj) {
                         if (currentSubj && currentText.length > 0) {
-                            let subjUrls = (currentSubj.url || "").split(',').map(u => u.trim()).filter(u => u);
-                            let currentUrl = subjUrls[0] || "";
-
-                            let blockText = currentText.join(' ').toLowerCase();
-                            if (subjUrls.length > 1) {
-                                if (blockText.includes('из учебника')) {
-                                    currentUrl = subjUrls[0];
-                                } else if (blockText.includes('тетрад') || blockText.includes('рабоч')) {
-                                    if (!blockText.includes('обычной тетради')) {
-                                        currentUrl = subjUrls[1];
-                                    }
-                                }
-                            }
-
-                            let numsStr = currentSubj.type === 'numbers' ? extractNumbers(currentText.join(' '), currentSubj.name) : '';
-                            let numsArray = numsStr ? numsStr.split(',').map(n => n.trim()).filter(n => n) : [''];
-
-                            for (let n of numsArray) {
-                                jobs.push({
-                                    subject: currentSubj.name,
-                                    url: currentUrl,
-                                    type: currentSubj.type,
-                                    numbers: n,
-                                    raw_text: currentText.join('\n').trim()
-                                });
-                            }
+                            jobs.push({
+                                subject: currentSubj.name,
+                                url: currentSubj.url,
+                                type: currentSubj.type,
+                                numbers: currentSubj.type === 'numbers' ? extractNumbers(currentText.join(' '), currentSubj.name) : '',
+                                raw_text: currentText.join('\n').trim()
+                            });
                         }
                         currentSubj = matchedSubj;
 
@@ -662,34 +637,14 @@
                         currentText.push(line);
                     }
                 }
-
                 if (currentSubj && currentText.length > 0) {
-                    let subjUrls = (currentSubj.url || "").split(',').map(u => u.trim()).filter(u => u);
-                    let currentUrl = subjUrls[0] || "";
-
-                    let blockText = currentText.join(' ').toLowerCase();
-                    if (subjUrls.length > 1) {
-                        if (blockText.includes('из учебника')) {
-                            currentUrl = subjUrls[0];
-                        } else if (blockText.includes('тетрад') || blockText.includes('рабоч')) {
-                            if (!blockText.includes('обычной тетради')) {
-                                currentUrl = subjUrls[1];
-                            }
-                        }
-                    }
-
-                    let numsStr = currentSubj.type === 'numbers' ? extractNumbers(currentText.join(' '), currentSubj.name) : '';
-                    let numsArray = numsStr ? numsStr.split(',').map(n => n.trim()).filter(n => n) : [''];
-
-                    for (let n of numsArray) {
-                        jobs.push({
-                            subject: currentSubj.name,
-                            url: currentUrl,
-                            type: currentSubj.type,
-                            numbers: n,
-                            raw_text: currentText.join('\n').trim()
-                        });
-                    }
+                    jobs.push({
+                        subject: currentSubj.name,
+                        url: currentSubj.url,
+                        type: currentSubj.type,
+                        numbers: currentSubj.type === 'numbers' ? extractNumbers(currentText.join(' '), currentSubj.name) : '',
+                        raw_text: currentText.join('\n').trim()
+                    });
                 }
                 if (currentText.length > 0 && jobs.length === 0) {
                     jobs.push({ subject: "Текстовые задания", url: "", type: "text", numbers: "", raw_text: currentText.join('\n') });
@@ -705,23 +660,12 @@
             const timer = setInterval(() => { seconds++; showStatus(`⏳ Обрабатываю... ${seconds} сек`, 'loading'); }, 1000);
 
             try {
-                // ОТПРАВЛЯЕМ КАЖДУЮ ЗАДАЧУ ОТДЕЛЬНО, ЧТОБЫ СЕРВЕР НЕ ПЕРЕЗАПИСЫВАЛ КАРТИНКИ
-                let allResults = [];
-                for (const job of jobs) {
-                    const resp = await fetch('/api/parse', {
-                        method: 'POST',
-                        headers: {'Content-Type': 'application/json'},
-                        body: JSON.stringify({jobs: [job]}) // шлем по одному
-                    });
-                    const data = await resp.json();
-                    if (data.results && data.results.length > 0) {
-                        allResults.push(...data.results);
-                    }
-                }
-
+                const resp = await fetch('/api/parse', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({jobs}) });
+                const data = await resp.json();
                 clearInterval(timer);
-                if (allResults.length === 0) return showStatus('🤷 Ничего не найдено', 'error');
-                showStatus(`✅ Обработано заданий: ${allResults.length}`, 'success');
+                if (!resp.ok) return showStatus('❌ ' + (data.detail || 'Ошибка'), 'error');
+                if (data.total === 0) return showStatus('🤷 Ничего не найдено', 'error');
+                showStatus(`✅ Обработано ${data.total} заданий`, 'success');
 
                 if (authToken) {
                     for (const j of jobs) {
@@ -734,10 +678,11 @@
                 let textResults = [];
                 let seenTexts = new Set();
 
-                allResults.forEach(r => {
+                data.results.forEach(r => {
                     let isText = r.is_text || !r.found;
                     const subjObj = SUBJECTS.find(s => s.name === r.subject);
-                    if (subjObj && subjObj.type === 'text') isText = true;
+
+                    if (subjObj && subjObj.type === 'numbers') isText = false;
                     if (r.subject === "Текстовые задания") isText = true;
 
                     if (isText) {
@@ -760,51 +705,56 @@
                     items.forEach(r => {
                         const card = document.createElement('div');
                         card.className = 'task-card';
-                        card.innerHTML = `<div class="task-header"><h3>№${r.number}</h3></div>`;
-                        r.images.forEach((u, index) => {
-                            const wrapper = document.createElement('div');
-                            wrapper.style.cssText = 'display: flex; flex-direction: column; gap: 8px; margin-bottom: 15px;';
-                            const img = document.createElement('img');
-                            img.className = 'solution-img img-loading';
-                            img.style.marginTop = '0';
-                            img.alt = 'Загрузка...';
-                            loadImage(img, u);
-                            const controls = document.createElement('div');
-                            controls.style.cssText = 'display: flex; gap: 10px; justify-content: flex-end;';
-                            const refreshBtn = document.createElement('button');
-                            refreshBtn.innerHTML = '🔄 Обновить';
-                            refreshBtn.title = 'Обновить картинку';
-                            refreshBtn.style.cssText = 'padding: 8px 16px; display: flex; align-items: center; gap: 6px; background: rgba(150, 150, 150, 0.15); color: inherit; border: 1px solid rgba(150, 150, 150, 0.3); border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s;';
-                            refreshBtn.onmouseenter = () => refreshBtn.style.background = 'rgba(150, 150, 150, 0.25)';
-                            refreshBtn.onmouseleave = () => refreshBtn.style.background = 'rgba(150, 150, 150, 0.15)';
-                            refreshBtn.onclick = (e) => {
-                                e.stopPropagation();
-                                img.classList.remove('img-tall', 'img-retrying');
-                                img.classList.add('img-loading');
-                                img.src = '';
+
+                        if (!r.found) {
+                            card.innerHTML = `<div class="task-header"><h3>№${r.number}</h3></div><div class="img-error">⚠️ Решение не найдено на gdz.ru</div>`;
+                        } else {
+                            card.innerHTML = `<div class="task-header"><h3>№${r.number}</h3></div>`;
+                            r.images.forEach((u, index) => {
+                                const wrapper = document.createElement('div');
+                                wrapper.style.cssText = 'display: flex; flex-direction: column; gap: 8px; margin-bottom: 15px;';
+                                const img = document.createElement('img');
+                                img.className = 'solution-img img-loading';
+                                img.style.marginTop = '0';
+                                img.alt = 'Загрузка...';
                                 loadImage(img, u);
-                            };
-                            const dlBtn = document.createElement('button');
-                            dlBtn.innerHTML = '⬇️ Скачать';
-                            dlBtn.title = 'Скачать решение';
-                            dlBtn.style.cssText = 'padding: 8px 16px; display: flex; align-items: center; gap: 6px; background: #4299e1; color: #ffffff; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s; box-shadow: 0 2px 5px rgba(66, 153, 225, 0.3);';
-                            dlBtn.onmouseenter = () => dlBtn.style.background = '#3182ce';
-                            dlBtn.onmouseleave = () => dlBtn.style.background = '#4299e1';
-                            dlBtn.onclick = (e) => {
-                                e.stopPropagation();
-                                if (img.src && img.src.includes('/api/image')) {
-                                    const filename = `GDZ_${r.subject || 'Предмет'}_№${r.number || index + 1}.jpg`.replace(/\s+/g, '_');
-                                    downloadSingleImage(img.src, filename);
-                                } else {
-                                    alert('Картинка еще не загрузилась, подождите...');
-                                }
-                            };
-                            controls.appendChild(refreshBtn);
-                            controls.appendChild(dlBtn);
-                            wrapper.appendChild(img);
-                            wrapper.appendChild(controls);
-                            card.appendChild(wrapper);
-                        });
+                                const controls = document.createElement('div');
+                                controls.style.cssText = 'display: flex; gap: 10px; justify-content: flex-end;';
+                                const refreshBtn = document.createElement('button');
+                                refreshBtn.innerHTML = '🔄 Обновить';
+                                refreshBtn.title = 'Обновить картинку';
+                                refreshBtn.style.cssText = 'padding: 8px 16px; display: flex; align-items: center; gap: 6px; background: rgba(150, 150, 150, 0.15); color: inherit; border: 1px solid rgba(150, 150, 150, 0.3); border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s;';
+                                refreshBtn.onmouseenter = () => refreshBtn.style.background = 'rgba(150, 150, 150, 0.25)';
+                                refreshBtn.onmouseleave = () => refreshBtn.style.background = 'rgba(150, 150, 150, 0.15)';
+                                refreshBtn.onclick = (e) => {
+                                    e.stopPropagation();
+                                    img.classList.remove('img-tall', 'img-retrying');
+                                    img.classList.add('img-loading');
+                                    img.src = '';
+                                    loadImage(img, u);
+                                };
+                                const dlBtn = document.createElement('button');
+                                dlBtn.innerHTML = '⬇️ Скачать';
+                                dlBtn.title = 'Скачать решение';
+                                dlBtn.style.cssText = 'padding: 8px 16px; display: flex; align-items: center; gap: 6px; background: #4299e1; color: #ffffff; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s; box-shadow: 0 2px 5px rgba(66, 153, 225, 0.3);';
+                                dlBtn.onmouseenter = () => dlBtn.style.background = '#3182ce';
+                                dlBtn.onmouseleave = () => dlBtn.style.background = '#4299e1';
+                                dlBtn.onclick = (e) => {
+                                    e.stopPropagation();
+                                    if (img.src && img.src.includes('/api/image')) {
+                                        const filename = `GDZ_${r.subject || 'Предмет'}_№${r.number || index + 1}.jpg`.replace(/\s+/g, '_');
+                                        downloadSingleImage(img.src, filename);
+                                    } else {
+                                        alert('Картинка еще не загрузилась, подождите...');
+                                    }
+                                };
+                                controls.appendChild(refreshBtn);
+                                controls.appendChild(dlBtn);
+                                wrapper.appendChild(img);
+                                wrapper.appendChild(controls);
+                                card.appendChild(wrapper);
+                            });
+                        }
                         sec.appendChild(card);
                     });
                     result.appendChild(sec);
@@ -851,7 +801,6 @@
         function showStatus(text, type) { status.textContent = text; status.className = 'status ' + type; }
         function escapeHtml(t) { const d = document.createElement('div'); d.textContent = t || ''; return d.innerHTML; }
 
-        // Остальные функции
         function renderTopbar() {
             topbarRight.innerHTML = '';
             const name = authUser.name || authUser.email.split('@')[0];

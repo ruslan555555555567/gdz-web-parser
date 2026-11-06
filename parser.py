@@ -2,6 +2,7 @@ import re
 from curl_cffi import requests
 from bs4 import BeautifulSoup
 from urllib.parse import urljoin
+import asyncio
 
 HEADERS = {
     "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
@@ -9,11 +10,8 @@ HEADERS = {
     "Referer": "https://gdz.ru/",
 }
 
-
 def extract_numbers(text: str) -> list[str]:
-    """Вытаскивает номера заданий, отсекая параграфы, даты, страницы."""
-    if not text:
-        return []
+    if not text: return []
     text = re.sub(r'(?:\bп\.|\bпункт|\b§|\bпараграф)\s*\d+', ' ', text, flags=re.IGNORECASE)
     text = re.sub(r'\b\d{1,2}[./-]\d{1,2}([./-]\d{2,4})?', ' ', text)
     text = re.sub(r'\b(19|20)\d{2}\b', ' ', text)
@@ -28,16 +26,12 @@ def extract_numbers(text: str) -> list[str]:
             result.append(n)
     return result
 
-
 def _get_images(url: str) -> list[str]:
-    """Возвращает картинку с самым свежим годом издания."""
     try:
         r = requests.get(url, headers=HEADERS, impersonate="chrome", timeout=20)
-        if r.status_code != 200:
-            return []
+        if r.status_code != 200: return []
         html = r.text
-    except Exception:
-        return []
+    except Exception: return []
 
     soup = BeautifulSoup(html, "lxml")
     candidates = []
@@ -45,18 +39,15 @@ def _get_images(url: str) -> list[str]:
 
     for img in soup.find_all("img"):
         src = img.get("src")
-        if not src or "/attachments/images/tasks/" not in src:
-            continue
+        if not src or "/attachments/images/tasks/" not in src: continue
         full = urljoin(url, src)
-        if full in seen:
-            continue
+        if full in seen: continue
         seen.add(full)
 
         year = None
         parent = img.find_parent()
         for _ in range(4):
-            if parent is None:
-                break
+            if parent is None: break
             text = parent.get_text(" ", strip=True)
             years = re.findall(r'\b(20\d{2})\b', text)
             if years:
@@ -72,21 +63,11 @@ def _get_images(url: str) -> list[str]:
 
         candidates.append((year or 0, full))
 
-    if not candidates:
-        return []
+    if not candidates: return []
     candidates.sort(key=lambda x: x[0])
     return [candidates[-1][1]]
 
-
 async def parse_tasks(jobs: list[dict]) -> list[dict]:
-    """
-    jobs = [
-        {"subject": "Алгебра", "url": "...", "numbers": "447,449",
-         "raw_text": "...", "type": "numbers"},
-    ]
-    """
-    import asyncio
-
     results = []
     for job in jobs:
         subject = job["subject"]
@@ -94,38 +75,18 @@ async def parse_tasks(jobs: list[dict]) -> list[dict]:
         raw_text = job.get("raw_text", "").strip()
         s_type = job.get("type", "numbers")
 
-        # Текстовые предметы — сразу показываем текст
         if s_type == "text" or not base:
-            results.append({
-                "subject": subject,
-                "number": None,
-                "url": None,
-                "images": [],
-                "found": False,
-                "raw_text": raw_text,
-                "is_text": True,
-            })
+            results.append({"subject": subject, "number": None, "url": None, "images": [], "found": False, "raw_text": raw_text, "is_text": True})
             continue
 
-        if not base.endswith("/"):
-            base += "/"
+        if not base.endswith("/"): base += "/"
 
         numbers = extract_numbers(job.get("numbers", ""))
 
-        # Нет номеров, но есть текст
         if not numbers:
-            results.append({
-                "subject": subject,
-                "number": None,
-                "url": None,
-                "images": [],
-                "found": False,
-                "raw_text": raw_text,
-                "is_text": True,
-            })
+            results.append({"subject": subject, "number": None, "url": None, "images": [], "found": False, "raw_text": raw_text, "is_text": True})
             continue
 
-        # Ищем каждый номер
         for num in numbers:
             candidates = [
                 urljoin(base, f"{num}-task/"),
@@ -144,14 +105,6 @@ async def parse_tasks(jobs: list[dict]) -> list[dict]:
                     used = url
                     break
 
-            results.append({
-                "subject": subject,
-                "number": num,
-                "url": used,
-                "images": images,
-                "found": len(images) > 0,
-                "raw_text": raw_text,
-                "is_text": False,
-            })
+            results.append({"subject": subject, "number": num, "url": used, "images": images, "found": len(images) > 0, "raw_text": raw_text, "is_text": False})
 
     return results
