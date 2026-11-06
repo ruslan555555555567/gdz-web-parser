@@ -148,7 +148,6 @@
         }
         .theme-dark .text-box { background: rgba(66, 153, 225, 0.1); border-color: #2b6cb0; }
 
-        /* Новые стили для красивых текстовых карточек */
         .text-subject-block {
             background: linear-gradient(135deg, rgba(255,255,255,0.9), rgba(247,250,252,0.9));
             border-left: 4px solid #4299e1;
@@ -163,27 +162,10 @@
             border-left-color: #63b3ed;
             box-shadow: 0 4px 12px rgba(0,0,0,0.3);
         }
-        .text-subject-block:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 16px rgba(0,0,0,0.1);
-        }
-        .text-subject-block h3 {
-            color: #2b6cb0;
-            margin-bottom: 12px;
-            font-size: 18px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
+        .text-subject-block:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(0,0,0,0.1); }
+        .text-subject-block h3 { color: #2b6cb0; margin-bottom: 12px; font-size: 18px; display: flex; align-items: center; gap: 8px; }
         .theme-dark .text-subject-block h3 { color: #90cdf4; }
-        .text-subject-block .task-text {
-            background: transparent;
-            border: none;
-            padding: 0;
-            font-size: 15px;
-            line-height: 1.6;
-            color: #4a5568;
-        }
+        .text-subject-block .task-text { background: transparent; border: none; padding: 0; font-size: 15px; line-height: 1.6; color: #4a5568; }
         .theme-dark .text-subject-block .task-text { color: #cbd5e0; }
     </style>
     <link rel="stylesheet" href="/static/style.css">
@@ -247,7 +229,7 @@
                 </div>
                 <textarea id="allTextTasks" class="text-input" rows="6" placeholder="Например:
 Алгебра: № 237, 268
-Музыка: сделать доклад" style="resize: vertical; font-family: inherit; font-size: 15px; width: 100%; padding: 12px;"></textarea>
+Английский (Рабочая тетрадь): стр. 19" style="resize: vertical; font-family: inherit; font-size: 15px; width: 100%; padding: 12px;"></textarea>
             </div>
 
             <div style="display: flex; gap: 10px; margin-top: 20px;">
@@ -631,22 +613,45 @@
             return null;
         }
 
-        function extractNumbers(str) {
+        // УМНАЯ ФУНКЦИЯ ИЗВЛЕЧЕНИЯ НОМЕРОВ (ИЩЕТ СТРАНИЦЫ ДЛЯ АНГЛ И ГЕОГРАФИИ)
+        function extractNumbers(str, subjectName) {
             let clean = str;
+
+            // Проверяем, нужно ли искать страницы (только для англ и географии)
+            const isTargetSubject = /английск|географ/i.test(subjectName);
+            const hasPageKeyword = /стр\.?|страниц/i.test(clean);
+
+            if (isTargetSubject && hasPageKeyword) {
+                let pageMatches = [];
+                // Ищем числа после "стр.", "стр", "страница"
+                const pageRegex = /(?:стр\.?|страниц[ыа]?)\s*(\d+)/gi;
+                let match;
+                while ((match = pageRegex.exec(clean)) !== null) {
+                    pageMatches.push(match[1]);
+                }
+                if (pageMatches.length > 0) {
+                    return [...new Set(pageMatches)].join(', ');
+                }
+            }
+
+            // --- СТАНДАРТНАЯ ЛОГИКА ДЛЯ ВСЕХ ОСТАЛЬНЫХ СЛУЧАЕВ ---
             clean = clean.replace(/\([^)]*\)/g, '');
             clean = clean.replace(/(?:https?:\/\/|www\.)\S+/gi, '');
             clean = clean.replace(/\b\d{1,2}[./]\d{1,2}([./]\d{2,4})?\b/g, '');
             clean = clean.replace(/\b\d{1,2}\s+(января|февраля|марта|апреля|мая|июня|июля|августа|сентября|октября|ноября|декабря)\b/gi, '');
             clean = clean.replace(/(?:п\.|пункт|параграф|пар\.)\s*\d+/gi, '');
             clean = clean.replace(/\b([5-9]|1[0-1])\s*(класс|кл)\b/gi, '');
+
+            // Убираем страницы, если это не целевой предмет или мы их не нашли
             clean = clean.replace(/(?:страниц[ыа]?|стр\.?)\s*\d+(?:\s*,\s*\d+)*/gi, '');
+
             clean = clean.replace(/^\s*\d+[.):,\-]?\s+/g, '');
 
             let matches = [];
-            const specificRegex = /(?:№|номер|упражнение|задание|задача|упр\.?|вар\.?|вариант)\s*(\d+(?:\s*,\s*\d+)*)/gi;
+            const specificRegex = /(?:№|номер|номера|упражнение|задание|задача|упр\.?|вар\.?|вариант)\s*([\dA-Za-zА-Яа-я\s,и]+)/gi;
             let match;
             while ((match = specificRegex.exec(clean)) !== null) {
-                const nums = match[1].match(/\d+/g);
+                const nums = match[1].match(/\d+[A-Za-zА-Яа-я]?/g);
                 if (nums) matches.push(...nums);
             }
             if (matches.length === 0) {
@@ -682,7 +687,8 @@
                 const id = el.id.replace('subj_', '');
                 const subject = SUBJECTS.find(s => s.id == id);
                 if (subject) {
-                    jobs.push({ subject: subject.name, url: subject.url || '', type: subject.type || 'numbers', numbers: v, raw_text: v });
+                    // ВЫЗЫВАЕМ УМНУЮ ФУНКЦИЮ И ПЕРЕДАЕМ НАЗВАНИЕ ПРЕДМЕТА
+                    jobs.push({ subject: subject.name, url: subject.url || '', type: subject.type || 'numbers', numbers: extractNumbers(v, subject.name), raw_text: v });
                 }
             });
 
@@ -706,18 +712,25 @@
 
                     if (matchedSubj) {
                         if (currentSubj && currentText.length > 0) {
+                            // ВЫЗЫВАЕМ УМНУЮ ФУНКЦИЮ ЗДЕСЬ
                             jobs.push({
                                 subject: currentSubj.name,
                                 url: currentSubj.url,
                                 type: currentSubj.type,
-                                numbers: currentSubj.type === 'numbers' ? extractNumbers(currentText.join(' ')) : '',
+                                numbers: currentSubj.type === 'numbers' ? extractNumbers(currentText.join(' '), currentSubj.name) : '',
                                 raw_text: currentText.join('\n').trim()
                             });
                         }
                         currentSubj = matchedSubj;
-                        let cleanLine = sanitizedLine.replace(new RegExp(matchedSubj.name, 'gi'), '');
-                        cleanLine = cleanLine.replace(/иностранный|язык|[()]/gi, '').replace(/^[:\-\s]+/, '').trim();
+
+                        let cleanLine = sanitizedLine;
+                        const subjKeywords = matchedSubj.name.toLowerCase().replace(/[()]/g, '').split(' ').filter(w => w.length > 2);
+                        for (let kw of subjKeywords) {
+                            cleanLine = cleanLine.replace(new RegExp(kw, 'gi'), '');
+                        }
+                        cleanLine = cleanLine.replace(/иностранный|[()]/gi, '').replace(/^[:\-\s]+/, '').trim();
                         cleanLine = cleanLine.replace(/на\s*\d{1,2}[./]\d{1,2}\s*(\([А-Яа-я]+\))?:?/gi, '').trim();
+
                         currentText = cleanLine ? [cleanLine] : [];
                     } else if (currentSubj) {
                         currentText.push(line);
@@ -726,11 +739,12 @@
                     }
                 }
                 if (currentSubj && currentText.length > 0) {
+                    // ВЫЗЫВАЕМ УМНУЮ ФУНКЦИЮ ЗДЕСЬ
                     jobs.push({
                         subject: currentSubj.name,
                         url: currentSubj.url,
                         type: currentSubj.type,
-                        numbers: currentSubj.type === 'numbers' ? extractNumbers(currentText.join(' ')) : '',
+                        numbers: currentSubj.type === 'numbers' ? extractNumbers(currentText.join(' '), currentSubj.name) : '',
                         raw_text: currentText.join('\n').trim()
                     });
                 }
@@ -856,8 +870,15 @@
                         div.innerHTML = `<h3>📌 ${escapeHtml(subject)}</h3>`;
 
                         items.forEach(r => {
-                            let header = r.number ? `<span style="font-weight:700; color:#e53e3e; margin-right: 8px;">№${r.number}</span>` : '';
-                            let content = escapeHtml(r.raw_text || '').replace(/\n/g, '<br>');
+                            let content = escapeHtml(r.raw_text || '').trim();
+                            content = content.replace(/^№?\d+\s*/i, '');
+                            content = content.replace(/\n/g, '<br>');
+
+                            let header = '';
+                            if (r.number && !content.includes(r.number)) {
+                                header = `<span style="font-weight:700; color:#e53e3e; margin-right: 8px;">№${r.number}</span>`;
+                            }
+
                             div.innerHTML += `<div class="task-text" style="margin-bottom: 10px;">${header} ${content}</div>`;
                         });
 
@@ -873,7 +894,7 @@
         function showStatus(text, type) { status.textContent = text; status.className = 'status ' + type; }
         function escapeHtml(t) { const d = document.createElement('div'); d.textContent = t || ''; return d.innerHTML; }
 
-        // Остальные функции
+        // Остальные функции (аватар, история, поддержка, настройки)
         function renderTopbar() {
             topbarRight.innerHTML = '';
             const name = authUser.name || authUser.email.split('@')[0];
