@@ -162,6 +162,44 @@
             background: rgba(66, 153, 225, 0.05); border: 1px solid #bee3f8; padding: 15px; border-radius: 10px;
         }
         .theme-dark .text-box { background: rgba(66, 153, 225, 0.1); border-color: #2b6cb0; }
+
+        /* Новые стили для красивых текстовых карточек */
+        .text-subject-block {
+            background: linear-gradient(135deg, rgba(255,255,255,0.9), rgba(247,250,252,0.9));
+            border-left: 4px solid #4299e1;
+            border-radius: 10px;
+            padding: 16px;
+            margin-bottom: 16px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            transition: transform 0.2s;
+        }
+        .theme-dark .text-subject-block {
+            background: linear-gradient(135deg, rgba(45,55,72,0.8), rgba(26,32,44,0.8));
+            border-left-color: #63b3ed;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+        .text-subject-block:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(0,0,0,0.1);
+        }
+        .text-subject-block h3 {
+            color: #2b6cb0;
+            margin-bottom: 12px;
+            font-size: 18px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .theme-dark .text-subject-block h3 { color: #90cdf4; }
+        .text-subject-block .task-text {
+            background: transparent;
+            border: none;
+            padding: 0;
+            font-size: 15px;
+            line-height: 1.6;
+            color: #4a5568;
+        }
+        .theme-dark .text-subject-block .task-text { color: #cbd5e0; }
     </style>
     <link rel="stylesheet" href="/static/style.css">
     <link rel="stylesheet" href="/static/animations.css">
@@ -235,7 +273,10 @@
 Музыка: сделать доклад" style="resize: vertical; font-family: inherit; font-size: 15px; width: 100%; padding: 12px;"></textarea>
             </div>
 
-            <button id="btn" class="btn-primary" style="margin-top: 20px;">🔍 Найти решения / Показать задания</button>
+            <div style="display: flex; gap: 10px; margin-top: 20px;">
+                <button id="btn" class="btn-primary" style="flex: 1; margin-top: 0;">🔍 Найти решения / Показать задания</button>
+                <button id="clearBtn" class="btn-secondary" style="background: #fed7d7; color: #c53030; border: 1px solid #feb2b2; padding: 14px 20px; font-weight: 600; border-radius: 10px; cursor: pointer; transition: all 0.2s;">🗑 Очистить всё</button>
+            </div>
         </section>
 
         <div id="status" class="status"></div>
@@ -397,7 +438,7 @@
         const $ = id => document.getElementById(id);
         const authScreen = $('authScreen');
         const mainScreen = $('mainScreen');
-        const btn = $('btn'), status = $('status'), result = $('result');
+        const btn = $('btn'), status = $('status'), result = $('result'), clearBtn = $('clearBtn');
         const historyModal = $('historyModal');
         const settingsModal = $('settingsModal');
         const supportModal = $('supportModal');
@@ -588,7 +629,6 @@
                 allowedSubjects = SUBJECTS.filter(s => todaySubjectIds.includes(s.id));
             }
 
-            // Фильтруем только числовые предметы
             const numberSubjects = allowedSubjects.filter(s => s.type === 'numbers');
 
             if (numberSubjects.length === 0 && dailyModeToggle.checked) {
@@ -755,11 +795,21 @@
             return [...new Set(matches)].filter(n => n !== '').join(', ');
         }
 
-        // УМНЫЙ ПАРСИНГ ИЗ ВСЕХ ОКОН
+        // Очистка всех полей
+        clearBtn.onclick = () => {
+            const textareas = subjectsContainer.querySelectorAll('.text-input');
+            textareas.forEach(ta => ta.value = '');
+            allTextTasks.value = '';
+            result.innerHTML = '';
+            status.textContent = '';
+            status.className = 'status';
+            allTextTasks.focus();
+        };
+
+        // УМНЫЙ ПАРСИНГ
         btn.addEventListener('click', async () => {
             let jobs = [];
 
-            // 1. Собираем числовые предметы (верхние окна)
             const visibleTextareas = subjectsContainer.querySelectorAll('.text-input');
             visibleTextareas.forEach(el => {
                 const v = el.value.trim();
@@ -771,7 +821,6 @@
                 }
             });
 
-            // 2. Умный парсинг большого окна
             const textValue = allTextTasks.value.trim();
             if (textValue) {
                 let cleanText = textValue.replace(/на\s*\d{1,2}[./]\d{1,2}\s*(\([А-Яа-я]+\))?:?/gi, '');
@@ -820,7 +869,6 @@
                         raw_text: currentText.join('\n').trim()
                     });
                 }
-                // Fallback
                 if (currentText.length > 0 && jobs.length === 0) {
                     jobs.push({ subject: "Текстовые задания", url: "", type: "text", numbers: "", raw_text: currentText.join('\n') });
                 }
@@ -849,22 +897,31 @@
                     }
                 }
 
+                // Разделяем результаты на картинки и текст
+                let imageResults = [];
+                let textResults = [];
+
+                data.results.forEach(r => {
+                    let isText = r.is_text || !r.found;
+                    const subjObj = SUBJECTS.find(s => s.name === r.subject);
+                    if (subjObj && subjObj.type === 'text') isText = true;
+                    if (r.subject === "Текстовые задания") isText = true;
+
+                    if (isText) {
+                        textResults.push(r);
+                    } else {
+                        imageResults.push(r);
+                    }
+                });
+
+                // 1. Сначала рендерим картинки
                 const bySubject = {};
-                data.results.forEach(r => { (bySubject[r.subject] = bySubject[r.subject] || []).push(r); });
+                imageResults.forEach(r => { (bySubject[r.subject] = bySubject[r.subject] || []).push(r); });
                 Object.entries(bySubject).forEach(([subject, items]) => {
                     const sec = document.createElement('section');
                     sec.className = 'subject-block';
                     sec.innerHTML = `<h2>${escapeHtml(subject)}</h2>`;
                     items.forEach(r => {
-                        if (r.is_text || !r.found) {
-                            const textCard = document.createElement('div');
-                            textCard.className = 'task-card text-task';
-                            let headerText = '📝 Задание';
-                            if (r.number) headerText = `№${r.number} — не найдено`;
-                            textCard.innerHTML = `<div class="task-header"><h3>${escapeHtml(headerText)}</h3></div><div class="task-text">${escapeHtml(r.raw_text || '')}</div>`;
-                            sec.appendChild(textCard);
-                            return;
-                        }
                         const card = document.createElement('div');
                         card.className = 'task-card';
                         card.innerHTML = `<div class="task-header"><h3>№${r.number}</h3></div>`;
@@ -912,17 +969,39 @@
                             wrapper.appendChild(controls);
                             card.appendChild(wrapper);
                         });
-                        if (r.raw_text) {
-                            const textDiv = document.createElement('div');
-                            textDiv.className = 'task-text';
-                            textDiv.style.marginTop = '10px';
-                            textDiv.textContent = r.raw_text;
-                            card.appendChild(textDiv);
-                        }
                         sec.appendChild(card);
                     });
                     result.appendChild(sec);
                 });
+
+                // 2. Затем рендерим все текстовые задания красиво в одном блоке
+                if (textResults.length > 0) {
+                    const sec = document.createElement('section');
+                    sec.className = 'subject-block';
+                    sec.innerHTML = `<h2 style="color:#2b6cb0; border-bottom: 2px solid #bee3f8; padding-bottom: 10px; margin-bottom: 20px;">📝 Текстовые задания</h2>`;
+
+                    const textBySubject = {};
+                    textResults.forEach(r => {
+                        textBySubject[r.subject] = textBySubject[r.subject] || [];
+                        textBySubject[r.subject].push(r);
+                    });
+
+                    Object.entries(textBySubject).forEach(([subject, items]) => {
+                        const div = document.createElement('div');
+                        div.className = 'text-subject-block';
+                        div.innerHTML = `<h3>📌 ${escapeHtml(subject)}</h3>`;
+
+                        items.forEach(r => {
+                            let header = r.number ? `<span style="font-weight:700; color:#e53e3e; margin-right: 8px;">№${r.number}</span>` : '';
+                            let content = escapeHtml(r.raw_text || '').replace(/\n/g, '<br>');
+                            div.innerHTML += `<div class="task-text" style="margin-bottom: 10px;">${header} ${content}</div>`;
+                        });
+
+                        sec.appendChild(div);
+                    });
+                    result.appendChild(sec);
+                }
+
             } catch (err) { clearInterval(timer); showStatus('❌ Ошибка: ' + err.message, 'error'); }
             finally { btn.disabled = false; }
         });
