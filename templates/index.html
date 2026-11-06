@@ -30,11 +30,7 @@
         html.no-auth #authScreen { display: flex !important; }
         html.no-auth #mainScreen { display: none !important; }
 
-        .welcome-greeting {
-            text-align: center; font-size: 22px; font-weight: 700; margin-bottom: 20px;
-            color: #2d3748; opacity: 0; transform: translateY(-20px);
-            animation: slideDownFade 0.8s cubic-bezier(0.25, 0.8, 0.25, 1) forwards;
-        }
+        .welcome-greeting { text-align: center; font-size: 22px; font-weight: 700; margin-bottom: 20px; color: #2d3748; opacity: 0; transform: translateY(-20px); animation: slideDownFade 0.8s cubic-bezier(0.25, 0.8, 0.25, 1) forwards; }
         .theme-dark .welcome-greeting { color: #e2e8f0; }
         .theme-custom .welcome-greeting { color: #ffffff; text-shadow: 0 2px 4px rgba(0,0,0,0.8); }
         .welcome-greeting span { color: #4299e1; text-shadow: 0 0 10px rgba(66, 153, 225, 0.3); }
@@ -42,126 +38,44 @@
         @keyframes slideDownFade { to { opacity: 1; transform: translateY(0); } }
 
         .user-menu-container { position: relative; display: inline-block; }
-        .user-menu-btn {
-            display: flex; align-items: center; gap: 8px;
-            background: #edf2f7; padding: 6px 14px; border-radius: 20px;
-            border: none; cursor: pointer; font-weight: 600; font-family: inherit;
-            color: #4a5568; transition: all 0.2s;
-        }
+        .user-menu-btn { display: flex; align-items: center; gap: 8px; background: #edf2f7; padding: 6px 14px; border-radius: 20px; border: none; cursor: pointer; font-weight: 600; font-family: inherit; color: #4a5568; transition: all 0.2s; }
         .user-menu-btn:hover { background: #e2e8f0; }
         .theme-dark .user-menu-btn { background: rgba(74,85,104,0.6); color: #e2e8f0; }
         .theme-dark .user-menu-btn:hover { background: rgba(74,85,104,0.9); }
-
-        .user-avatar-mini {
-            width: 24px; height: 24px; border-radius: 50%;
-            background: #4299e1; color: white; display: flex; align-items: center; justify-content: center;
-            font-size: 12px; font-weight: 700; background-size: cover; background-position: center;
-        }
-
-        .dropdown-menu {
-            position: absolute; top: calc(100% + 10px); right: 0;
-            background: white; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.15);
-            min-width: 220px; opacity: 0; visibility: hidden;
-            transform: translateY(-10px) scale(0.95);
-            transition: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            z-index: 1000; overflow: hidden; border: 1px solid #e2e8f0;
-        }
+        .user-avatar-mini { width: 24px; height: 24px; border-radius: 50%; background: #4299e1; color: white; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; background-size: cover; background-position: center; }
+        .dropdown-menu { position: absolute; top: calc(100% + 10px); right: 0; background: white; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.15); min-width: 220px; opacity: 0; visibility: hidden; transform: translateY(-10px) scale(0.95); transition: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275); z-index: 1000; overflow: hidden; border: 1px solid #e2e8f0; }
         .theme-dark .dropdown-menu { background: #2d3748; border-color: #4a5568; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
         .dropdown-menu.show { opacity: 1; visibility: visible; transform: translateY(0) scale(1); }
-
-        .dropdown-header {
-            padding: 15px; background: #f7fafc; border-bottom: 1px solid #e2e8f0;
-            font-size: 14px; font-weight: 700; color: #2d3748;
-        }
+        .dropdown-header { padding: 15px; background: #f7fafc; border-bottom: 1px solid #e2e8f0; font-size: 14px; font-weight: 700; color: #2d3748; }
         .theme-dark .dropdown-header { background: #1a202c; border-color: #4a5568; color: #f7fafc; }
-
-        .dropdown-item {
-            display: flex; align-items: center; gap: 10px; width: 100%;
-            padding: 12px 15px; border: none; background: transparent;
-            text-align: left; font-size: 14px; font-weight: 600; color: #4a5568;
-            cursor: pointer; transition: background 0.2s; font-family: inherit;
-        }
+        .dropdown-item { display: flex; align-items: center; gap: 10px; width: 100%; padding: 12px 15px; border: none; background: transparent; text-align: left; font-size: 14px; font-weight: 600; color: #4a5568; cursor: pointer; transition: background 0.2s; font-family: inherit; }
         .theme-dark .dropdown-item { color: #cbd5e0; }
         .dropdown-item:hover { background: #edf2f7; color: #2b6cb0; }
         .theme-dark .dropdown-item:hover { background: #4a5568; color: #90cdf4; }
-
         .dropdown-divider { height: 1px; background: #e2e8f0; margin: 5px 0; }
         .theme-dark .dropdown-divider { background: #4a5568; }
-
         .dropdown-item.logout { color: #e53e3e; }
         .dropdown-item.logout:hover { background: #fff5f5; color: #c53030; }
         .theme-dark .dropdown-item.logout:hover { background: rgba(229,62,62,0.2); }
 
-        html.theme-custom .card,
-        html.theme-custom .subject-block {
-            background: rgba(255, 255, 255, 0.05) !important;
-            backdrop-filter: blur(30px) !important;
-            -webkit-backdrop-filter: blur(30px) !important;
-            border: 1px solid rgba(255, 255, 255, 0.2) !important;
-            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2) !important;
-        }
-
-        html.theme-custom textarea,
-        html.theme-custom input[type="text"],
-        html.theme-custom input[type="email"],
-        html.theme-custom input[type="password"] {
-            background: transparent !important;
-            background-color: transparent !important;
-            border: 1px solid rgba(255, 255, 255, 0.4) !important;
-            color: #ffffff !important;
-            -webkit-appearance: none !important;
-            appearance: none !important;
-            box-shadow: none !important;
-            outline: none !important;
-            backdrop-filter: blur(5px) !important;
-        }
-
-        html.theme-custom textarea:focus,
-        html.theme-custom input:focus {
-            background: rgba(255, 255, 255, 0.1) !important;
-            border-color: #ffffff !important;
-        }
-
-        html.theme-custom textarea::placeholder,
-        html.theme-custom input::placeholder { color: rgba(255, 255, 255, 0.6) !important; }
-
-        html.theme-custom .user-menu-btn {
-            background: rgba(255, 255, 255, 0.1) !important;
-            color: #ffffff !important;
-            border: 1px solid rgba(255,255,255,0.3) !important;
-            backdrop-filter: blur(10px);
-        }
+        html.theme-custom .card, html.theme-custom .subject-block { background: rgba(255, 255, 255, 0.05) !important; backdrop-filter: blur(30px) !important; -webkit-backdrop-filter: blur(30px) !important; border: 1px solid rgba(255, 255, 255, 0.2) !important; box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2) !important; }
+        html.theme-custom textarea, html.theme-custom input[type="text"], html.theme-custom input[type="email"], html.theme-custom input[type="password"] { background: transparent !important; background-color: transparent !important; border: 1px solid rgba(255, 255, 255, 0.4) !important; color: #ffffff !important; -webkit-appearance: none !important; appearance: none !important; box-shadow: none !important; outline: none !important; backdrop-filter: blur(5px) !important; }
+        html.theme-custom textarea:focus, html.theme-custom input:focus { background: rgba(255, 255, 255, 0.1) !important; border-color: #ffffff !important; }
+        html.theme-custom textarea::placeholder, html.theme-custom input::placeholder { color: rgba(255, 255, 255, 0.6) !important; }
+        html.theme-custom .user-menu-btn { background: rgba(255, 255, 255, 0.1) !important; color: #ffffff !important; border: 1px solid rgba(255,255,255,0.3) !important; backdrop-filter: blur(10px); }
         html.theme-custom .user-menu-btn:hover { background: rgba(255, 255, 255, 0.2) !important; }
 
-        .divider-text {
-            display: flex; align-items: center; text-align: center; color: #a0aec0; margin: 25px 0; font-weight: 600; font-size: 14px;
-        }
-        .divider-text::before, .divider-text::after {
-            content: ''; flex: 1; border-bottom: 1px solid #e2e8f0;
-        }
+        .divider-text { display: flex; align-items: center; text-align: center; color: #a0aec0; margin: 25px 0; font-weight: 600; font-size: 14px; }
+        .divider-text::before, .divider-text::after { content: ''; flex: 1; border-bottom: 1px solid #e2e8f0; }
         .theme-dark .divider-text::before, .theme-dark .divider-text::after { border-color: #4a5568; }
         .divider-text::before { margin-right: 15px; }
         .divider-text::after { margin-left: 15px; }
 
-        .text-box {
-            background: rgba(66, 153, 225, 0.05); border: 1px solid #bee3f8; padding: 15px; border-radius: 10px;
-        }
+        .text-box { background: rgba(66, 153, 225, 0.05); border: 1px solid #bee3f8; padding: 15px; border-radius: 10px; }
         .theme-dark .text-box { background: rgba(66, 153, 225, 0.1); border-color: #2b6cb0; }
 
-        .text-subject-block {
-            background: linear-gradient(135deg, rgba(255,255,255,0.9), rgba(247,250,252,0.9));
-            border-left: 4px solid #4299e1;
-            border-radius: 10px;
-            padding: 16px;
-            margin-bottom: 16px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-            transition: transform 0.2s;
-        }
-        .theme-dark .text-subject-block {
-            background: linear-gradient(135deg, rgba(45,55,72,0.8), rgba(26,32,44,0.8));
-            border-left-color: #63b3ed;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-        }
+        .text-subject-block { background: linear-gradient(135deg, rgba(255,255,255,0.9), rgba(247,250,252,0.9)); border-left: 4px solid #4299e1; border-radius: 10px; padding: 16px; margin-bottom: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); transition: transform 0.2s; }
+        .theme-dark .text-subject-block { background: linear-gradient(135deg, rgba(45,55,72,0.8), rgba(26,32,44,0.8)); border-left-color: #63b3ed; box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
         .text-subject-block:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(0,0,0,0.1); }
         .text-subject-block h3 { color: #2b6cb0; margin-bottom: 12px; font-size: 18px; display: flex; align-items: center; gap: 8px; }
         .theme-dark .text-subject-block h3 { color: #90cdf4; }
@@ -229,7 +143,7 @@
                 </div>
                 <textarea id="allTextTasks" class="text-input" rows="6" placeholder="Например:
 Алгебра: № 237, 268
-Английский (Рабочая тетрадь): стр. 19" style="resize: vertical; font-family: inherit; font-size: 15px; width: 100%; padding: 12px;"></textarea>
+Английский (Учебник): стр. 19" style="resize: vertical; font-family: inherit; font-size: 15px; width: 100%; padding: 12px;"></textarea>
             </div>
 
             <div style="display: flex; gap: 10px; margin-top: 20px;">
@@ -775,7 +689,7 @@
 
                 let imageResults = [];
                 let textResults = [];
-                let seenTexts = new Set(); // Для защиты от дубликатов
+                let seenTexts = new Set();
 
                 data.results.forEach(r => {
                     let isText = r.is_text || !r.found;
@@ -784,7 +698,6 @@
                     if (r.subject === "Текстовые задания") isText = true;
 
                     if (isText) {
-                        // Уникальный ключ для проверки дубликатов (предмет + текст)
                         const textKey = r.subject + '|||' + (r.raw_text || '').trim();
                         if (!seenTexts.has(textKey)) {
                             seenTexts.add(textKey);
