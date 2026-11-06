@@ -157,7 +157,7 @@
         <footer class="footer"><span>GDZ Парсер · v{{ version }}</span></footer>
     </div>
 
-    <!-- ИСТОРИЯ -->
+    <!-- Модалки (История, Настройки, Поддержка, Картинки) оставляем без изменений -->
     <div id="historyModal" class="modal hidden">
         <div class="modal-content">
             <h3>📜 История поисков</h3>
@@ -169,7 +169,6 @@
         </div>
     </div>
 
-    <!-- НАСТРОЙКИ АККАУНТА -->
     <div id="settingsModal" class="modal hidden">
         <div class="modal-content">
             <h3>⚙️ Настройки аккаунта</h3>
@@ -296,6 +295,8 @@
         const subjectsContainer = $('subjectsContainer');
         const allTextTasks = $('allTextTasks');
         const textHint = $('textHint');
+
+        // ... (стандартные функции getDeviceInfo, fileToBase64, applyTheme, getInitial, setAuthState, init, showAuth, showMain, updateGreeting, loadSubjects, renderSubjects оставляем как были) ...
 
         function getDeviceInfo() {
             const ua = navigator.userAgent;
@@ -500,24 +501,20 @@
             textHint.innerHTML = `Вставь сюда весь текст (История, Музыка и т.д.). Умный парсер сам разберет.`;
         }
 
-        // НЕВИДИМЫЕ ПРЕДМЕТЫ
         const INVISIBLE_SUBJECTS = [
             { name: 'Разговоры о важном', url: '', type: 'text', keywords: ['разговоры о важном'] }
         ];
 
         function findSubjectInLine(line, subjectsList) {
             const lowerLine = line.toLowerCase();
-
             for (let s of INVISIBLE_SUBJECTS) {
                 for (let kw of s.keywords) {
                     if (lowerLine.includes(kw)) return s;
                 }
             }
-
             for (let s of subjectsList) {
                 if (lowerLine.includes(s.name.toLowerCase())) return s;
             }
-
             for (let s of subjectsList) {
                 const keywords = s.name.toLowerCase().replace(/[()]/g, '').split(' ').filter(w => w.length > 3 && w !== 'язык' && w !== 'класс');
                 for (let kw of keywords) {
@@ -527,17 +524,13 @@
             return null;
         }
 
-        // УМНАЯ ФУНКЦИЯ ИЗВЛЕЧЕНИЯ НОМЕРОВ (ИЩЕТ СТРАНИЦЫ ДЛЯ АНГЛ И ГЕОГРАФИИ)
         function extractNumbers(str, subjectName) {
             let clean = str;
-
-            // Проверяем, нужно ли искать страницы (только для англ и географии)
-            const isTargetSubject = /английск|географ/i.test(subjectName);
+            const isPageBased = /английск|географ/i.test(subjectName);
             const hasPageKeyword = /стр\.?|страниц/i.test(clean);
 
-            if (isTargetSubject && hasPageKeyword) {
+            if (isPageBased && hasPageKeyword) {
                 let pageMatches = [];
-                // Ищем числа после "стр.", "стр", "страница"
                 const pageRegex = /(?:стр\.?|страниц[ыа]?)\s*(\d+)/gi;
                 let match;
                 while ((match = pageRegex.exec(clean)) !== null) {
@@ -548,17 +541,13 @@
                 }
             }
 
-            // --- СТАНДАРТНАЯ ЛОГИКА ДЛЯ ВСЕХ ОСТАЛЬНЫХ СЛУЧАЕВ ---
             clean = clean.replace(/\([^)]*\)/g, '');
             clean = clean.replace(/(?:https?:\/\/|www\.)\S+/gi, '');
             clean = clean.replace(/\b\d{1,2}[./]\d{1,2}([./]\d{2,4})?\b/g, '');
             clean = clean.replace(/\b\d{1,2}\s+(января|февраля|марта|апреля|мая|июня|июля|августа|сентября|октября|ноября|декабря)\b/gi, '');
             clean = clean.replace(/(?:п\.|пункт|параграф|пар\.)\s*\d+/gi, '');
             clean = clean.replace(/\b([5-9]|1[0-1])\s*(класс|кл)\b/gi, '');
-
-            // Убираем страницы, если это не целевой предмет или мы их не нашли
             clean = clean.replace(/(?:страниц[ыа]?|стр\.?)\s*\d+(?:\s*,\s*\d+)*/gi, '');
-
             clean = clean.replace(/^\s*\d+[.):,\-]?\s+/g, '');
 
             let matches = [];
@@ -579,7 +568,6 @@
             return [...new Set(matches)].filter(n => n !== '').join(', ');
         }
 
-        // Очистка всех полей
         clearBtn.onclick = () => {
             const textareas = subjectsContainer.querySelectorAll('.text-input');
             textareas.forEach(ta => ta.value = '');
@@ -590,7 +578,6 @@
             allTextTasks.focus();
         };
 
-        // УМНЫЙ ПАРСИНГ
         btn.addEventListener('click', async () => {
             let jobs = [];
 
@@ -601,7 +588,10 @@
                 const id = el.id.replace('subj_', '');
                 const subject = SUBJECTS.find(s => s.id == id);
                 if (subject) {
-                    jobs.push({ subject: subject.name, url: subject.url || '', type: subject.type || 'numbers', numbers: extractNumbers(v, subject.name), raw_text: v });
+                    // Если ссылок несколько, для верхнего поля берем первую (учебник по умолчанию)
+                    let subjUrls = (subject.url || "").split(',').map(u => u.trim()).filter(u => u);
+                    let currentUrl = subjUrls[0] || "";
+                    jobs.push({ subject: subject.name, url: currentUrl, type: subject.type || 'numbers', numbers: extractNumbers(v, subject.name), raw_text: v });
                 }
             });
 
@@ -625,9 +615,23 @@
 
                     if (matchedSubj) {
                         if (currentSubj && currentText.length > 0) {
+                            let subjUrls = (currentSubj.url || "").split(',').map(u => u.trim()).filter(u => u);
+                            let currentUrl = subjUrls[0] || "";
+
+                            // Если в блоке текста упоминается рабочая тетрадь, берем вторую ссылку
+                            let blockText = currentText.join(' ').toLowerCase();
+                            if (subjUrls.length > 1) {
+                                if (blockText.includes('тетрад') || blockText.includes('рабоч')) {
+                                    // Проверяем, что это не "в обычной тетради"
+                                    if (!blockText.includes('обычной тетради')) {
+                                        currentUrl = subjUrls[1];
+                                    }
+                                }
+                            }
+
                             jobs.push({
                                 subject: currentSubj.name,
-                                url: currentSubj.url,
+                                url: currentUrl,
                                 type: currentSubj.type,
                                 numbers: currentSubj.type === 'numbers' ? extractNumbers(currentText.join(' '), currentSubj.name) : '',
                                 raw_text: currentText.join('\n').trim()
@@ -650,10 +654,23 @@
                         currentText.push(line);
                     }
                 }
+
                 if (currentSubj && currentText.length > 0) {
+                    let subjUrls = (currentSubj.url || "").split(',').map(u => u.trim()).filter(u => u);
+                    let currentUrl = subjUrls[0] || "";
+
+                    let blockText = currentText.join(' ').toLowerCase();
+                    if (subjUrls.length > 1) {
+                        if (blockText.includes('тетрад') || blockText.includes('рабоч')) {
+                            if (!blockText.includes('обычной тетради')) {
+                                currentUrl = subjUrls[1];
+                            }
+                        }
+                    }
+
                     jobs.push({
                         subject: currentSubj.name,
-                        url: currentSubj.url,
+                        url: currentUrl,
                         type: currentSubj.type,
                         numbers: currentSubj.type === 'numbers' ? extractNumbers(currentText.join(' '), currentSubj.name) : '',
                         raw_text: currentText.join('\n').trim()
@@ -708,7 +725,6 @@
                     }
                 });
 
-                // 1. Сначала рендерим картинки
                 const bySubject = {};
                 imageResults.forEach(r => { (bySubject[r.subject] = bySubject[r.subject] || []).push(r); });
                 Object.entries(bySubject).forEach(([subject, items]) => {
@@ -768,7 +784,6 @@
                     result.appendChild(sec);
                 });
 
-                // 2. Затем рендерим все текстовые задания красиво в одном блоке
                 if (textResults.length > 0) {
                     const sec = document.createElement('section');
                     sec.className = 'subject-block';
