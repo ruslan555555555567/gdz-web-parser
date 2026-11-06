@@ -687,7 +687,6 @@
                 const id = el.id.replace('subj_', '');
                 const subject = SUBJECTS.find(s => s.id == id);
                 if (subject) {
-                    // ВЫЗЫВАЕМ УМНУЮ ФУНКЦИЮ И ПЕРЕДАЕМ НАЗВАНИЕ ПРЕДМЕТА
                     jobs.push({ subject: subject.name, url: subject.url || '', type: subject.type || 'numbers', numbers: extractNumbers(v, subject.name), raw_text: v });
                 }
             });
@@ -712,7 +711,6 @@
 
                     if (matchedSubj) {
                         if (currentSubj && currentText.length > 0) {
-                            // ВЫЗЫВАЕМ УМНУЮ ФУНКЦИЮ ЗДЕСЬ
                             jobs.push({
                                 subject: currentSubj.name,
                                 url: currentSubj.url,
@@ -739,7 +737,6 @@
                     }
                 }
                 if (currentSubj && currentText.length > 0) {
-                    // ВЫЗЫВАЕМ УМНУЮ ФУНКЦИЮ ЗДЕСЬ
                     jobs.push({
                         subject: currentSubj.name,
                         url: currentSubj.url,
@@ -778,6 +775,7 @@
 
                 let imageResults = [];
                 let textResults = [];
+                let seenTexts = new Set(); // Для защиты от дубликатов
 
                 data.results.forEach(r => {
                     let isText = r.is_text || !r.found;
@@ -786,7 +784,12 @@
                     if (r.subject === "Текстовые задания") isText = true;
 
                     if (isText) {
-                        textResults.push(r);
+                        // Уникальный ключ для проверки дубликатов (предмет + текст)
+                        const textKey = r.subject + '|||' + (r.raw_text || '').trim();
+                        if (!seenTexts.has(textKey)) {
+                            seenTexts.add(textKey);
+                            textResults.push(r);
+                        }
                     } else {
                         imageResults.push(r);
                     }
@@ -894,7 +897,7 @@
         function showStatus(text, type) { status.textContent = text; status.className = 'status ' + type; }
         function escapeHtml(t) { const d = document.createElement('div'); d.textContent = t || ''; return d.innerHTML; }
 
-        // Остальные функции (аватар, история, поддержка, настройки)
+        // Остальные функции
         function renderTopbar() {
             topbarRight.innerHTML = '';
             const name = authUser.name || authUser.email.split('@')[0];
