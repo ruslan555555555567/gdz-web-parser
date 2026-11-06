@@ -157,7 +157,7 @@
         <footer class="footer"><span>GDZ Парсер · v{{ version }}</span></footer>
     </div>
 
-    <!-- Модалки (История, Настройки, Поддержка, Картинки) оставляем без изменений -->
+    <!-- ИСТОРИЯ -->
     <div id="historyModal" class="modal hidden">
         <div class="modal-content">
             <h3>📜 История поисков</h3>
@@ -169,6 +169,7 @@
         </div>
     </div>
 
+    <!-- НАСТРОЙКИ АККАУНТА -->
     <div id="settingsModal" class="modal hidden">
         <div class="modal-content">
             <h3>⚙️ Настройки аккаунта</h3>
@@ -295,8 +296,6 @@
         const subjectsContainer = $('subjectsContainer');
         const allTextTasks = $('allTextTasks');
         const textHint = $('textHint');
-
-        // ... (стандартные функции getDeviceInfo, fileToBase64, applyTheme, getInitial, setAuthState, init, showAuth, showMain, updateGreeting, loadSubjects, renderSubjects оставляем как были) ...
 
         function getDeviceInfo() {
             const ua = navigator.userAgent;
@@ -524,12 +523,13 @@
             return null;
         }
 
+        // ИСПРАВЛЕННАЯ ФУНКЦИЯ ИЗВЛЕЧЕНИЯ НОМЕРОВ
         function extractNumbers(str, subjectName) {
             let clean = str;
             const isPageBased = /английск|географ/i.test(subjectName);
-            const hasPageKeyword = /стр\.?|страниц/i.test(clean);
 
-            if (isPageBased && hasPageKeyword) {
+            // Для английского и географии ищем ТОЛЬКО страницы (слово "стр." или "страница")
+            if (isPageBased) {
                 let pageMatches = [];
                 const pageRegex = /(?:стр\.?|страниц[ыа]?)\s*(\d+)/gi;
                 let match;
@@ -539,7 +539,13 @@
                 if (pageMatches.length > 0) {
                     return [...new Set(pageMatches)].join(', ');
                 }
+                // Если страниц нет, возвращаем пустоту (номера упражнений игнорируются)
+                return "";
             }
+
+            // --- СТАНДАРТНАЯ ЛОГИКА ДЛЯ ОСТАЛЬНЫХ ПРЕДМЕТОВ ---
+            // Убираем года (2023, 2024), чтобы не путать с номерами
+            clean = clean.replace(/\b(19|20)\d{2}\s*(год|г\.)?\b/gi, '');
 
             clean = clean.replace(/\([^)]*\)/g, '');
             clean = clean.replace(/(?:https?:\/\/|www\.)\S+/gi, '');
@@ -588,9 +594,9 @@
                 const id = el.id.replace('subj_', '');
                 const subject = SUBJECTS.find(s => s.id == id);
                 if (subject) {
-                    // Если ссылок несколько, для верхнего поля берем первую (учебник по умолчанию)
                     let subjUrls = (subject.url || "").split(',').map(u => u.trim()).filter(u => u);
                     let currentUrl = subjUrls[0] || "";
+                    // Если это верхнее поле, просто шлем текст
                     jobs.push({ subject: subject.name, url: currentUrl, type: subject.type || 'numbers', numbers: extractNumbers(v, subject.name), raw_text: v });
                 }
             });
@@ -618,24 +624,29 @@
                             let subjUrls = (currentSubj.url || "").split(',').map(u => u.trim()).filter(u => u);
                             let currentUrl = subjUrls[0] || "";
 
-                            // Если в блоке текста упоминается рабочая тетрадь, берем вторую ссылку
                             let blockText = currentText.join(' ').toLowerCase();
                             if (subjUrls.length > 1) {
-                                if (blockText.includes('тетрад') || blockText.includes('рабоч')) {
-                                    // Проверяем, что это не "в обычной тетради"
+                                if (blockText.includes('из учебника')) {
+                                    currentUrl = subjUrls[0];
+                                } else if (blockText.includes('тетрад') || blockText.includes('рабоч')) {
                                     if (!blockText.includes('обычной тетради')) {
                                         currentUrl = subjUrls[1];
                                     }
                                 }
                             }
 
-                            jobs.push({
-                                subject: currentSubj.name,
-                                url: currentUrl,
-                                type: currentSubj.type,
-                                numbers: currentSubj.type === 'numbers' ? extractNumbers(currentText.join(' '), currentSubj.name) : '',
-                                raw_text: currentText.join('\n').trim()
-                            });
+                            let numsStr = currentSubj.type === 'numbers' ? extractNumbers(currentText.join(' '), currentSubj.name) : '';
+                            let numsArray = numsStr ? numsStr.split(',').map(n => n.trim()).filter(n => n) : [''];
+
+                            for (let n of numsArray) {
+                                jobs.push({
+                                    subject: currentSubj.name,
+                                    url: currentUrl,
+                                    type: currentSubj.type,
+                                    numbers: n,
+                                    raw_text: currentText.join('\n').trim()
+                                });
+                            }
                         }
                         currentSubj = matchedSubj;
 
@@ -661,20 +672,27 @@
 
                     let blockText = currentText.join(' ').toLowerCase();
                     if (subjUrls.length > 1) {
-                        if (blockText.includes('тетрад') || blockText.includes('рабоч')) {
+                        if (blockText.includes('из учебника')) {
+                            currentUrl = subjUrls[0];
+                        } else if (blockText.includes('тетрад') || blockText.includes('рабоч')) {
                             if (!blockText.includes('обычной тетради')) {
                                 currentUrl = subjUrls[1];
                             }
                         }
                     }
 
-                    jobs.push({
-                        subject: currentSubj.name,
-                        url: currentUrl,
-                        type: currentSubj.type,
-                        numbers: currentSubj.type === 'numbers' ? extractNumbers(currentText.join(' '), currentSubj.name) : '',
-                        raw_text: currentText.join('\n').trim()
-                    });
+                    let numsStr = currentSubj.type === 'numbers' ? extractNumbers(currentText.join(' '), currentSubj.name) : '';
+                    let numsArray = numsStr ? numsStr.split(',').map(n => n.trim()).filter(n => n) : [''];
+
+                    for (let n of numsArray) {
+                        jobs.push({
+                            subject: currentSubj.name,
+                            url: currentUrl,
+                            type: currentSubj.type,
+                            numbers: n,
+                            raw_text: currentText.join('\n').trim()
+                        });
+                    }
                 }
                 if (currentText.length > 0 && jobs.length === 0) {
                     jobs.push({ subject: "Текстовые задания", url: "", type: "text", numbers: "", raw_text: currentText.join('\n') });
