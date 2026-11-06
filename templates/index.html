@@ -148,15 +148,20 @@
         }
         .theme-dark .toggle-container { background: rgba(66,153,225,0.1); border-color: #2b6cb0; }
 
-        .daily-box {
+        .divider-text {
+            display: flex; align-items: center; text-align: center; color: #a0aec0; margin: 25px 0; font-weight: 600; font-size: 14px;
+        }
+        .divider-text::before, .divider-text::after {
+            content: ''; flex: 1; border-bottom: 1px solid #e2e8f0;
+        }
+        .theme-dark .divider-text::before, .theme-dark .divider-text::after { border-color: #4a5568; }
+        .divider-text::before { margin-right: 15px; }
+        .divider-text::after { margin-left: 15px; }
+
+        .text-box {
             background: rgba(66, 153, 225, 0.05); border: 1px solid #bee3f8; padding: 15px; border-radius: 10px;
         }
-        .theme-dark .daily-box { background: rgba(66, 153, 225, 0.1); border-color: #2b6cb0; }
-
-        .hint-example {
-            font-size: 13px; color: #718096; margin-bottom: 10px;
-        }
-        .theme-dark .hint-example { color: #a0aec0; }
+        .theme-dark .text-box { background: rgba(66, 153, 225, 0.1); border-color: #2b6cb0; }
     </style>
     <link rel="stylesheet" href="/static/style.css">
     <link rel="stylesheet" href="/static/animations.css">
@@ -213,22 +218,26 @@
             <div class="toggle-container">
                 <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; font-weight: 600; width: 100%;">
                     <input type="checkbox" id="dailyModeToggle" style="width: 18px; height: 18px; cursor: pointer;">
-                    <span>Только предметы на сегодня</span>
+                    <span>Показывать только предметы на сегодня</span>
                     <button type="button" id="openScheduleBtn" class="btn-small" style="margin-left: auto; background: #9f7aea; padding: 4px 10px; font-size: 12px;">📅 Расписание</button>
                 </label>
             </div>
 
-            <div id="dailyHint" class="hint-example">
-                Вставь весь текст заданий. Например:<br>
-                <b>Алгебра:</b> 447, 449<br>
-                <b>Геометрия:</b> 123
+            <!-- ЧИСЛОВЫЕ ПРЕДМЕТЫ (с картинками) -->
+            <div id="subjectsContainer"><p class="empty">Загрузка предметов...</p></div>
+
+            <!-- ТЕКСТОВЫЕ ПРЕДМЕТЫ (одно большое окно) -->
+            <div class="divider-text">ТЕКСТОВЫЕ ЗАДАНИЯ (История, Физика, Литература...)</div>
+            <div class="text-box">
+                <div id="textHint" style="margin-bottom: 10px; font-size: 14px; color: #4a5568; font-weight: 500;">
+                    Напиши здесь текстовые задания для всех предметов. Например:<br>
+                    <b>История:</b> параграф 12, пересказ<br>
+                    <b>Физика:</b> выучить формулы
+                </div>
+                <textarea id="allTextTasks" class="text-input" rows="6" placeholder="Вставь сюда текст..." style="resize: vertical; font-family: inherit; font-size: 15px; width: 100%; padding: 12px;"></textarea>
             </div>
 
-            <div class="daily-box">
-                <textarea id="dailyAllTasksInput" class="text-input" rows="10" placeholder="Вставь сюда текст заданий на весь день..." style="resize: vertical; font-family: inherit; font-size: 15px; width: 100%; padding: 12px;"></textarea>
-            </div>
-
-            <button id="btn" class="btn-primary" style="margin-top: 20px;">🔍 Найти решения</button>
+            <button id="btn" class="btn-primary" style="margin-top: 20px;">🔍 Найти решения / Показать задания</button>
         </section>
 
         <div id="status" class="status"></div>
@@ -236,6 +245,7 @@
         <footer class="footer"><span>GDZ Парсер · v{{ version }}</span></footer>
     </div>
 
+    <!-- МОДАЛКА РАСПИСАНИЯ -->
     <div id="scheduleModal" class="modal hidden">
         <div class="modal-content" style="max-width: 500px;">
             <h3>📅 Расписание</h3>
@@ -249,7 +259,8 @@
                 <button class="schedule-tab" data-day="6">Сб</button>
                 <button class="schedule-tab" data-day="7">Вс</button>
             </div>
-            <div id="scheduleList" style="margin-bottom: 15px;"></div>
+            <div id="scheduleList" style="margin-bottom: 15px;">
+            </div>
             <div class="modal-actions">
                 <button type="button" id="closeScheduleBtn" class="btn-secondary">Отмена</button>
                 <button type="button" id="saveScheduleBtn" class="btn-primary" style="width:auto;">💾 Сохранить</button>
@@ -257,6 +268,7 @@
         </div>
     </div>
 
+    <!-- ИСТОРИЯ -->
     <div id="historyModal" class="modal hidden">
         <div class="modal-content">
             <h3>📜 История поисков</h3>
@@ -268,6 +280,7 @@
         </div>
     </div>
 
+    <!-- НАСТРОЙКИ АККАУНТА -->
     <div id="settingsModal" class="modal hidden">
         <div class="modal-content">
             <h3>⚙️ Настройки аккаунта</h3>
@@ -394,8 +407,9 @@
         const imageModalImg = $('imageModalImg');
         const topbarRight = $('topbarRight');
         const scheduleModal = $('scheduleModal');
-        const dailyAllTasksInput = $('dailyAllTasksInput');
-        const dailyHint = $('dailyHint');
+        const subjectsContainer = $('subjectsContainer');
+        const allTextTasks = $('allTextTasks');
+        const textHint = $('textHint');
         const dailyModeToggle = $('dailyModeToggle');
 
         function getDeviceInfo() {
@@ -526,7 +540,7 @@
             renderTopbar();
             await loadSubjects();
             await loadSchedule();
-            updateDailyHint();
+            renderSubjects();
         }
 
         function updateGreeting() {
@@ -553,7 +567,7 @@
                 const d = await r.json();
                 SUBJECTS = d.subjects || [];
             } catch (e) {
-                console.error('Ошибка загрузки предметов', e);
+                subjectsContainer.innerHTML = '<p class="empty">Не удалось загрузить предметы</p>';
             }
         }
 
@@ -565,7 +579,9 @@
             } catch (e) { console.error('Ошибка загрузки расписания', e); }
         }
 
-        function updateDailyHint() {
+        function renderSubjects() {
+            subjectsContainer.innerHTML = '';
+
             let allowedSubjects = SUBJECTS;
             if (dailyModeToggle.checked) {
                 let tDay = new Date().getDay();
@@ -574,21 +590,62 @@
                 allowedSubjects = SUBJECTS.filter(s => todaySubjectIds.includes(s.id));
             }
 
-            if (allowedSubjects.length === 0 && dailyModeToggle.checked) {
-                dailyHint.innerHTML = '<span style="color:#e53e3e;">На сегодня нет предметов в расписании. Настрой расписание.</span>';
-                dailyAllTasksInput.disabled = true;
-                btn.disabled = true;
+            // Фильтруем только числовые предметы
+            const numberSubjects = allowedSubjects.filter(s => s.type === 'numbers');
+            const textSubjects = allowedSubjects.filter(s => s.type === 'text');
+
+            if (numberSubjects.length === 0 && dailyModeToggle.checked) {
+                subjectsContainer.innerHTML = `<p class="empty" style="padding: 20px; background: rgba(237, 137, 54, 0.1); border-radius: 8px; border: 1px solid #ed8936;">На сегодня нет предметов с картинками.</p>`;
             } else {
-                dailyAllTasksInput.disabled = false;
-                btn.disabled = false;
-                dailyHint.innerHTML = `Вставь весь текст заданий. Например:<br><b>Алгебра:</b> 447, 449<br><b>Геометрия:</b> 123`;
+                const groups = {};
+                numberSubjects.forEach(s => {
+                    const g = s.group_name || 'Прочее';
+                    if (!groups[g]) groups[g] = [];
+                    groups[g].push(s);
+                });
+                Object.entries(groups).forEach(([groupName, items]) => {
+                    const groupDiv = document.createElement('div');
+                    groupDiv.className = 'subject-group';
+                    const title = document.createElement('h3');
+                    title.className = 'group-title';
+                    title.textContent = groupName;
+                    groupDiv.appendChild(title);
+                    items.forEach(s => {
+                        const row = document.createElement('div');
+                        row.className = 'input-row';
+                        const label = document.createElement('label');
+                        label.className = 'input-label';
+                        label.textContent = s.name;
+                        row.appendChild(label);
+                        const ta = document.createElement('textarea');
+                        ta.className = 'text-input';
+                        ta.id = 'subj_' + s.id;
+                        ta.rows = 2;
+                        ta.dataset.subject = s.name;
+                        ta.dataset.type = s.type || 'numbers';
+                        ta.dataset.url = s.url || '';
+                        ta.placeholder = '447, 449, 451 — или текст задания';
+                        row.appendChild(ta);
+                        groupDiv.appendChild(row);
+                    });
+                    subjectsContainer.appendChild(groupDiv);
+                });
+            }
+
+            // Настраиваем подсказку для текстовых предметов
+            if (textSubjects.length > 0 && dailyModeToggle.checked) {
+                const names = textSubjects.map(s => `<b>${s.name}</b>`).join(', ');
+                textHint.innerHTML = `Сегодня текстовые задания: ${names}. Напиши их ниже.`;
+            } else {
+                textHint.innerHTML = `Напиши здесь текстовые задания для всех предметов. Например:<br><b>История:</b> параграф 12, пересказ<br><b>Физика:</b> выучить формулы`;
             }
         }
 
         dailyModeToggle.onchange = () => {
-            updateDailyHint();
+            renderSubjects();
         };
 
+        // Расписание
         $('openScheduleBtn').onclick = () => {
             scheduleModal.classList.remove('hidden');
             renderScheduleList();
@@ -642,7 +699,7 @@
                 });
                 if (!r.ok) throw new Error('Ошибка сохранения');
                 scheduleModal.classList.add('hidden');
-                updateDailyHint();
+                renderSubjects();
                 alert('✅ Расписание сохранено!');
             } catch (e) {
                 alert('❌ ' + e.message);
@@ -651,149 +708,41 @@
             }
         };
 
-        const INVISIBLE_SUBJECTS = [
-            { name: 'Разговоры о важном', url: '', type: 'text', keywords: ['разговоры о важном'] }
-        ];
-
-        function findSubjectInLine(line, subjectsList) {
-            const lowerLine = line.toLowerCase();
-
-            for (let s of INVISIBLE_SUBJECTS) {
-                for (let kw of s.keywords) {
-                    if (lowerLine.includes(kw)) return s;
-                }
-            }
-
-            for (let s of subjectsList) {
-                if (lowerLine.includes(s.name.toLowerCase())) return s;
-            }
-
-            for (let s of subjectsList) {
-                const keywords = s.name.toLowerCase().replace(/[()]/g, '').split(' ').filter(w => w.length > 3 && w !== 'язык' && w !== 'класс');
-                for (let kw of keywords) {
-                    if (lowerLine.includes(kw)) return s;
-                }
-            }
-            return null;
-        }
-
+        // Обработка кнопки "Найти решения / Показать задания"
         btn.addEventListener('click', async () => {
-            const rawText = dailyAllTasksInput.value.trim();
-            if (!rawText) return showStatus('⚠️ Вставь задания в окно', 'error');
-
-            let allowedSubjects = SUBJECTS;
-            if (dailyModeToggle.checked) {
-                let today = new Date().getDay();
-                if (today === 0) today = 7;
-                const todaySubjectIds = SCHEDULE[today.toString()] || [];
-                allowedSubjects = SUBJECTS.filter(s => todaySubjectIds.includes(s.id));
-            }
-
-            if (allowedSubjects.length === 0) return showStatus('⚠️ Нет доступных предметов', 'error');
-
-            let cleanText = rawText.replace(/на\s*\d{1,2}[./]\d{1,2}\s*(\([А-Яа-я]+\))?:?/gi, '');
-            cleanText = cleanText.replace(/\b\d{1,2}[./]\d{1,2}([./]\d{2,4})?\b/g, '');
-
-            function extractNumbers(str) {
-                let clean = str;
-
-                clean = clean.replace(/\([^)]*\)/g, '');
-                clean = clean.replace(/(?:https?:\/\/|www\.)\S+/gi, '');
-                clean = clean.replace(/\b\d{1,2}[./]\d{1,2}([./]\d{2,4})?\b/g, '');
-                clean = clean.replace(/\b\d{1,2}\s+(января|февраля|марта|апреля|мая|июня|июля|августа|сентября|октября|ноября|декабря)\b/gi, '');
-                clean = clean.replace(/(?:п\.|пункт|параграф|пар\.)\s*\d+/gi, '');
-                clean = clean.replace(/\b([5-9]|1[0-1])\s*(класс|кл)\b/gi, '');
-                clean = clean.replace(/(?:страниц[ыа]?|стр\.?)\s*\d+(?:\s*,\s*\d+)*/gi, '');
-                clean = clean.replace(/^\s*\d+[.):,\-]?\s+/g, '');
-
-                let matches = [];
-                const specificRegex = /(?:№|номер|упражнение|задание|задача|упр\.?|вар\.?|вариант)\s*(\d+(?:\s*,\s*\d+)*)/gi;
-                let match;
-                while ((match = specificRegex.exec(clean)) !== null) {
-                    const nums = match[1].match(/\d+/g);
-                    if (nums) matches.push(...nums);
-                }
-
-                if (matches.length === 0) {
-                    const trimmed = clean.trim();
-                    if (/^[\d\s,]+$/.test(trimmed)) {
-                        const generalMatches = trimmed.match(/\b\d+\b/g);
-                        if (generalMatches) matches = generalMatches;
-                    }
-                }
-
-                if (matches.length === 0) return "";
-                return [...new Set(matches)].filter(n => n !== '').join(', ');
-            }
-
             let jobs = [];
-            const lines = cleanText.split('\n');
-            let currentSubj = null;
-            let currentText = [];
 
-            for (let line of lines) {
-                line = line.trim();
-                if (!line) continue;
-
-                // ФИКС: буква класса (7б, 7а) срезается только если после неё пробел/точка/скобка/запятая/тире или конец строки.
-                // Заглавная "А" в "1Алгебра" больше не срезается.
-                let sanitizedLine = line.replace(/^\s*\d+(?:[а-яa-z](?=[\s.):,\-]|$))?[.):\-\s]*/i, '').trim();
-                if (!sanitizedLine) continue;
-
-                let matchedSubj = findSubjectInLine(sanitizedLine, allowedSubjects) || findSubjectInLine(sanitizedLine, SUBJECTS);
-
-                if (matchedSubj) {
-                    if (currentSubj && currentText.length > 0) {
-                        jobs.push({
-                            subject: currentSubj.name,
-                            url: currentSubj.url,
-                            type: currentSubj.type,
-                            numbers: currentSubj.name === 'Разговоры о важном' ? '' : extractNumbers(currentText.join(' ')),
-                            raw_text: currentSubj.name + ': ' + currentText.join('\n').trim()
-                        });
-                    }
-                    currentSubj = matchedSubj;
-
-                    let cleanLine = sanitizedLine.replace(new RegExp(matchedSubj.name, 'gi'), '');
-                    cleanLine = cleanLine.replace(/иностранный|язык|[()]/gi, '').replace(/^[:\-\s]+/, '').trim();
-
-                    cleanLine = cleanLine.replace(/на\s*\d{1,2}[./]\d{1,2}\s*(\([А-Яа-я]+\))?:?/gi, '').trim();
-
-                    currentText = cleanLine ? [cleanLine] : [];
-                } else if (currentSubj) {
-                    currentText.push(line);
-                } else {
-                    currentText.push(line);
+            // 1. Собираем числовые предметы
+            const visibleTextareas = subjectsContainer.querySelectorAll('.text-input');
+            visibleTextareas.forEach(el => {
+                const v = el.value.trim();
+                if (!v) return;
+                const id = el.id.replace('subj_', '');
+                const subject = SUBJECTS.find(s => s.id == id);
+                if (subject) {
+                    jobs.push({ subject: subject.name, url: subject.url || '', type: subject.type || 'numbers', numbers: v, raw_text: v });
                 }
-            }
-            if (currentSubj && currentText.length > 0) {
+            });
+
+            // 2. Собираем текстовые предметы из одного большого окна
+            const textValue = allTextTasks.value.trim();
+            if (textValue) {
                 jobs.push({
-                    subject: currentSubj.name,
-                    url: currentSubj.url,
-                    type: currentSubj.type,
-                    numbers: currentSubj.name === 'Разговоры о важном' ? '' : extractNumbers(currentText.join(' ')),
-                    raw_text: currentSubj.name + ': ' + currentText.join('\n').trim()
+                    subject: "Текстовые задания",
+                    url: "",
+                    type: "text",
+                    numbers: "",
+                    raw_text: textValue
                 });
             }
 
-            if (jobs.length === 0 && currentText.length > 0) {
-                const nums = extractNumbers(currentText.join(' '));
-                const fallbackSubj = allowedSubjects[0];
-                let rawTxt = fallbackSubj.name + ': ' + currentText.join('\n').trim();
-                if (nums) {
-                    jobs.push({ subject: fallbackSubj.name, url: fallbackSubj.url, type: fallbackSubj.type, numbers: nums, raw_text: rawTxt });
-                } else {
-                    jobs.push({ subject: fallbackSubj.name, url: fallbackSubj.url, type: 'text', numbers: "", raw_text: rawTxt });
-                }
-            }
-
-            if (!jobs.length) return showStatus('⚠️ Не удалось распознать текст', 'error');
+            if (!jobs.length) return showStatus('⚠️ Заполни хотя бы одно поле', 'error');
 
             btn.disabled = true;
             result.innerHTML = '';
             let seconds = 0;
-            showStatus('⏳ Ищу решения... 0 сек', 'loading');
-            const timer = setInterval(() => { seconds++; showStatus(`⏳ Ищу решения... ${seconds} сек`, 'loading'); }, 1000);
+            showStatus('⏳ Обрабатываю... 0 сек', 'loading');
+            const timer = setInterval(() => { seconds++; showStatus(`⏳ Обрабатываю... ${seconds} сек`, 'loading'); }, 1000);
 
             try {
                 const resp = await fetch('/api/parse', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({jobs}) });
@@ -809,12 +758,6 @@
                         fetch('/api/history/save', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({token: authToken, subject: j.subject, numbers: j.numbers}) }).catch(() => {});
                     }
                 }
-                const globalDlBtn = document.createElement('button');
-                globalDlBtn.className = 'btn-download-all';
-                globalDlBtn.innerHTML = '⬇️ Скачать все решения';
-                globalDlBtn.style.cssText = 'display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; padding: 16px 24px; margin: 25px 0; background: linear-gradient(135deg, #48bb78 0%, #38a169 100%); color: #ffffff; border: none; border-radius: 12px; font-size: 17px; font-weight: 700; cursor: pointer; box-shadow: 0 4px 15px rgba(72, 187, 120, 0.4); transition: all 0.3s;';
-                globalDlBtn.onclick = downloadAllImages;
-                result.appendChild(globalDlBtn);
 
                 const bySubject = {};
                 data.results.forEach(r => { (bySubject[r.subject] = bySubject[r.subject] || []).push(r); });
@@ -879,7 +822,7 @@
                             wrapper.appendChild(controls);
                             card.appendChild(wrapper);
                         });
-                        if (r.raw_text) {
+                        if (r.raw_text && r.subject !== "Текстовые задания") {
                             const textDiv = document.createElement('div');
                             textDiv.className = 'task-text';
                             textDiv.style.marginTop = '10px';
@@ -897,6 +840,7 @@
         function showStatus(text, type) { status.textContent = text; status.className = 'status ' + type; }
         function escapeHtml(t) { const d = document.createElement('div'); d.textContent = t || ''; return d.innerHTML; }
 
+        // Остальные функции (аватар, история, поддержка, настройки)
         function renderTopbar() {
             topbarRight.innerHTML = '';
             const name = authUser.name || authUser.email.split('@')[0];
@@ -1017,8 +961,8 @@
                     row.className = 'history-row';
                     row.innerHTML = `<div class="history-info"><strong>${escapeHtml(it.subject)}</strong><span>${escapeHtml(it.numbers)}</span></div><span class="history-date">${escapeHtml(it.created)}</span>`;
                     row.onclick = () => {
-                        dailyAllTasksInput.value = `${it.subject}: ${it.numbers}`;
-                        historyModal.classList.add('hidden');
+                        const subj = SUBJECTS.find(s => s.name === it.subject);
+                        if (subj) { const el = document.getElementById('subj_' + subj.id); if (el) el.value = it.numbers; historyModal.classList.add('hidden'); }
                     };
                     list.appendChild(row);
                 });
