@@ -223,18 +223,16 @@
                 </label>
             </div>
 
-            <!-- ЧИСЛОВЫЕ ПРЕДМЕТЫ (с картинками) -->
             <div id="subjectsContainer"><p class="empty">Загрузка предметов...</p></div>
 
-            <!-- ТЕКСТОВЫЕ ПРЕДМЕТЫ (одно большое окно) -->
-            <div class="divider-text">ТЕКСТОВЫЕ ЗАДАНИЯ (История, Физика, Литература...)</div>
+            <div class="divider-text">ТЕКСТОВЫЕ ЗАДАНИЯ ИЛИ ВЕСЬ ТЕКСТ СРАЗУ</div>
             <div class="text-box">
                 <div id="textHint" style="margin-bottom: 10px; font-size: 14px; color: #4a5568; font-weight: 500;">
-                    Напиши здесь текстовые задания для всех предметов. Например:<br>
-                    <b>История:</b> параграф 12, пересказ<br>
-                    <b>Физика:</b> выучить формулы
+                    Вставь сюда весь текст. Умный парсер сам найдет Алгебру, Геометрию и текстовые предметы.
                 </div>
-                <textarea id="allTextTasks" class="text-input" rows="6" placeholder="Вставь сюда текст..." style="resize: vertical; font-family: inherit; font-size: 15px; width: 100%; padding: 12px;"></textarea>
+                <textarea id="allTextTasks" class="text-input" rows="6" placeholder="Например:
+Алгебра: № 237, 268
+Музыка: сделать доклад" style="resize: vertical; font-family: inherit; font-size: 15px; width: 100%; padding: 12px;"></textarea>
             </div>
 
             <button id="btn" class="btn-primary" style="margin-top: 20px;">🔍 Найти решения / Показать задания</button>
@@ -592,7 +590,6 @@
 
             // Фильтруем только числовые предметы
             const numberSubjects = allowedSubjects.filter(s => s.type === 'numbers');
-            const textSubjects = allowedSubjects.filter(s => s.type === 'text');
 
             if (numberSubjects.length === 0 && dailyModeToggle.checked) {
                 subjectsContainer.innerHTML = `<p class="empty" style="padding: 20px; background: rgba(237, 137, 54, 0.1); border-radius: 8px; border: 1px solid #ed8936;">На сегодня нет предметов с картинками.</p>`;
@@ -632,13 +629,7 @@
                 });
             }
 
-            // Настраиваем подсказку для текстовых предметов
-            if (textSubjects.length > 0 && dailyModeToggle.checked) {
-                const names = textSubjects.map(s => `<b>${s.name}</b>`).join(', ');
-                textHint.innerHTML = `Сегодня текстовые задания: ${names}. Напиши их ниже.`;
-            } else {
-                textHint.innerHTML = `Напиши здесь текстовые задания для всех предметов. Например:<br><b>История:</b> параграф 12, пересказ<br><b>Физика:</b> выучить формулы`;
-            }
+            textHint.innerHTML = `Вставь сюда весь текст (История, Музыка и т.д.). Умный парсер сам разберет.`;
         }
 
         dailyModeToggle.onchange = () => {
@@ -708,11 +699,67 @@
             }
         };
 
-        // Обработка кнопки "Найти решения / Показать задания"
+        // НЕВИДИМЫЕ ПРЕДМЕТЫ
+        const INVISIBLE_SUBJECTS = [
+            { name: 'Разговоры о важном', url: '', type: 'text', keywords: ['разговоры о важном'] }
+        ];
+
+        function findSubjectInLine(line, subjectsList) {
+            const lowerLine = line.toLowerCase();
+
+            for (let s of INVISIBLE_SUBJECTS) {
+                for (let kw of s.keywords) {
+                    if (lowerLine.includes(kw)) return s;
+                }
+            }
+
+            for (let s of subjectsList) {
+                if (lowerLine.includes(s.name.toLowerCase())) return s;
+            }
+
+            for (let s of subjectsList) {
+                const keywords = s.name.toLowerCase().replace(/[()]/g, '').split(' ').filter(w => w.length > 3 && w !== 'язык' && w !== 'класс');
+                for (let kw of keywords) {
+                    if (lowerLine.includes(kw)) return s;
+                }
+            }
+            return null;
+        }
+
+        function extractNumbers(str) {
+            let clean = str;
+            clean = clean.replace(/\([^)]*\)/g, '');
+            clean = clean.replace(/(?:https?:\/\/|www\.)\S+/gi, '');
+            clean = clean.replace(/\b\d{1,2}[./]\d{1,2}([./]\d{2,4})?\b/g, '');
+            clean = clean.replace(/\b\d{1,2}\s+(января|февраля|марта|апреля|мая|июня|июля|августа|сентября|октября|ноября|декабря)\b/gi, '');
+            clean = clean.replace(/(?:п\.|пункт|параграф|пар\.)\s*\d+/gi, '');
+            clean = clean.replace(/\b([5-9]|1[0-1])\s*(класс|кл)\b/gi, '');
+            clean = clean.replace(/(?:страниц[ыа]?|стр\.?)\s*\d+(?:\s*,\s*\d+)*/gi, '');
+            clean = clean.replace(/^\s*\d+[.):,\-]?\s+/g, '');
+
+            let matches = [];
+            const specificRegex = /(?:№|номер|упражнение|задание|задача|упр\.?|вар\.?|вариант)\s*(\d+(?:\s*,\s*\d+)*)/gi;
+            let match;
+            while ((match = specificRegex.exec(clean)) !== null) {
+                const nums = match[1].match(/\d+/g);
+                if (nums) matches.push(...nums);
+            }
+            if (matches.length === 0) {
+                const trimmed = clean.trim();
+                if (/^[\d\s,]+$/.test(trimmed)) {
+                    const generalMatches = trimmed.match(/\b\d+\b/g);
+                    if (generalMatches) matches = generalMatches;
+                }
+            }
+            if (matches.length === 0) return "";
+            return [...new Set(matches)].filter(n => n !== '').join(', ');
+        }
+
+        // УМНЫЙ ПАРСИНГ ИЗ ВСЕХ ОКОН
         btn.addEventListener('click', async () => {
             let jobs = [];
 
-            // 1. Собираем числовые предметы
+            // 1. Собираем числовые предметы (верхние окна)
             const visibleTextareas = subjectsContainer.querySelectorAll('.text-input');
             visibleTextareas.forEach(el => {
                 const v = el.value.trim();
@@ -724,16 +771,59 @@
                 }
             });
 
-            // 2. Собираем текстовые предметы из одного большого окна
+            // 2. Умный парсинг большого окна
             const textValue = allTextTasks.value.trim();
             if (textValue) {
-                jobs.push({
-                    subject: "Текстовые задания",
-                    url: "",
-                    type: "text",
-                    numbers: "",
-                    raw_text: textValue
-                });
+                let cleanText = textValue.replace(/на\s*\d{1,2}[./]\d{1,2}\s*(\([А-Яа-я]+\))?:?/gi, '');
+                cleanText = cleanText.replace(/\b\d{1,2}[./]\d{1,2}([./]\d{2,4})?\b/g, '');
+
+                const lines = cleanText.split('\n');
+                let currentSubj = null;
+                let currentText = [];
+
+                for (let line of lines) {
+                    line = line.trim();
+                    if (!line) continue;
+
+                    let sanitizedLine = line.replace(/^\s*\d+[а-яa-z]?[.):\-\s]+/i, '').trim();
+                    if (!sanitizedLine) continue;
+
+                    let matchedSubj = findSubjectInLine(sanitizedLine, SUBJECTS);
+
+                    if (matchedSubj) {
+                        if (currentSubj && currentText.length > 0) {
+                            jobs.push({
+                                subject: currentSubj.name,
+                                url: currentSubj.url,
+                                type: currentSubj.type,
+                                numbers: currentSubj.type === 'numbers' ? extractNumbers(currentText.join(' ')) : '',
+                                raw_text: currentText.join('\n').trim()
+                            });
+                        }
+                        currentSubj = matchedSubj;
+                        let cleanLine = sanitizedLine.replace(new RegExp(matchedSubj.name, 'gi'), '');
+                        cleanLine = cleanLine.replace(/иностранный|язык|[()]/gi, '').replace(/^[:\-\s]+/, '').trim();
+                        cleanLine = cleanLine.replace(/на\s*\d{1,2}[./]\d{1,2}\s*(\([А-Яа-я]+\))?:?/gi, '').trim();
+                        currentText = cleanLine ? [cleanLine] : [];
+                    } else if (currentSubj) {
+                        currentText.push(line);
+                    } else {
+                        currentText.push(line);
+                    }
+                }
+                if (currentSubj && currentText.length > 0) {
+                    jobs.push({
+                        subject: currentSubj.name,
+                        url: currentSubj.url,
+                        type: currentSubj.type,
+                        numbers: currentSubj.type === 'numbers' ? extractNumbers(currentText.join(' ')) : '',
+                        raw_text: currentText.join('\n').trim()
+                    });
+                }
+                // Fallback
+                if (currentText.length > 0 && jobs.length === 0) {
+                    jobs.push({ subject: "Текстовые задания", url: "", type: "text", numbers: "", raw_text: currentText.join('\n') });
+                }
             }
 
             if (!jobs.length) return showStatus('⚠️ Заполни хотя бы одно поле', 'error');
@@ -822,7 +912,7 @@
                             wrapper.appendChild(controls);
                             card.appendChild(wrapper);
                         });
-                        if (r.raw_text && r.subject !== "Текстовые задания") {
+                        if (r.raw_text) {
                             const textDiv = document.createElement('div');
                             textDiv.className = 'task-text';
                             textDiv.style.marginTop = '10px';
@@ -961,8 +1051,8 @@
                     row.className = 'history-row';
                     row.innerHTML = `<div class="history-info"><strong>${escapeHtml(it.subject)}</strong><span>${escapeHtml(it.numbers)}</span></div><span class="history-date">${escapeHtml(it.created)}</span>`;
                     row.onclick = () => {
-                        const subj = SUBJECTS.find(s => s.name === it.subject);
-                        if (subj) { const el = document.getElementById('subj_' + subj.id); if (el) el.value = it.numbers; historyModal.classList.add('hidden'); }
+                        allTextTasks.value = `${it.subject}: ${it.numbers}`;
+                        historyModal.classList.add('hidden');
                     };
                     list.appendChild(row);
                 });
