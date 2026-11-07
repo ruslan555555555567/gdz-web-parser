@@ -4,6 +4,21 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>GDZ Парсер — 7 класс</title>
+
+    <!-- НОВОЕ ДЛЯ PWA -->
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#4299e1">
+    <link rel="apple-touch-icon" href="/static/icon-192.png">
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js')
+                    .then(reg => console.log('✅ PWA: Service Worker зарегистрирован'))
+                    .catch(err => console.log('❌ PWA: Ошибка SW', err));
+            });
+        }
+    </script>
+
     <script>
         (function() {
             try {
@@ -74,7 +89,6 @@
         .text-box { background: rgba(66, 153, 225, 0.05); border: 1px solid #bee3f8; padding: 15px; border-radius: 10px; }
         .theme-dark .text-box { background: rgba(66, 153, 225, 0.1); border-color: #2b6cb0; }
 
-        /* СТИЛИ ДЛЯ ТЕКСТОВЫХ ЗАДАНИЙ */
         .text-subject-block { background: linear-gradient(135deg, rgba(255,255,255,0.9), rgba(247,250,252,0.9)); border-left: 4px solid #4299e1; border-radius: 10px; padding: 16px; margin-bottom: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); transition: transform 0.2s; }
         .theme-dark .text-subject-block { background: linear-gradient(135deg, rgba(45,55,72,0.8), rgba(26,32,44,0.8)); border-left-color: #63b3ed; box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
         .text-subject-block:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(0,0,0,0.1); }
@@ -82,12 +96,10 @@
         .text-subject-block .task-text { background: transparent !important; border: none !important; padding: 0 !important; font-size: 15px; line-height: 1.6; color: #4a5568; margin-bottom: 8px; }
         .theme-dark .text-subject-block .task-text { color: #cbd5e0; }
 
-        /* ЕДИНЫЙ СИНИЙ ЦВЕТ */
         .color-blue { color: #3182ce !important; }
         .theme-dark .color-blue { color: #63b3ed !important; }
         .theme-custom .color-blue { color: #ffffff !important; }
 
-        /* ТЕКСТ ПОД КАРТИНКОЙ (СДЕЛАЛИ ТЕМНЕЕ) */
         .task-raw-text {
             background: #edf2f7;
             border: 1px solid #cbd5e0;
@@ -118,6 +130,7 @@
     <link rel="stylesheet" href="/static/animations.css">
 </head>
 <body>
+    <!-- ... (весь остальной HTML код и скрипт остаются точно такими же, как в предыдущем сообщении) ... -->
     <div class="floating-shapes">
         <div class="shape shape-1"></div>
         <div class="shape shape-2"></div>
@@ -692,7 +705,6 @@
             const timer = setInterval(() => { seconds++; showStatus(`⏳ Обрабатываю... ${seconds} сек`, 'loading'); }, 1000);
 
             try {
-                // ОТПРАВЛЯЕМ ТОКЕН ВМЕСТЕ С ЗАПРОСОМ
                 const resp = await fetch('/api/parse', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({jobs, token: authToken}) });
                 const data = await resp.json();
                 clearInterval(timer);
@@ -726,15 +738,12 @@
                     }
                 });
 
-                // --- ОТРИСОВКА КАРТИНОК ---
                 const bySubject = {};
                 imageResults.forEach(r => { (bySubject[r.subject] = bySubject[r.subject] || []).push(r); });
 
                 Object.entries(bySubject).forEach(([subject, items]) => {
                     const sec = document.createElement('section');
                     sec.className = 'subject-block';
-
-                    // Всегда синий цвет
                     sec.innerHTML = `<h2 class="color-blue">${escapeHtml(subject)}</h2>`;
 
                     items.forEach(r => {
@@ -760,7 +769,6 @@
                                 const textDiv = document.createElement('div');
                                 textDiv.className = 'task-raw-text';
 
-                                // ОЧИСТКА ТЕКСТА ОТ НАЗВАНИЯ ПРЕДМЕТА
                                 let displayText = r.raw_text;
                                 if (r.subject) {
                                     const regex = new RegExp(r.subject, 'gi');
@@ -768,7 +776,6 @@
                                 }
                                 if (!displayText) displayText = r.numbers || 'Без текста';
 
-                                // Убрали слово "Задание:", оставили только текст
                                 textDiv.textContent = displayText;
                                 wrapper.appendChild(textDiv);
                             }
@@ -814,7 +821,6 @@
                     result.appendChild(sec);
                 });
 
-                // --- ОТРИСОВКА ТЕКСТОВЫХ ЗАДАНИЙ ---
                 if (textResults.length > 0) {
                     const sec = document.createElement('section');
                     sec.className = 'subject-block';
@@ -828,8 +834,6 @@
                     Object.entries(textBySubject).forEach(([subject, items]) => {
                         const div = document.createElement('div');
                         div.className = 'text-subject-block';
-
-                        // Всегда синий цвет
                         div.innerHTML = `<h3 class="color-blue">${escapeHtml(subject)}</h3>`;
 
                         items.forEach(r => {
