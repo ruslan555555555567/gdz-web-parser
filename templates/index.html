@@ -44,33 +44,29 @@
         html.no-auth #authScreen { display: flex !important; }
         html.no-auth #mainScreen { display: none !important; }
 
-        /* КРАСИВЫЙ СТИЛЬ ДЛЯ НОМЕРОВ ЗАДАНИЙ (СЕРЫЙ, С ЛИНИЕЙ) */
+        /* СТИЛЬ ДЛЯ НОМЕРОВ ЗАДАНИЙ (АККУРАТНАЯ ПЛАШКА) */
         .task-number-header {
-            font-size: 18px;
-            font-weight: 600;
-            color: #718096 !important; /* Мягкий серый для светлой темы */
-            margin-bottom: 8px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        .task-number-header::after {
-            content: '';
-            flex: 1;
-            height: 1px;
-            background: #e2e8f0; /* Тонкая линия, чтобы отделить от картинки */
+            display: inline-block;
+            font-size: 15px;
+            font-weight: 700;
+            color: #2b6cb0 !important; /* Синий текст */
+            background: #ebf8ff; /* Нежно-голубой фон */
+            padding: 6px 14px;
+            border-radius: 20px; /* Форма таблетки */
+            margin-bottom: 12px;
+            border: 1px solid #bee3f8;
+            width: fit-content;
         }
         .theme-dark .task-number-header {
-            color: #a0aec0 !important; /* Светло-серый для темной темы */
-        }
-        .theme-dark .task-number-header::after {
-            background: #4a5568;
+            color: #90cdf4 !important;
+            background: rgba(66, 153, 225, 0.15);
+            border-color: rgba(66, 153, 225, 0.3);
         }
         .theme-custom .task-number-header {
-            color: #e2e8f0 !important;
-        }
-        .theme-custom .task-number-header::after {
-            background: rgba(255,255,255,0.2);
+            color: #ffffff !important;
+            background: rgba(255, 255, 255, 0.15);
+            border-color: rgba(255, 255, 255, 0.3);
+            backdrop-filter: blur(5px);
         }
 
         .welcome-greeting { text-align: center; font-size: 22px; font-weight: 700; margin-bottom: 20px; color: #2d3748; opacity: 0; transform: translateY(-20px); animation: slideDownFade 0.8s cubic-bezier(0.25, 0.8, 0.25, 1) forwards; }
@@ -815,7 +811,7 @@
                             const wrapper = document.createElement('div');
                             wrapper.style.cssText = 'display: flex; flex-direction: column; gap: 8px; margin-bottom: 25px;';
 
-                            // КРАСИВЫЙ НОМЕР ЗАДАНИЯ С ЛИНИЕЙ
+                            // АККУРАТНАЯ ПЛАШКА С НОМЕРОМ
                             if (r.number) {
                                 const numHeader = document.createElement('div');
                                 numHeader.className = 'task-number-header';
