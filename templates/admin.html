@@ -164,6 +164,41 @@
             padding: 8px 12px; border-radius: 8px; margin-bottom: 8px;
             font-size: 14px; color: inherit;
         }
+
+        /* ═══ СТИЛИ ДЛЯ УЛУЧШЕННЫХ ЛОГОВ ═══ */
+        .log-filters { display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap; }
+        .log-filters input, .log-filters select {
+            padding: 8px 12px; border-radius: 8px; border: 1px solid #cbd5e0;
+            font-family: inherit; font-size: 14px; flex: 1; min-width: 150px;
+            background: white; color: #1a202c;
+        }
+        html.admin-theme-dark .log-filters input, html.admin-theme-dark .log-filters select,
+        html.theme-dark .log-filters input, html.theme-dark .log-filters select {
+            background: rgba(26,32,44,0.6); border-color: #4a5568; color: #e2e8f0;
+        }
+
+        /* Цвета для разных типов действий */
+        .action-login { border-left-color: #48bb78 !important; }
+        .action-login_fail { border-left-color: #e53e3e !important; }
+        .action-parse { border-left-color: #4299e1 !important; }
+        .action-subject { border-left-color: #9f7aea !important; }
+        .action-admin { border-left-color: #ecc94b !important; }
+
+        .log-action-badge {
+            display: inline-block; padding: 3px 8px; border-radius: 6px;
+            font-size: 12px; font-weight: 600; margin-bottom: 4px;
+        }
+        .badge-green { background: rgba(72, 187, 120, 0.2); color: #276749; }
+        .badge-red { background: rgba(229, 62, 62, 0.2); color: #9b2c2c; }
+        .badge-blue { background: rgba(66, 153, 225, 0.2); color: #2c5282; }
+        .badge-purple { background: rgba(159, 122, 234, 0.2); color: #553c9a; }
+        .badge-yellow { background: rgba(236, 201, 75, 0.2); color: #975a16; }
+
+        html.admin-theme-dark .badge-green, html.theme-dark .badge-green { color: #9ae6b4; }
+        html.admin-theme-dark .badge-red, html.theme-dark .badge-red { color: #feb2b2; }
+        html.admin-theme-dark .badge-blue, html.theme-dark .badge-blue { color: #90cdf4; }
+        html.admin-theme-dark .badge-purple, html.theme-dark .badge-purple { color: #d6bcfa; }
+        html.admin-theme-dark .badge-yellow, html.theme-dark .badge-yellow { color: #faf089; }
     </style>
     <link rel="stylesheet" href="/static/style.css">
 </head>
@@ -261,6 +296,19 @@
                     </div>
                 </div>
                 <p class="hint" style="margin-bottom:12px;">Последние 500 действий.</p>
+
+                <!-- НОВЫЕ ФИЛЬТРЫ ДЛЯ ЛОГОВ -->
+                <div class="log-filters">
+                    <input type="text" id="logSearchInput" placeholder="Поиск по email или деталям..." oninput="renderLogs()">
+                    <select id="logActionFilter" onchange="renderLogs()">
+                        <option value="all">Все действия</option>
+                        <option value="login">Входы</option>
+                        <option value="parse">Поиски</option>
+                        <option value="subject">Предметы</option>
+                        <option value="admin">Админы</option>
+                    </select>
+                </div>
+
                 <div id="logsList"></div>
                 <div id="emptyLogs" class="empty">Логов пока нет</div>
             </div>
@@ -380,7 +428,6 @@
 
                 <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
                     <span class="hint">Выберите, какие общие предметы разрешить.</span>
-                    <!-- Убрана кнопка "Снять все" -->
                 </div>
 
                 <div id="userSubjectsList" style="display:flex; flex-direction:column; gap:8px; max-height:40vh; overflow-y:auto; margin-bottom:15px; padding-right:5px;"></div>
@@ -401,16 +448,43 @@
         let usersCache = [];
         let draggedId = null;
         let isMainAdmin = false;
+        let allLogsCache = []; // Храним все логи для фильтрации на клиенте
 
-        // НОВОЕ: Кэш для личных предметов пользователя, чтобы работал карандаш
         let currentCustomSubjects = [];
-
         let currentEditingUserId = null;
         let currentEditingUserEmail = null;
         let editingId = null;
         let editingTargetUserId = null;
 
-        const ACTION_ICONS = { 'register': '🆕', 'login': '🔑', 'login_fail': '⚠️', 'logout': '🚪', 'parse': '🔍', 'profile_update': '⚙️', 'avatar_update': '🖼', 'password_change': '🔐', 'account_delete': '❌', 'subject_add': '➕', 'subject_update': '✏️', 'subject_delete': '🗑', 'subject_reorder': '↕️', 'subjects_reset': '🔄', 'admin_delete_user': '👤', 'block_device': '🚫', 'unblock_device': '✅', 'toggle_admin': '👑' };
+        // Словарь для перевода технических названий в понятные человеку
+        const ACTION_NAMES = {
+            'register': 'Регистрация',
+            'login': 'Вход в систему',
+            'login_fail': 'Неудачный вход',
+            'logout': 'Выход из системы',
+            'parse': 'Поиск заданий',
+            'profile_update': 'Обновление профиля',
+            'avatar_update': 'Смена аватарки',
+            'password_change': 'Смена пароля',
+            'account_delete': 'Удаление аккаунта',
+            'subject_add': 'Добавление предмета',
+            'subject_update': 'Изменение предмета',
+            'subject_delete': 'Удаление предмета',
+            'subject_reorder': 'Сортировка предметов',
+            'subjects_reset': 'Сброс предметов',
+            'admin_delete_user': 'Удаление пользователя',
+            'block_device': 'Блокировка устройства',
+            'unblock_device': 'Разблокировка устройства',
+            'toggle_admin': 'Выдача прав админа'
+        };
+
+        // Иконки для логов
+        const ACTION_ICONS = {
+            'register': '🆕', 'login': '🔑', 'login_fail': '⚠️', 'logout': '🚪', 'parse': '🔍',
+            'profile_update': '⚙️', 'avatar_update': '🖼', 'password_change': '🔐', 'account_delete': '❌',
+            'subject_add': '➕', 'subject_update': '✏️', 'subject_delete': '🗑', 'subject_reorder': '↕️',
+            'subjects_reset': '🔄', 'admin_delete_user': '👤', 'block_device': '🚫', 'unblock_device': '✅', 'toggle_admin': '👑'
+        };
 
         function getInitial(name, email) { const n = (name || '').trim(); if (n) return n[0].toUpperCase(); if (email) return email[0].toUpperCase(); return '?'; }
 
@@ -720,7 +794,6 @@
 
                 document.getElementById('toggleAllSubjects').checked = !d.subjects_configured;
 
-                // Сохраняем в кэш для карандаша
                 currentCustomSubjects = d.custom_subjects;
 
                 const customList = document.getElementById('customSubjectsList'); const emptyCustom = document.getElementById('emptyCustomSubjects'); customList.innerHTML = '';
@@ -747,7 +820,6 @@
             } catch (err) { document.getElementById('customSubjectsList').innerHTML = '<p class="empty">Ошибка загрузки</p>'; }
         }
 
-        // Переключатель "Показывать все"
         document.getElementById('toggleAllSubjects').onchange = (e) => {
             const isChecked = e.target.checked;
             document.querySelectorAll('#userSubjectsList input[type="checkbox"]').forEach(cb => cb.checked = isChecked);
@@ -758,7 +830,6 @@
 
         document.getElementById('addCustomSubjectBtn').onclick = () => { openEditModal(null, currentEditingUserId); };
 
-        // ИСПРАВЛЕНО: Ищем в currentCustomSubjects
         window.editCustomSubject = (id) => { const s = currentCustomSubjects.find(x => x.id === id); if (s) openEditModal(s, currentEditingUserId); };
         window.deleteCustomSubject = async (id) => {
             if (!confirm('Удалить этот личный предмет?')) return;
@@ -766,7 +837,6 @@
             catch (err) { alert('Ошибка: ' + err.message); }
         };
 
-        // СОХРАНЕНИЕ ОБЩИХ ПРЕДМЕТОВ
         document.getElementById('saveUserSubjectsBtn').onclick = async () => {
             if (!currentEditingUserId) return;
 
@@ -819,19 +889,83 @@
             catch (e) { alert('Ошибка: ' + e.message); }
         }
 
+        // ═══ НОВАЯ ЛОГИКА ЗАГРУЗКИ И ОТРИСОВКИ ЛОГОВ ═══
         async function loadLogs() {
             const list = document.getElementById('logsList'); const empty = document.getElementById('emptyLogs'); if (!list || !empty) return;
             try {
                 const r = await fetch('/api/admin/logs', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(getAuthPayload()) }); if (!r.ok) return; const d = await r.json();
-                document.getElementById('logsCount').textContent = d.logs.length; list.innerHTML = ''; if (!d.logs || !d.logs.length) { empty.style.display = 'block'; return; } empty.style.display = 'none';
-                d.logs.forEach(l => {
-                    const div = document.createElement('div'); div.className = 'log-row';
-                    const icon = ACTION_ICONS[l.action] || '📌';
-                    const avatarHtml = l.avatar ? `<span class="log-avatar" style="background-image:url('${l.avatar}')"></span>` : `<span class="log-avatar">${getInitial(l.name, l.email)}</span>`;
-                    div.innerHTML = `<div class="log-icon">${icon}</div><div class="log-content"><div class="log-head">${avatarHtml}<strong>${escapeHtml(l.name || l.email || 'Гость')}</strong><span class="log-action">${escapeHtml(l.action)}</span></div><div class="log-details">${escapeHtml(l.details || '')}</div><div class="log-meta">${escapeHtml(l.created)} · IP: ${escapeHtml(l.ip || '—')}</div></div>`;
-                    list.appendChild(div);
-                });
+
+                allLogsCache = d.logs || [];
+                document.getElementById('logsCount').textContent = allLogsCache.length;
+
+                renderLogs();
             } catch (e) { console.error(e); }
+        }
+
+        function renderLogs() {
+            const list = document.getElementById('logsList'); const empty = document.getElementById('emptyLogs');
+            list.innerHTML = '';
+
+            const searchQuery = document.getElementById('logSearchInput').value.toLowerCase().trim();
+            const actionFilter = document.getElementById('logActionFilter').value;
+
+            const filteredLogs = allLogsCache.filter(l => {
+                // Поиск по тексту (email, детали, IP)
+                const searchMatch = !searchQuery ||
+                    (l.email && l.email.toLowerCase().includes(searchQuery)) ||
+                    (l.name && l.name.toLowerCase().includes(searchQuery)) ||
+                    (l.details && l.details.toLowerCase().includes(searchQuery)) ||
+                    (l.ip && l.ip.includes(searchQuery));
+
+                // Фильтр по категории
+                let actionMatch = true;
+                if (actionFilter === 'login') actionMatch = ['login', 'login_fail', 'logout'].includes(l.action);
+                else if (actionFilter === 'parse') actionMatch = l.action === 'parse';
+                else if (actionFilter === 'subject') actionMatch = l.action.startsWith('subject');
+                else if (actionFilter === 'admin') actionMatch = ['admin_delete_user', 'block_device', 'unblock_device', 'toggle_admin'].includes(l.action);
+
+                return searchMatch && actionMatch;
+            });
+
+            if (!filteredLogs.length) {
+                empty.style.display = 'block';
+                return;
+            }
+            empty.style.display = 'none';
+
+            filteredLogs.forEach(l => {
+                const div = document.createElement('div'); div.className = 'log-row';
+
+                // Определяем иконку и понятное название
+                const icon = ACTION_ICONS[l.action] || '📌';
+                const actionName = ACTION_NAMES[l.action] || l.action;
+
+                // Определяем цвет бейджа
+                let badgeClass = 'badge-blue';
+                let borderClass = 'action-parse';
+                if (['login', 'register', 'unblock_device'].includes(l.action)) { badgeClass = 'badge-green'; borderClass = 'action-login'; }
+                else if (['login_fail', 'account_delete', 'admin_delete_user'].includes(l.action)) { badgeClass = 'badge-red'; borderClass = 'action-login_fail'; }
+                else if (l.action.startsWith('subject')) { badgeClass = 'badge-purple'; borderClass = 'action-subject'; }
+                else if (['block_device', 'toggle_admin', 'subjects_reset'].includes(l.action)) { badgeClass = 'badge-yellow'; borderClass = 'action-admin'; }
+
+                div.classList.add(borderClass);
+
+                const avatarHtml = l.avatar ? `<span class="log-avatar" style="background-image:url('${l.avatar}')"></span>` : `<span class="log-avatar">${getInitial(l.name, l.email)}</span>`;
+
+                div.innerHTML = `
+                    <div class="log-icon">${icon}</div>
+                    <div class="log-content">
+                        <div class="log-head">
+                            ${avatarHtml}
+                            <strong>${escapeHtml(l.name || l.email || 'Гость')}</strong>
+                            <span class="log-action-badge ${badgeClass}">${actionName}</span>
+                        </div>
+                        <div class="log-details">${escapeHtml(l.details || '')}</div>
+                        <div class="log-meta">${escapeHtml(l.created)} · IP: ${escapeHtml(l.ip || '—')}</div>
+                    </div>
+                `;
+                list.appendChild(div);
+            });
         }
 
         document.getElementById('refreshBlockedBtn').onclick = loadBlockedDevices;
@@ -853,7 +987,6 @@
             } catch (e) { st.textContent = '❌ ' + e.message; st.className = 'fb-status error'; }
         };
 
-        // ИСПРАВЛЕНО: Четкое сохранение настроек
         document.getElementById('saveSettingsBtn').onclick = async () => {
             const st = document.getElementById('settingsStatus'); const token = localStorage.getItem('gdz_token');
             if (!token) { st.textContent = '❌ Нужно войти на главной странице'; st.className = 'fb-status error'; return; }
