@@ -82,26 +82,37 @@
         .text-subject-block .task-text { background: transparent !important; border: none !important; padding: 0 !important; font-size: 15px; line-height: 1.6; color: #4a5568; margin-bottom: 8px; }
         .theme-dark .text-subject-block .task-text { color: #cbd5e0; }
 
-        /* ЦВЕТА ЗАГОЛОВКОВ */
+        /* ЕДИНЫЙ СИНИЙ ЦВЕТ */
         .color-blue { color: #3182ce !important; }
-        .color-purple { color: #805ad5 !important; }
-        .color-green { color: #38a169 !important; }
-        .color-orange { color: #dd6b20 !important; }
         .theme-dark .color-blue { color: #63b3ed !important; }
-        .theme-dark .color-purple { color: #b794f4 !important; }
-        .theme-dark .color-green { color: #68d391 !important; }
-        .theme-dark .color-orange { color: #fbd38d !important; }
-        .theme-custom .color-blue, .theme-custom .color-purple, .theme-custom .color-green, .theme-custom .color-orange { color: #ffffff !important; }
+        .theme-custom .color-blue { color: #ffffff !important; }
 
-        /* ПЛАШКА С НОМЕРАМИ */
-        .numbers-badge { display: inline-block; background: rgba(66,153,225,0.1); padding: 6px 12px; border-radius: 8px; font-weight: 600; margin-bottom: 16px; font-size: 14px; color: #2b6cb0; border: 1px solid rgba(66,153,225,0.2); }
-        .theme-dark .numbers-badge { background: rgba(66,153,225,0.2); color: #90cdf4; border-color: rgba(66,153,225,0.3); }
-        .theme-custom .numbers-badge { background: rgba(255,255,255,0.15); color: #ffffff; border-color: rgba(255,255,255,0.3); }
-
-        /* ТЕКСТ ПОД КАРТИНКОЙ */
-        .task-raw-text { background: rgba(237, 242, 247, 0.7); border: 1px solid #e2e8f0; border-left: 4px solid #4299e1; padding: 10px 14px; border-radius: 6px; font-size: 14px; color: #4a5568; white-space: pre-wrap; margin-top: 5px; line-height: 1.5; }
-        .theme-dark .task-raw-text { background: rgba(26, 32, 44, 0.5); border-color: #4a5568; border-left-color: #63b3ed; color: #cbd5e0; }
-        .theme-custom .task-raw-text { background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.2); border-left-color: #ffffff; color: #ffffff; }
+        /* ТЕКСТ ПОД КАРТИНКОЙ (СДЕЛАЛИ ТЕМНЕЕ) */
+        .task-raw-text {
+            background: #edf2f7;
+            border: 1px solid #cbd5e0;
+            border-left: 4px solid #3182ce;
+            padding: 12px 16px;
+            border-radius: 8px;
+            font-size: 15px;
+            font-weight: 500;
+            color: #1a202c;
+            white-space: pre-wrap;
+            margin-top: 8px;
+            line-height: 1.5;
+        }
+        .theme-dark .task-raw-text {
+            background: #2d3748;
+            border-color: #4a5568;
+            border-left-color: #4299e1;
+            color: #ffffff;
+        }
+        .theme-custom .task-raw-text {
+            background: rgba(0,0,0,0.6);
+            border-color: rgba(255,255,255,0.3);
+            border-left-color: #ffffff;
+            color: #ffffff;
+        }
     </style>
     <link rel="stylesheet" href="/static/style.css">
     <link rel="stylesheet" href="/static/animations.css">
@@ -714,7 +725,7 @@
                     }
                 });
 
-                // --- ОТРИСОВКА КАРТИНОК С НОМЕРАМИ ---
+                // --- ОТРИСОВКА КАРТИНОК ---
                 const bySubject = {};
                 imageResults.forEach(r => { (bySubject[r.subject] = bySubject[r.subject] || []).push(r); });
 
@@ -722,23 +733,8 @@
                     const sec = document.createElement('section');
                     sec.className = 'subject-block';
 
-                    // Определяем цвет по группе
-                    const subjObj = SUBJECTS.find(s => s.name === subject);
-                    let colorClass = 'color-blue'; // По умолчанию для Точных наук
-                    if (subjObj) {
-                        if (subjObj.group_name.includes('Гуманитарные')) colorClass = 'color-purple';
-                        else if (subjObj.group_name.includes('Естественные')) colorClass = 'color-green';
-                        else if (subjObj.group_name.includes('Остальные')) colorClass = 'color-orange';
-                    }
-
-                    // Собираем все номера
-                    const numbersList = items.map(i => i.number).filter(Boolean);
-                    const numbersStr = numbersList.length ? `Задания: ${numbersList.join(', ')}` : '';
-
-                    sec.innerHTML = `<h2 class="${colorClass}">${escapeHtml(subject)}</h2>`;
-                    if (numbersStr) {
-                        sec.innerHTML += `<div class="numbers-badge">${numbersStr}</div>`;
-                    }
+                    // Всегда синий цвет
+                    sec.innerHTML = `<h2 class="color-blue">${escapeHtml(subject)}</h2>`;
 
                     items.forEach(r => {
                         if (!r.found) {
@@ -766,13 +762,13 @@
                                 // ОЧИСТКА ТЕКСТА ОТ НАЗВАНИЯ ПРЕДМЕТА
                                 let displayText = r.raw_text;
                                 if (r.subject) {
-                                    // Заменяем название предмета и следующее за ним двоеточие/пробелы на пустоту
                                     const regex = new RegExp(r.subject, 'gi');
                                     displayText = displayText.replace(regex, '').replace(/^[:\-\s]+/, '').trim();
                                 }
                                 if (!displayText) displayText = r.numbers || 'Без текста';
 
-                                textDiv.textContent = `Задание: ${displayText}`;
+                                // Убрали слово "Задание:", оставили только текст
+                                textDiv.textContent = displayText;
                                 wrapper.appendChild(textDiv);
                             }
 
@@ -832,15 +828,8 @@
                         const div = document.createElement('div');
                         div.className = 'text-subject-block';
 
-                        const subjObj = SUBJECTS.find(s => s.name === subject);
-                        let colorClass = 'color-blue';
-                        if (subjObj) {
-                            if (subjObj.group_name.includes('Гуманитарные')) colorClass = 'color-purple';
-                            else if (subjObj.group_name.includes('Естественные')) colorClass = 'color-green';
-                            else if (subjObj.group_name.includes('Остальные')) colorClass = 'color-orange';
-                        }
-
-                        div.innerHTML = `<h3 class="${colorClass}">${escapeHtml(subject)}</h3>`;
+                        // Всегда синий цвет
+                        div.innerHTML = `<h3 class="color-blue">${escapeHtml(subject)}</h3>`;
 
                         items.forEach(r => {
                             let content = escapeHtml(r.raw_text || '').trim();
