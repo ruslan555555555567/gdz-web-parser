@@ -74,13 +74,29 @@
         .text-box { background: rgba(66, 153, 225, 0.05); border: 1px solid #bee3f8; padding: 15px; border-radius: 10px; }
         .theme-dark .text-box { background: rgba(66, 153, 225, 0.1); border-color: #2b6cb0; }
 
+        /* СТИЛИ ДЛЯ ТЕКСТОВЫХ ЗАДАНИЙ */
         .text-subject-block { background: linear-gradient(135deg, rgba(255,255,255,0.9), rgba(247,250,252,0.9)); border-left: 4px solid #4299e1; border-radius: 10px; padding: 16px; margin-bottom: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); transition: transform 0.2s; }
         .theme-dark .text-subject-block { background: linear-gradient(135deg, rgba(45,55,72,0.8), rgba(26,32,44,0.8)); border-left-color: #63b3ed; box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
         .text-subject-block:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(0,0,0,0.1); }
-        .text-subject-block h3 { color: #2b6cb0; margin-bottom: 12px; font-size: 18px; display: flex; align-items: center; gap: 8px; }
-        .theme-dark .text-subject-block h3 { color: #90cdf4; }
-        .text-subject-block .task-text { background: transparent; border: none; padding: 0; font-size: 15px; line-height: 1.6; color: #4a5568; }
+        .text-subject-block h3 { margin-bottom: 12px; font-size: 18px; display: flex; align-items: center; gap: 8px; font-weight: 700; }
+        .text-subject-block .task-text { background: transparent !important; border: none !important; padding: 0 !important; font-size: 15px; line-height: 1.6; color: #4a5568; margin-bottom: 8px; }
         .theme-dark .text-subject-block .task-text { color: #cbd5e0; }
+
+        /* ЦВЕТА ЗАГОЛОВКОВ */
+        .color-blue { color: #3182ce !important; }
+        .color-purple { color: #805ad5 !important; }
+        .color-green { color: #38a169 !important; }
+        .color-orange { color: #dd6b20 !important; }
+        .theme-dark .color-blue { color: #63b3ed !important; }
+        .theme-dark .color-purple { color: #b794f4 !important; }
+        .theme-dark .color-green { color: #68d391 !important; }
+        .theme-dark .color-orange { color: #fbd38d !important; }
+        .theme-custom .color-blue, .theme-custom .color-purple, .theme-custom .color-green, .theme-custom .color-orange { color: #ffffff !important; }
+
+        /* ПЛАШКА С НОМЕРАМИ */
+        .numbers-badge { display: inline-block; background: rgba(66,153,225,0.1); padding: 6px 12px; border-radius: 8px; font-weight: 600; margin-bottom: 16px; font-size: 14px; color: #2b6cb0; border: 1px solid rgba(66,153,225,0.2); }
+        .theme-dark .numbers-badge { background: rgba(66,153,225,0.2); color: #90cdf4; border-color: rgba(66,153,225,0.3); }
+        .theme-custom .numbers-badge { background: rgba(255,255,255,0.15); color: #ffffff; border-color: rgba(255,255,255,0.3); }
     </style>
     <link rel="stylesheet" href="/static/style.css">
     <link rel="stylesheet" href="/static/animations.css">
@@ -679,7 +695,6 @@
                 let seenTexts = new Set();
 
                 data.results.forEach(r => {
-                    // ИСПРАВЛЕНИЕ: Если бэкенд сказал, что это текст, ИЛИ номера нет (null) - это текстовое задание
                     let isText = r.is_text || r.number === null;
                     if (r.subject === "Текстовые задания") isText = true;
 
@@ -694,74 +709,95 @@
                     }
                 });
 
+                // --- ОТРИСОВКА КАРТИНОК С НОМЕРАМИ ---
                 const bySubject = {};
                 imageResults.forEach(r => { (bySubject[r.subject] = bySubject[r.subject] || []).push(r); });
+
                 Object.entries(bySubject).forEach(([subject, items]) => {
                     const sec = document.createElement('section');
                     sec.className = 'subject-block';
-                    sec.innerHTML = `<h2>${escapeHtml(subject)}</h2>`;
-                    items.forEach(r => {
-                        const card = document.createElement('div');
-                        card.className = 'task-card';
 
+                    // Определяем цвет по группе
+                    const subjObj = SUBJECTS.find(s => s.name === subject);
+                    let colorClass = 'color-blue';
+                    if (subjObj) {
+                        if (subjObj.group_name.includes('Гуманитарные')) colorClass = 'color-purple';
+                        if (subjObj.group_name.includes('Естественные')) colorClass = 'color-green';
+                        if (subjObj.group_name.includes('Остальные')) colorClass = 'color-orange';
+                    }
+
+                    // Собираем все номера
+                    const numbersList = items.map(i => i.number).filter(Boolean);
+                    const numbersStr = numbersList.length ? `Задания: ${numbersList.join(', ')}` : '';
+
+                    sec.innerHTML = `<h2 class="${colorClass}">${escapeHtml(subject)}</h2>`;
+                    if (numbersStr) {
+                        sec.innerHTML += `<div class="numbers-badge">${numbersStr}</div>`;
+                    }
+
+                    items.forEach(r => {
                         if (!r.found) {
-                            card.innerHTML = `<div class="task-header"><h3>№${r.number}</h3></div><div class="img-error">⚠️ Решение не найдено на gdz.ru</div>`;
-                        } else {
-                            card.innerHTML = `<div class="task-header"><h3>№${r.number}</h3></div>`;
-                            r.images.forEach((u, index) => {
-                                const wrapper = document.createElement('div');
-                                wrapper.style.cssText = 'display: flex; flex-direction: column; gap: 8px; margin-bottom: 15px;';
-                                const img = document.createElement('img');
-                                img.className = 'solution-img img-loading';
-                                img.style.marginTop = '0';
-                                img.alt = 'Загрузка...';
-                                loadImage(img, u);
-                                const controls = document.createElement('div');
-                                controls.style.cssText = 'display: flex; gap: 10px; justify-content: flex-end;';
-                                const refreshBtn = document.createElement('button');
-                                refreshBtn.innerHTML = '🔄 Обновить';
-                                refreshBtn.title = 'Обновить картинку';
-                                refreshBtn.style.cssText = 'padding: 8px 16px; display: flex; align-items: center; gap: 6px; background: rgba(150, 150, 150, 0.15); color: inherit; border: 1px solid rgba(150, 150, 150, 0.3); border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s;';
-                                refreshBtn.onmouseenter = () => refreshBtn.style.background = 'rgba(150, 150, 150, 0.25)';
-                                refreshBtn.onmouseleave = () => refreshBtn.style.background = 'rgba(150, 150, 150, 0.15)';
-                                refreshBtn.onclick = (e) => {
-                                    e.stopPropagation();
-                                    img.classList.remove('img-tall', 'img-retrying');
-                                    img.classList.add('img-loading');
-                                    img.src = '';
-                                    loadImage(img, u);
-                                };
-                                const dlBtn = document.createElement('button');
-                                dlBtn.innerHTML = '⬇️ Скачать';
-                                dlBtn.title = 'Скачать решение';
-                                dlBtn.style.cssText = 'padding: 8px 16px; display: flex; align-items: center; gap: 6px; background: #4299e1; color: #ffffff; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s; box-shadow: 0 2px 5px rgba(66, 153, 225, 0.3);';
-                                dlBtn.onmouseenter = () => dlBtn.style.background = '#3182ce';
-                                dlBtn.onmouseleave = () => dlBtn.style.background = '#4299e1';
-                                dlBtn.onclick = (e) => {
-                                    e.stopPropagation();
-                                    if (img.src && img.src.includes('/api/image')) {
-                                        const filename = `GDZ_${r.subject || 'Предмет'}_№${r.number || index + 1}.jpg`.replace(/\s+/g, '_');
-                                        downloadSingleImage(img.src, filename);
-                                    } else {
-                                        alert('Картинка еще не загрузилась, подождите...');
-                                    }
-                                };
-                                controls.appendChild(refreshBtn);
-                                controls.appendChild(dlBtn);
-                                wrapper.appendChild(img);
-                                wrapper.appendChild(controls);
-                                card.appendChild(wrapper);
-                            });
+                            const errorDiv = document.createElement('div');
+                            errorDiv.innerHTML = `<div class="img-error">⚠️ Решение для №${r.number} не найдено на gdz.ru</div>`;
+                            sec.appendChild(errorDiv);
+                            return;
                         }
-                        sec.appendChild(card);
+
+                        r.images.forEach((u, index) => {
+                            const wrapper = document.createElement('div');
+                            wrapper.style.cssText = 'display: flex; flex-direction: column; gap: 8px; margin-bottom: 15px;';
+                            const img = document.createElement('img');
+                            img.className = 'solution-img img-loading';
+                            img.style.marginTop = '0';
+                            img.alt = 'Загрузка...';
+                            loadImage(img, u);
+                            const controls = document.createElement('div');
+                            controls.style.cssText = 'display: flex; gap: 10px; justify-content: flex-end;';
+
+                            const refreshBtn = document.createElement('button');
+                            refreshBtn.innerHTML = '🔄 Обновить';
+                            refreshBtn.title = 'Обновить картинку';
+                            refreshBtn.style.cssText = 'padding: 8px 16px; display: flex; align-items: center; gap: 6px; background: rgba(150, 150, 150, 0.15); color: inherit; border: 1px solid rgba(150, 150, 150, 0.3); border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s;';
+                            refreshBtn.onmouseenter = () => refreshBtn.style.background = 'rgba(150, 150, 150, 0.25)';
+                            refreshBtn.onmouseleave = () => refreshBtn.style.background = 'rgba(150, 150, 150, 0.15)';
+                            refreshBtn.onclick = (e) => {
+                                e.stopPropagation();
+                                img.classList.remove('img-tall', 'img-retrying');
+                                img.classList.add('img-loading');
+                                img.src = '';
+                                loadImage(img, u);
+                            };
+
+                            const dlBtn = document.createElement('button');
+                            dlBtn.innerHTML = '⬇️ Скачать';
+                            dlBtn.title = 'Скачать решение';
+                            dlBtn.style.cssText = 'padding: 8px 16px; display: flex; align-items: center; gap: 6px; background: #4299e1; color: #ffffff; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s; box-shadow: 0 2px 5px rgba(66, 153, 225, 0.3);';
+                            dlBtn.onmouseenter = () => dlBtn.style.background = '#3182ce';
+                            dlBtn.onmouseleave = () => dlBtn.style.background = '#4299e1';
+                            dlBtn.onclick = (e) => {
+                                e.stopPropagation();
+                                if (img.src && img.src.includes('/api/image')) {
+                                    const filename = `GDZ_${r.subject || 'Предмет'}_№${r.number || index + 1}.jpg`.replace(/\s+/g, '_');
+                                    downloadSingleImage(img.src, filename);
+                                } else {
+                                    alert('Картинка еще не загрузилась, подождите...');
+                                }
+                            };
+                            controls.appendChild(refreshBtn);
+                            controls.appendChild(dlBtn);
+                            wrapper.appendChild(img);
+                            wrapper.appendChild(controls);
+                            sec.appendChild(wrapper);
+                        });
                     });
                     result.appendChild(sec);
                 });
 
+                // --- ОТРИСОВКА ТЕКСТОВЫХ ЗАДАНИЙ ---
                 if (textResults.length > 0) {
                     const sec = document.createElement('section');
                     sec.className = 'subject-block';
-                    sec.innerHTML = `<h2 style="color:#2b6cb0; border-bottom: 2px solid #bee3f8; padding-bottom: 10px; margin-bottom: 20px;">📝 Текстовые задания</h2>`;
+                    sec.innerHTML = `<h2 class="color-blue" style="border-bottom: 2px solid rgba(66,153,225,0.2); padding-bottom: 10px; margin-bottom: 20px;">📝 Текстовые задания</h2>`;
 
                     const textBySubject = {};
                     textResults.forEach(r => {
@@ -772,19 +808,34 @@
                     Object.entries(textBySubject).forEach(([subject, items]) => {
                         const div = document.createElement('div');
                         div.className = 'text-subject-block';
-                        div.innerHTML = `<h3>📌 ${escapeHtml(subject)}</h3>`;
+
+                        // Определяем цвет для текста
+                        const subjObj = SUBJECTS.find(s => s.name === subject);
+                        let colorClass = 'color-blue';
+                        if (subjObj) {
+                            if (subjObj.group_name.includes('Гуманитарные')) colorClass = 'color-purple';
+                            if (subjObj.group_name.includes('Естественные')) colorClass = 'color-green';
+                            if (subjObj.group_name.includes('Остальные')) colorClass = 'color-orange';
+                        }
+
+                        div.innerHTML = `<h3 class="${colorClass}">${escapeHtml(subject)}</h3>`;
 
                         items.forEach(r => {
                             let content = escapeHtml(r.raw_text || '').trim();
                             content = content.replace(/^№?\d+\s*/i, '');
-                            content = content.replace(/\n/g, '<br>');
+
+                            // Очистка от мусора (одиночные буквы в начале строки)
+                            let lines = content.split('\n');
+                            lines = lines.map(l => l.trim());
+                            lines = lines.filter(l => l.length > 2 || (l.length > 0 && !/^[а-яa-z]$/i.test(l)));
+                            content = lines.join('<br>');
 
                             let header = '';
                             if (r.number && !content.includes(r.number)) {
                                 header = `<span style="font-weight:700; color:#e53e3e; margin-right: 8px;">№${r.number}</span>`;
                             }
 
-                            div.innerHTML += `<div class="task-text" style="margin-bottom: 10px;">${header} ${content}</div>`;
+                            div.innerHTML += `<div class="task-text">${header} ${content}</div>`;
                         });
 
                         sec.appendChild(div);
