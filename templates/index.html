@@ -679,10 +679,8 @@
                 let seenTexts = new Set();
 
                 data.results.forEach(r => {
-                    let isText = r.is_text || !r.found;
-                    const subjObj = SUBJECTS.find(s => s.name === r.subject);
-
-                    if (subjObj && subjObj.type === 'numbers') isText = false;
+                    // ИСПРАВЛЕНИЕ: Если бэкенд сказал, что это текст, ИЛИ номера нет (null) - это текстовое задание
+                    let isText = r.is_text || r.number === null;
                     if (r.subject === "Текстовые задания") isText = true;
 
                     if (isText) {
