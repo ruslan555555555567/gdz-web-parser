@@ -692,7 +692,8 @@
             const timer = setInterval(() => { seconds++; showStatus(`⏳ Обрабатываю... ${seconds} сек`, 'loading'); }, 1000);
 
             try {
-                const resp = await fetch('/api/parse', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({jobs}) });
+                // ОТПРАВЛЯЕМ ТОКЕН ВМЕСТЕ С ЗАПРОСОМ
+                const resp = await fetch('/api/parse', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({jobs, token: authToken}) });
                 const data = await resp.json();
                 clearInterval(timer);
                 if (!resp.ok) return showStatus('❌ ' + (data.detail || 'Ошибка'), 'error');
