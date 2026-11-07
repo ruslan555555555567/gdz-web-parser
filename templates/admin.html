@@ -34,7 +34,6 @@
         })();
     </script>
     <style>
-        /* ═══ ФИКС ПРОЗРАЧНОСТИ ОКОН (ЯДЕРНЫЙ) ═══ */
         .modal {
             background: rgba(0, 0, 0, 0.85) !important;
             backdrop-filter: blur(5px) !important;
@@ -165,7 +164,7 @@
             font-size: 14px; color: inherit;
         }
 
-        /* ═══ СТИЛИ ДЛЯ УЛУЧШЕННЫХ ЛОГОВ ═══ */
+        /* ═══ НОВЫЕ СТИЛИ ДЛЯ ЛОГОВ ═══ */
         .log-filters { display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap; }
         .log-filters input, .log-filters select {
             padding: 8px 12px; border-radius: 8px; border: 1px solid #cbd5e0;
@@ -177,7 +176,6 @@
             background: rgba(26,32,44,0.6); border-color: #4a5568; color: #e2e8f0;
         }
 
-        /* Цвета для разных типов действий */
         .action-login { border-left-color: #48bb78 !important; }
         .action-login_fail { border-left-color: #e53e3e !important; }
         .action-parse { border-left-color: #4299e1 !important; }
@@ -199,6 +197,13 @@
         html.admin-theme-dark .badge-blue, html.theme-dark .badge-blue { color: #90cdf4; }
         html.admin-theme-dark .badge-purple, html.theme-dark .badge-purple { color: #d6bcfa; }
         html.admin-theme-dark .badge-yellow, html.theme-dark .badge-yellow { color: #faf089; }
+
+        .log-delete-btn {
+            background: transparent; border: none; font-size: 16px; cursor: pointer;
+            margin-left: auto; padding: 0 5px; opacity: 0.6; transition: opacity 0.2s;
+            color: inherit;
+        }
+        .log-delete-btn:hover { opacity: 1; transform: scale(1.1); }
     </style>
     <link rel="stylesheet" href="/static/style.css">
 </head>
@@ -291,13 +296,12 @@
                 <div class="section-header">
                     <h2>📋 Логи (<span id="logsCount">0</span>)</h2>
                     <div style="display:flex; gap:8px; flex-wrap:wrap;">
-                        <button id="clearLogsBtn" class="btn-small reset-btn">🗑 Очистить</button>
+                        <button id="clearLogsBtn" class="btn-small reset-btn">🗑 Очистить всё</button>
                         <button id="refreshLogsBtn" class="btn-small">🔄 Обновить</button>
                     </div>
                 </div>
                 <p class="hint" style="margin-bottom:12px;">Последние 500 действий.</p>
 
-                <!-- НОВЫЕ ФИЛЬТРЫ ДЛЯ ЛОГОВ -->
                 <div class="log-filters">
                     <input type="text" id="logSearchInput" placeholder="Поиск по email или деталям..." oninput="renderLogs()">
                     <select id="logActionFilter" onchange="renderLogs()">
@@ -456,29 +460,15 @@
         let editingId = null;
         let editingTargetUserId = null;
 
-        // Словарь для перевода технических названий в понятные человеку
         const ACTION_NAMES = {
-            'register': 'Регистрация',
-            'login': 'Вход в систему',
-            'login_fail': 'Неудачный вход',
-            'logout': 'Выход из системы',
-            'parse': 'Поиск заданий',
-            'profile_update': 'Обновление профиля',
-            'avatar_update': 'Смена аватарки',
-            'password_change': 'Смена пароля',
-            'account_delete': 'Удаление аккаунта',
-            'subject_add': 'Добавление предмета',
-            'subject_update': 'Изменение предмета',
-            'subject_delete': 'Удаление предмета',
-            'subject_reorder': 'Сортировка предметов',
-            'subjects_reset': 'Сброс предметов',
-            'admin_delete_user': 'Удаление пользователя',
-            'block_device': 'Блокировка устройства',
-            'unblock_device': 'Разблокировка устройства',
-            'toggle_admin': 'Выдача прав админа'
+            'register': 'Регистрация', 'login': 'Вход в систему', 'login_fail': 'Неудачный вход', 'logout': 'Выход из системы',
+            'parse': 'Поиск заданий', 'profile_update': 'Обновление профиля', 'avatar_update': 'Смена аватарки',
+            'password_change': 'Смена пароля', 'account_delete': 'Удаление аккаунта', 'subject_add': 'Добавление предмета',
+            'subject_update': 'Изменение предмета', 'subject_delete': 'Удаление предмета', 'subject_reorder': 'Сортировка предметов',
+            'subjects_reset': 'Сброс предметов', 'admin_delete_user': 'Удаление пользователя', 'block_device': 'Блокировка устройства',
+            'unblock_device': 'Разблокировка устройства', 'toggle_admin': 'Выдача прав админа'
         };
 
-        // Иконки для логов
         const ACTION_ICONS = {
             'register': '🆕', 'login': '🔑', 'login_fail': '⚠️', 'logout': '🚪', 'parse': '🔍',
             'profile_update': '⚙️', 'avatar_update': '🖼', 'password_change': '🔐', 'account_delete': '❌',
@@ -839,15 +829,12 @@
 
         document.getElementById('saveUserSubjectsBtn').onclick = async () => {
             if (!currentEditingUserId) return;
-
             const checkboxes = document.querySelectorAll('#userSubjectsList input[type="checkbox"]:checked');
             const subject_ids = Array.from(checkboxes).map(cb => parseInt(cb.value));
             const showAll = document.getElementById('toggleAllSubjects').checked;
             const subjects_configured = !showAll;
-
             const btn = document.getElementById('saveUserSubjectsBtn');
             btn.disabled = true; btn.textContent = 'Сохранение...';
-
             try {
                 const r = await fetch('/api/admin/save-user-subjects', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({...getAuthPayload(), user_id: currentEditingUserId, subject_ids, subjects_configured}) });
                 if (!r.ok) { const errData = await r.json().catch(()=>({detail:'Ошибка сервера'})); throw new Error(errData.detail || 'Ошибка сервера'); }
@@ -889,15 +876,12 @@
             catch (e) { alert('Ошибка: ' + e.message); }
         }
 
-        // ═══ НОВАЯ ЛОГИКА ЗАГРУЗКИ И ОТРИСОВКИ ЛОГОВ ═══
         async function loadLogs() {
             const list = document.getElementById('logsList'); const empty = document.getElementById('emptyLogs'); if (!list || !empty) return;
             try {
                 const r = await fetch('/api/admin/logs', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(getAuthPayload()) }); if (!r.ok) return; const d = await r.json();
-
                 allLogsCache = d.logs || [];
                 document.getElementById('logsCount').textContent = allLogsCache.length;
-
                 renderLogs();
             } catch (e) { console.error(e); }
         }
@@ -910,14 +894,12 @@
             const actionFilter = document.getElementById('logActionFilter').value;
 
             const filteredLogs = allLogsCache.filter(l => {
-                // Поиск по тексту (email, детали, IP)
                 const searchMatch = !searchQuery ||
                     (l.email && l.email.toLowerCase().includes(searchQuery)) ||
                     (l.name && l.name.toLowerCase().includes(searchQuery)) ||
                     (l.details && l.details.toLowerCase().includes(searchQuery)) ||
                     (l.ip && l.ip.includes(searchQuery));
 
-                // Фильтр по категории
                 let actionMatch = true;
                 if (actionFilter === 'login') actionMatch = ['login', 'login_fail', 'logout'].includes(l.action);
                 else if (actionFilter === 'parse') actionMatch = l.action === 'parse';
@@ -935,12 +917,9 @@
 
             filteredLogs.forEach(l => {
                 const div = document.createElement('div'); div.className = 'log-row';
-
-                // Определяем иконку и понятное название
                 const icon = ACTION_ICONS[l.action] || '📌';
                 const actionName = ACTION_NAMES[l.action] || l.action;
 
-                // Определяем цвет бейджа
                 let badgeClass = 'badge-blue';
                 let borderClass = 'action-parse';
                 if (['login', 'register', 'unblock_device'].includes(l.action)) { badgeClass = 'badge-green'; borderClass = 'action-login'; }
@@ -952,6 +931,7 @@
 
                 const avatarHtml = l.avatar ? `<span class="log-avatar" style="background-image:url('${l.avatar}')"></span>` : `<span class="log-avatar">${getInitial(l.name, l.email)}</span>`;
 
+                // ДОБАВЛЕНА КНОПКА УДАЛЕНИЯ ЛОГА
                 div.innerHTML = `
                     <div class="log-icon">${icon}</div>
                     <div class="log-content">
@@ -959,6 +939,7 @@
                             ${avatarHtml}
                             <strong>${escapeHtml(l.name || l.email || 'Гость')}</strong>
                             <span class="log-action-badge ${badgeClass}">${actionName}</span>
+                            <button class="log-delete-btn" onclick="deleteLog(${l.id})" title="Удалить лог">🗑</button>
                         </div>
                         <div class="log-details">${escapeHtml(l.details || '')}</div>
                         <div class="log-meta">${escapeHtml(l.created)} · IP: ${escapeHtml(l.ip || '—')}</div>
@@ -967,6 +948,16 @@
                 list.appendChild(div);
             });
         }
+
+        // НОВАЯ ФУНКЦИЯ УДАЛЕНИЯ ЛОГА
+        window.deleteLog = async (id) => {
+            if (!confirm('Удалить эту запись из логов?')) return;
+            try {
+                const r = await fetch('/api/admin/logs/delete/' + id, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(getAuthPayload()) });
+                if (!r.ok) throw new Error('Ошибка удаления');
+                loadLogs(); // Перезагружаем логи
+            } catch (e) { alert('Ошибка: ' + e.message); }
+        };
 
         document.getElementById('refreshBlockedBtn').onclick = loadBlockedDevices;
         document.getElementById('refreshBtn').onclick = loadMessages;
