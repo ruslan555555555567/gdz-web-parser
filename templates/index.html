@@ -44,6 +44,35 @@
         html.no-auth #authScreen { display: flex !important; }
         html.no-auth #mainScreen { display: none !important; }
 
+        /* КРАСИВЫЙ СТИЛЬ ДЛЯ НОМЕРОВ ЗАДАНИЙ (СЕРЫЙ, С ЛИНИЕЙ) */
+        .task-number-header {
+            font-size: 18px;
+            font-weight: 600;
+            color: #718096 !important; /* Мягкий серый для светлой темы */
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .task-number-header::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: #e2e8f0; /* Тонкая линия, чтобы отделить от картинки */
+        }
+        .theme-dark .task-number-header {
+            color: #a0aec0 !important; /* Светло-серый для темной темы */
+        }
+        .theme-dark .task-number-header::after {
+            background: #4a5568;
+        }
+        .theme-custom .task-number-header {
+            color: #e2e8f0 !important;
+        }
+        .theme-custom .task-number-header::after {
+            background: rgba(255,255,255,0.2);
+        }
+
         .welcome-greeting { text-align: center; font-size: 22px; font-weight: 700; margin-bottom: 20px; color: #2d3748; opacity: 0; transform: translateY(-20px); animation: slideDownFade 0.8s cubic-bezier(0.25, 0.8, 0.25, 1) forwards; }
         .theme-dark .welcome-greeting { color: #e2e8f0; }
         .theme-custom .welcome-greeting { color: #ffffff; text-shadow: 0 2px 4px rgba(0,0,0,0.8); }
@@ -786,11 +815,11 @@
                             const wrapper = document.createElement('div');
                             wrapper.style.cssText = 'display: flex; flex-direction: column; gap: 8px; margin-bottom: 25px;';
 
-                            // ВОЗВРАЩАЕМ НОМЕР ЗАДАНИЯ (БЕЗ СИНЕЙ РАМКИ)
+                            // КРАСИВЫЙ НОМЕР ЗАДАНИЯ С ЛИНИЕЙ
                             if (r.number) {
-                                const numHeader = document.createElement('h3');
-                                numHeader.style.cssText = 'font-size: 20px; font-weight: 700; color: #3182ce; margin-bottom: 5px;';
-                                numHeader.textContent = `№${r.number}`;
+                                const numHeader = document.createElement('div');
+                                numHeader.className = 'task-number-header';
+                                numHeader.textContent = `Задание №${r.number}`;
                                 wrapper.appendChild(numHeader);
                             }
 
