@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>GDZ Парсер — 7 класс</title>
     
-    <!-- НОВОЕ ДЛЯ PWA -->
     <link rel="manifest" href="/manifest.json">
     <meta name="theme-color" content="#4299e1">
     <link rel="apple-touch-icon" href="/static/icon-192.png">
@@ -100,30 +99,54 @@
         .theme-dark .color-blue { color: #63b3ed !important; }
         .theme-custom .color-blue { color: #ffffff !important; }
 
-        .task-raw-text { 
-            background: #edf2f7; 
-            border: 1px solid #cbd5e0; 
-            border-left: 4px solid #3182ce; 
-            padding: 12px 16px; 
-            border-radius: 8px; 
-            font-size: 15px; 
-            font-weight: 500; 
-            color: #1a202c; 
-            white-space: pre-wrap; 
-            margin-top: 8px; 
-            line-height: 1.5; 
+        .task-raw-text {
+            background: #edf2f7;
+            border: 1px solid #cbd5e0;
+            border-left: 4px solid #3182ce;
+            padding: 12px 16px;
+            border-radius: 8px;
+            font-size: 15px;
+            font-weight: 500;
+            color: #1a202c;
+            white-space: pre-wrap;
+            margin-top: 8px;
+            line-height: 1.5;
         }
-        .theme-dark .task-raw-text { 
-            background: #2d3748; 
-            border-color: #4a5568; 
-            border-left-color: #4299e1; 
-            color: #ffffff; 
+        .theme-dark .task-raw-text {
+            background: #2d3748;
+            border-color: #4a5568;
+            border-left-color: #4299e1;
+            color: #ffffff;
         }
-        .theme-custom .task-raw-text { 
-            background: rgba(0,0,0,0.6); 
-            border-color: rgba(255,255,255,0.3); 
-            border-left-color: #ffffff; 
-            color: #ffffff; 
+        .theme-custom .task-raw-text {
+            background: rgba(0,0,0,0.6);
+            border-color: rgba(255,255,255,0.3);
+            border-left-color: #ffffff;
+            color: #ffffff;
+        }
+
+        /* ИСПРАВЛЕНИЕ ОКНА ТЕХПОДДЕРЖКИ (УБИРАЕМ ПРОЗРАЧНОСТЬ) */
+        .modal {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.85) !important;
+            display: flex; align-items: center; justify-content: center;
+            padding: 20px; z-index: 9999 !important;
+        }
+        .modal-content {
+            background: #ffffff !important; /* Плотный белый фон */
+            color: #1a202c !important;
+            border-radius: 12px; padding: 24px;
+            max-width: 450px; width: 100%; max-height: 90vh; overflow-y: auto;
+            box-shadow: 0 10px 50px rgba(0,0,0,0.5) !important;
+        }
+        .theme-dark .modal-content {
+            background: #2d3748 !important; /* Плотный темный фон */
+            color: #e2e8f0 !important;
+            border: 1px solid #4a5568 !important;
+        }
+        .theme-custom .modal-content {
+            background: #1a202c !important;
+            color: #ffffff !important;
+            border: 1px solid rgba(255,255,255,0.2) !important;
         }
     </style>
     <link rel="stylesheet" href="/static/style.css">
@@ -296,7 +319,7 @@
                     Контакт <span class="hint">(необязательно)</span>
                     <input type="text" id="fbContact" placeholder="Telegram, email">
                 </label>
-                
+
                 <label class="form-label">
                     Прикрепить фото <span class="hint">(необязательно)</span>
                     <div style="display: flex; align-items: center; gap: 10px; margin-top: 6px;">
@@ -745,7 +768,7 @@
 
                 const bySubject = {};
                 imageResults.forEach(r => { (bySubject[r.subject] = bySubject[r.subject] || []).push(r); });
-                
+
                 Object.entries(bySubject).forEach(([subject, items]) => {
                     const sec = document.createElement('section');
                     sec.className = 'subject-block';
@@ -762,6 +785,15 @@
                         r.images.forEach((u, index) => {
                             const wrapper = document.createElement('div');
                             wrapper.style.cssText = 'display: flex; flex-direction: column; gap: 8px; margin-bottom: 25px;';
+
+                            // ВОЗВРАЩАЕМ НОМЕР ЗАДАНИЯ (БЕЗ СИНЕЙ РАМКИ)
+                            if (r.number) {
+                                const numHeader = document.createElement('h3');
+                                numHeader.style.cssText = 'font-size: 20px; font-weight: 700; color: #3182ce; margin-bottom: 5px;';
+                                numHeader.textContent = `№${r.number}`;
+                                wrapper.appendChild(numHeader);
+                            }
+
                             const img = document.createElement('img');
                             img.className = 'solution-img img-loading';
                             img.style.marginTop = '0';
