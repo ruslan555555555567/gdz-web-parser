@@ -97,6 +97,11 @@
         .numbers-badge { display: inline-block; background: rgba(66,153,225,0.1); padding: 6px 12px; border-radius: 8px; font-weight: 600; margin-bottom: 16px; font-size: 14px; color: #2b6cb0; border: 1px solid rgba(66,153,225,0.2); }
         .theme-dark .numbers-badge { background: rgba(66,153,225,0.2); color: #90cdf4; border-color: rgba(66,153,225,0.3); }
         .theme-custom .numbers-badge { background: rgba(255,255,255,0.15); color: #ffffff; border-color: rgba(255,255,255,0.3); }
+
+        /* ТЕКСТ ПОД КАРТИНКОЙ */
+        .task-raw-text { background: rgba(237, 242, 247, 0.7); border: 1px solid #e2e8f0; border-left: 4px solid #4299e1; padding: 10px 14px; border-radius: 6px; font-size: 14px; color: #4a5568; white-space: pre-wrap; margin-top: 5px; line-height: 1.5; }
+        .theme-dark .task-raw-text { background: rgba(26, 32, 44, 0.5); border-color: #4a5568; border-left-color: #63b3ed; color: #cbd5e0; }
+        .theme-custom .task-raw-text { background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.2); border-left-color: #ffffff; color: #ffffff; }
     </style>
     <link rel="stylesheet" href="/static/style.css">
     <link rel="stylesheet" href="/static/animations.css">
@@ -719,11 +724,11 @@
 
                     // Определяем цвет по группе
                     const subjObj = SUBJECTS.find(s => s.name === subject);
-                    let colorClass = 'color-blue';
+                    let colorClass = 'color-blue'; // По умолчанию для Точных наук
                     if (subjObj) {
                         if (subjObj.group_name.includes('Гуманитарные')) colorClass = 'color-purple';
-                        if (subjObj.group_name.includes('Естественные')) colorClass = 'color-green';
-                        if (subjObj.group_name.includes('Остальные')) colorClass = 'color-orange';
+                        else if (subjObj.group_name.includes('Естественные')) colorClass = 'color-green';
+                        else if (subjObj.group_name.includes('Остальные')) colorClass = 'color-orange';
                     }
 
                     // Собираем все номера
@@ -745,12 +750,32 @@
 
                         r.images.forEach((u, index) => {
                             const wrapper = document.createElement('div');
-                            wrapper.style.cssText = 'display: flex; flex-direction: column; gap: 8px; margin-bottom: 15px;';
+                            wrapper.style.cssText = 'display: flex; flex-direction: column; gap: 8px; margin-bottom: 25px;';
                             const img = document.createElement('img');
                             img.className = 'solution-img img-loading';
                             img.style.marginTop = '0';
                             img.alt = 'Загрузка...';
                             loadImage(img, u);
+
+                            wrapper.appendChild(img);
+
+                            if (r.raw_text) {
+                                const textDiv = document.createElement('div');
+                                textDiv.className = 'task-raw-text';
+
+                                // ОЧИСТКА ТЕКСТА ОТ НАЗВАНИЯ ПРЕДМЕТА
+                                let displayText = r.raw_text;
+                                if (r.subject) {
+                                    // Заменяем название предмета и следующее за ним двоеточие/пробелы на пустоту
+                                    const regex = new RegExp(r.subject, 'gi');
+                                    displayText = displayText.replace(regex, '').replace(/^[:\-\s]+/, '').trim();
+                                }
+                                if (!displayText) displayText = r.numbers || 'Без текста';
+
+                                textDiv.textContent = `Задание: ${displayText}`;
+                                wrapper.appendChild(textDiv);
+                            }
+
                             const controls = document.createElement('div');
                             controls.style.cssText = 'display: flex; gap: 10px; justify-content: flex-end;';
 
@@ -785,7 +810,6 @@
                             };
                             controls.appendChild(refreshBtn);
                             controls.appendChild(dlBtn);
-                            wrapper.appendChild(img);
                             wrapper.appendChild(controls);
                             sec.appendChild(wrapper);
                         });
@@ -797,7 +821,6 @@
                 if (textResults.length > 0) {
                     const sec = document.createElement('section');
                     sec.className = 'subject-block';
-                    sec.innerHTML = `<h2 class="color-blue" style="border-bottom: 2px solid rgba(66,153,225,0.2); padding-bottom: 10px; margin-bottom: 20px;">📝 Текстовые задания</h2>`;
 
                     const textBySubject = {};
                     textResults.forEach(r => {
@@ -809,13 +832,12 @@
                         const div = document.createElement('div');
                         div.className = 'text-subject-block';
 
-                        // Определяем цвет для текста
                         const subjObj = SUBJECTS.find(s => s.name === subject);
                         let colorClass = 'color-blue';
                         if (subjObj) {
                             if (subjObj.group_name.includes('Гуманитарные')) colorClass = 'color-purple';
-                            if (subjObj.group_name.includes('Естественные')) colorClass = 'color-green';
-                            if (subjObj.group_name.includes('Остальные')) colorClass = 'color-orange';
+                            else if (subjObj.group_name.includes('Естественные')) colorClass = 'color-green';
+                            else if (subjObj.group_name.includes('Остальные')) colorClass = 'color-orange';
                         }
 
                         div.innerHTML = `<h3 class="${colorClass}">${escapeHtml(subject)}</h3>`;
@@ -824,7 +846,6 @@
                             let content = escapeHtml(r.raw_text || '').trim();
                             content = content.replace(/^№?\d+\s*/i, '');
 
-                            // Очистка от мусора (одиночные буквы в начале строки)
                             let lines = content.split('\n');
                             lines = lines.map(l => l.trim());
                             lines = lines.filter(l => l.length > 2 || (l.length > 0 && !/^[а-яa-z]$/i.test(l)));
