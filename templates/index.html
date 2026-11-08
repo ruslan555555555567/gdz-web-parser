@@ -44,6 +44,26 @@
         html.no-auth #authScreen { display: flex !important; }
         html.no-auth #mainScreen { display: none !important; }
 
+        .subject-header-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 6px;
+        }
+        .gear-btn {
+            background: transparent;
+            border: none;
+            font-size: 18px;
+            cursor: pointer;
+            padding: 0 5px;
+            opacity: 0.6;
+            transition: opacity 0.2s, transform 0.2s;
+        }
+        .gear-btn:hover {
+            opacity: 1;
+            transform: rotate(45deg);
+        }
+
         .task-number-header {
             display: inline-block;
             font-size: 15px;
@@ -103,7 +123,6 @@
             color: #ffffff;
         }
 
-        /* СТИЛИ ДЛЯ ТЕКСТА ИИ */
         .ai-text-block h4 { margin: 15px 0 10px 0; font-size: 18px; color: #2b6cb0; border-bottom: 1px solid #bee3f8; padding-bottom: 4px; }
         .ai-text-block h5 { margin: 15px 0 5px 0; font-size: 16px; color: #2b6cb0; }
         .theme-dark .ai-text-block h4, .theme-dark .ai-text-block h5 { color: #90cdf4; border-bottom-color: #4a5568; }
@@ -111,6 +130,7 @@
 
         .ai-text-block ul, .ai-text-block ol { margin: 10px 0; padding-left: 20px; }
         .ai-text-block li { margin-bottom: 6px; }
+        .ai-text-block p { margin-bottom: 10px; }
         .ai-text-block b { color: #1a202c; }
         .theme-dark .ai-text-block b { color: #ffffff; }
 
@@ -305,7 +325,7 @@
         </div>
     </div>
 
-    <!-- НАСТРОЙКИ АККАУНТА -->
+    <!-- НАСТРОЙКИ АККАУНТА (ГЛОБАЛЬНЫЕ) -->
     <div id="settingsModal" class="modal hidden">
         <div class="modal-content">
             <h3>⚙️ Настройки аккаунта</h3>
@@ -330,10 +350,10 @@
             </div>
             <div class="settings-section">
                 <label class="form-label">
-                    Предпочитаемый год издания
+                    Глобальный год по умолчанию
                     <input type="text" id="setYear" placeholder="Например: 2025">
                 </label>
-                <p class="hint" style="margin-top: 5px;">Если оставить пустым, будут показываться решения для всех годов.</p>
+                <p class="hint" style="margin-top: 5px;">Если не указать год для конкретного предмета, будет использоваться этот.</p>
             </div>
             <div class="settings-section">
                 <label class="form-label">Оформление главной</label>
@@ -378,6 +398,26 @@
                     <button type="button" id="closeSettingsBtn" class="btn-secondary">Отмена</button>
                     <button type="button" id="saveSettingsBtn" class="btn-primary" style="width:auto;">💾 Применить</button>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- НАСТРОЙКИ КОНКРЕТНОГО ПРЕДМЕТА -->
+    <div id="subjectSettingsModal" class="modal hidden">
+        <div class="modal-content">
+            <h3 id="subjectSettingsTitle">⚙️ Настройки предмета</h3>
+            <p class="hint" style="margin-bottom: 15px;">Эти настройки применяются только к этому предмету.</p>
+            <div class="settings-section">
+                <label class="form-label">
+                    Предпочитаемый год издания
+                    <input type="text" id="subjectSetYear" placeholder="Например: 2025">
+                </label>
+                <p class="hint" style="margin-top: 5px;">Оставь пустым, чтобы показывались все годы.</p>
+            </div>
+            <div id="subjectSettingsStatus" class="fb-status"></div>
+            <div class="modal-actions">
+                <button type="button" id="closeSubjectSettingsBtn" class="btn-secondary">Отмена</button>
+                <button type="button" id="saveSubjectSettingsBtn" class="btn-primary" style="width:auto;">💾 Сохранить</button>
             </div>
         </div>
     </div>
@@ -431,6 +471,8 @@
         let originalTheme = 'light';
         let originalBgUrl = null;
         let fbImageBase64 = "";
+        let currentSubjectId = null;
+        let subjectYears = {}; // Объект для хранения годов предметов { "Алгебра": "2023" }
 
         const $ = id => document.getElementById(id);
         const authScreen = $('authScreen');
@@ -438,6 +480,7 @@
         const btn = $('btn'), status = $('status'), result = $('result'), clearBtn = $('clearBtn');
         const historyModal = $('historyModal');
         const settingsModal = $('settingsModal');
+        const subjectSettingsModal = $('subjectSettingsModal');
         const supportModal = $('supportModal');
         const imageModal = $('imageModal');
         const imageModalImg = $('imageModalImg');
@@ -528,6 +571,14 @@
             root.classList.add(hasAuth ? 'has-auth' : 'no-auth');
         }
 
+        function parseSubjectYears(str) {
+            try {
+                return JSON.parse(str || '{}');
+            } catch (e) {
+                return {};
+            }
+        }
+
         async function init() {
             if (authToken) {
                 try {
@@ -537,6 +588,7 @@
                         const d = await r.json();
                         authUser = d.user;
                         currentAvatar = authUser.avatar || null;
+                        subjectYears = parseSubjectYears(authUser.subject_years);
                         applyTheme(authUser.theme || 'light', authUser.bg_url);
                         setAuthState(true);
                         await showMain();
@@ -627,10 +679,25 @@
                     items.forEach(s => {
                         const row = document.createElement('div');
                         row.className = 'input-row';
+
+                        // НОВЫЙ БЛОК С ШЕСТЕРЕНКОЙ
+                        const headerRow = document.createElement('div');
+                        headerRow.className = 'subject-header-row';
+
                         const label = document.createElement('label');
                         label.className = 'input-label';
                         label.textContent = s.name;
-                        row.appendChild(label);
+                        headerRow.appendChild(label);
+
+                        const gearBtn = document.createElement('button');
+                        gearBtn.className = 'gear-btn';
+                        gearBtn.innerHTML = '⚙️';
+                        gearBtn.title = 'Настроить год для этого предмета';
+                        gearBtn.onclick = () => openSubjectSettings(s.name);
+                        headerRow.appendChild(gearBtn);
+
+                        row.appendChild(headerRow);
+
                         const ta = document.createElement('textarea');
                         ta.className = 'text-input';
                         ta.id = 'subj_' + s.id;
@@ -648,6 +715,52 @@
 
             textHint.innerHTML = `Вставь сюда весь текст (История, Музыка и т.д.). Умный парсер сам разберет.`;
         }
+
+        // ОТКРЫТИЕ НАСТРОЕК ПРЕДМЕТА
+        function openSubjectSettings(subjectName) {
+            currentSubjectId = subjectName;
+            $('subjectSettingsTitle').textContent = `⚙️ Настройки: ${subjectName}`;
+            $('subjectSetYear').value = subjectYears[subjectName] || '';
+            $('subjectSettingsStatus').textContent = '';
+            $('subjectSettingsStatus').className = 'fb-status';
+            subjectSettingsModal.classList.remove('hidden');
+        }
+
+        $('closeSubjectSettingsBtn').onclick = () => subjectSettingsModal.classList.add('hidden');
+        subjectSettingsModal.onclick = (e) => { if (e.target === subjectSettingsModal) subjectSettingsModal.classList.add('hidden'); };
+
+        // СОХРАНЕНИЕ НАСТРОЕК ПРЕДМЕТА
+        $('saveSubjectSettingsBtn').onclick = async () => {
+            if (!currentSubjectId) return;
+            const yearVal = $('subjectSetYear').value.trim();
+            const st = $('subjectSettingsStatus');
+
+            st.textContent = '⏳ Сохраняем...';
+            st.className = 'fb-status loading';
+
+            subjectYears[currentSubjectId] = yearVal;
+            const jsonStr = JSON.stringify(subjectYears);
+
+            try {
+                const r = await fetch('/api/auth/update', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ token: authToken, subject_years: jsonStr })
+                });
+                const d = await r.json();
+                if (!r.ok) throw new Error(d.detail || 'Ошибка');
+
+                authUser = d.user;
+                subjectYears = parseSubjectYears(authUser.subject_years);
+
+                st.textContent = '✅ Сохранено!';
+                st.className = 'fb-status success';
+                setTimeout(() => subjectSettingsModal.classList.add('hidden'), 1000);
+            } catch (e) {
+                st.textContent = '❌ ' + e.message;
+                st.className = 'fb-status error';
+            }
+        };
 
         const INVISIBLE_SUBJECTS = [
             { name: 'Разговоры о важном', url: '', type: 'text', keywords: ['разговоры о важном'] }
@@ -937,8 +1050,14 @@
                         }
 
                         let filteredSolutions = r.solutions;
-                        if (authUser && authUser.year) {
-                            filteredSolutions = r.solutions.filter(sol => sol.edition.includes(authUser.year));
+
+                        // ИСПОЛЬЗУЕМ НАСТРОЙКИ ДЛЯ КОНКРЕТНОГО ПРЕДМЕТА
+                        const specificYear = subjectYears[subject];
+                        const globalYear = authUser ? authUser.year : '';
+                        const targetYear = specificYear || globalYear;
+
+                        if (targetYear) {
+                            filteredSolutions = r.solutions.filter(sol => sol.edition.includes(targetYear));
                             if (filteredSolutions.length === 0) filteredSolutions = r.solutions;
                         }
 
@@ -1088,32 +1207,49 @@
             finally { btn.disabled = false; }
         });
 
-        // ФУНКЦИЯ ДЛЯ КРАСИВОГО ВЫВОДА MARKDOWN
         function renderMarkdown(text) {
             if (!text) return '';
-            let html = text;
+            let escaped = text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
-            // Экранируем HTML теги для безопасности
-            html = html.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+            const lines = escaped.split('\n');
+            let html = '';
+            let inUl = false;
+            let inOl = false;
 
-            // Заголовки
-            html = html.replace(/^#### (.*)$/gm, '<h5>$1</h5>');
-            html = html.replace(/^### (.*)$/gm, '<h4>$1</h4>');
+            const closeLists = () => {
+                if (inUl) { html += '</ul>'; inUl = false; }
+                if (inOl) { html += '</ol>'; inOl = false; }
+            };
 
-            // Жирный текст
-            html = html.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>');
+            for (let line of lines) {
+                line = line.trim();
+                if (!line) {
+                    closeLists();
+                    continue;
+                }
 
-            // Списки (маркированные и нумерованные)
-            html = html.replace(/^\* (.*)$/gm, '<li>$1</li>');
-            html = html.replace(/^\d+\. (.*)$/gm, '<li style="list-style-type: decimal;">$1</li>');
+                line = line.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>');
 
-            // Перенос строки
-            html = html.replace(/\n/g, '<br>');
-
-            // Чистим лишние переносы вокруг заголовков и списков
-            html = html.replace(/<br><h([45])/g, '<h$1').replace(/<\/h([45])><br>/g, '</h$1>');
-            html = html.replace(/<br><li/g, '<li').replace(/<\/li><br>/g, '</li>');
-
+                if (line.startsWith('#### ')) {
+                    closeLists();
+                    html += `<h5>${line.substring(5)}</h5>`;
+                } else if (line.startsWith('### ')) {
+                    closeLists();
+                    html += `<h4>${line.substring(4)}</h4>`;
+                } else if (line.startsWith('* ')) {
+                    if (inOl) { html += '</ol>'; inOl = false; }
+                    if (!inUl) { html += '<ul>'; inUl = true; }
+                    html += `<li>${line.substring(2)}</li>`;
+                } else if (/^\d+\.\s/.test(line)) {
+                    if (inUl) { html += '</ul>'; inUl = false; }
+                    if (!inOl) { html += '<ol>'; inOl = true; }
+                    html += `<li>${line.replace(/^\d+\.\s/, '')}</li>`;
+                } else {
+                    closeLists();
+                    html += `<p>${line}</p>`;
+                }
+            }
+            closeLists();
             return html;
         }
 
@@ -1204,6 +1340,7 @@
                 authToken = d.token;
                 authUser = d.user;
                 currentAvatar = d.user.avatar || null;
+                subjectYears = parseSubjectYears(authUser.subject_years);
                 localStorage.setItem('gdz_token', authToken);
                 applyTheme(authUser.theme || 'light', authUser.bg_url);
                 await showMain();
@@ -1217,7 +1354,7 @@
         async function logout() {
             if (!confirm('Выйти из аккаунта?')) return;
             try { await fetch('/api/auth/logout', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({token: authToken}) }); } catch {}
-            authToken = ''; authUser = null; currentAvatar = null;
+            authToken = ''; authUser = null; currentAvatar = null; subjectYears = {};
             localStorage.removeItem('gdz_token');
             applyTheme('light', null);
             topbarRight.innerHTML = '';
