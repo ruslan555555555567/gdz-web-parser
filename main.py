@@ -16,7 +16,7 @@ import asyncpg
 
 from parser import parse_tasks
 
-VERSION = "98.0.0"
+VERSION = "99.0.0"
 ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "")
 ADMIN_EMAIL = os.getenv("ADMIN_EMAIL", "admin@gdz.ru").lower().strip()
 DATABASE_URL = os.getenv("DATABASE_URL")
@@ -34,24 +34,28 @@ DEFAULT_SUBJECTS = [
      "group_name": "🧮 Точные науки", "sort_order": 4, "max_number": 500, "note": ""},
     {"name": "Русский язык", "url": "https://gdz.ru/class-7/russkii_yazik/baranova/", "type": "numbers",
      "group_name": "📖 Гуманитарные науки", "sort_order": 5, "max_number": 560, "note": ""},
-    {"name": "Английский язык", "url": "https://gdz.ru/class-7/english/spotlight-7/", "type": "numbers",
-     "group_name": "📖 Гуманитарные науки", "sort_order": 6, "max_number": 500, "note": ""},
-    {"name": "Физика", "url": "", "type": "text", "group_name": "🌿 Естественные науки", "sort_order": 7,
+    {"name": "Русский (Тетрадь)", "url": "https://gdz.ru/class-7/russkii_yazik/baranova-rabochaya-tetrad/",
+     "type": "numbers", "group_name": "📖 Гуманитарные науки", "sort_order": 6, "max_number": 560, "note": ""},
+    {"name": "Английский язык", "url": "https://gdz.ru/class-7/english/reshebnik-angliyskiy-v-fokuse-vaulina-yu-e/",
+     "type": "numbers", "group_name": "📖 Гуманитарные науки", "sort_order": 7, "max_number": 500, "note": ""},
+    {"name": "Английский (Тетрадь)", "url": "https://gdz.ru/class-7/english/workbook-spotlight-7/", "type": "numbers",
+     "group_name": "📖 Гуманитарные науки", "sort_order": 8, "max_number": 500, "note": ""},
+    {"name": "Физика", "url": "", "type": "text", "group_name": "🌿 Естественные науки", "sort_order": 9,
      "max_number": 0, "note": ""},
-    {"name": "Биология", "url": "", "type": "text", "group_name": "🌿 Естественные науки", "sort_order": 8,
+    {"name": "Биология", "url": "", "type": "text", "group_name": "🌿 Естественные науки", "sort_order": 10,
      "max_number": 0, "note": ""},
-    {"name": "География", "url": "", "type": "text", "group_name": "🌿 Естественные науки", "sort_order": 9,
+    {"name": "География", "url": "", "type": "text", "group_name": "🌿 Естественные науки", "sort_order": 11,
      "max_number": 0, "note": ""},
-    {"name": "Литература", "url": "", "type": "text", "group_name": "📖 Гуманитарные науки", "sort_order": 10,
+    {"name": "Литература", "url": "", "type": "text", "group_name": "📖 Гуманитарные науки", "sort_order": 12,
      "max_number": 0, "note": ""},
-    {"name": "История", "url": "", "type": "text", "group_name": "📖 Гуманитарные науки", "sort_order": 11,
+    {"name": "История", "url": "", "type": "text", "group_name": "📖 Гуманитарные науки", "sort_order": 13,
      "max_number": 0, "note": ""},
-    {"name": "Музыка", "url": "", "type": "text", "group_name": "🎨 Остальные предметы", "sort_order": 12,
+    {"name": "Музыка", "url": "", "type": "text", "group_name": "🎨 Остальные предметы", "sort_order": 14,
      "max_number": 0, "note": ""},
-    {"name": "Труд (технология)", "url": "", "type": "text", "group_name": "🎨 Остальные предметы", "sort_order": 13,
+    {"name": "Труд (технология)", "url": "", "type": "text", "group_name": "🎨 Остальные предметы", "sort_order": 15,
      "max_number": 0, "note": ""},
     {"name": "Изобразительное искусство", "url": "", "type": "text", "group_name": "🎨 Остальные предметы",
-     "sort_order": 14, "max_number": 0, "note": ""},
+     "sort_order": 16, "max_number": 0, "note": ""},
 ]
 
 DEFAULT_SETTINGS = {"site_title": "GDZ Парсер", "announcement": "", "footer_text": "", "custom_css": ""}
@@ -709,7 +713,6 @@ async def admin_logs_clear(data: dict):
     return {"ok": True}
 
 
-# НОВОЕ: Удаление одного лога
 @app.post("/api/admin/logs/delete/{log_id}")
 async def admin_logs_delete(log_id: int, data: dict):
     if not await check_admin(data): raise HTTPException(401, "Нет доступа")
