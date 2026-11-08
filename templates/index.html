@@ -44,15 +44,14 @@
         html.no-auth #authScreen { display: flex !important; }
         html.no-auth #mainScreen { display: none !important; }
 
-        /* СТИЛЬ ДЛЯ НОМЕРОВ ЗАДАНИЙ (АККУРАТНАЯ ПЛАШКА) */
         .task-number-header {
             display: inline-block;
             font-size: 15px;
             font-weight: 700;
-            color: #2b6cb0 !important; /* Синий текст */
-            background: #ebf8ff; /* Нежно-голубой фон */
+            color: #2b6cb0 !important;
+            background: #ebf8ff;
             padding: 6px 14px;
-            border-radius: 20px; /* Форма таблетки */
+            border-radius: 20px;
             margin-bottom: 12px;
             border: 1px solid #bee3f8;
             width: fit-content;
@@ -150,21 +149,20 @@
             color: #ffffff;
         }
 
-        /* ИСПРАВЛЕНИЕ ОКНА ТЕХПОДДЕРЖКИ (УБИРАЕМ ПРОЗРАЧНОСТЬ) */
         .modal {
             position: fixed; inset: 0; background: rgba(0,0,0,0.85) !important;
             display: flex; align-items: center; justify-content: center;
             padding: 20px; z-index: 9999 !important;
         }
         .modal-content {
-            background: #ffffff !important; /* Плотный белый фон */
+            background: #ffffff !important;
             color: #1a202c !important;
             border-radius: 12px; padding: 24px;
             max-width: 450px; width: 100%; max-height: 90vh; overflow-y: auto;
             box-shadow: 0 10px 50px rgba(0,0,0,0.5) !important;
         }
         .theme-dark .modal-content {
-            background: #2d3748 !important; /* Плотный темный фон */
+            background: #2d3748 !important;
             color: #e2e8f0 !important;
             border: 1px solid #4a5568 !important;
         }
@@ -234,8 +232,8 @@
                     Вставь сюда весь текст. Умный парсер сам найдет Алгебру, Геометрию и текстовые предметы.
                 </div>
                 <textarea id="allTextTasks" class="text-input" rows="6" placeholder="Например:
-Алгебра: № 237, 268
-Английский (Учебник): стр. 19" style="resize: vertical; font-family: inherit; font-size: 15px; width: 100%; padding: 12px;"></textarea>
+Английский (Учебник): стр. 19
+Английский (Тетрадь): стр. 5" style="resize: vertical; font-family: inherit; font-size: 15px; width: 100%; padding: 12px;"></textarea>
             </div>
 
             <div style="display: flex; gap: 10px; margin-top: 20px;">
@@ -621,20 +619,26 @@
             return null;
         }
 
+        // УЛУЧШЕННЫЙ ЭКСТРАКТОР НОМЕРОВ (ТЕПЕРЬ БЕРЕТ И НОМЕРА, И СТРАНИЦЫ)
         function extractNumbers(str, subjectName) {
             let clean = str;
             const isPageBased = /английск|географ/i.test(subjectName);
 
             if (isPageBased) {
                 let pageMatches = [];
-                const pageRegex = /(?:стр\.?|страниц[ыа]?)\s*(\d+)/gi;
+                const pageRegex = /(?:стр\.?|страниц[ыа]?|page)\s*(\d+)/gi;
                 let match;
                 while ((match = pageRegex.exec(clean)) !== null) {
                     pageMatches.push(match[1]);
                 }
-                if (pageMatches.length > 0) {
-                    return [...new Set(pageMatches)].join(', ');
+                let standardMatches = [];
+                const numRegex = /(?:№|номер|номера|упражнение|задание|задача|упр\.?)\s*([\dA-Za-zА-Яа-я\s,и]+)/gi;
+                while ((match = numRegex.exec(clean)) !== null) {
+                    const nums = match[1].match(/\d+/g);
+                    if (nums) standardMatches.push(...nums);
                 }
+                const allNums = [...new Set([...pageMatches, ...standardMatches])];
+                if (allNums.length > 0) return allNums.join(', ');
                 return "";
             }
 
@@ -666,6 +670,60 @@
             return [...new Set(matches)].filter(n => n !== '').join(', ');
         }
 
+        // НОВЫЙ УМНЫЙ ПАРСЕР: РАЗДЕЛЯЕТ ТЕТРАДЬ И УЧЕБНИК
+        function parseDualTasks(subject, rawText) {
+            const textLower = rawText.toLowerCase();
+            const subjectNameLower = subject.name.toLowerCase();
+            const isEnglishOrRussian = subjectNameLower.includes('англ') || subjectNameLower.includes('русск');
+
+            if (!isEnglishOrRussian) {
+                return [{ subject: subject.name, url: subject.url, type: subject.type, numbers: extractNumbers(rawText, subject.name), raw_text: rawText }];
+            }
+
+            const hasWb = /тетрад|печатн|р\.т\.|тпо/.test(textLower);
+            const hasTb = /учебник|учеб\./.test(textLower);
+
+            if (hasWb && hasTb) {
+                const baseName = subject.name.replace(/\(.*?\)/g, '').trim();
+                const textbookSubj = SUBJECTS.find(s => s.name.includes(baseName) && !s.name.toLowerCase().includes('тетрад') && s.type === 'numbers');
+                const workbookSubj = SUBJECTS.find(s => s.name.includes(baseName) && s.name.toLowerCase().includes('тетрад') && s.type === 'numbers');
+
+                if (textbookSubj && workbookSubj) {
+                    // Убираем упоминания учебника из текста для тетради
+                    let wbClean = rawText.replace(/(?:стр|страниц[ыа]?|page|номера|№)\s*[\d,\s\-]+\s*(?:учебника|учеб\.)/gi, '');
+                    wbClean = wbClean.replace(/(?:учебника|учеб\.)\s*(?:стр|страниц[ыа]?|page|номера|№)?\s*[\d,\s\-]+/gi, '');
+
+                    // Убираем упоминания тетради из текста для учебника
+                    let tbClean = rawText.replace(/(?:стр|страниц[ыа]?|page|номера|№)\s*[\d,\s\-]+\s*(?:тетради|тетрадь|р\.т\.)/gi, '');
+                    tbClean = tbClean.replace(/(?:тетради|тетрадь|р\.т\.)\s*(?:стр|страниц[ыа]?|page|номера|№)?\s*[\d,\s\-]+/gi, '');
+
+                    let jobs = [];
+                    let wbNums = extractNumbers(wbClean, workbookSubj.name);
+                    let tbNums = extractNumbers(tbClean, textbookSubj.name);
+
+                    if (wbNums) jobs.push({ subject: workbookSubj.name, url: workbookSubj.url, type: 'numbers', numbers: wbNums, raw_text: rawText });
+                    if (tbNums) jobs.push({ subject: textbookSubj.name, url: textbookSubj.url, type: 'numbers', numbers: tbNums, raw_text: rawText });
+
+                    if (jobs.length > 0) return jobs;
+                }
+            }
+
+            let finalSubj = subject;
+            let cleanedText = rawText;
+
+            if (hasWb) {
+                finalSubj = SUBJECTS.find(s => s.name.includes(subject.name.replace(/\(.*?\)/g, '').trim()) && s.name.toLowerCase().includes('тетрад')) || subject;
+                cleanedText = cleanedText.replace(/(?:стр|страниц[ыа]?|page|номера|№)\s*[\d,\s\-]+\s*(?:учебника|учеб\.)/gi, '');
+                cleanedText = cleanedText.replace(/(?:учебника|учеб\.)\s*(?:стр|страниц[ыа]?|page|номера|№)?\s*[\d,\s\-]+/gi, '');
+            } else if (hasTb) {
+                finalSubj = SUBJECTS.find(s => s.name.includes(subject.name.replace(/\(.*?\)/g, '').trim()) && !s.name.toLowerCase().includes('тетрад')) || subject;
+                cleanedText = cleanedText.replace(/(?:стр|страниц[ыа]?|page|номера|№)\s*[\d,\s\-]+\s*(?:тетради|тетрадь|р\.т\.)/gi, '');
+                cleanedText = cleanedText.replace(/(?:тетради|тетрадь|р\.т\.)\s*(?:стр|страниц[ыа]?|page|номера|№)?\s*[\d,\s\-]+/gi, '');
+            }
+
+            return [{ subject: finalSubj.name, url: finalSubj.url, type: finalSubj.type, numbers: extractNumbers(cleanedText, finalSubj.name), raw_text: rawText }];
+        }
+
         clearBtn.onclick = () => {
             const textareas = subjectsContainer.querySelectorAll('.text-input');
             textareas.forEach(ta => ta.value = '');
@@ -686,7 +744,8 @@
                 const id = el.id.replace('subj_', '');
                 const subject = SUBJECTS.find(s => s.id == id);
                 if (subject) {
-                    jobs.push({ subject: subject.name, url: subject.url || '', type: subject.type || 'numbers', numbers: extractNumbers(v, subject.name), raw_text: v });
+                    const taskJobs = parseDualTasks(subject, v);
+                    jobs.push(...taskJobs);
                 }
             });
 
@@ -710,13 +769,9 @@
 
                     if (matchedSubj) {
                         if (currentSubj && currentText.length > 0) {
-                            jobs.push({
-                                subject: currentSubj.name,
-                                url: currentSubj.url,
-                                type: currentSubj.type,
-                                numbers: currentSubj.type === 'numbers' ? extractNumbers(currentText.join(' '), currentSubj.name) : '',
-                                raw_text: currentText.join('\n').trim()
-                            });
+                            const rawText = currentText.join('\n').trim();
+                            const taskJobs = parseDualTasks(currentSubj, rawText);
+                            jobs.push(...taskJobs);
                         }
                         currentSubj = matchedSubj;
 
@@ -736,13 +791,9 @@
                     }
                 }
                 if (currentSubj && currentText.length > 0) {
-                    jobs.push({
-                        subject: currentSubj.name,
-                        url: currentSubj.url,
-                        type: currentSubj.type,
-                        numbers: currentSubj.type === 'numbers' ? extractNumbers(currentText.join(' '), currentSubj.name) : '',
-                        raw_text: currentText.join('\n').trim()
-                    });
+                    const rawText = currentText.join('\n').trim();
+                    const taskJobs = parseDualTasks(currentSubj, rawText);
+                    jobs.push(...taskJobs);
                 }
                 if (currentText.length > 0 && jobs.length === 0) {
                     jobs.push({ subject: "Текстовые задания", url: "", type: "text", numbers: "", raw_text: currentText.join('\n') });
@@ -811,7 +862,6 @@
                             const wrapper = document.createElement('div');
                             wrapper.style.cssText = 'display: flex; flex-direction: column; gap: 8px; margin-bottom: 25px;';
 
-                            // АККУРАТНАЯ ПЛАШКА С НОМЕРОМ
                             if (r.number) {
                                 const numHeader = document.createElement('div');
                                 numHeader.className = 'task-number-header';
