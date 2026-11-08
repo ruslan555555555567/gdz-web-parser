@@ -44,6 +44,80 @@
         html.no-auth #authScreen { display: flex !important; }
         html.no-auth #mainScreen { display: none !important; }
 
+        /* НОВЫЕ СТИЛИ ДЛЯ КНОПОК ДЕЙСТВИЙ */
+        .action-buttons-row {
+            display: flex;
+            gap: 12px;
+            margin-top: 24px;
+            align-items: stretch;
+        }
+        .btn-modern-primary {
+            flex: 1;
+            background: linear-gradient(135deg, #4299e1, #3182ce);
+            color: white;
+            border: none;
+            border-radius: 14px;
+            padding: 15px 24px;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(66, 153, 225, 0.4);
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            font-family: inherit;
+        }
+        .btn-modern-primary:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(66, 153, 225, 0.6);
+        }
+        .btn-modern-primary:active:not(:disabled) {
+            transform: translateY(1px);
+        }
+        .btn-modern-primary:disabled {
+            background: #a0aec0;
+            box-shadow: none;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .btn-modern-clear {
+            background: #edf2f7;
+            color: #e53e3e;
+            border: 2px solid #fed7d7;
+            border-radius: 14px;
+            padding: 15px 20px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            font-family: inherit;
+            white-space: nowrap;
+        }
+        .btn-modern-clear:hover {
+            background: #fff5f5;
+            border-color: #feb2b2;
+            transform: translateY(-2px);
+        }
+        .btn-modern-clear:active {
+            transform: translateY(1px);
+        }
+        /* Темная тема для кнопки очистки */
+        .theme-dark .btn-modern-clear {
+            background: rgba(74, 85, 104, 0.5);
+            color: #fc8181;
+            border-color: #4a5568;
+        }
+        .theme-dark .btn-modern-clear:hover {
+            background: rgba(229, 62, 62, 0.2);
+            border-color: #fc8181;
+        }
+
         .subject-header-row {
             display: flex;
             justify-content: space-between;
@@ -314,13 +388,14 @@
                     Вставь сюда весь текст. Умный парсер сам найдет Алгебру, Геометрию и текстовые предметы.
                 </div>
                 <textarea id="allTextTasks" class="text-input" rows="6" placeholder="Например:
-Английский (Учебник): стр. 19
-Английский (Тетрадь): стр. 5" style="resize: vertical; font-family: inherit; font-size: 15px; width: 100%; padding: 12px;"></textarea>
+Алгебра: № 237, 268
+Английский (Учебник): стр. 19" style="resize: vertical; font-family: inherit; font-size: 15px; width: 100%; padding: 12px;"></textarea>
             </div>
 
-            <div style="display: flex; gap: 10px; margin-top: 20px;">
-                <button id="btn" class="btn-primary" style="flex: 1; margin-top: 0;">🔍 Найти решения / Показать задания</button>
-                <button id="clearBtn" class="btn-secondary" style="background: #fed7d7; color: #c53030; border: 1px solid #feb2b2; padding: 14px 20px; font-weight: 600; border-radius: 10px; cursor: pointer; transition: all 0.2s;">🗑 Очистить всё</button>
+            <!-- НОВЫЕ КНОПКИ -->
+            <div class="action-buttons-row">
+                <button id="btn" class="btn-modern-primary">🚀 Решить</button>
+                <button id="clearBtn" class="btn-modern-clear">🗑 Очистить</button>
             </div>
         </section>
 
@@ -482,7 +557,7 @@
         let fbImageBase64 = "";
         let currentSubjectId = null;
         let subjectYears = {};
-        let activeParts = {}; // { "Алгебра": "1" | "2" }
+        let activeParts = {};
 
         const $ = id => document.getElementById(id);
         const authScreen = $('authScreen');
@@ -984,7 +1059,6 @@
                 if (subject) {
                     const taskJobs = parseDualTasks(subject, v);
 
-                    // ПОДСТАВЛЯЕМ URL В ЗАВИСИМОСТИ ОТ ВЫБРАННОЙ ЧАСТИ
                     const activePart = activeParts[subject.name] || '1';
                     taskJobs.forEach(job => {
                         if (activePart === '2' && subject.url_alt) {
