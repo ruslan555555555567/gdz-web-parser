@@ -164,7 +164,6 @@
             font-size: 14px; color: inherit;
         }
 
-        /* ═══ НОВЫЕ СТИЛИ ДЛЯ ЛОГОВ ═══ */
         .log-filters { display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap; }
         .log-filters input, .log-filters select {
             padding: 8px 12px; border-radius: 8px; border: 1px solid #cbd5e0;
@@ -391,6 +390,7 @@
                     <option value="🎨 Остальные предметы">🎨 Остальные предметы</option>
                 </select>
             </label>
+            <label class="form-label">Год по умолчанию (для всех пользователей)<input type="text" id="editDefaultYear" placeholder="Например: 2025"></label>
             <label class="form-label">Всего номеров в учебнике (0 = не знаем)<input type="number" id="editMaxNum" placeholder="560" min="0"></label>
             <label class="form-label">Порядок<input type="number" id="editSort" placeholder="1" min="0"></label>
             <label class="form-label">Заметка (необязательно)<textarea id="editNote" rows="2" placeholder="Например: Мерзляк, 2023 год"></textarea></label>
@@ -452,7 +452,7 @@
         let usersCache = [];
         let draggedId = null;
         let isMainAdmin = false;
-        let allLogsCache = []; // Храним все логи для фильтрации на клиенте
+        let allLogsCache = [];
 
         let currentCustomSubjects = [];
         let currentEditingUserId = null;
@@ -625,11 +625,17 @@
                     div.className = 'subject-card'; div.draggable = true; div.dataset.id = s.id;
                     const typeLabel = s.type === 'text' ? '<span class="type-badge type-text">📝 текст</span>' : '<span class="type-badge type-num">🔍 номера</span>';
                     const maxNum = s.max_number ? `${s.max_number}` : '—';
+                    const yearBadge = s.default_year ? `<span class="stat-pill" style="background: rgba(72, 187, 120, 0.2); color: #276749; border: 1px solid #48bb78;">📅 Год: <b>${s.default_year}</b></span>` : '';
+
                     div.innerHTML = `
                         <div class="subj-head"><span class="drag-handle" title="Перетащи">⠿</span><strong>${escapeHtml(s.name)}</strong>${typeLabel}</div>
                         <div class="subj-row">📁 ${escapeHtml(s.group_name || '—')}</div>
                         <div class="subj-row">🔗 ${escapeHtml(s.url || '—')}</div>
-                        <div class="subj-row"><span class="stat-pill">📊 Макс: <b>${maxNum}</b></span><span class="stat-pill">📍 Порядок: <b>${s.sort_order}</b></span></div>
+                        <div class="subj-row">
+                            <span class="stat-pill">📊 Макс: <b>${maxNum}</b></span>
+                            <span class="stat-pill">📍 Порядок: <b>${s.sort_order}</b></span>
+                            ${yearBadge}
+                        </div>
                         ${s.note ? `<div class="subj-row small">📝 ${escapeHtml(s.note)}</div>` : ''}
                         <div class="subj-actions"><button class="btn-small subj-edit">✏️ Изменить</button><button class="msg-delete subj-del">🗑</button></div>
                     `;
@@ -676,6 +682,7 @@
             document.getElementById('editUrl').value = subject ? (subject.url || '') : '';
             document.getElementById('editType').value = subject ? (subject.type || 'numbers') : 'numbers';
             document.getElementById('editGroup').value = subject ? (subject.group_name || '🧮 Точные науки') : '🧮 Точные науки';
+            document.getElementById('editDefaultYear').value = subject ? (subject.default_year || '') : '';
             document.getElementById('editMaxNum').value = subject ? (subject.max_number || 0) : 0;
             document.getElementById('editSort').value = subject ? subject.sort_order : 99;
             document.getElementById('editNote').value = subject ? (subject.note || '') : '';
@@ -688,12 +695,13 @@
             const st = document.getElementById('editStatus');
             const name = document.getElementById('editName').value.trim(); const url = document.getElementById('editUrl').value.trim();
             const type = document.getElementById('editType').value; const group_name = document.getElementById('editGroup').value;
+            const default_year = document.getElementById('editDefaultYear').value.trim();
             const max_number = parseInt(document.getElementById('editMaxNum').value) || 0; const sort_order = parseInt(document.getElementById('editSort').value) || 999;
             const note = document.getElementById('editNote').value.trim();
             if (!name) { st.textContent = '⚠️ Нужно название'; st.className = 'fb-status error'; return; }
             if (type === 'numbers' && !url) { st.textContent = '⚠️ Для поиска номеров нужна ссылка'; st.className = 'fb-status error'; return; }
             st.textContent = '⏳ Сохраняем...'; st.className = 'fb-status loading';
-            const payload = { ...getAuthPayload(), name, url, type, group_name, max_number, sort_order, note };
+            const payload = { ...getAuthPayload(), name, url, type, group_name, default_year, max_number, sort_order, note };
             if (editingTargetUserId) payload.user_id = editingTargetUserId;
             try {
                 let r;
@@ -931,7 +939,6 @@
 
                 const avatarHtml = l.avatar ? `<span class="log-avatar" style="background-image:url('${l.avatar}')"></span>` : `<span class="log-avatar">${getInitial(l.name, l.email)}</span>`;
 
-                // ДОБАВЛЕНА КНОПКА УДАЛЕНИЯ ЛОГА
                 div.innerHTML = `
                     <div class="log-icon">${icon}</div>
                     <div class="log-content">
@@ -949,13 +956,12 @@
             });
         }
 
-        // НОВАЯ ФУНКЦИЯ УДАЛЕНИЯ ЛОГА
         window.deleteLog = async (id) => {
             if (!confirm('Удалить эту запись из логов?')) return;
             try {
                 const r = await fetch('/api/admin/logs/delete/' + id, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(getAuthPayload()) });
                 if (!r.ok) throw new Error('Ошибка удаления');
-                loadLogs(); // Перезагружаем логи
+                loadLogs();
             } catch (e) { alert('Ошибка: ' + e.message); }
         };
 

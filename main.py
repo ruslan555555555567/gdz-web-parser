@@ -16,7 +16,7 @@ import asyncpg
 
 from parser import parse_tasks
 
-VERSION = "103.0.0"
+VERSION = "104.0.0"
 ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "")
 ADMIN_EMAIL = os.getenv("ADMIN_EMAIL", "admin@gdz.ru").lower().strip()
 DATABASE_URL = os.getenv("DATABASE_URL")
@@ -25,36 +25,38 @@ db_pool = None
 
 DEFAULT_SUBJECTS = [
     {"name": "Алгебра", "url": "https://gdz.ru/class-7/algebra/makarichev-18/", "type": "numbers",
-     "group_name": "🧮 Точные науки", "sort_order": 1, "max_number": 1000, "note": ""},
+     "group_name": "🧮 Точные науки", "sort_order": 1, "max_number": 1000, "note": "", "default_year": ""},
     {"name": "Геометрия", "url": "https://gdz.ru/class-7/geometria/merzljak/", "type": "numbers",
-     "group_name": "🧮 Точные науки", "sort_order": 2, "max_number": 1000, "note": ""},
+     "group_name": "🧮 Точные науки", "sort_order": 2, "max_number": 1000, "note": "", "default_year": ""},
     {"name": "Вероятность и статистика", "url": "https://gdz.ru/class-7/matematika/vysockij-yashenko-bazovij-uroven/",
-     "type": "numbers", "group_name": "🧮 Точные науки", "sort_order": 3, "max_number": 500, "note": ""},
+     "type": "numbers", "group_name": "🧮 Точные науки", "sort_order": 3, "max_number": 500, "note": "",
+     "default_year": ""},
     {"name": "Информатика", "url": "https://gdz.ru/class-7/informatika/reshebnik-bosova-l-l-7/", "type": "numbers",
-     "group_name": "🧮 Точные науки", "sort_order": 4, "max_number": 500, "note": ""},
+     "group_name": "🧮 Точные науки", "sort_order": 4, "max_number": 500, "note": "", "default_year": ""},
     {"name": "Русский язык", "url": "https://gdz.ru/class-7/russkii_yazik/baranova/", "type": "numbers",
-     "group_name": "📖 Гуманитарные науки", "sort_order": 5, "max_number": 560, "note": ""},
+     "group_name": "📖 Гуманитарные науки", "sort_order": 5, "max_number": 560, "note": "", "default_year": ""},
     {"name": "Английский язык(Учебник)",
      "url": "https://gdz.ru/class-7/english/reshebnik-angliyskiy-v-fokuse-vaulina-yu-e/", "type": "numbers",
-     "group_name": "📖 Гуманитарные науки", "sort_order": 7, "max_number": 500, "note": ""},
+     "group_name": "📖 Гуманитарные науки", "sort_order": 7, "max_number": 500, "note": "", "default_year": "2025"},
     {"name": "Английский язык(Тетрадь)", "url": "https://gdz.ru/class-7/english/workbook-spotlight-7/",
-     "type": "numbers", "group_name": "📖 Гуманитарные науки", "sort_order": 8, "max_number": 500, "note": ""},
+     "type": "numbers", "group_name": "📖 Гуманитарные науки", "sort_order": 8, "max_number": 500, "note": "",
+     "default_year": "2025"},
     {"name": "Физика", "url": "", "type": "text", "group_name": "🌿 Естественные науки", "sort_order": 9,
-     "max_number": 0, "note": ""},
+     "max_number": 0, "note": "", "default_year": ""},
     {"name": "Биология", "url": "", "type": "text", "group_name": "🌿 Естественные науки", "sort_order": 10,
-     "max_number": 0, "note": ""},
+     "max_number": 0, "note": "", "default_year": ""},
     {"name": "География", "url": "", "type": "text", "group_name": "🌿 Естественные науки", "sort_order": 11,
-     "max_number": 0, "note": ""},
+     "max_number": 0, "note": "", "default_year": ""},
     {"name": "Литература", "url": "", "type": "text", "group_name": "📖 Гуманитарные науки", "sort_order": 12,
-     "max_number": 0, "note": ""},
+     "max_number": 0, "note": "", "default_year": ""},
     {"name": "История", "url": "", "type": "text", "group_name": "📖 Гуманитарные науки", "sort_order": 13,
-     "max_number": 0, "note": ""},
+     "max_number": 0, "note": "", "default_year": ""},
     {"name": "Музыка", "url": "", "type": "text", "group_name": "🎨 Остальные предметы", "sort_order": 14,
-     "max_number": 0, "note": ""},
+     "max_number": 0, "note": "", "default_year": ""},
     {"name": "Труд (технология)", "url": "", "type": "text", "group_name": "🎨 Остальные предметы", "sort_order": 15,
-     "max_number": 0, "note": ""},
+     "max_number": 0, "note": "", "default_year": ""},
     {"name": "Изобразительное искусство", "url": "", "type": "text", "group_name": "🎨 Остальные предметы",
-     "sort_order": 16, "max_number": 0, "note": ""},
+     "sort_order": 16, "max_number": 0, "note": "", "default_year": ""},
 ]
 
 DEFAULT_SETTINGS = {"site_title": "GDZ Парсер", "announcement": "", "footer_text": "", "custom_css": ""}
@@ -82,8 +84,7 @@ async def init_db():
             await conn.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS is_verified BOOLEAN DEFAULT TRUE")
             await conn.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS subjects_configured BOOLEAN DEFAULT FALSE")
             await conn.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS year TEXT DEFAULT ''")
-            await conn.execute(
-                "ALTER TABLE users ADD COLUMN IF NOT EXISTS subject_years TEXT DEFAULT '{}'")  # НОВОЕ ПОЛЕ
+            await conn.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS subject_years TEXT DEFAULT '{}'")
             await conn.execute(
                 "CREATE TABLE IF NOT EXISTS blocked_devices (device TEXT PRIMARY KEY, blocked_at TIMESTAMP DEFAULT NOW())")
             await conn.execute(
@@ -92,6 +93,8 @@ async def init_db():
             await conn.execute("ALTER TABLE subjects ADD COLUMN IF NOT EXISTS note TEXT DEFAULT ''")
             await conn.execute(
                 "ALTER TABLE subjects ADD COLUMN IF NOT EXISTS user_id INTEGER REFERENCES users(id) ON DELETE CASCADE")
+            await conn.execute(
+                "ALTER TABLE subjects ADD COLUMN IF NOT EXISTS default_year TEXT DEFAULT ''")  # НОВОЕ ПОЛЕ
             await conn.execute(
                 "CREATE TABLE IF NOT EXISTS user_subjects (user_id INTEGER REFERENCES users(id) ON DELETE CASCADE, subject_id INTEGER REFERENCES subjects(id) ON DELETE CASCADE, PRIMARY KEY (user_id, subject_id))")
             await conn.execute(
@@ -114,8 +117,9 @@ async def init_db():
             if count == 0:
                 for s in DEFAULT_SUBJECTS:
                     await conn.execute(
-                        "INSERT INTO subjects (name, url, type, group_name, sort_order, max_number, note) VALUES ($1, $2, $3, $4, $5, $6, $7) ON CONFLICT (name) DO NOTHING",
-                        s["name"], s["url"], s["type"], s["group_name"], s["sort_order"], s["max_number"], s["note"])
+                        "INSERT INTO subjects (name, url, type, group_name, sort_order, max_number, note, default_year) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) ON CONFLICT (name) DO NOTHING",
+                        s["name"], s["url"], s["type"], s["group_name"], s["sort_order"], s["max_number"], s["note"],
+                        s["default_year"])
     except Exception as e:
         print(f"[main] Ошибка PostgreSQL: {e}")
         db_pool = None
@@ -314,22 +318,22 @@ async def get_subjects(token: str = ""):
     async with db_pool.acquire() as conn:
         if not user:
             rows = await conn.fetch(
-                "SELECT id, name, url, type, group_name, sort_order, max_number, note FROM subjects WHERE user_id IS NULL ORDER BY sort_order, id")
+                "SELECT id, name, url, type, group_name, sort_order, max_number, note, default_year FROM subjects WHERE user_id IS NULL ORDER BY sort_order, id")
         else:
             if user.get("subjects_configured"):
                 assigned = await conn.fetch("SELECT subject_id FROM user_subjects WHERE user_id = $1", user["id"])
                 s_ids = [r["subject_id"] for r in assigned]
                 if s_ids:
                     global_rows = await conn.fetch(
-                        "SELECT id, name, url, type, group_name, sort_order, max_number, note FROM subjects WHERE user_id IS NULL AND id = ANY($1::int[]) ORDER BY sort_order, id",
+                        "SELECT id, name, url, type, group_name, sort_order, max_number, note, default_year FROM subjects WHERE user_id IS NULL AND id = ANY($1::int[]) ORDER BY sort_order, id",
                         s_ids)
                 else:
                     global_rows = []
             else:
                 global_rows = await conn.fetch(
-                    "SELECT id, name, url, type, group_name, sort_order, max_number, note FROM subjects WHERE user_id IS NULL ORDER BY sort_order, id")
+                    "SELECT id, name, url, type, group_name, sort_order, max_number, note, default_year FROM subjects WHERE user_id IS NULL ORDER BY sort_order, id")
             custom_rows = await conn.fetch(
-                "SELECT id, name, url, type, group_name, sort_order, max_number, note FROM subjects WHERE user_id = $1 ORDER BY sort_order, id",
+                "SELECT id, name, url, type, group_name, sort_order, max_number, note, default_year FROM subjects WHERE user_id = $1 ORDER BY sort_order, id",
                 user["id"])
             rows = list(global_rows) + list(custom_rows)
     return {"subjects": [dict(r) for r in rows]}
@@ -376,14 +380,15 @@ async def admin_add_subject(data: dict):
     max_number = int(data.get("max_number") or 0)
     note = (data.get("note") or "").strip();
     user_id = data.get("user_id")
+    default_year = (data.get("default_year") or "").strip()
     if not name: raise HTTPException(400, "Нужно название")
     if s_type not in ("numbers", "text"): raise HTTPException(400, "Неверный type")
     if s_type == "numbers" and not url: raise HTTPException(400, "Нужна ссылка")
     async with db_pool.acquire() as conn:
         try:
             new_id = await conn.fetchval(
-                "INSERT INTO subjects (name, url, type, group_name, sort_order, max_number, note, user_id) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id",
-                name, url, s_type, group_name, sort_order, max_number, note, user_id)
+                "INSERT INTO subjects (name, url, type, group_name, sort_order, max_number, note, user_id, default_year) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id",
+                name, url, s_type, group_name, sort_order, max_number, note, user_id, default_year)
         except asyncpg.UniqueViolationError:
             raise HTTPException(400, "Такой предмет уже есть")
     await log_action(None, "subject_add", name)
@@ -397,7 +402,7 @@ async def admin_update_subject(data: dict):
     subj_id = data.get("id")
     if not subj_id: raise HTTPException(400, "Нужен id")
     fields, params, idx = [], [], 1
-    for key in ("name", "url", "type", "group_name", "note"):
+    for key in ("name", "url", "type", "group_name", "note", "default_year"):
         if key in data and data[key] is not None:
             fields.append(f"{key} = ${idx}");
             params.append(str(data[key]).strip());
@@ -449,8 +454,9 @@ async def admin_reset_subjects(data: dict):
         await conn.execute("DELETE FROM subjects WHERE user_id IS NULL")
         for s in DEFAULT_SUBJECTS:
             await conn.execute(
-                "INSERT INTO subjects (name, url, type, group_name, sort_order, max_number, note) VALUES ($1, $2, $3, $4, $5, $6, $7) ON CONFLICT (name) DO NOTHING",
-                s["name"], s["url"], s["type"], s["group_name"], s["sort_order"], s["max_number"], s["note"])
+                "INSERT INTO subjects (name, url, type, group_name, sort_order, max_number, note, default_year) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) ON CONFLICT (name) DO NOTHING",
+                s["name"], s["url"], s["type"], s["group_name"], s["sort_order"], s["max_number"], s["note"],
+                s["default_year"])
     return {"ok": True, "count": len(DEFAULT_SUBJECTS)}
 
 
@@ -815,7 +821,7 @@ async def admin_get_user_subjects(data: dict):
         assigned_rows = await conn.fetch("SELECT subject_id FROM user_subjects WHERE user_id = $1", user_id)
         assigned_ids = [r["subject_id"] for r in assigned_rows]
         custom_rows = await conn.fetch(
-            "SELECT id, name, url, type, group_name, sort_order, max_number, note FROM subjects WHERE user_id = $1 ORDER BY sort_order, id",
+            "SELECT id, name, url, type, group_name, sort_order, max_number, note, default_year FROM subjects WHERE user_id = $1 ORDER BY sort_order, id",
             user_id)
         conf = await conn.fetchval("SELECT subjects_configured FROM users WHERE id = $1", user_id)
     return {"assigned_global_ids": assigned_ids, "custom_subjects": [dict(r) for r in custom_rows],
