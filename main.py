@@ -16,7 +16,7 @@ import asyncpg
 
 from parser import parse_tasks
 
-VERSION = "99.0.0"
+VERSION = "100.0.0"
 ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "")
 ADMIN_EMAIL = os.getenv("ADMIN_EMAIL", "admin@gdz.ru").lower().strip()
 DATABASE_URL = os.getenv("DATABASE_URL")
@@ -34,11 +34,9 @@ DEFAULT_SUBJECTS = [
      "group_name": "🧮 Точные науки", "sort_order": 4, "max_number": 500, "note": ""},
     {"name": "Русский язык", "url": "https://gdz.ru/class-7/russkii_yazik/baranova/", "type": "numbers",
      "group_name": "📖 Гуманитарные науки", "sort_order": 5, "max_number": 560, "note": ""},
-    {"name": "Русский (Тетрадь)", "url": "https://gdz.ru/class-7/russkii_yazik/baranova-rabochaya-tetrad/",
-     "type": "numbers", "group_name": "📖 Гуманитарные науки", "sort_order": 6, "max_number": 560, "note": ""},
-    {"name": "Английский язык", "url": "https://gdz.ru/class-7/english/reshebnik-angliyskiy-v-fokuse-vaulina-yu-e/",
+    {"name": "Английский язык(Учебник)", "url": "https://gdz.ru/class-7/english/reshebnik-angliyskiy-v-fokuse-vaulina-yu-e/",
      "type": "numbers", "group_name": "📖 Гуманитарные науки", "sort_order": 7, "max_number": 500, "note": ""},
-    {"name": "Английский (Тетрадь)", "url": "https://gdz.ru/class-7/english/workbook-spotlight-7/", "type": "numbers",
+    {"name": "Английский язык(Тетрадь)", "url": "https://gdz.ru/class-7/english/workbook-spotlight-7/", "type": "numbers",
      "group_name": "📖 Гуманитарные науки", "sort_order": 8, "max_number": 500, "note": ""},
     {"name": "Физика", "url": "", "type": "text", "group_name": "🌿 Естественные науки", "sort_order": 9,
      "max_number": 0, "note": ""},
