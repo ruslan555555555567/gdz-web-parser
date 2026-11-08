@@ -64,6 +64,22 @@
             transform: rotate(45deg);
         }
 
+        .part-toggle-btn {
+            background: #edf2f7;
+            border: 1px solid #cbd5e0;
+            border-radius: 12px;
+            padding: 2px 8px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            color: #4a5568;
+            margin-left: 8px;
+            transition: all 0.2s;
+        }
+        .part-toggle-btn:hover { background: #e2e8f0; }
+        .theme-dark .part-toggle-btn { background: #4a5568; border-color: #718096; color: #e2e8f0; }
+        .theme-dark .part-toggle-btn:hover { background: #718096; }
+
         .task-number-header {
             display: inline-block;
             font-size: 15px;
@@ -349,13 +365,6 @@
                 </label>
             </div>
             <div class="settings-section">
-                <label class="form-label">
-                    Глобальный год по умолчанию
-                    <input type="text" id="setYear" placeholder="Например: 2025">
-                </label>
-                <p class="hint" style="margin-top: 5px;">Если не указать год для конкретного предмета, будет использоваться этот.</p>
-            </div>
-            <div class="settings-section">
                 <label class="form-label">Оформление главной</label>
                 <div class="theme-options">
                     <button type="button" class="theme-btn active" data-theme="light">
@@ -473,6 +482,7 @@
         let fbImageBase64 = "";
         let currentSubjectId = null;
         let subjectYears = {};
+        let activeParts = {}; // { "Алгебра": "1" | "2" }
 
         const $ = id => document.getElementById(id);
         const authScreen = $('authScreen');
@@ -687,7 +697,15 @@
                         label.className = 'input-label';
 
                         const activeYear = subjectYears[s.name] || s.default_year;
-                        label.innerHTML = escapeHtml(s.name) + (activeYear ? ` <span style="color:#48bb78; font-size:13px;">(${escapeHtml(activeYear)})</span>` : '');
+                        const yearBadge = activeYear ? ` <span style="color:#48bb78; font-size:13px;">(${escapeHtml(activeYear)})</span>` : '';
+
+                        let partBtn = '';
+                        if (s.url_alt) {
+                            const currentPart = activeParts[s.name] || '1';
+                            partBtn = `<button type="button" class="part-toggle-btn" onclick="togglePart('${s.name.replace(/'/g, "\\'")}', this)" data-part="${currentPart}">Часть ${currentPart}</button>`;
+                        }
+
+                        label.innerHTML = escapeHtml(s.name) + yearBadge + partBtn;
                         headerRow.appendChild(label);
 
                         const gearBtn = document.createElement('button');
@@ -706,6 +724,7 @@
                         ta.dataset.subject = s.name;
                         ta.dataset.type = s.type || 'numbers';
                         ta.dataset.url = s.url || '';
+                        ta.dataset.urlAlt = s.url_alt || '';
                         ta.placeholder = '447, 449, 451 — или текст задания';
                         row.appendChild(ta);
                         groupDiv.appendChild(row);
@@ -716,6 +735,14 @@
 
             textHint.innerHTML = `Вставь сюда весь текст (История, Музыка и т.д.). Умный парсер сам разберет.`;
         }
+
+        window.togglePart = (subjName, btn) => {
+            const current = activeParts[subjName] || '1';
+            const next = current === '1' ? '2' : '1';
+            activeParts[subjName] = next;
+            btn.textContent = 'Часть ' + next;
+            btn.dataset.part = next;
+        };
 
         function openSubjectSettings(subjectName) {
             currentSubjectId = subjectName;
@@ -956,6 +983,15 @@
                 const subject = SUBJECTS.find(s => s.id == id);
                 if (subject) {
                     const taskJobs = parseDualTasks(subject, v);
+
+                    // ПОДСТАВЛЯЕМ URL В ЗАВИСИМОСТИ ОТ ВЫБРАННОЙ ЧАСТИ
+                    const activePart = activeParts[subject.name] || '1';
+                    taskJobs.forEach(job => {
+                        if (activePart === '2' && subject.url_alt) {
+                            job.url = subject.url_alt;
+                        }
+                    });
+
                     jobs.push(...taskJobs);
                 }
             });
@@ -982,6 +1018,14 @@
                         if (currentSubj && currentText.length > 0) {
                             const rawText = currentText.join('\n').trim();
                             const taskJobs = parseDualTasks(currentSubj, rawText);
+
+                            const activePart = activeParts[currentSubj.name] || '1';
+                            taskJobs.forEach(job => {
+                                if (activePart === '2' && currentSubj.url_alt) {
+                                    job.url = currentSubj.url_alt;
+                                }
+                            });
+
                             jobs.push(...taskJobs);
                         }
                         currentSubj = matchedSubj;
@@ -1004,6 +1048,14 @@
                 if (currentSubj && currentText.length > 0) {
                     const rawText = currentText.join('\n').trim();
                     const taskJobs = parseDualTasks(currentSubj, rawText);
+
+                    const activePart = activeParts[currentSubj.name] || '1';
+                    taskJobs.forEach(job => {
+                        if (activePart === '2' && currentSubj.url_alt) {
+                            job.url = currentSubj.url_alt;
+                        }
+                    });
+
                     jobs.push(...taskJobs);
                 }
                 if (currentText.length > 0 && jobs.length === 0) {
@@ -1074,10 +1126,8 @@
                         const subjectObj = SUBJECTS.find(s => s.name === subject);
                         const adminDefaultYear = subjectObj ? subjectObj.default_year : '';
                         const userSubjectYear = subjectYears[subject];
-                        const globalYear = authUser ? authUser.year : '';
 
-                        // Приоритет: год пользователя для этого предмета > год админа по умолчанию > глобальный год пользователя
-                        const targetYear = userSubjectYear || adminDefaultYear || globalYear;
+                        const targetYear = userSubjectYear || adminDefaultYear;
 
                         if (targetYear) {
                             filteredSolutions = r.solutions.filter(sol => sol.edition.includes(targetYear));
@@ -1377,7 +1427,7 @@
         async function logout() {
             if (!confirm('Выйти из аккаунта?')) return;
             try { await fetch('/api/auth/logout', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({token: authToken}) }); } catch {}
-            authToken = ''; authUser = null; currentAvatar = null; subjectYears = {};
+            authToken = ''; authUser = null; currentAvatar = null; subjectYears = {}; activeParts = {};
             localStorage.removeItem('gdz_token');
             applyTheme('light', null);
             topbarRight.innerHTML = '';
@@ -1434,7 +1484,6 @@
             $('settingsStatus').textContent = '';
             $('settingsStatus').className = 'fb-status';
             $('setName').value = authUser?.name || '';
-            $('setYear').value = authUser?.year || '';
             $('setOldPwd').value = '';
             $('setNewPwd').value = '';
             updateAvatarPreview();
@@ -1507,14 +1556,13 @@
         $('saveSettingsBtn').onclick = async () => {
             const st = $('settingsStatus');
             const newName = $('setName').value.trim();
-            const newYear = $('setYear').value.trim();
             const newTheme = document.querySelector('.theme-btn.active')?.dataset.theme || 'light';
             const bgToSave = newTheme === 'custom' ? (currentBgUrl || '') : '';
             const oldPwd = $('setOldPwd').value;
             const newPwd = $('setNewPwd').value;
             st.textContent = '⏳ Применяем...';
             st.className = 'fb-status loading';
-            const payload = { token: authToken, name: newName, year: newYear, theme: newTheme, bg_url: bgToSave };
+            const payload = { token: authToken, name: newName, theme: newTheme, bg_url: bgToSave };
             try {
                 const r1 = await fetch('/api/auth/update', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload) });
                 const d1 = await r1.json();

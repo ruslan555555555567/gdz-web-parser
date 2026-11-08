@@ -375,7 +375,8 @@
         <div class="modal-content">
             <h3 id="editModalTitle">✏️ Редактировать предмет</h3>
             <label class="form-label">Название<input type="text" id="editName" placeholder="Алгебра"></label>
-            <label class="form-label">Ссылка на gdz.ru<input type="text" id="editUrl" placeholder="https://gdz.ru/class-7/algebra/makarichev-18/"></label>
+            <label class="form-label">Ссылка на gdz.ru (Часть 1)<input type="text" id="editUrl" placeholder="https://gdz.ru/class-7/algebra/makarichev-18/"></label>
+            <label class="form-label">Ссылка на gdz.ru (Часть 2)<input type="text" id="editUrlAlt" placeholder="Оставьте пустым, если части нет"></label>
             <label class="form-label">Тип
                 <select id="editType" class="num-input">
                     <option value="numbers">🔍 Поиск номеров</option>
@@ -626,19 +627,24 @@
                     const typeLabel = s.type === 'text' ? '<span class="type-badge type-text">📝 текст</span>' : '<span class="type-badge type-num">🔍 номера</span>';
                     const maxNum = s.max_number ? `${s.max_number}` : '—';
                     const yearBadge = s.default_year ? `<span class="stat-pill" style="background: rgba(72, 187, 120, 0.2); color: #276749; border: 1px solid #48bb78;">📅 Год: <b>${s.default_year}</b></span>` : '';
+                    const altBadge = s.url_alt ? `<span class="stat-pill" style="background: rgba(237, 137, 54, 0.2); color: #9c4221; border: 1px solid #ed8936;">📚 Есть 2-я часть</span>` : '';
+                    const swapBtn = s.url_alt ? `<button class="btn-small subj-swap" style="background:#ed8936; color:white;" title="Поменять части местами">🔄</button>` : '';
 
                     div.innerHTML = `
                         <div class="subj-head"><span class="drag-handle" title="Перетащи">⠿</span><strong>${escapeHtml(s.name)}</strong>${typeLabel}</div>
                         <div class="subj-row">📁 ${escapeHtml(s.group_name || '—')}</div>
                         <div class="subj-row">🔗 ${escapeHtml(s.url || '—')}</div>
+                        ${s.url_alt ? `<div class="subj-row">🔗 (Часть 2) ${escapeHtml(s.url_alt)}</div>` : ''}
                         <div class="subj-row">
                             <span class="stat-pill">📊 Макс: <b>${maxNum}</b></span>
                             <span class="stat-pill">📍 Порядок: <b>${s.sort_order}</b></span>
                             ${yearBadge}
+                            ${altBadge}
                         </div>
                         ${s.note ? `<div class="subj-row small">📝 ${escapeHtml(s.note)}</div>` : ''}
-                        <div class="subj-actions"><button class="btn-small subj-edit">✏️ Изменить</button><button class="msg-delete subj-del">🗑</button></div>
+                        <div class="subj-actions">${swapBtn}<button class="btn-small subj-edit">✏️ Изменить</button><button class="msg-delete subj-del">🗑</button></div>
                     `;
+
                     div.addEventListener('dragstart', (e) => { draggedId = s.id; div.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; });
                     div.addEventListener('dragend', () => { div.classList.remove('dragging'); document.querySelectorAll('.subject-card').forEach(c => c.classList.remove('drag-over')); });
                     div.addEventListener('dragover', (e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; if (draggedId !== s.id) div.classList.add('drag-over'); });
@@ -657,6 +663,18 @@
                             newOrder.forEach((id, i) => { const el = document.querySelector(`.subject-card[data-id="${id}"]`); if (el) { const pill = el.querySelectorAll('.stat-pill b'); if (pill[1]) pill[1].textContent = i + 1; } });
                         } catch (err) { alert('Не удалось сохранить порядок: ' + err.message); loadSubjects(); }
                     });
+
+                    if (s.url_alt) {
+                        div.querySelector('.subj-swap').onclick = async () => {
+                            if (!confirm('Поменять местами Часть 1 и Часть 2?')) return;
+                            try {
+                                const r = await fetch('/api/admin/subjects/update', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({...getAuthPayload(), id: s.id, url: s.url_alt, url_alt: s.url}) });
+                                if (!r.ok) throw new Error('Ошибка');
+                                loadSubjects();
+                            } catch (err) { alert('Ошибка: ' + err.message); }
+                        };
+                    }
+
                     div.querySelector('.subj-edit').onclick = () => openEditModal(s, null);
                     div.querySelector('.subj-del').onclick = async () => {
                         if (!confirm(`Удалить «${s.name}»?`)) return;
@@ -680,6 +698,7 @@
             document.getElementById('editModalTitle').textContent = subject ? '✏️ Редактировать: ' + subject.name : '➕ Новый предмет';
             document.getElementById('editName').value = subject ? subject.name : '';
             document.getElementById('editUrl').value = subject ? (subject.url || '') : '';
+            document.getElementById('editUrlAlt').value = subject ? (subject.url_alt || '') : '';
             document.getElementById('editType').value = subject ? (subject.type || 'numbers') : 'numbers';
             document.getElementById('editGroup').value = subject ? (subject.group_name || '🧮 Точные науки') : '🧮 Точные науки';
             document.getElementById('editDefaultYear').value = subject ? (subject.default_year || '') : '';
@@ -693,15 +712,17 @@
 
         document.getElementById('editSaveBtn').onclick = async () => {
             const st = document.getElementById('editStatus');
-            const name = document.getElementById('editName').value.trim(); const url = document.getElementById('editUrl').value.trim();
+            const name = document.getElementById('editName').value.trim();
+            const url = document.getElementById('editUrl').value.trim();
+            const url_alt = document.getElementById('editUrlAlt').value.trim();
             const type = document.getElementById('editType').value; const group_name = document.getElementById('editGroup').value;
             const default_year = document.getElementById('editDefaultYear').value.trim();
             const max_number = parseInt(document.getElementById('editMaxNum').value) || 0; const sort_order = parseInt(document.getElementById('editSort').value) || 999;
             const note = document.getElementById('editNote').value.trim();
             if (!name) { st.textContent = '⚠️ Нужно название'; st.className = 'fb-status error'; return; }
-            if (type === 'numbers' && !url) { st.textContent = '⚠️ Для поиска номеров нужна ссылка'; st.className = 'fb-status error'; return; }
+            if (type === 'numbers' && !url) { st.textContent = '⚠️ Для поиска номеров нужна основная ссылка'; st.className = 'fb-status error'; return; }
             st.textContent = '⏳ Сохраняем...'; st.className = 'fb-status loading';
-            const payload = { ...getAuthPayload(), name, url, type, group_name, default_year, max_number, sort_order, note };
+            const payload = { ...getAuthPayload(), name, url, url_alt, type, group_name, default_year, max_number, sort_order, note };
             if (editingTargetUserId) payload.user_id = editingTargetUserId;
             try {
                 let r;
