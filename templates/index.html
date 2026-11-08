@@ -88,7 +88,6 @@
             font-size: 15px;
             line-height: 1.6;
             color: #1a202c;
-            white-space: pre-wrap;
             margin-bottom: 20px;
         }
         .theme-dark .ai-text-block {
@@ -103,6 +102,17 @@
             border-left-color: #ffffff;
             color: #ffffff;
         }
+
+        /* СТИЛИ ДЛЯ ТЕКСТА ИИ */
+        .ai-text-block h4 { margin: 15px 0 10px 0; font-size: 18px; color: #2b6cb0; border-bottom: 1px solid #bee3f8; padding-bottom: 4px; }
+        .ai-text-block h5 { margin: 15px 0 5px 0; font-size: 16px; color: #2b6cb0; }
+        .theme-dark .ai-text-block h4, .theme-dark .ai-text-block h5 { color: #90cdf4; border-bottom-color: #4a5568; }
+        .theme-custom .ai-text-block h4, .theme-custom .ai-text-block h5 { color: #ffffff; border-bottom-color: rgba(255,255,255,0.2); }
+
+        .ai-text-block ul, .ai-text-block ol { margin: 10px 0; padding-left: 20px; }
+        .ai-text-block li { margin-bottom: 6px; }
+        .ai-text-block b { color: #1a202c; }
+        .theme-dark .ai-text-block b { color: #ffffff; }
 
         .welcome-greeting { text-align: center; font-size: 22px; font-weight: 700; margin-bottom: 20px; color: #2d3748; opacity: 0; transform: translateY(-20px); animation: slideDownFade 0.8s cubic-bezier(0.25, 0.8, 0.25, 1) forwards; }
         .theme-dark .welcome-greeting { color: #e2e8f0; }
@@ -926,15 +936,12 @@
                             return;
                         }
 
-                        // ФИЛЬТРАЦИЯ ПО ГОДУ
                         let filteredSolutions = r.solutions;
                         if (authUser && authUser.year) {
                             filteredSolutions = r.solutions.filter(sol => sol.edition.includes(authUser.year));
-                            // Если после фильтрации ничего не осталось, показываем всё
                             if (filteredSolutions.length === 0) filteredSolutions = r.solutions;
                         }
 
-                        // Если это английский, ставим ИИ-решебник на первое место
                         if (subject.toLowerCase().includes('англ')) {
                             filteredSolutions.sort((a, b) => {
                                 if (a.edition.includes('ИИ')) return -1;
@@ -947,7 +954,6 @@
                             const wrapper = document.createElement('div');
                             wrapper.style.cssText = 'display: flex; flex-direction: column; gap: 8px; margin-bottom: 25px;';
 
-                            // Заголовок с номером задания
                             if (r.number) {
                                 const numHeader = document.createElement('div');
                                 numHeader.className = 'task-number-header';
@@ -955,7 +961,6 @@
                                 wrapper.appendChild(numHeader);
                             }
 
-                            // Заголовок версии (например, "Решебник 2025")
                             if (filteredSolutions.length > 1 || sol.edition.includes('ИИ')) {
                                 const edHeader = document.createElement('div');
                                 edHeader.className = 'edition-header';
@@ -963,14 +968,12 @@
                                 wrapper.appendChild(edHeader);
                             }
 
-                            // Если это ИИ-текст
                             if (sol.text) {
                                 const textDiv = document.createElement('div');
                                 textDiv.className = 'ai-text-block';
-                                textDiv.textContent = sol.text;
+                                textDiv.innerHTML = renderMarkdown(sol.text);
                                 wrapper.appendChild(textDiv);
                             }
-                            // Если это картинки
                             else if (sol.images) {
                                 sol.images.forEach((u, index) => {
                                     const imgWrap = document.createElement('div');
@@ -1084,6 +1087,35 @@
             } catch (err) { clearInterval(timer); showStatus('❌ Ошибка: ' + err.message, 'error'); }
             finally { btn.disabled = false; }
         });
+
+        // ФУНКЦИЯ ДЛЯ КРАСИВОГО ВЫВОДА MARKDOWN
+        function renderMarkdown(text) {
+            if (!text) return '';
+            let html = text;
+
+            // Экранируем HTML теги для безопасности
+            html = html.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+            // Заголовки
+            html = html.replace(/^#### (.*)$/gm, '<h5>$1</h5>');
+            html = html.replace(/^### (.*)$/gm, '<h4>$1</h4>');
+
+            // Жирный текст
+            html = html.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>');
+
+            // Списки (маркированные и нумерованные)
+            html = html.replace(/^\* (.*)$/gm, '<li>$1</li>');
+            html = html.replace(/^\d+\. (.*)$/gm, '<li style="list-style-type: decimal;">$1</li>');
+
+            // Перенос строки
+            html = html.replace(/\n/g, '<br>');
+
+            // Чистим лишние переносы вокруг заголовков и списков
+            html = html.replace(/<br><h([45])/g, '<h$1').replace(/<\/h([45])><br>/g, '</h$1>');
+            html = html.replace(/<br><li/g, '<li').replace(/<\/li><br>/g, '</li>');
+
+            return html;
+        }
 
         function showStatus(text, type) { status.textContent = text; status.className = 'status ' + type; }
         function escapeHtml(t) { const d = document.createElement('div'); d.textContent = t || ''; return d.innerHTML; }
