@@ -619,7 +619,7 @@
             return null;
         }
 
-        // УЛУЧШЕННЫЙ ЭКСТРАКТОР НОМЕРОВ (ТЕПЕРЬ БЕРЕТ И НОМЕРА, И СТРАНИЦЫ)
+        // ЭКСТРАКТОР НОМЕРОВ (ТЕПЕРЬ СТРАНИЧНЫЙ ТОЛЬКО ДЛЯ АНГЛИЙСКОГО И ГЕОГРАФИИ)
         function extractNumbers(str, subjectName) {
             let clean = str;
             const isPageBased = /английск|географ/i.test(subjectName);
@@ -631,15 +631,16 @@
                 while ((match = pageRegex.exec(clean)) !== null) {
                     pageMatches.push(match[1]);
                 }
+                if (pageMatches.length > 0) {
+                    return [...new Set(pageMatches)].join(', ');
+                }
                 let standardMatches = [];
                 const numRegex = /(?:№|номер|номера|упражнение|задание|задача|упр\.?)\s*([\dA-Za-zА-Яа-я\s,и]+)/gi;
                 while ((match = numRegex.exec(clean)) !== null) {
                     const nums = match[1].match(/\d+/g);
                     if (nums) standardMatches.push(...nums);
                 }
-                const allNums = [...new Set([...pageMatches, ...standardMatches])];
-                if (allNums.length > 0) return allNums.join(', ');
-                return "";
+                return [...new Set(standardMatches)].join(', ');
             }
 
             clean = clean.replace(/\b(19|20)\d{2}\s*(год|г\.)?\b/gi, '');
@@ -670,13 +671,15 @@
             return [...new Set(matches)].filter(n => n !== '').join(', ');
         }
 
-        // НОВЫЙ УМНЫЙ ПАРСЕР: РАЗДЕЛЯЕТ ТЕТРАДЬ И УЧЕБНИК
+        // САМЫЙ УМНЫЙ ПАРСЕР (ТЕПЕРЬ ТОЛЬКО ДЛЯ АНГЛИЙСКОГО)
         function parseDualTasks(subject, rawText) {
             const textLower = rawText.toLowerCase();
             const subjectNameLower = subject.name.toLowerCase();
-            const isEnglishOrRussian = subjectNameLower.includes('англ') || subjectNameLower.includes('русск');
 
-            if (!isEnglishOrRussian) {
+            // УМНАЯ ЛОГИКА ТОЛЬКО ДЛЯ АНГЛИЙСКОГО
+            const isEnglishOnly = subjectNameLower.includes('англ');
+
+            if (!isEnglishOnly) {
                 return [{ subject: subject.name, url: subject.url, type: subject.type, numbers: extractNumbers(rawText, subject.name), raw_text: rawText }];
             }
 
@@ -689,20 +692,41 @@
                 const workbookSubj = SUBJECTS.find(s => s.name.includes(baseName) && s.name.toLowerCase().includes('тетрад') && s.type === 'numbers');
 
                 if (textbookSubj && workbookSubj) {
-                    // Убираем упоминания учебника из текста для тетради
-                    let wbClean = rawText.replace(/(?:стр|страниц[ыа]?|page|номера|№)\s*[\d,\s\-]+\s*(?:учебника|учеб\.)/gi, '');
-                    wbClean = wbClean.replace(/(?:учебника|учеб\.)\s*(?:стр|страниц[ыа]?|page|номера|№)?\s*[\d,\s\-]+/gi, '');
+                    // 1. Учебник
+                    let tbNums = [];
+                    let tbRegex = /(?:стр\.?|страниц[ыа]?|page|номера|№)\s*([\d,\s\-]+)\s*(?:учебника|учеб\.)/gi;
+                    let tbRegex2 = /(?:учебника|учеб\.)\s*(?:стр\.?|страниц[ыа]?|page|номера|№)?\s*([\d,\s\-]+)/gi;
+                    let match;
+                    while ((match = tbRegex.exec(rawText)) !== null) {
+                        let nums = match[1].match(/\d+/g);
+                        if (nums) tbNums.push(...nums);
+                    }
+                    while ((match = tbRegex2.exec(rawText)) !== null) {
+                        let nums = match[1].match(/\d+/g);
+                        if (nums) tbNums.push(...nums);
+                    }
 
-                    // Убираем упоминания тетради из текста для учебника
-                    let tbClean = rawText.replace(/(?:стр|страниц[ыа]?|page|номера|№)\s*[\d,\s\-]+\s*(?:тетради|тетрадь|р\.т\.)/gi, '');
-                    tbClean = tbClean.replace(/(?:тетради|тетрадь|р\.т\.)\s*(?:стр|страниц[ыа]?|page|номера|№)?\s*[\d,\s\-]+/gi, '');
+                    // 2. Тетрадь (очищаем от учебника)
+                    let wbClean = rawText.replace(/(?:со|на|в|по|из)?\s*(?:стр|страниц[ыа]?|page)?\s*[\d,\s\-]+\s*(?:учебника|учеб\.)/gi, '');
+                    wbClean = wbClean.replace(/(?:учебника|учеб\.)\s*(?:стр|страниц[ыа]?|page)?\s*[\d,\s\-]+/gi, '');
+
+                    let wbNums = [];
+                    let pRegex = /(?:стр\.?|страниц[ыа]?|page)\s*(\d+)/gi;
+                    while ((match = pRegex.exec(wbClean)) !== null) {
+                        wbNums.push(match[1]);
+                    }
+
+                    if (wbNums.length === 0) {
+                        let nRegex = /(?:№|номер|номера|упражнение|задание|задача|упр\.?)\s*([\d\s,и]+)/gi;
+                        while ((match = nRegex.exec(wbClean)) !== null) {
+                            let nums = match[1].match(/\d+/g);
+                            if (nums) wbNums.push(...nums);
+                        }
+                    }
 
                     let jobs = [];
-                    let wbNums = extractNumbers(wbClean, workbookSubj.name);
-                    let tbNums = extractNumbers(tbClean, textbookSubj.name);
-
-                    if (wbNums) jobs.push({ subject: workbookSubj.name, url: workbookSubj.url, type: 'numbers', numbers: wbNums, raw_text: rawText });
-                    if (tbNums) jobs.push({ subject: textbookSubj.name, url: textbookSubj.url, type: 'numbers', numbers: tbNums, raw_text: rawText });
+                    if (wbNums.length > 0) jobs.push({ subject: workbookSubj.name, url: workbookSubj.url, type: 'numbers', numbers: [...new Set(wbNums)].join(', '), raw_text: rawText });
+                    if (tbNums.length > 0) jobs.push({ subject: textbookSubj.name, url: textbookSubj.url, type: 'numbers', numbers: [...new Set(tbNums)].join(', '), raw_text: rawText });
 
                     if (jobs.length > 0) return jobs;
                 }
@@ -713,12 +737,12 @@
 
             if (hasWb) {
                 finalSubj = SUBJECTS.find(s => s.name.includes(subject.name.replace(/\(.*?\)/g, '').trim()) && s.name.toLowerCase().includes('тетрад')) || subject;
-                cleanedText = cleanedText.replace(/(?:стр|страниц[ыа]?|page|номера|№)\s*[\d,\s\-]+\s*(?:учебника|учеб\.)/gi, '');
-                cleanedText = cleanedText.replace(/(?:учебника|учеб\.)\s*(?:стр|страниц[ыа]?|page|номера|№)?\s*[\d,\s\-]+/gi, '');
+                cleanedText = cleanedText.replace(/(?:со|на|в|по|из)?\s*(?:стр|страниц[ыа]?|page)?\s*[\d,\s\-]+\s*(?:учебника|учеб\.)/gi, '');
+                cleanedText = cleanedText.replace(/(?:учебника|учеб\.)\s*(?:стр|страниц[ыа]?|page)?\s*[\d,\s\-]+/gi, '');
             } else if (hasTb) {
                 finalSubj = SUBJECTS.find(s => s.name.includes(subject.name.replace(/\(.*?\)/g, '').trim()) && !s.name.toLowerCase().includes('тетрад')) || subject;
-                cleanedText = cleanedText.replace(/(?:стр|страниц[ыа]?|page|номера|№)\s*[\d,\s\-]+\s*(?:тетради|тетрадь|р\.т\.)/gi, '');
-                cleanedText = cleanedText.replace(/(?:тетради|тетрадь|р\.т\.)\s*(?:стр|страниц[ыа]?|page|номера|№)?\s*[\d,\s\-]+/gi, '');
+                cleanedText = cleanedText.replace(/(?:со|на|в|по|из)?\s*(?:стр|страниц[ыа]?|page)?\s*[\d,\s\-]+\s*(?:тетради|тетрадь|р\.т\.)/gi, '');
+                cleanedText = cleanedText.replace(/(?:тетради|тетрадь|р\.т\.)\s*(?:стр|страниц[ыа]?|page)?\s*[\d,\s\-]+/gi, '');
             }
 
             return [{ subject: finalSubj.name, url: finalSubj.url, type: finalSubj.type, numbers: extractNumbers(cleanedText, finalSubj.name), raw_text: rawText }];
