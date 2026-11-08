@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>GDZ Парсер — 7 класс</title>
-    
+
     <link rel="manifest" href="/manifest.json">
     <meta name="theme-color" content="#4299e1">
     <link rel="apple-touch-icon" href="/static/icon-192.png">
@@ -66,6 +66,42 @@
             background: rgba(255, 255, 255, 0.15);
             border-color: rgba(255, 255, 255, 0.3);
             backdrop-filter: blur(5px);
+        }
+
+        .edition-header {
+            font-size: 14px;
+            font-weight: 600;
+            color: #4a5568;
+            margin: 15px 0 8px 0;
+            padding-left: 10px;
+            border-left: 3px solid #4299e1;
+        }
+        .theme-dark .edition-header { color: #a0aec0; border-left-color: #63b3ed; }
+        .theme-custom .edition-header { color: #e2e8f0; border-left-color: #ffffff; }
+
+        .ai-text-block {
+            background: rgba(66, 153, 225, 0.05);
+            border: 1px solid #bee3f8;
+            border-left: 4px solid #4299e1;
+            border-radius: 10px;
+            padding: 16px;
+            font-size: 15px;
+            line-height: 1.6;
+            color: #1a202c;
+            white-space: pre-wrap;
+            margin-bottom: 20px;
+        }
+        .theme-dark .ai-text-block {
+            background: rgba(66, 153, 225, 0.1);
+            border-color: #2b6cb0;
+            border-left-color: #63b3ed;
+            color: #e2e8f0;
+        }
+        .theme-custom .ai-text-block {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.3);
+            border-left-color: #ffffff;
+            color: #ffffff;
         }
 
         .welcome-greeting { text-align: center; font-size: 22px; font-weight: 700; margin-bottom: 20px; color: #2d3748; opacity: 0; transform: translateY(-20px); animation: slideDownFade 0.8s cubic-bezier(0.25, 0.8, 0.25, 1) forwards; }
@@ -281,6 +317,13 @@
                     Имя
                     <input type="text" id="setName" placeholder="Как тебя зовут">
                 </label>
+            </div>
+            <div class="settings-section">
+                <label class="form-label">
+                    Предпочитаемый год издания
+                    <input type="text" id="setYear" placeholder="Например: 2025">
+                </label>
+                <p class="hint" style="margin-top: 5px;">Если оставить пустым, будут показываться решения для всех годов.</p>
             </div>
             <div class="settings-section">
                 <label class="form-label">Оформление главной</label>
@@ -670,7 +713,6 @@
             return [...new Set(matches)].filter(n => n !== '').join(', ');
         }
 
-        // САМЫЙ УМНЫЙ ПАРСЕР (ТЕПЕРЬ ТОЛЬКО ДЛЯ АНГЛИЙСКОГО)
         function parseDualTasks(subject, rawText) {
             const textLower = rawText.toLowerCase();
             const subjectNameLower = subject.name.toLowerCase();
@@ -685,7 +727,6 @@
             const hasTb = /учебник|учеб\./.test(textLower);
 
             if (hasWb && hasTb) {
-                // Ищем базовое имя (например, "Английский язык")
                 const baseNameMatch = subject.name.match(/^(.*?)(?:\s*\(|$)/);
                 const baseName = baseNameMatch ? baseNameMatch[1].trim() : subject.name;
 
@@ -878,17 +919,35 @@
                     sec.innerHTML = `<h2 class="color-blue">${escapeHtml(subject)}</h2>`;
 
                     items.forEach(r => {
-                        if (!r.found) {
+                        if (!r.found || !r.solutions || r.solutions.length === 0) {
                             const errorDiv = document.createElement('div');
                             errorDiv.innerHTML = `<div class="img-error">⚠️ Решение для №${r.number} не найдено на gdz.ru</div>`;
                             sec.appendChild(errorDiv);
                             return;
                         }
 
-                        r.images.forEach((u, index) => {
+                        // ФИЛЬТРАЦИЯ ПО ГОДУ
+                        let filteredSolutions = r.solutions;
+                        if (authUser && authUser.year) {
+                            filteredSolutions = r.solutions.filter(sol => sol.edition.includes(authUser.year));
+                            // Если после фильтрации ничего не осталось, показываем всё
+                            if (filteredSolutions.length === 0) filteredSolutions = r.solutions;
+                        }
+
+                        // Если это английский, ставим ИИ-решебник на первое место
+                        if (subject.toLowerCase().includes('англ')) {
+                            filteredSolutions.sort((a, b) => {
+                                if (a.edition.includes('ИИ')) return -1;
+                                if (b.edition.includes('ИИ')) return 1;
+                                return 0;
+                            });
+                        }
+
+                        filteredSolutions.forEach(sol => {
                             const wrapper = document.createElement('div');
                             wrapper.style.cssText = 'display: flex; flex-direction: column; gap: 8px; margin-bottom: 25px;';
 
+                            // Заголовок с номером задания
                             if (r.number) {
                                 const numHeader = document.createElement('div');
                                 numHeader.className = 'task-number-header';
@@ -896,64 +955,89 @@
                                 wrapper.appendChild(numHeader);
                             }
 
-                            const img = document.createElement('img');
-                            img.className = 'solution-img img-loading';
-                            img.style.marginTop = '0';
-                            img.alt = 'Загрузка...';
-                            loadImage(img, u);
-                            
-                            wrapper.appendChild(img);
-                            
-                            if (r.raw_text) {
-                                const textDiv = document.createElement('div');
-                                textDiv.className = 'task-raw-text';
-                                
-                                let displayText = r.raw_text;
-                                if (r.subject) {
-                                    const regex = new RegExp(r.subject, 'gi');
-                                    displayText = displayText.replace(regex, '').replace(/^[:\-\s]+/, '').trim();
-                                }
-                                if (!displayText) displayText = r.numbers || 'Без текста';
-                                
-                                textDiv.textContent = displayText; 
-                                wrapper.appendChild(textDiv);
+                            // Заголовок версии (например, "Решебник 2025")
+                            if (filteredSolutions.length > 1 || sol.edition.includes('ИИ')) {
+                                const edHeader = document.createElement('div');
+                                edHeader.className = 'edition-header';
+                                edHeader.textContent = sol.edition;
+                                wrapper.appendChild(edHeader);
                             }
 
-                            const controls = document.createElement('div');
-                            controls.style.cssText = 'display: flex; gap: 10px; justify-content: flex-end;';
-                            
-                            const refreshBtn = document.createElement('button');
-                            refreshBtn.innerHTML = '🔄 Обновить';
-                            refreshBtn.title = 'Обновить картинку';
-                            refreshBtn.style.cssText = 'padding: 8px 16px; display: flex; align-items: center; gap: 6px; background: rgba(150, 150, 150, 0.15); color: inherit; border: 1px solid rgba(150, 150, 150, 0.3); border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s;';
-                            refreshBtn.onmouseenter = () => refreshBtn.style.background = 'rgba(150, 150, 150, 0.25)';
-                            refreshBtn.onmouseleave = () => refreshBtn.style.background = 'rgba(150, 150, 150, 0.15)';
-                            refreshBtn.onclick = (e) => {
-                                e.stopPropagation();
-                                img.classList.remove('img-tall', 'img-retrying');
-                                img.classList.add('img-loading');
-                                img.src = '';
-                                loadImage(img, u);
-                            };
-                            
-                            const dlBtn = document.createElement('button');
-                            dlBtn.innerHTML = '⬇️ Скачать';
-                            dlBtn.title = 'Скачать решение';
-                            dlBtn.style.cssText = 'padding: 8px 16px; display: flex; align-items: center; gap: 6px; background: #4299e1; color: #ffffff; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s; box-shadow: 0 2px 5px rgba(66, 153, 225, 0.3);';
-                            dlBtn.onmouseenter = () => dlBtn.style.background = '#3182ce';
-                            dlBtn.onmouseleave = () => dlBtn.style.background = '#4299e1';
-                            dlBtn.onclick = (e) => {
-                                e.stopPropagation();
-                                if (img.src && img.src.includes('/api/image')) {
-                                    const filename = `GDZ_${r.subject || 'Предмет'}_№${r.number || index + 1}.jpg`.replace(/\s+/g, '_');
-                                    downloadSingleImage(img.src, filename);
-                                } else {
-                                    alert('Картинка еще не загрузилась, подождите...');
-                                }
-                            };
-                            controls.appendChild(refreshBtn);
-                            controls.appendChild(dlBtn);
-                            wrapper.appendChild(controls);
+                            // Если это ИИ-текст
+                            if (sol.text) {
+                                const textDiv = document.createElement('div');
+                                textDiv.className = 'ai-text-block';
+                                textDiv.textContent = sol.text;
+                                wrapper.appendChild(textDiv);
+                            }
+                            // Если это картинки
+                            else if (sol.images) {
+                                sol.images.forEach((u, index) => {
+                                    const imgWrap = document.createElement('div');
+                                    imgWrap.style.cssText = 'display: flex; flex-direction: column; gap: 8px; margin-bottom: 15px;';
+
+                                    const img = document.createElement('img');
+                                    img.className = 'solution-img img-loading';
+                                    img.style.marginTop = '0';
+                                    img.alt = 'Загрузка...';
+                                    loadImage(img, u);
+
+                                    imgWrap.appendChild(img);
+
+                                    if (r.raw_text) {
+                                        const textDiv = document.createElement('div');
+                                        textDiv.className = 'task-raw-text';
+
+                                        let displayText = r.raw_text;
+                                        if (r.subject) {
+                                            const regex = new RegExp(r.subject, 'gi');
+                                            displayText = displayText.replace(regex, '').replace(/^[:\-\s]+/, '').trim();
+                                        }
+                                        if (!displayText) displayText = r.numbers || 'Без текста';
+
+                                        textDiv.textContent = displayText;
+                                        imgWrap.appendChild(textDiv);
+                                    }
+
+                                    const controls = document.createElement('div');
+                                    controls.style.cssText = 'display: flex; gap: 10px; justify-content: flex-end;';
+
+                                    const refreshBtn = document.createElement('button');
+                                    refreshBtn.innerHTML = '🔄 Обновить';
+                                    refreshBtn.title = 'Обновить картинку';
+                                    refreshBtn.style.cssText = 'padding: 8px 16px; display: flex; align-items: center; gap: 6px; background: rgba(150, 150, 150, 0.15); color: inherit; border: 1px solid rgba(150, 150, 150, 0.3); border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s;';
+                                    refreshBtn.onmouseenter = () => refreshBtn.style.background = 'rgba(150, 150, 150, 0.25)';
+                                    refreshBtn.onmouseleave = () => refreshBtn.style.background = 'rgba(150, 150, 150, 0.15)';
+                                    refreshBtn.onclick = (e) => {
+                                        e.stopPropagation();
+                                        img.classList.remove('img-tall', 'img-retrying');
+                                        img.classList.add('img-loading');
+                                        img.src = '';
+                                        loadImage(img, u);
+                                    };
+
+                                    const dlBtn = document.createElement('button');
+                                    dlBtn.innerHTML = '⬇️ Скачать';
+                                    dlBtn.title = 'Скачать решение';
+                                    dlBtn.style.cssText = 'padding: 8px 16px; display: flex; align-items: center; gap: 6px; background: #4299e1; color: #ffffff; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s; box-shadow: 0 2px 5px rgba(66, 153, 225, 0.3);';
+                                    dlBtn.onmouseenter = () => dlBtn.style.background = '#3182ce';
+                                    dlBtn.onmouseleave = () => dlBtn.style.background = '#4299e1';
+                                    dlBtn.onclick = (e) => {
+                                        e.stopPropagation();
+                                        if (img.src && img.src.includes('/api/image')) {
+                                            const filename = `GDZ_${r.subject || 'Предмет'}_№${r.number || index + 1}.jpg`.replace(/\s+/g, '_');
+                                            downloadSingleImage(img.src, filename);
+                                        } else {
+                                            alert('Картинка еще не загрузилась, подождите...');
+                                        }
+                                    };
+                                    controls.appendChild(refreshBtn);
+                                    controls.appendChild(dlBtn);
+                                    imgWrap.appendChild(controls);
+                                    wrapper.appendChild(imgWrap);
+                                });
+                            }
+
                             sec.appendChild(wrapper);
                         });
                     });
@@ -978,7 +1062,7 @@
                         items.forEach(r => {
                             let content = escapeHtml(r.raw_text || '').trim();
                             content = content.replace(/^№?\d+\s*/i, '');
-                            
+
                             let lines = content.split('\n');
                             lines = lines.map(l => l.trim());
                             lines = lines.filter(l => l.length > 2 || (l.length > 0 && !/^[а-яa-z]$/i.test(l)));
@@ -1158,6 +1242,7 @@
             $('settingsStatus').textContent = '';
             $('settingsStatus').className = 'fb-status';
             $('setName').value = authUser?.name || '';
+            $('setYear').value = authUser?.year || '';
             $('setOldPwd').value = '';
             $('setNewPwd').value = '';
             updateAvatarPreview();
@@ -1230,13 +1315,14 @@
         $('saveSettingsBtn').onclick = async () => {
             const st = $('settingsStatus');
             const newName = $('setName').value.trim();
+            const newYear = $('setYear').value.trim();
             const newTheme = document.querySelector('.theme-btn.active')?.dataset.theme || 'light';
             const bgToSave = newTheme === 'custom' ? (currentBgUrl || '') : '';
             const oldPwd = $('setOldPwd').value;
             const newPwd = $('setNewPwd').value;
             st.textContent = '⏳ Применяем...';
             st.className = 'fb-status loading';
-            const payload = { token: authToken, name: newName, theme: newTheme, bg_url: bgToSave };
+            const payload = { token: authToken, name: newName, year: newYear, theme: newTheme, bg_url: bgToSave };
             try {
                 const r1 = await fetch('/api/auth/update', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload) });
                 const d1 = await r1.json();

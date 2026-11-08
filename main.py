@@ -16,7 +16,7 @@ import asyncpg
 
 from parser import parse_tasks
 
-VERSION = "88.5.0"
+VERSION = "101.0.0"
 ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "")
 ADMIN_EMAIL = os.getenv("ADMIN_EMAIL", "admin@gdz.ru").lower().strip()
 DATABASE_URL = os.getenv("DATABASE_URL")
@@ -35,11 +35,10 @@ DEFAULT_SUBJECTS = [
     {"name": "Русский язык", "url": "https://gdz.ru/class-7/russkii_yazik/baranova/", "type": "numbers",
      "group_name": "📖 Гуманитарные науки", "sort_order": 5, "max_number": 560, "note": ""},
     {"name": "Английский язык(Учебник)",
-     "url": "https://gdz.ru/class-7/english/reshebnik-angliyskiy-v-fokuse-vaulina-yu-e/",
-     "type": "numbers", "group_name": "📖 Гуманитарные науки", "sort_order": 7, "max_number": 500, "note": ""},
+     "url": "https://gdz.ru/class-7/english/reshebnik-angliyskiy-v-fokuse-vaulina-yu-e/", "type": "numbers",
+     "group_name": "📖 Гуманитарные науки", "sort_order": 7, "max_number": 500, "note": ""},
     {"name": "Английский язык(Тетрадь)", "url": "https://gdz.ru/class-7/english/workbook-spotlight-7/",
-     "type": "numbers",
-     "group_name": "📖 Гуманитарные науки", "sort_order": 8, "max_number": 500, "note": ""},
+     "type": "numbers", "group_name": "📖 Гуманитарные науки", "sort_order": 8, "max_number": 500, "note": ""},
     {"name": "Физика", "url": "", "type": "text", "group_name": "🌿 Естественные науки", "sort_order": 9,
      "max_number": 0, "note": ""},
     {"name": "Биология", "url": "", "type": "text", "group_name": "🌿 Естественные науки", "sort_order": 10,
@@ -82,6 +81,7 @@ async def init_db():
             await conn.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS btn_style TEXT DEFAULT 'light'")
             await conn.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS is_verified BOOLEAN DEFAULT TRUE")
             await conn.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS subjects_configured BOOLEAN DEFAULT FALSE")
+            await conn.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS year TEXT DEFAULT ''")  # НОВОЕ ПОЛЕ ДЛЯ ГОДА
             await conn.execute(
                 "CREATE TABLE IF NOT EXISTS blocked_devices (device TEXT PRIMARY KEY, blocked_at TIMESTAMP DEFAULT NOW())")
             await conn.execute(
@@ -149,7 +149,7 @@ async def get_user_by_token(token: str):
     if not db_pool or not token: return None
     async with db_pool.acquire() as conn:
         row = await conn.fetchrow(
-            "SELECT u.id, u.email, u.name, u.is_admin, u.theme, u.bg_url, u.avatar, u.admin_bg_url, u.admin_btn_color, u.admin_theme, u.btn_style, u.subjects_configured FROM sessions s JOIN users u ON u.id = s.user_id WHERE s.token = $1",
+            "SELECT u.id, u.email, u.name, u.is_admin, u.theme, u.bg_url, u.avatar, u.admin_bg_url, u.admin_btn_color, u.admin_theme, u.btn_style, u.subjects_configured, u.year FROM sessions s JOIN users u ON u.id = s.user_id WHERE s.token = $1",
             token)
         if row: await conn.execute("UPDATE users SET last_seen = NOW() WHERE id = $1", row["id"])
     return dict(row) if row else None
@@ -230,7 +230,7 @@ class HistorySaveRequest(BaseModel): token: str; subject: str; numbers: str
 
 
 class UpdateProfileRequest(
-    BaseModel): token: str; name: str = ""; theme: str = ""; bg_url: str = ""; admin_bg_url: str = ""; admin_btn_color: str = ""; admin_theme: str = ""; btn_style: str = ""
+    BaseModel): token: str; name: str = ""; theme: str = ""; bg_url: str = ""; admin_bg_url: str = ""; admin_btn_color: str = ""; admin_theme: str = ""; btn_style: str = ""; year: str = ""
 
 
 class ChangePasswordRequest(BaseModel): token: str; old_password: str; new_password: str
@@ -466,14 +466,14 @@ async def register(req: RegisterRequest, request: Request):
         if existing: raise HTTPException(400, "Email уже зарегистрирован")
         is_admin = (email == ADMIN_EMAIL)
         user_id = await conn.fetchval(
-            "INSERT INTO users (email, password_hash, name, is_admin, device, theme, is_verified) VALUES ($1, $2, $3, $4, $5, 'light', TRUE) RETURNING id",
+            "INSERT INTO users (email, password_hash, name, is_admin, device, theme, is_verified, year) VALUES ($1, $2, $3, $4, $5, 'light', TRUE, '') RETURNING id",
             email, hash_password(req.password), req.name.strip(), is_admin, req.device.strip())
         token = secrets.token_urlsafe(32)
         await conn.execute("INSERT INTO sessions (token, user_id) VALUES ($1, $2)", token, user_id)
     return {"ok": True, "token": token,
             "user": {"id": user_id, "email": email, "name": req.name.strip(), "is_admin": is_admin, "theme": "light",
                      "bg_url": None, "avatar": None, "admin_bg_url": None, "admin_btn_color": "#4299e1",
-                     "admin_theme": "auto", "btn_style": "light"}}
+                     "admin_theme": "auto", "btn_style": "light", "year": ""}}
 
 
 @app.post("/api/auth/login")
@@ -485,7 +485,7 @@ async def login(req: LoginRequest, request: Request):
     email = req.email.lower().strip()
     async with db_pool.acquire() as conn:
         row = await conn.fetchrow(
-            "SELECT id, email, password_hash, name, is_admin, theme, bg_url, avatar, admin_bg_url, admin_btn_color, admin_theme, btn_style FROM users WHERE email = $1",
+            "SELECT id, email, password_hash, name, is_admin, theme, bg_url, avatar, admin_bg_url, admin_btn_color, admin_theme, btn_style, year FROM users WHERE email = $1",
             email)
         if not row or not verify_password(req.password, row["password_hash"]):
             ip = request.client.host if request.client else ""
@@ -504,7 +504,8 @@ async def login(req: LoginRequest, request: Request):
             "user": {"id": row["id"], "email": row["email"], "name": row["name"], "is_admin": row["is_admin"],
                      "theme": row["theme"] or "light", "bg_url": row["bg_url"], "avatar": row["avatar"],
                      "admin_bg_url": row["admin_bg_url"], "admin_btn_color": row["admin_btn_color"] or "#4299e1",
-                     "admin_theme": row["admin_theme"] or "auto", "btn_style": row["btn_style"] or "light"}}
+                     "admin_theme": row["admin_theme"] or "auto", "btn_style": row["btn_style"] or "light",
+                     "year": row["year"] or ""}}
 
 
 @app.post("/api/auth/logout")
@@ -535,6 +536,7 @@ async def update_profile(req: UpdateProfileRequest):
     if db_pool is None: raise HTTPException(500, "БД недоступна")
     updates, params, idx = [], [], 1
     if req.name.strip(): updates.append(f"name = ${idx}"); params.append(req.name.strip()); idx += 1
+    if req.year.strip(): updates.append(f"year = ${idx}"); params.append(req.year.strip()); idx += 1
     if req.theme in ('light', 'dark', 'custom'):
         updates.append(f"theme = ${idx}");
         params.append(req.theme);
@@ -566,7 +568,7 @@ async def update_profile(req: UpdateProfileRequest):
     async with db_pool.acquire() as conn:
         await conn.execute(f"UPDATE users SET {', '.join(updates)} WHERE id = ${idx}", *params)
         row = await conn.fetchrow(
-            "SELECT id, email, name, is_admin, theme, bg_url, avatar, admin_bg_url, admin_btn_color, admin_theme, btn_style FROM users WHERE id = $1",
+            "SELECT id, email, name, is_admin, theme, bg_url, avatar, admin_bg_url, admin_btn_color, admin_theme, btn_style, year FROM users WHERE id = $1",
             user["id"])
     return {"ok": True, "user": dict(row)}
 
@@ -681,7 +683,7 @@ async def admin_users(data: dict):
     if db_pool is None: return {"users": []}
     async with db_pool.acquire() as conn:
         rows = await conn.fetch(
-            "SELECT id, email, name, device, is_admin, avatar, to_char(created_at, 'DD.MM.YY HH24:MI') AS created, to_char(last_seen, 'DD.MM.YY HH24:MI') AS last_seen FROM users ORDER BY id DESC")
+            "SELECT id, email, name, device, is_admin, avatar, year, to_char(created_at, 'DD.MM.YY HH24:MI') AS created, to_char(last_seen, 'DD.MM.YY HH24:MI') AS last_seen FROM users ORDER BY id DESC")
     return {"users": [dict(r) for r in rows]}
 
 
@@ -691,7 +693,7 @@ async def admin_online(data: dict):
     if db_pool is None: return {"users": []}
     async with db_pool.acquire() as conn:
         rows = await conn.fetch(
-            "SELECT id, email, name, device, is_admin, avatar, to_char(last_seen, 'HH24:MI:SS') AS last_seen FROM users WHERE last_seen > NOW() - INTERVAL '5 minutes' ORDER BY last_seen DESC")
+            "SELECT id, email, name, device, is_admin, avatar, year, to_char(last_seen, 'HH24:MI:SS') AS last_seen FROM users WHERE last_seen > NOW() - INTERVAL '5 minutes' ORDER BY last_seen DESC")
     return {"users": [dict(r) for r in rows], "total": len(rows)}
 
 

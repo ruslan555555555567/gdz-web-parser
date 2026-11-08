@@ -10,6 +10,7 @@ HEADERS = {
     "Referer": "https://gdz.ru/",
 }
 
+
 def extract_numbers(text: str) -> list[str]:
     if not text: return []
     text = re.sub(r'(?:\bп\.|\bпункт|\b§|\bпараграф)\s*\d+', ' ', text, flags=re.IGNORECASE)
@@ -26,46 +27,55 @@ def extract_numbers(text: str) -> list[str]:
             result.append(n)
     return result
 
-def _get_images(url: str) -> list[str]:
+
+def _get_solutions(url: str) -> list[dict]:
     try:
         r = requests.get(url, headers=HEADERS, impersonate="chrome", timeout=20)
         if r.status_code != 200: return []
         html = r.text
-    except Exception: return []
+    except Exception:
+        return []
 
     soup = BeautifulSoup(html, "lxml")
-    candidates = []
-    seen = set()
+    solutions = []
 
-    for img in soup.find_all("img"):
-        src = img.get("src")
-        if not src or "/attachments/images/tasks/" not in src: continue
-        full = urljoin(url, src)
-        if full in seen: continue
-        seen.add(full)
+    # 1. Сначала ищем ИИ-решебник
+    ai_card = soup.find("div", class_="ai-card")
+    if ai_card:
+        ai_content = ai_card.find("div", class_="ai-card__content")
+        if ai_content:
+            # Берем текст из ИИ
+            ai_text = ai_content.get_text(separator="\n").strip()
+            solutions.append({
+                "edition": "ИИ-решебник",
+                "text": ai_text
+            })
 
-        year = None
-        parent = img.find_parent()
-        for _ in range(4):
-            if parent is None: break
-            text = parent.get_text(" ", strip=True)
-            years = re.findall(r'\b(20\d{2})\b', text)
-            if years:
-                year = max(int(y) for y in years)
-                break
-            parent = parent.find_parent()
+    # 2. Ищем обычные решения (картинки)
+    for fig in soup.find_all("figure", class_="task-container"):
+        caption = fig.find("figcaption", class_="task-crumbs")
+        if not caption:
+            continue
 
-        if year is None:
-            alt = img.get("alt", "") + " " + img.get("title", "")
-            years = re.findall(r'\b(20\d{2})\b', alt)
-            if years:
-                year = max(int(y) for y in years)
+        raw_title = caption.get_text(" ", strip=True)
+        edition_title = re.sub(r'/\s*страница\s*/\s*\d+', '', raw_title, flags=re.IGNORECASE).strip()
 
-        candidates.append((year or 0, full))
+        images = []
+        for img in fig.find_all("img"):
+            src = img.get("src")
+            if src and "/attachments/images/tasks/" in src:
+                full = urljoin("https://gdz.ru", src)
+                if full not in images:
+                    images.append(full)
 
-    if not candidates: return []
-    candidates.sort(key=lambda x: x[0])
-    return [candidates[-1][1]]
+        if images:
+            solutions.append({
+                "edition": edition_title if edition_title else "Решение",
+                "images": images
+            })
+
+    return solutions
+
 
 async def parse_tasks(jobs: list[dict]) -> list[dict]:
     results = []
@@ -76,7 +86,9 @@ async def parse_tasks(jobs: list[dict]) -> list[dict]:
         s_type = job.get("type", "numbers")
 
         if s_type == "text" or not base:
-            results.append({"subject": subject, "number": None, "url": None, "images": [], "found": False, "raw_text": raw_text, "is_text": True})
+            results.append(
+                {"subject": subject, "number": None, "url": None, "solutions": [], "found": False, "raw_text": raw_text,
+                 "is_text": True})
             continue
 
         if not base.endswith("/"): base += "/"
@@ -84,7 +96,9 @@ async def parse_tasks(jobs: list[dict]) -> list[dict]:
         numbers = extract_numbers(job.get("numbers", ""))
 
         if not numbers:
-            results.append({"subject": subject, "number": None, "url": None, "images": [], "found": False, "raw_text": raw_text, "is_text": True})
+            results.append(
+                {"subject": subject, "number": None, "url": None, "solutions": [], "found": False, "raw_text": raw_text,
+                 "is_text": True})
             continue
 
         for num in numbers:
@@ -97,14 +111,26 @@ async def parse_tasks(jobs: list[dict]) -> list[dict]:
                 urljoin(base, f"1-2-prt-{num}/"),
                 urljoin(base, f"2-1-prt-{num}/"),
                 urljoin(base, f"2-2-prt-{num}/"),
+                urljoin(base, f"page-{num}/"),
+                urljoin(base, f"{num}-page/"),
+                urljoin(base, f"page-{num}-task/"),
             ]
-            images, used = [], candidates[0]
+
+            solutions, used = [], candidates[0]
             for url in candidates:
-                images = await asyncio.to_thread(_get_images, url)
-                if images:
+                solutions = await asyncio.to_thread(_get_solutions, url)
+                if solutions:
                     used = url
                     break
 
-            results.append({"subject": subject, "number": num, "url": used, "images": images, "found": len(images) > 0, "raw_text": raw_text, "is_text": False})
+            results.append({
+                "subject": subject,
+                "number": num,
+                "url": used,
+                "solutions": solutions,
+                "found": len(solutions) > 0,
+                "raw_text": raw_text,
+                "is_text": False
+            })
 
     return results
