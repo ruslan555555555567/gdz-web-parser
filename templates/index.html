@@ -619,7 +619,6 @@
             return null;
         }
 
-        // ЭКСТРАКТОР НОМЕРОВ (ТЕПЕРЬ СТРАНИЧНЫЙ ТОЛЬКО ДЛЯ АНГЛИЙСКОГО И ГЕОГРАФИИ)
         function extractNumbers(str, subjectName) {
             let clean = str;
             const isPageBased = /английск|географ/i.test(subjectName);
@@ -676,7 +675,6 @@
             const textLower = rawText.toLowerCase();
             const subjectNameLower = subject.name.toLowerCase();
 
-            // УМНАЯ ЛОГИКА ТОЛЬКО ДЛЯ АНГЛИЙСКОГО
             const isEnglishOnly = subjectNameLower.includes('англ');
 
             if (!isEnglishOnly) {
@@ -687,12 +685,14 @@
             const hasTb = /учебник|учеб\./.test(textLower);
 
             if (hasWb && hasTb) {
-                const baseName = subject.name.replace(/\(.*?\)/g, '').trim();
+                // Ищем базовое имя (например, "Английский язык")
+                const baseNameMatch = subject.name.match(/^(.*?)(?:\s*\(|$)/);
+                const baseName = baseNameMatch ? baseNameMatch[1].trim() : subject.name;
+
                 const textbookSubj = SUBJECTS.find(s => s.name.includes(baseName) && !s.name.toLowerCase().includes('тетрад') && s.type === 'numbers');
                 const workbookSubj = SUBJECTS.find(s => s.name.includes(baseName) && s.name.toLowerCase().includes('тетрад') && s.type === 'numbers');
 
                 if (textbookSubj && workbookSubj) {
-                    // 1. Учебник
                     let tbNums = [];
                     let tbRegex = /(?:стр\.?|страниц[ыа]?|page|номера|№)\s*([\d,\s\-]+)\s*(?:учебника|учеб\.)/gi;
                     let tbRegex2 = /(?:учебника|учеб\.)\s*(?:стр\.?|страниц[ыа]?|page|номера|№)?\s*([\d,\s\-]+)/gi;
@@ -706,7 +706,6 @@
                         if (nums) tbNums.push(...nums);
                     }
 
-                    // 2. Тетрадь (очищаем от учебника)
                     let wbClean = rawText.replace(/(?:со|на|в|по|из)?\s*(?:стр|страниц[ыа]?|page)?\s*[\d,\s\-]+\s*(?:учебника|учеб\.)/gi, '');
                     wbClean = wbClean.replace(/(?:учебника|учеб\.)\s*(?:стр|страниц[ыа]?|page)?\s*[\d,\s\-]+/gi, '');
 
@@ -736,11 +735,15 @@
             let cleanedText = rawText;
 
             if (hasWb) {
-                finalSubj = SUBJECTS.find(s => s.name.includes(subject.name.replace(/\(.*?\)/g, '').trim()) && s.name.toLowerCase().includes('тетрад')) || subject;
+                const baseNameMatch = subject.name.match(/^(.*?)(?:\s*\(|$)/);
+                const baseName = baseNameMatch ? baseNameMatch[1].trim() : subject.name;
+                finalSubj = SUBJECTS.find(s => s.name.includes(baseName) && s.name.toLowerCase().includes('тетрад')) || subject;
                 cleanedText = cleanedText.replace(/(?:со|на|в|по|из)?\s*(?:стр|страниц[ыа]?|page)?\s*[\d,\s\-]+\s*(?:учебника|учеб\.)/gi, '');
                 cleanedText = cleanedText.replace(/(?:учебника|учеб\.)\s*(?:стр|страниц[ыа]?|page)?\s*[\d,\s\-]+/gi, '');
             } else if (hasTb) {
-                finalSubj = SUBJECTS.find(s => s.name.includes(subject.name.replace(/\(.*?\)/g, '').trim()) && !s.name.toLowerCase().includes('тетрад')) || subject;
+                const baseNameMatch = subject.name.match(/^(.*?)(?:\s*\(|$)/);
+                const baseName = baseNameMatch ? baseNameMatch[1].trim() : subject.name;
+                finalSubj = SUBJECTS.find(s => s.name.includes(baseName) && !s.name.toLowerCase().includes('тетрад')) || subject;
                 cleanedText = cleanedText.replace(/(?:со|на|в|по|из)?\s*(?:стр|страниц[ыа]?|page)?\s*[\d,\s\-]+\s*(?:тетради|тетрадь|р\.т\.)/gi, '');
                 cleanedText = cleanedText.replace(/(?:тетради|тетрадь|р\.т\.)\s*(?:стр|страниц[ыа]?|page)?\s*[\d,\s\-]+/gi, '');
             }
