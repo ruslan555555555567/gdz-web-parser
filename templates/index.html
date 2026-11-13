@@ -1196,6 +1196,7 @@
                         }
 
                         let filteredSolutions = r.solutions;
+                        let yearNotFound = false;
 
                         const subjectObj = SUBJECTS.find(s => s.name === subject);
                         const adminDefaultYear = subjectObj ? subjectObj.default_year : '';
@@ -1203,9 +1204,26 @@
 
                         const targetYear = userSubjectYear || adminDefaultYear;
 
+                        // СТРОГАЯ ФИЛЬТРАЦИЯ: Если год выбран, ищем только его (или ИИ-ответ)
                         if (targetYear) {
-                            filteredSolutions = r.solutions.filter(sol => sol.edition.includes(targetYear));
-                            if (filteredSolutions.length === 0) filteredSolutions = r.solutions;
+                            const yearMatches = r.solutions.filter(sol =>
+                                (sol.edition && sol.edition.includes(targetYear)) ||
+                                (sol.edition && sol.edition.includes('ИИ'))
+                            );
+
+                            if (yearMatches.length > 0) {
+                                filteredSolutions = yearMatches;
+                            } else {
+                                filteredSolutions = [];
+                                yearNotFound = true;
+                            }
+                        }
+
+                        if (yearNotFound) {
+                            const warnDiv = document.createElement('div');
+                            warnDiv.innerHTML = `<div class="img-error" style="color: #dd6b20; background: #fffaf0; border-color: #fbd38d;">⚠️ Решений для №${r.number} за <b>${targetYear}</b> год не найдено.<br>Нажмите на ⚙️ рядом с предметом, чтобы изменить год или очистить поле.</div>`;
+                            sec.appendChild(warnDiv);
+                            return;
                         }
 
                         if (subject.toLowerCase().includes('англ')) {
