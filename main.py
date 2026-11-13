@@ -78,6 +78,11 @@ DEFAULT_SUBJECTS = [
     {"name": "Изобразительное искусство", "url": "", "url_alt": "", "type": "text",
      "group_name": "🎨 Остальные предметы", "sort_order": 16, "max_number": 0, "note": "", "default_year": "",
      "default_year_alt": ""},
+
+    {"name": "Информатика (Тетрадь)", "url": "https://gdz.ru/class-7/informatika/rabochaya-tetrad-bosova/",
+     "url_alt": "",
+     "type": "numbers", "group_name": "🧮 Точные науки", "sort_order": 4.5, "max_number": 500, "note": "",
+     "default_year": "", "default_year_alt": ""},
 ]
 
 DEFAULT_SETTINGS = {"site_title": "GDZ Парсер", "announcement": "", "footer_text": "", "custom_css": ""}
