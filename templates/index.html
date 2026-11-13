@@ -921,6 +921,7 @@
 
         function extractNumbers(str, subjectName) {
             let clean = str;
+            // Умный поиск для страниц
             const isPageBased = /английск|географ/i.test(subjectName) || (/информатика/i.test(subjectName) && !/тетрад/i.test(subjectName));
 
             if (isPageBased) {
@@ -933,13 +934,12 @@
                 if (pageMatches.length > 0) {
                     return [...new Set(pageMatches)].join(', ');
                 }
-                let standardMatches = [];
-                const numRegex = /(?:№|номер|номера|упражнение|задание|задача|упр\.?)\s*([\dA-Za-zА-Яа-я\s,и]+)/gi;
-                while ((match = numRegex.exec(clean)) !== null) {
-                    const nums = match[1].match(/\d+/g);
-                    if (nums) standardMatches.push(...nums);
+
+                // Если нет слова "стр", но есть просто цифры (например, пользователь ввел просто 11)
+                let simpleNums = clean.match(/\b\d+\b/g);
+                if (simpleNums && simpleNums.length > 0) {
+                    return [...new Set(simpleNums)].join(', ');
                 }
-                return [...new Set(standardMatches)].join(', ');
             }
 
             clean = clean.replace(/\b(19|20)\d{2}\s*(год|г\.)?\b/gi, '');
@@ -1191,6 +1191,13 @@
                     }
                 });
 
+                // ГЛОБАЛЬНАЯ ПРОВЕРКА: если вообще ничего не нашли
+                if (imageResults.length === 0 && textResults.length === 0) {
+                    showStatus('⚠️ Решения не найдены. Проверьте правильность ввода.', 'error');
+                    btn.disabled = false;
+                    return;
+                }
+
                 const bySubject = {};
                 imageResults.forEach(r => { (bySubject[r.subject] = bySubject[r.subject] || []).push(r); });
 
@@ -1202,7 +1209,7 @@
                     items.forEach(r => {
                         if (!r.found || !r.solutions || r.solutions.length === 0) {
                             const errorDiv = document.createElement('div');
-                            errorDiv.innerHTML = `<div class="img-error">⚠️ Решение для №${r.number} не найдено на gdz.ru</div>`;
+                            errorDiv.innerHTML = `<div class="img-error">⚠️ Решение для №${r.number || ''} не найдено на gdz.ru</div>`;
                             sec.appendChild(errorDiv);
                             return;
                         }
@@ -1215,7 +1222,7 @@
 
                         let hasRenderedSomething = false;
 
-                        // 1. СНАЧАЛА ИИ-РЕШЕНИЕ (проверяем, что текст не пустой)
+                        // 1. СНАЧАЛА ИИ-РЕШЕНИЕ
                         let aiSolution = r.solutions.find(sol => sol.edition && sol.edition.includes('ИИ') && sol.text && sol.text.trim().length > 0);
                         if (aiSolution) {
                             hasRenderedSomething = true;

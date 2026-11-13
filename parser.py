@@ -54,13 +54,11 @@ def _get_solutions(url: str) -> list[dict]:
         caption = fig.find("figcaption", class_="task-crumbs")
         raw_title = caption.get_text(" ", strip=True) if caption else "Решение"
 
-        # Убираем лишнее из заголовка (например, "/ задание / 11")
         edition_title = re.sub(r'/\s*(задание|страница)\s*/\s*\d+', '', raw_title, flags=re.IGNORECASE).strip()
 
         images = []
         for img in fig.find_all("img"):
             src = img.get("src", "")
-            # Берем картинки заданий (отсеиваем обложки и иконки)
             if (
                     "/attachments/" in src or ".jpg" in src or ".png" in src) and "logo" not in src.lower() and "icon" not in src.lower():
                 full = urljoin("https://gdz.ru", src)
