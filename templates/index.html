@@ -392,7 +392,6 @@
 Английский (Учебник): стр. 19" style="resize: vertical; font-family: inherit; font-size: 15px; width: 100%; padding: 12px;"></textarea>
             </div>
 
-            <!-- НОВЫЕ КНОПКИ -->
             <div class="action-buttons-row">
                 <button id="btn" class="btn-modern-primary">🚀 Решить</button>
                 <button id="clearBtn" class="btn-modern-clear">🗑 Очистить</button>
@@ -404,7 +403,6 @@
         <footer class="footer"><span>GDZ Парсер · v{{ version }}</span></footer>
     </div>
 
-    <!-- ИСТОРИЯ -->
     <div id="historyModal" class="modal hidden">
         <div class="modal-content">
             <h3>📜 История поисков</h3>
@@ -416,7 +414,6 @@
         </div>
     </div>
 
-    <!-- НАСТРОЙКИ АККАУНТА -->
     <div id="settingsModal" class="modal hidden">
         <div class="modal-content">
             <h3>⚙️ Настройки аккаунта</h3>
@@ -486,7 +483,6 @@
         </div>
     </div>
 
-    <!-- НАСТРОЙКИ ПРЕДМЕТА -->
     <div id="subjectSettingsModal" class="modal hidden">
         <div class="modal-content">
             <h3 id="subjectSettingsTitle">⚙️ Настройки предмета</h3>
@@ -1196,34 +1192,25 @@
                         }
 
                         let filteredSolutions = r.solutions;
-                        let yearNotFound = false;
+                        let warningHtml = '';
 
                         const subjectObj = SUBJECTS.find(s => s.name === subject);
                         const adminDefaultYear = subjectObj ? subjectObj.default_year : '';
                         const userSubjectYear = subjectYears[subject];
-
                         const targetYear = userSubjectYear || adminDefaultYear;
 
-                        // СТРОГАЯ ФИЛЬТРАЦИЯ: Если год выбран, ищем только его (или ИИ-ответ)
+                        // Строгая фильтрация: если год выбран, ищем его (или ИИ-ответ)
                         if (targetYear) {
                             const yearMatches = r.solutions.filter(sol =>
                                 (sol.edition && sol.edition.includes(targetYear)) ||
                                 (sol.edition && sol.edition.includes('ИИ'))
                             );
-
                             if (yearMatches.length > 0) {
                                 filteredSolutions = yearMatches;
                             } else {
-                                filteredSolutions = [];
-                                yearNotFound = true;
+                                // Если решений за этот год нет, показываем предупреждение, но оставляем картинки!
+                                warningHtml = `<div class="img-error" style="color: #dd6b20; background: #fffaf0; border-color: #fbd38d; margin-bottom: 10px;">⚠️ Решений для №${r.number} за <b>${targetYear}</b> год не найдено. Показываем другие доступные варианты:</div>`;
                             }
-                        }
-
-                        if (yearNotFound) {
-                            const warnDiv = document.createElement('div');
-                            warnDiv.innerHTML = `<div class="img-error" style="color: #dd6b20; background: #fffaf0; border-color: #fbd38d;">⚠️ Решений для №${r.number} за <b>${targetYear}</b> год не найдено.<br>Нажмите на ⚙️ рядом с предметом, чтобы изменить год или очистить поле.</div>`;
-                            sec.appendChild(warnDiv);
-                            return;
                         }
 
                         if (subject.toLowerCase().includes('англ')) {
@@ -1234,9 +1221,13 @@
                             });
                         }
 
-                        filteredSolutions.forEach(sol => {
+                        filteredSolutions.forEach((sol, index) => {
                             const wrapper = document.createElement('div');
                             wrapper.style.cssText = 'display: flex; flex-direction: column; gap: 8px; margin-bottom: 25px;';
+
+                            if (warningHtml && index === 0) {
+                                wrapper.insertAdjacentHTML('afterbegin', warningHtml);
+                            }
 
                             if (r.number) {
                                 const numHeader = document.createElement('div');
@@ -1259,7 +1250,7 @@
                                 wrapper.appendChild(textDiv);
                             }
                             else if (sol.images) {
-                                sol.images.forEach((u, index) => {
+                                sol.images.forEach((u, imgIndex) => {
                                     const imgWrap = document.createElement('div');
                                     imgWrap.style.cssText = 'display: flex; flex-direction: column; gap: 8px; margin-bottom: 15px;';
 
@@ -1312,7 +1303,7 @@
                                     dlBtn.onclick = (e) => {
                                         e.stopPropagation();
                                         if (img.src && img.src.includes('/api/image')) {
-                                            const filename = `GDZ_${r.subject || 'Предмет'}_№${r.number || index + 1}.jpg`.replace(/\s+/g, '_');
+                                            const filename = `GDZ_${r.subject || 'Предмет'}_№${r.number || imgIndex + 1}.jpg`.replace(/\s+/g, '_');
                                             downloadSingleImage(img.src, filename);
                                         } else {
                                             alert('Картинка еще не загрузилась, подождите...');
@@ -1372,18 +1363,30 @@
             finally { btn.disabled = false; }
         });
 
+        // ОБНОВЛЕННАЯ ФУНКЦИЯ РЕНДЕРА MARKDOWN
         function renderMarkdown(text) {
             if (!text) return '';
-            let escaped = text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+            // Сначала экранируем HTML-теги, чтобы не сломать верстку
+            let html = text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
-            const lines = escaped.split('\n');
-            let html = '';
+            // 1. Заменяем математические стрелочки на красивые символы
+            html = html.replace(/\$\\rightarrow\$/g, '➔');
+            html = html.replace(/\$\\to\$/g, '➔');
+
+            // 2. Жирный текст (**текст**)
+            html = html.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>');
+
+            // 3. Курсив (*текст*) - но не в начале строки (чтобы не ломать списки)
+            html = html.replace(/(?<!\*)\*([^*]+)\*(?!\*)/g, '<i>$1</i>');
+
+            const lines = html.split('\n');
+            let result = '';
             let inUl = false;
             let inOl = false;
 
             const closeLists = () => {
-                if (inUl) { html += '</ul>'; inUl = false; }
-                if (inOl) { html += '</ol>'; inOl = false; }
+                if (inUl) { result += '</ul>'; inUl = false; }
+                if (inOl) { result += '</ol>'; inOl = false; }
             };
 
             for (let line of lines) {
@@ -1393,29 +1396,27 @@
                     continue;
                 }
 
-                line = line.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>');
-
-                if (line.startsWith('#### ')) {
+                if (line.startsWith('* ')) {
+                    if (inOl) { result += '</ol>'; inOl = false; }
+                    if (!inUl) { result += '<ul>'; inUl = true; }
+                    result += `<li>${line.substring(2)}</li>`;
+                } else if (/^\d+\.\s/.test(line)) {
+                    if (inUl) { result += '</ul>'; inUl = false; }
+                    if (!inOl) { result += '<ol>'; inOl = true; }
+                    result += `<li>${line.replace(/^\d+\.\s/, '')}</li>`;
+                } else if (line.startsWith('#### ')) {
                     closeLists();
-                    html += `<h5>${line.substring(5)}</h5>`;
+                    result += `<h5>${line.substring(5)}</h5>`;
                 } else if (line.startsWith('### ')) {
                     closeLists();
-                    html += `<h4>${line.substring(4)}</h4>`;
-                } else if (line.startsWith('* ')) {
-                    if (inOl) { html += '</ol>'; inOl = false; }
-                    if (!inUl) { html += '<ul>'; inUl = true; }
-                    html += `<li>${line.substring(2)}</li>`;
-                } else if (/^\d+\.\s/.test(line)) {
-                    if (inUl) { html += '</ul>'; inUl = false; }
-                    if (!inOl) { html += '<ol>'; inOl = true; }
-                    html += `<li>${line.replace(/^\d+\.\s/, '')}</li>`;
+                    result += `<h4>${line.substring(4)}</h4>`;
                 } else {
                     closeLists();
-                    html += `<p>${line}</p>`;
+                    result += `<p>${line}</p>`;
                 }
             }
             closeLists();
-            return html;
+            return result;
         }
 
         function showStatus(text, type) { status.textContent = text; status.className = 'status ' + type; }
