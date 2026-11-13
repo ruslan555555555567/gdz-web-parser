@@ -60,8 +60,9 @@ def _get_solutions(url: str) -> list[dict]:
         images = []
         for img in fig.find_all("img"):
             src = img.get("src", "")
-            # Берем только картинки заданий (отсеиваем обложки и иконки)
-            if "/attachments/images/tasks/" in src:
+            # Берем картинки заданий (отсеиваем обложки и иконки)
+            if (
+                    "/attachments/" in src or ".jpg" in src or ".png" in src) and "logo" not in src.lower() and "icon" not in src.lower():
                 full = urljoin("https://gdz.ru", src)
                 if full not in images:
                     images.append(full)
