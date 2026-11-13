@@ -1208,61 +1208,15 @@
                             return;
                         }
 
-                        let filteredSolutions = r.solutions;
-
                         const subjectObj = SUBJECTS.find(s => s.name === subject);
                         const currentPart = activeParts[subject] || '1';
                         const adminDefaultYear = currentPart === '2' ? (subjectObj.default_year_alt || subjectObj.default_year) : subjectObj.default_year;
                         const userSubjectYear = subjectYears[subject];
                         const targetYear = userSubjectYear || adminDefaultYear;
 
-                        if (targetYear) {
-                            const targetYearNum = parseInt(targetYear);
-                            let allYears = [];
-
-                            r.solutions.forEach(sol => {
-                                if (sol.edition) {
-                                    const match = sol.edition.match(/\b(20\d{2})\b/g);
-                                    if (match) {
-                                        match.forEach(y => allYears.push({ year: parseInt(y), sol: sol }));
-                                    }
-                                }
-                            });
-
-                            if (allYears.length > 0) {
-                                // Ищем только года, которые больше или равны нужному
-                                let futureYears = [...new Set(allYears.map(y => y.year))].filter(y => y >= targetYearNum).sort((a,b) => a - b);
-                                let selectedYear;
-
-                                if (futureYears.length > 0) {
-                                    selectedYear = futureYears[0]; // Берем ближайший впереди
-                                } else {
-                                    // Если впереди ничего нет, берем самый последний доступный
-                                    let allAvailable = [...new Set(allYears.map(y => y.year))].sort((a,b) => b - a);
-                                    selectedYear = allAvailable[0];
-                                }
-
-                                filteredSolutions = r.solutions.filter(sol =>
-                                    (sol.edition && sol.edition.includes(selectedYear.toString())) ||
-                                    (sol.edition && sol.edition.includes('ИИ'))
-                                );
-                            } else {
-                                filteredSolutions = r.solutions;
-                            }
-                        }
-
-                        if (subject.toLowerCase().includes('англ')) {
-                            filteredSolutions.sort((a, b) => {
-                                if (a.edition.includes('ИИ')) return -1;
-                                if (b.edition.includes('ИИ')) return 1;
-                                return 0;
-                            });
-                        }
-
-                        // Оставляем ТОЛЬКО ПЕРВОЕ подходящее решение
-                        if (filteredSolutions.length > 0) {
-                            let sol = filteredSolutions[0]; // Берем самое первое
-
+                        // 1. СНАЧАЛА ИИ-РЕШЕНИЕ
+                        let aiSolution = r.solutions.find(sol => sol.edition && sol.edition.includes('ИИ') && sol.text);
+                        if (aiSolution) {
                             const wrapper = document.createElement('div');
                             wrapper.style.cssText = 'display: flex; flex-direction: column; gap: 8px; margin-bottom: 25px;';
 
@@ -1273,113 +1227,148 @@
                                 wrapper.appendChild(numHeader);
                             }
 
-                            if (sol.edition) {
+                            const edHeader = document.createElement('div');
+                            edHeader.className = 'edition-header';
+                            edHeader.textContent = aiSolution.edition;
+                            wrapper.appendChild(edHeader);
+
+                            const textDiv = document.createElement('div');
+                            textDiv.className = 'ai-text-block';
+                            textDiv.innerHTML = renderMarkdown(aiSolution.text);
+
+                            if (window.renderMathInElement) {
+                                renderMathInElement(textDiv, {
+                                    delimiters: [
+                                        {left: '$$', right: '$$', display: true},
+                                        {left: '$', right: '$', display: false},
+                                        {left: '\\(', right: '\\)', display: false},
+                                        {left: '\\[', right: '\\]', display: true}
+                                    ],
+                                    throwOnError: false
+                                });
+                            }
+
+                            wrapper.appendChild(textDiv);
+
+                            if (r.raw_text) {
+                                const taskTextDiv = document.createElement('div');
+                                taskTextDiv.className = 'task-raw-text';
+                                let displayText = r.raw_text;
+                                if (r.subject) {
+                                    const regex = new RegExp(r.subject, 'gi');
+                                    displayText = displayText.replace(regex, '').replace(/^[:\-\s]+/, '').trim();
+                                }
+                                if (!displayText) displayText = r.numbers || 'Без текста';
+                                taskTextDiv.textContent = displayText;
+                                wrapper.appendChild(taskTextDiv);
+                            }
+                            sec.appendChild(wrapper);
+                        }
+
+                        // 2. ПОТОМ ПОИСК ГОДА И ОДНОЙ КАРТИНКИ
+                        let imageSolutions = r.solutions.filter(sol => sol.images && sol.images.length > 0 && (!sol.edition || !sol.edition.includes('ИИ')));
+
+                        if (imageSolutions.length > 0) {
+                            let selectedSolution = imageSolutions[0];
+
+                            if (targetYear) {
+                                const targetYearNum = parseInt(targetYear);
+                                let allYears = [];
+
+                                imageSolutions.forEach(sol => {
+                                    if (sol.edition) {
+                                        const match = sol.edition.match(/\b(20\d{2})\b/g);
+                                        if (match) match.forEach(y => allYears.push(parseInt(y)));
+                                    }
+                                });
+
+                                if (allYears.length > 0) {
+                                    // Ищем только года впереди или равные
+                                    let futureYears = [...new Set(allYears)].filter(y => y >= targetYearNum).sort((a,b) => a - b);
+                                    let selectedYear;
+                                    if (futureYears.length > 0) {
+                                        selectedYear = futureYears[0]; // Ближайший будущий
+                                    } else {
+                                        selectedYear = Math.max(...allYears); // Если впереди нет, берем самый свежий
+                                    }
+
+                                    let foundByYear = imageSolutions.find(sol => sol.edition && sol.edition.includes(selectedYear.toString()));
+                                    if (foundByYear) selectedSolution = foundByYear;
+                                }
+                            }
+
+                            // Выводим только 1 картинку
+                            const wrapper = document.createElement('div');
+                            wrapper.style.cssText = 'display: flex; flex-direction: column; gap: 8px; margin-bottom: 25px;';
+
+                            if (!aiSolution && r.number) {
+                                const numHeader = document.createElement('div');
+                                numHeader.className = 'task-number-header';
+                                numHeader.textContent = `Задание №${r.number}`;
+                                wrapper.appendChild(numHeader);
+                            }
+
+                            if (selectedSolution.edition) {
                                 const edHeader = document.createElement('div');
                                 edHeader.className = 'edition-header';
-                                edHeader.textContent = sol.edition;
+                                edHeader.textContent = selectedSolution.edition;
                                 wrapper.appendChild(edHeader);
                             }
 
-                            if (sol.text) {
+                            const u = selectedSolution.images[0];
+                            const imgWrap = document.createElement('div');
+                            imgWrap.style.cssText = 'display: flex; flex-direction: column; gap: 8px; margin-bottom: 15px;';
+
+                            const img = document.createElement('img');
+                            img.className = 'solution-img img-loading';
+                            img.style.marginTop = '0';
+                            img.alt = 'Загрузка...';
+                            loadImage(img, u);
+                            imgWrap.appendChild(img);
+
+                            if (!aiSolution && r.raw_text) {
                                 const textDiv = document.createElement('div');
-                                textDiv.className = 'ai-text-block';
-                                textDiv.innerHTML = renderMarkdown(sol.text);
-
-                                if (window.renderMathInElement) {
-                                    renderMathInElement(textDiv, {
-                                        delimiters: [
-                                            {left: '$$', right: '$$', display: true},
-                                            {left: '$', right: '$', display: false},
-                                            {left: '\\(', right: '\\)', display: false},
-                                            {left: '\\[', right: '\\]', display: true}
-                                        ],
-                                        throwOnError: false
-                                    });
+                                textDiv.className = 'task-raw-text';
+                                let displayText = r.raw_text;
+                                if (r.subject) {
+                                    const regex = new RegExp(r.subject, 'gi');
+                                    displayText = displayText.replace(regex, '').replace(/^[:\-\s]+/, '').trim();
                                 }
-
-                                wrapper.appendChild(textDiv);
-
-                                // ДОБАВЛЯЕМ САМО ЗАДАНИЕ ПОСЛЕ ОТВЕТА ИИ
-                                if (r.raw_text) {
-                                    const taskTextDiv = document.createElement('div');
-                                    taskTextDiv.className = 'task-raw-text';
-
-                                    let displayText = r.raw_text;
-                                    if (r.subject) {
-                                        const regex = new RegExp(r.subject, 'gi');
-                                        displayText = displayText.replace(regex, '').replace(/^[:\-\s]+/, '').trim();
-                                    }
-                                    if (!displayText) displayText = r.numbers || 'Без текста';
-
-                                    taskTextDiv.textContent = displayText;
-                                    wrapper.appendChild(taskTextDiv);
-                                }
+                                if (!displayText) displayText = r.numbers || 'Без текста';
+                                textDiv.textContent = displayText;
+                                imgWrap.appendChild(textDiv);
                             }
-                            else if (sol.images && sol.images.length > 0) {
-                                const u = sol.images[0]; // Берем ТОЛЬКО ПЕРВУЮ картинку из решения
-                                const imgWrap = document.createElement('div');
-                                imgWrap.style.cssText = 'display: flex; flex-direction: column; gap: 8px; margin-bottom: 15px;';
 
-                                const img = document.createElement('img');
-                                img.className = 'solution-img img-loading';
-                                img.style.marginTop = '0';
-                                img.alt = 'Загрузка...';
+                            const controls = document.createElement('div');
+                            controls.style.cssText = 'display: flex; gap: 10px; justify-content: flex-end;';
+
+                            const refreshBtn = document.createElement('button');
+                            refreshBtn.innerHTML = '🔄 Обновить';
+                            refreshBtn.style.cssText = 'padding: 8px 16px; display: flex; align-items: center; gap: 6px; background: rgba(150, 150, 150, 0.15); color: inherit; border: 1px solid rgba(150, 150, 150, 0.3); border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s;';
+                            refreshBtn.onclick = (e) => {
+                                e.stopPropagation();
+                                img.classList.remove('img-tall', 'img-retrying');
+                                img.classList.add('img-loading');
+                                img.src = '';
                                 loadImage(img, u);
+                            };
 
-                                imgWrap.appendChild(img);
-
-                                if (r.raw_text) {
-                                    const textDiv = document.createElement('div');
-                                    textDiv.className = 'task-raw-text';
-
-                                    let displayText = r.raw_text;
-                                    if (r.subject) {
-                                        const regex = new RegExp(r.subject, 'gi');
-                                        displayText = displayText.replace(regex, '').replace(/^[:\-\s]+/, '').trim();
-                                    }
-                                    if (!displayText) displayText = r.numbers || 'Без текста';
-
-                                    textDiv.textContent = displayText;
-                                    imgWrap.appendChild(textDiv);
+                            const dlBtn = document.createElement('button');
+                            dlBtn.innerHTML = '⬇️ Скачать';
+                            dlBtn.style.cssText = 'padding: 8px 16px; display: flex; align-items: center; gap: 6px; background: #4299e1; color: #ffffff; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s; box-shadow: 0 2px 5px rgba(66, 153, 225, 0.3);';
+                            dlBtn.onclick = (e) => {
+                                e.stopPropagation();
+                                if (img.src && img.src.includes('/api/image')) {
+                                    const filename = `GDZ_${r.subject || 'Предмет'}_№${r.number || 1}.jpg`.replace(/\s+/g, '_');
+                                    downloadSingleImage(img.src, filename);
+                                } else {
+                                    alert('Картинка еще не загрузилась, подождите...');
                                 }
-
-                                const controls = document.createElement('div');
-                                controls.style.cssText = 'display: flex; gap: 10px; justify-content: flex-end;';
-
-                                const refreshBtn = document.createElement('button');
-                                refreshBtn.innerHTML = '🔄 Обновить';
-                                refreshBtn.title = 'Обновить картинку';
-                                refreshBtn.style.cssText = 'padding: 8px 16px; display: flex; align-items: center; gap: 6px; background: rgba(150, 150, 150, 0.15); color: inherit; border: 1px solid rgba(150, 150, 150, 0.3); border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s;';
-                                refreshBtn.onmouseenter = () => refreshBtn.style.background = 'rgba(150, 150, 150, 0.25)';
-                                refreshBtn.onmouseleave = () => refreshBtn.style.background = 'rgba(150, 150, 150, 0.15)';
-                                refreshBtn.onclick = (e) => {
-                                    e.stopPropagation();
-                                    img.classList.remove('img-tall', 'img-retrying');
-                                    img.classList.add('img-loading');
-                                    img.src = '';
-                                    loadImage(img, u);
-                                };
-
-                                const dlBtn = document.createElement('button');
-                                dlBtn.innerHTML = '⬇️ Скачать';
-                                dlBtn.title = 'Скачать решение';
-                                dlBtn.style.cssText = 'padding: 8px 16px; display: flex; align-items: center; gap: 6px; background: #4299e1; color: #ffffff; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s; box-shadow: 0 2px 5px rgba(66, 153, 225, 0.3);';
-                                dlBtn.onmouseenter = () => dlBtn.style.background = '#3182ce';
-                                dlBtn.onmouseleave = () => dlBtn.style.background = '#4299e1';
-                                dlBtn.onclick = (e) => {
-                                    e.stopPropagation();
-                                    if (img.src && img.src.includes('/api/image')) {
-                                        const filename = `GDZ_${r.subject || 'Предмет'}_№${r.number || 1}.jpg`.replace(/\s+/g, '_');
-                                        downloadSingleImage(img.src, filename);
-                                    } else {
-                                        alert('Картинка еще не загрузилась, подождите...');
-                                    }
-                                };
-                                controls.appendChild(refreshBtn);
-                                controls.appendChild(dlBtn);
-                                imgWrap.appendChild(controls);
-                                wrapper.appendChild(imgWrap);
-                            }
+                            };
+                            controls.appendChild(refreshBtn);
+                            controls.appendChild(dlBtn);
+                            imgWrap.appendChild(controls);
+                            wrapper.appendChild(imgWrap);
                             sec.appendChild(wrapper);
                         }
                     });
@@ -1917,20 +1906,6 @@
                 window.URL.revokeObjectURL(blobUrl);
             } catch (e) {
                 console.error('Ошибка скачивания:', e);
-            }
-        }
-
-        async function downloadAllImages() {
-            const images = Array.from(document.querySelectorAll('.solution-img'));
-            const validImages = images.filter(img => img.src && img.src.includes('/api/image'));
-            if (validImages.length === 0) {
-                alert('Нет загруженных решений. Подождите, пока картинки загрузятся, или найдите новые.');
-                return;
-            }
-            if (!confirm(`Найдено ${validImages.length} решений.\nБраузер может спросить разрешение на скачивание нескольких файлов. Нажмите "Разрешить".\n\nСкачиваем?`)) return;
-            for (let i = 0; i < validImages.length; i++) {
-                await downloadSingleImage(validImages[i].src, `GDZ_Решение_${i + 1}.jpg`);
-                await new Promise(r => setTimeout(r, 500));
             }
         }
 
