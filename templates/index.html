@@ -202,7 +202,7 @@
             font-size: 15px;
             line-height: 1.6;
             color: #1a202c;
-            margin-bottom: 12px; /* Уменьшил отступ снизу, так как теперь под ним будет текст задания */
+            margin-bottom: 12px;
             overflow-x: auto;
         }
         .theme-dark .ai-text-block {
@@ -1209,7 +1209,6 @@
                         }
 
                         let filteredSolutions = r.solutions;
-                        let warningHtml = '';
 
                         const subjectObj = SUBJECTS.find(s => s.name === subject);
                         const currentPart = activeParts[subject] || '1';
@@ -1247,16 +1246,8 @@
                                     (sol.edition && sol.edition.includes(selectedYear.toString())) ||
                                     (sol.edition && sol.edition.includes('ИИ'))
                                 );
-
-                                if (selectedYear.toString() !== targetYear) {
-                                    let msg = selectedYear > targetYearNum
-                                        ? `⚠️ За ${targetYear} год решений не найдено. Показываем ближайший будущий: <b>${selectedYear}</b> год.`
-                                        : `⚠️ За ${targetYear} год решений не найдено. Показываем самый свежий доступный: <b>${selectedYear}</b> год.`;
-                                    warningHtml = `<div class="img-error" style="color: #dd6b20; background: #fffaf0; border-color: #fbd38d; margin-bottom: 10px;">${msg}</div>`;
-                                }
                             } else {
                                 filteredSolutions = r.solutions;
-                                warningHtml = `<div class="img-error" style="color: #dd6b20; background: #fffaf0; border-color: #fbd38d; margin-bottom: 10px;">⚠️ За ${targetYear} год решений не найдено. Показываем все доступные варианты:</div>`;
                             }
                         }
 
@@ -1268,13 +1259,12 @@
                             });
                         }
 
-                        filteredSolutions.forEach((sol, index) => {
+                        // Оставляем ТОЛЬКО ПЕРВОЕ подходящее решение
+                        if (filteredSolutions.length > 0) {
+                            let sol = filteredSolutions[0]; // Берем самое первое
+
                             const wrapper = document.createElement('div');
                             wrapper.style.cssText = 'display: flex; flex-direction: column; gap: 8px; margin-bottom: 25px;';
-
-                            if (warningHtml && index === 0) {
-                                wrapper.insertAdjacentHTML('afterbegin', warningHtml);
-                            }
 
                             if (r.number) {
                                 const numHeader = document.createElement('div');
@@ -1283,7 +1273,7 @@
                                 wrapper.appendChild(numHeader);
                             }
 
-                            if (filteredSolutions.length > 1 || sol.edition.includes('ИИ')) {
+                            if (sol.edition) {
                                 const edHeader = document.createElement('div');
                                 edHeader.className = 'edition-header';
                                 edHeader.textContent = sol.edition;
@@ -1325,75 +1315,73 @@
                                     wrapper.appendChild(taskTextDiv);
                                 }
                             }
-                            else if (sol.images) {
-                                sol.images.forEach((u, imgIndex) => {
-                                    const imgWrap = document.createElement('div');
-                                    imgWrap.style.cssText = 'display: flex; flex-direction: column; gap: 8px; margin-bottom: 15px;';
+                            else if (sol.images && sol.images.length > 0) {
+                                const u = sol.images[0]; // Берем ТОЛЬКО ПЕРВУЮ картинку из решения
+                                const imgWrap = document.createElement('div');
+                                imgWrap.style.cssText = 'display: flex; flex-direction: column; gap: 8px; margin-bottom: 15px;';
 
-                                    const img = document.createElement('img');
-                                    img.className = 'solution-img img-loading';
-                                    img.style.marginTop = '0';
-                                    img.alt = 'Загрузка...';
-                                    loadImage(img, u);
+                                const img = document.createElement('img');
+                                img.className = 'solution-img img-loading';
+                                img.style.marginTop = '0';
+                                img.alt = 'Загрузка...';
+                                loadImage(img, u);
 
-                                    imgWrap.appendChild(img);
+                                imgWrap.appendChild(img);
 
-                                    if (r.raw_text) {
-                                        const textDiv = document.createElement('div');
-                                        textDiv.className = 'task-raw-text';
+                                if (r.raw_text) {
+                                    const textDiv = document.createElement('div');
+                                    textDiv.className = 'task-raw-text';
 
-                                        let displayText = r.raw_text;
-                                        if (r.subject) {
-                                            const regex = new RegExp(r.subject, 'gi');
-                                            displayText = displayText.replace(regex, '').replace(/^[:\-\s]+/, '').trim();
-                                        }
-                                        if (!displayText) displayText = r.numbers || 'Без текста';
-
-                                        textDiv.textContent = displayText;
-                                        imgWrap.appendChild(textDiv);
+                                    let displayText = r.raw_text;
+                                    if (r.subject) {
+                                        const regex = new RegExp(r.subject, 'gi');
+                                        displayText = displayText.replace(regex, '').replace(/^[:\-\s]+/, '').trim();
                                     }
+                                    if (!displayText) displayText = r.numbers || 'Без текста';
 
-                                    const controls = document.createElement('div');
-                                    controls.style.cssText = 'display: flex; gap: 10px; justify-content: flex-end;';
+                                    textDiv.textContent = displayText;
+                                    imgWrap.appendChild(textDiv);
+                                }
 
-                                    const refreshBtn = document.createElement('button');
-                                    refreshBtn.innerHTML = '🔄 Обновить';
-                                    refreshBtn.title = 'Обновить картинку';
-                                    refreshBtn.style.cssText = 'padding: 8px 16px; display: flex; align-items: center; gap: 6px; background: rgba(150, 150, 150, 0.15); color: inherit; border: 1px solid rgba(150, 150, 150, 0.3); border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s;';
-                                    refreshBtn.onmouseenter = () => refreshBtn.style.background = 'rgba(150, 150, 150, 0.25)';
-                                    refreshBtn.onmouseleave = () => refreshBtn.style.background = 'rgba(150, 150, 150, 0.15)';
-                                    refreshBtn.onclick = (e) => {
-                                        e.stopPropagation();
-                                        img.classList.remove('img-tall', 'img-retrying');
-                                        img.classList.add('img-loading');
-                                        img.src = '';
-                                        loadImage(img, u);
-                                    };
+                                const controls = document.createElement('div');
+                                controls.style.cssText = 'display: flex; gap: 10px; justify-content: flex-end;';
 
-                                    const dlBtn = document.createElement('button');
-                                    dlBtn.innerHTML = '⬇️ Скачать';
-                                    dlBtn.title = 'Скачать решение';
-                                    dlBtn.style.cssText = 'padding: 8px 16px; display: flex; align-items: center; gap: 6px; background: #4299e1; color: #ffffff; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s; box-shadow: 0 2px 5px rgba(66, 153, 225, 0.3);';
-                                    dlBtn.onmouseenter = () => dlBtn.style.background = '#3182ce';
-                                    dlBtn.onmouseleave = () => dlBtn.style.background = '#4299e1';
-                                    dlBtn.onclick = (e) => {
-                                        e.stopPropagation();
-                                        if (img.src && img.src.includes('/api/image')) {
-                                            const filename = `GDZ_${r.subject || 'Предмет'}_№${r.number || imgIndex + 1}.jpg`.replace(/\s+/g, '_');
-                                            downloadSingleImage(img.src, filename);
-                                        } else {
-                                            alert('Картинка еще не загрузилась, подождите...');
-                                        }
-                                    };
-                                    controls.appendChild(refreshBtn);
-                                    controls.appendChild(dlBtn);
-                                    imgWrap.appendChild(controls);
-                                    wrapper.appendChild(imgWrap);
-                                });
+                                const refreshBtn = document.createElement('button');
+                                refreshBtn.innerHTML = '🔄 Обновить';
+                                refreshBtn.title = 'Обновить картинку';
+                                refreshBtn.style.cssText = 'padding: 8px 16px; display: flex; align-items: center; gap: 6px; background: rgba(150, 150, 150, 0.15); color: inherit; border: 1px solid rgba(150, 150, 150, 0.3); border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s;';
+                                refreshBtn.onmouseenter = () => refreshBtn.style.background = 'rgba(150, 150, 150, 0.25)';
+                                refreshBtn.onmouseleave = () => refreshBtn.style.background = 'rgba(150, 150, 150, 0.15)';
+                                refreshBtn.onclick = (e) => {
+                                    e.stopPropagation();
+                                    img.classList.remove('img-tall', 'img-retrying');
+                                    img.classList.add('img-loading');
+                                    img.src = '';
+                                    loadImage(img, u);
+                                };
+
+                                const dlBtn = document.createElement('button');
+                                dlBtn.innerHTML = '⬇️ Скачать';
+                                dlBtn.title = 'Скачать решение';
+                                dlBtn.style.cssText = 'padding: 8px 16px; display: flex; align-items: center; gap: 6px; background: #4299e1; color: #ffffff; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s; box-shadow: 0 2px 5px rgba(66, 153, 225, 0.3);';
+                                dlBtn.onmouseenter = () => dlBtn.style.background = '#3182ce';
+                                dlBtn.onmouseleave = () => dlBtn.style.background = '#4299e1';
+                                dlBtn.onclick = (e) => {
+                                    e.stopPropagation();
+                                    if (img.src && img.src.includes('/api/image')) {
+                                        const filename = `GDZ_${r.subject || 'Предмет'}_№${r.number || 1}.jpg`.replace(/\s+/g, '_');
+                                        downloadSingleImage(img.src, filename);
+                                    } else {
+                                        alert('Картинка еще не загрузилась, подождите...');
+                                    }
+                                };
+                                controls.appendChild(refreshBtn);
+                                controls.appendChild(dlBtn);
+                                imgWrap.appendChild(controls);
+                                wrapper.appendChild(imgWrap);
                             }
-
                             sec.appendChild(wrapper);
-                        });
+                        }
                     });
                     result.appendChild(sec);
                 });
