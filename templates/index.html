@@ -922,7 +922,8 @@
 
         function extractNumbers(str, subjectName) {
             let clean = str;
-            const isPageBased = /английск|географ/i.test(subjectName);
+            // ДОБАВИЛИ ИНФОРМАТИКУ СЮДА
+            const isPageBased = /английск|географ|информ/i.test(subjectName);
 
             if (isPageBased) {
                 let pageMatches = [];
