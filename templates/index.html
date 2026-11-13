@@ -922,8 +922,8 @@
 
         function extractNumbers(str, subjectName) {
             let clean = str;
-            // ДОБАВИЛИ ИНФОРМАТИКУ СЮДА
-            const isPageBased = /английск|географ|информ/i.test(subjectName);
+            // ИСПРАВЛЕНИЕ: Информатика (Тетрадь) ищется по номерам, а учебник по страницам
+            const isPageBased = /английск|географ/i.test(subjectName) || (/информатика/i.test(subjectName) && !/тетрад/i.test(subjectName));
 
             if (isPageBased) {
                 let pageMatches = [];
@@ -1215,9 +1215,12 @@
                         const userSubjectYear = subjectYears[subject];
                         const targetYear = userSubjectYear || adminDefaultYear;
 
+                        let hasRenderedSomething = false;
+
                         // 1. СНАЧАЛА ИИ-РЕШЕНИЕ
                         let aiSolution = r.solutions.find(sol => sol.edition && sol.edition.includes('ИИ') && sol.text);
                         if (aiSolution) {
+                            hasRenderedSomething = true;
                             const wrapper = document.createElement('div');
                             wrapper.style.cssText = 'display: flex; flex-direction: column; gap: 8px; margin-bottom: 25px;';
 
@@ -1270,6 +1273,7 @@
                         let imageSolutions = r.solutions.filter(sol => sol.images && sol.images.length > 0 && (!sol.edition || !sol.edition.includes('ИИ')));
 
                         if (imageSolutions.length > 0) {
+                            hasRenderedSomething = true;
                             let selectedSolution = imageSolutions[0];
 
                             if (targetYear) {
@@ -1284,13 +1288,12 @@
                                 });
 
                                 if (allYears.length > 0) {
-                                    // Ищем только года впереди или равные
                                     let futureYears = [...new Set(allYears)].filter(y => y >= targetYearNum).sort((a,b) => a - b);
                                     let selectedYear;
                                     if (futureYears.length > 0) {
-                                        selectedYear = futureYears[0]; // Ближайший будущий
+                                        selectedYear = futureYears[0];
                                     } else {
-                                        selectedYear = Math.max(...allYears); // Если впереди нет, берем самый свежий
+                                        selectedYear = Math.max(...allYears);
                                     }
 
                                     let foundByYear = imageSolutions.find(sol => sol.edition && sol.edition.includes(selectedYear.toString()));
@@ -1298,7 +1301,6 @@
                                 }
                             }
 
-                            // Выводим только 1 картинку
                             const wrapper = document.createElement('div');
                             wrapper.style.cssText = 'display: flex; flex-direction: column; gap: 8px; margin-bottom: 25px;';
 
@@ -1371,6 +1373,13 @@
                             imgWrap.appendChild(controls);
                             wrapper.appendChild(imgWrap);
                             sec.appendChild(wrapper);
+                        }
+
+                        // 3. ЕСЛИ НИЧЕГО НЕ ОТРИСОВАЛОСЬ - ПОКАЗЫВАЕМ ОШИБКУ
+                        if (!hasRenderedSomething) {
+                            const errorDiv = document.createElement('div');
+                            errorDiv.innerHTML = `<div class="img-error" style="margin-bottom: 15px;">⚠️ Решение для №${r.number} не найдено на gdz.ru. Проверьте ссылку на предмет в админке (возможно, она неверная).</div>`;
+                            sec.appendChild(errorDiv);
                         }
                     });
                     result.appendChild(sec);
