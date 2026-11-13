@@ -9,7 +9,6 @@
     <meta name="theme-color" content="#4299e1">
     <link rel="apple-touch-icon" href="/static/icon-192.png">
 
-    <!-- Библиотека для красивых математических формул (KaTeX) -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
     <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js"></script>
@@ -922,7 +921,6 @@
 
         function extractNumbers(str, subjectName) {
             let clean = str;
-            // ИСПРАВЛЕНО: Информатика (Тетрадь) ищется по номерам, а учебник по страницам
             const isPageBased = /английск|географ/i.test(subjectName) || (/информатика/i.test(subjectName) && !/тетрад/i.test(subjectName));
 
             if (isPageBased) {
@@ -1217,8 +1215,8 @@
 
                         let hasRenderedSomething = false;
 
-                        // 1. СНАЧАЛА ИИ-РЕШЕНИЕ
-                        let aiSolution = r.solutions.find(sol => sol.edition && sol.edition.includes('ИИ') && sol.text);
+                        // 1. СНАЧАЛА ИИ-РЕШЕНИЕ (проверяем, что текст не пустой)
+                        let aiSolution = r.solutions.find(sol => sol.edition && sol.edition.includes('ИИ') && sol.text && sol.text.trim().length > 0);
                         if (aiSolution) {
                             hasRenderedSomething = true;
                             const wrapper = document.createElement('div');
@@ -1378,7 +1376,7 @@
                         // 3. ЕСЛИ НИЧЕГО НЕ ОТРИСОВАЛОСЬ - ПОКАЗЫВАЕМ ОШИБКУ
                         if (!hasRenderedSomething) {
                             const errorDiv = document.createElement('div');
-                            errorDiv.innerHTML = `<div class="img-error" style="margin-bottom: 15px;">⚠️ Решение для №${r.number} не найдено на gdz.ru. Проверьте ссылку на предмет в админке (возможно, она неверная).</div>`;
+                            errorDiv.innerHTML = `<div class="img-error" style="margin-bottom: 15px;">⚠️ Решение для №${r.number || ''} не найдено на gdz.ru. Проверьте ссылку на предмет в админке (возможно, она неверная).</div>`;
                             sec.appendChild(errorDiv);
                         }
                     });
