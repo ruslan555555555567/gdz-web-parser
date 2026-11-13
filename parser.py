@@ -44,26 +44,25 @@ def _get_solutions(url: str) -> list[dict]:
     if ai_card:
         ai_content = ai_card.find("div", class_="ai-card__content")
         if ai_content:
-            # Берем текст из ИИ
-            ai_text = ai_content.get_text(separator="\n").strip()
             solutions.append({
                 "edition": "ИИ-решебник",
-                "text": ai_text
+                "text": ai_content.get_text(separator="\n").strip()
             })
 
-    # 2. Ищем обычные решения (картинки)
-    for fig in soup.find_all("figure", class_="task-container"):
-        caption = fig.find("figcaption", class_="task-crumbs")
-        if not caption:
-            continue
+    # 2. Ищем обычные решения (картинки). Теперь ищем и в figure, и в div.
+    containers = soup.find_all("figure", class_="task-container") + soup.find_all("div", class_="task-container")
 
-        raw_title = caption.get_text(" ", strip=True)
+    for fig in containers:
+        caption = fig.find("figcaption", class_="task-crumbs")
+        raw_title = caption.get_text(" ", strip=True) if caption else "Решение"
+        # Убираем слово "страница" и номер из заголовка
         edition_title = re.sub(r'/\s*страница\s*/\s*\d+', '', raw_title, flags=re.IGNORECASE).strip()
 
         images = []
         for img in fig.find_all("img"):
             src = img.get("src")
-            if src and "/attachments/images/tasks/" in src:
+            # Смягчили проверку: ищем любые картинки из папки attachments или с расширением jpg/png
+            if src and ("/attachments/" in src or ".jpg" in src or ".png" in src or ".webp" in src):
                 full = urljoin("https://gdz.ru", src)
                 if full not in images:
                     images.append(full)
@@ -102,7 +101,7 @@ async def parse_tasks(jobs: list[dict]) -> list[dict]:
             continue
 
         for num in numbers:
-            # ДОБАВИЛИ НОВЫЕ ВАРИАНТЫ ССЫЛОК (включая 1-nom-2 и т.д.)
+            # ДОБАВИЛИ ВСЕ ВОЗМОЖНЫЕ ВАРИАНТЫ ССЫЛОК
             candidates = [
                 urljoin(base, f"{num}-task/"),
                 urljoin(base, f"{num}-s/"),
@@ -118,6 +117,7 @@ async def parse_tasks(jobs: list[dict]) -> list[dict]:
                 urljoin(base, f"page-{num}/"),
                 urljoin(base, f"{num}-page/"),
                 urljoin(base, f"page-{num}-task/"),
+                urljoin(base, f"{num}/"),  # Прямая ссылка на номер
             ]
 
             solutions, used = [], candidates[0]
