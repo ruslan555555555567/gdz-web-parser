@@ -10,6 +10,7 @@ HEADERS = {
     "Referer": "https://gdz.ru/",
 }
 
+
 def extract_numbers(text: str) -> list[str]:
     if not text: return []
     text = re.sub(r'(?:\bп\.|\bпункт|\b§|\bпараграф)\s*\d+', ' ', text, flags=re.IGNORECASE)
@@ -26,6 +27,7 @@ def extract_numbers(text: str) -> list[str]:
             result.append(n)
     return result
 
+
 def _get_solutions(url: str) -> list[dict]:
     try:
         r = requests.get(url, headers=HEADERS, impersonate="chrome", timeout=20)
@@ -37,7 +39,7 @@ def _get_solutions(url: str) -> list[dict]:
     soup = BeautifulSoup(html, "lxml")
     solutions = []
 
-    # 1. Сначала ищем ИИ-решебник
+    # 1. Ищем ИИ-решебник
     ai_card = soup.find("div", class_="ai-card")
     if ai_card:
         ai_content = ai_card.find("div", class_="ai-card__content")
@@ -47,34 +49,31 @@ def _get_solutions(url: str) -> list[dict]:
                 "text": ai_content.get_text(separator="\n").strip()
             })
 
-    # 2. Ищем ВСЕ картинки, которые похожи на решения
-    images = []
-    for img in soup.find_all("img"):
-        src = img.get("src", "")
-        # Любая картинка, лежащая в папке attachments/images, скорее всего является решением
-        if "/attachments/images/" in src:
-            full = urljoin("https://gdz.ru", src)
-            # Отсеиваем мелкие иконки и логотипы
-            if "logo" not in full.lower() and "icon" not in full.lower():
+    # 2. Ищем картинки ТОЛЬКО внутри блоков с решениями (figure)
+    for fig in soup.find_all("figure", class_="task-container"):
+        caption = fig.find("figcaption", class_="task-crumbs")
+        raw_title = caption.get_text(" ", strip=True) if caption else "Решение"
+
+        # Убираем лишнее из заголовка (например, "/ задание / 11")
+        edition_title = re.sub(r'/\s*(задание|страница)\s*/\s*\d+', '', raw_title, flags=re.IGNORECASE).strip()
+
+        images = []
+        for img in fig.find_all("img"):
+            src = img.get("src", "")
+            # Берем только картинки заданий (отсеиваем обложки и иконки)
+            if "/attachments/images/tasks/" in src:
+                full = urljoin("https://gdz.ru", src)
                 if full not in images:
                     images.append(full)
 
-    if images:
-        # Пытаемся найти красивый заголовок (например "Решебник 2023 / страница / 13")
-        title = "Решение"
-        crumb = soup.find("div", class_="task-crumbs") or soup.find("h1")
-        if crumb:
-            raw_title = crumb.get_text(" ", strip=True)
-            clean_title = re.sub(r'/\s*страница\s*/\s*\d+', '', raw_title, flags=re.IGNORECASE).strip()
-            if clean_title:
-                title = clean_title
-
-        solutions.append({
-            "edition": title,
-            "images": images
-        })
+        if images:
+            solutions.append({
+                "edition": edition_title if edition_title else "Решение",
+                "images": images
+            })
 
     return solutions
+
 
 async def parse_tasks(jobs: list[dict]) -> list[dict]:
     results = []
@@ -101,7 +100,6 @@ async def parse_tasks(jobs: list[dict]) -> list[dict]:
             continue
 
         for num in numbers:
-            # Добавили вообще все возможные варианты, которые использует gdz.ru
             candidates = [
                 urljoin(base, f"{num}-task/"),
                 urljoin(base, f"{num}-s/"),
