@@ -102,10 +102,14 @@ async def parse_tasks(jobs: list[dict]) -> list[dict]:
             continue
 
         for num in numbers:
+            # ДОБАВИЛИ НОВЫЕ ВАРИАНТЫ ССЫЛОК (включая 1-nom-2 и т.д.)
             candidates = [
                 urljoin(base, f"{num}-task/"),
                 urljoin(base, f"{num}-s/"),
                 urljoin(base, f"{num}-nom/"),
+                urljoin(base, f"1-nom-{num}/"),
+                urljoin(base, f"2-nom-{num}/"),
+                urljoin(base, f"nom-{num}/"),
                 urljoin(base, f"task-{num}/"),
                 urljoin(base, f"1-1-prt-{num}/"),
                 urljoin(base, f"1-2-prt-{num}/"),
