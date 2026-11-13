@@ -59,6 +59,9 @@ DEFAULT_SUBJECTS = [
      "sort_order": 15, "max_number": 0, "note": "", "default_year": "", "default_year_alt": ""},
     {"name": "Изобразительное искусство", "url": "", "url_alt": "", "type": "text",
      "group_name": "🎨 Остальные предметы", "sort_order": 16, "max_number": 0, "note": "", "default_year": "", "default_year_alt": ""},
+    {"name": "Информатика (Тетрадь)", "url": "ССЫЛКА_НА_ТЕТРАДЬ_С_GDZ", "url_alt": "", "type": "numbers",
+     "group_name": "🧮 Точные науки", "sort_order": 4.5, "max_number": 500, "note": "", "default_year": "",
+     "default_year_alt": ""},
 ]
 
 DEFAULT_SETTINGS = {"site_title": "GDZ Парсер", "announcement": "", "footer_text": "", "custom_css": ""}
