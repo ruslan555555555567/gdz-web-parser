@@ -923,7 +923,7 @@
         function extractNumbers(str, subjectName) {
             let clean = str;
             // ИСПРАВЛЕНИЕ: Информатика (Тетрадь) ищется по номерам, а учебник по страницам
-            const isPageBased = /английск|географ|информ/i.test(subjectName);
+            const isPageBased = /английск|географ/i.test(subjectName) || (/информатика/i.test(subjectName) && !/тетрад/i.test(subjectName));
 
             if (isPageBased) {
                 let pageMatches = [];

@@ -10,7 +10,6 @@ HEADERS = {
     "Referer": "https://gdz.ru/",
 }
 
-
 def extract_numbers(text: str) -> list[str]:
     if not text: return []
     text = re.sub(r'(?:\bп\.|\bпункт|\b§|\bпараграф)\s*\d+', ' ', text, flags=re.IGNORECASE)
@@ -26,7 +25,6 @@ def extract_numbers(text: str) -> list[str]:
             seen.add(n)
             result.append(n)
     return result
-
 
 def _get_solutions(url: str) -> list[dict]:
     try:
@@ -49,32 +47,34 @@ def _get_solutions(url: str) -> list[dict]:
                 "text": ai_content.get_text(separator="\n").strip()
             })
 
-    # 2. Ищем обычные решения (картинки). Теперь ищем и в figure, и в div.
-    containers = soup.find_all("figure", class_="task-container") + soup.find_all("div", class_="task-container")
-
-    for fig in containers:
-        caption = fig.find("figcaption", class_="task-crumbs")
-        raw_title = caption.get_text(" ", strip=True) if caption else "Решение"
-        # Убираем слово "страница" и номер из заголовка
-        edition_title = re.sub(r'/\s*страница\s*/\s*\d+', '', raw_title, flags=re.IGNORECASE).strip()
-
-        images = []
-        for img in fig.find_all("img"):
-            src = img.get("src")
-            # Смягчили проверку: ищем любые картинки из папки attachments или с расширением jpg/png
-            if src and ("/attachments/" in src or ".jpg" in src or ".png" in src or ".webp" in src):
-                full = urljoin("https://gdz.ru", src)
+    # 2. Ищем ВСЕ картинки, которые похожи на решения
+    images = []
+    for img in soup.find_all("img"):
+        src = img.get("src", "")
+        # Любая картинка, лежащая в папке attachments/images, скорее всего является решением
+        if "/attachments/images/" in src:
+            full = urljoin("https://gdz.ru", src)
+            # Отсеиваем мелкие иконки и логотипы
+            if "logo" not in full.lower() and "icon" not in full.lower():
                 if full not in images:
                     images.append(full)
 
-        if images:
-            solutions.append({
-                "edition": edition_title if edition_title else "Решение",
-                "images": images
-            })
+    if images:
+        # Пытаемся найти красивый заголовок (например "Решебник 2023 / страница / 13")
+        title = "Решение"
+        crumb = soup.find("div", class_="task-crumbs") or soup.find("h1")
+        if crumb:
+            raw_title = crumb.get_text(" ", strip=True)
+            clean_title = re.sub(r'/\s*страница\s*/\s*\d+', '', raw_title, flags=re.IGNORECASE).strip()
+            if clean_title:
+                title = clean_title
+
+        solutions.append({
+            "edition": title,
+            "images": images
+        })
 
     return solutions
-
 
 async def parse_tasks(jobs: list[dict]) -> list[dict]:
     results = []
@@ -101,7 +101,7 @@ async def parse_tasks(jobs: list[dict]) -> list[dict]:
             continue
 
         for num in numbers:
-            # ДОБАВИЛИ ВСЕ ВОЗМОЖНЫЕ ВАРИАНТЫ ССЫЛОК
+            # Добавили вообще все возможные варианты, которые использует gdz.ru
             candidates = [
                 urljoin(base, f"{num}-task/"),
                 urljoin(base, f"{num}-s/"),
@@ -117,7 +117,7 @@ async def parse_tasks(jobs: list[dict]) -> list[dict]:
                 urljoin(base, f"page-{num}/"),
                 urljoin(base, f"{num}-page/"),
                 urljoin(base, f"page-{num}-task/"),
-                urljoin(base, f"{num}/"),  # Прямая ссылка на номер
+                urljoin(base, f"{num}/"),
             ]
 
             solutions, used = [], candidates[0]
