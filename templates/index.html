@@ -8,6 +8,12 @@
     <link rel="manifest" href="/manifest.json">
     <meta name="theme-color" content="#4299e1">
     <link rel="apple-touch-icon" href="/static/icon-192.png">
+
+    <!-- Библиотека для красивых математических формул (KaTeX) -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js"></script>
+
     <script>
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
@@ -199,6 +205,7 @@
             line-height: 1.6;
             color: #1a202c;
             margin-bottom: 20px;
+            overflow-x: auto; /* Чтобы длинные формулы можно было скроллить */
         }
         .theme-dark .ai-text-block {
             background: rgba(66, 153, 225, 0.1);
@@ -223,6 +230,9 @@
         .ai-text-block p { margin-bottom: 10px; }
         .ai-text-block b { color: #1a202c; }
         .theme-dark .ai-text-block b { color: #ffffff; }
+
+        /* Стили для математических блоков */
+        .katex-display { margin: 15px 0 !important; }
 
         .welcome-greeting { text-align: center; font-size: 22px; font-weight: 700; margin-bottom: 20px; color: #2d3748; opacity: 0; transform: translateY(-20px); animation: slideDownFade 0.8s cubic-bezier(0.25, 0.8, 0.25, 1) forwards; }
         .theme-dark .welcome-greeting { color: #e2e8f0; }
@@ -1211,14 +1221,34 @@
                         const targetYear = userSubjectYear || adminDefaultYear;
 
                         if (targetYear) {
-                            const yearMatches = r.solutions.filter(sol =>
-                                (sol.edition && sol.edition.includes(targetYear)) ||
-                                (sol.edition && sol.edition.includes('ИИ'))
-                            );
-                            if (yearMatches.length > 0) {
-                                filteredSolutions = yearMatches;
+                            const targetYearNum = parseInt(targetYear);
+                            let allYears = [];
+
+                            r.solutions.forEach(sol => {
+                                if (sol.edition) {
+                                    const match = sol.edition.match(/\b(20\d{2})\b/g);
+                                    if (match) {
+                                        match.forEach(y => allYears.push({ year: parseInt(y), sol: sol }));
+                                    }
+                                }
+                            });
+
+                            if (allYears.length > 0) {
+                                // Сортируем по разнице с нужным годом
+                                allYears.sort((a, b) => Math.abs(a.year - targetYearNum) - Math.abs(b.year - targetYearNum));
+                                const closestYear = allYears[0].year;
+
+                                filteredSolutions = r.solutions.filter(sol =>
+                                    (sol.edition && sol.edition.includes(closestYear.toString())) ||
+                                    (sol.edition && sol.edition.includes('ИИ'))
+                                );
+
+                                if (closestYear.toString() !== targetYear) {
+                                    warningHtml = `<div class="img-error" style="color: #dd6b20; background: #fffaf0; border-color: #fbd38d; margin-bottom: 10px;">⚠️ За ${targetYear} год решений не найдено. Показываем ближайший доступный: <b>${closestYear}</b> год.</div>`;
+                                }
                             } else {
-                                warningHtml = `<div class="img-error" style="color: #dd6b20; background: #fffaf0; border-color: #fbd38d; margin-bottom: 10px;">⚠️ Решений для №${r.number} за <b>${targetYear}</b> год не найдено. Показываем другие доступные варианты:</div>`;
+                                filteredSolutions = r.solutions;
+                                warningHtml = `<div class="img-error" style="color: #dd6b20; background: #fffaf0; border-color: #fbd38d; margin-bottom: 10px;">⚠️ За ${targetYear} год решений не найдено. Показываем все доступные варианты:</div>`;
                             }
                         }
 
@@ -1256,6 +1286,20 @@
                                 const textDiv = document.createElement('div');
                                 textDiv.className = 'ai-text-block';
                                 textDiv.innerHTML = renderMarkdown(sol.text);
+
+                                // Запускаем рендер математики (KaTeX)
+                                if (window.renderMathInElement) {
+                                    renderMathInElement(textDiv, {
+                                        delimiters: [
+                                            {left: '$$', right: '$$', display: true},
+                                            {left: '$', right: '$', display: false},
+                                            {left: '\\(', right: '\\)', display: false},
+                                            {left: '\\[', right: '\\]', display: true}
+                                        ],
+                                        throwOnError: false
+                                    });
+                                }
+
                                 wrapper.appendChild(textDiv);
                             }
                             else if (sol.images) {
@@ -1374,17 +1418,15 @@
 
         function renderMarkdown(text) {
             if (!text) return '';
+            // Не экранируем $ и \, чтобы KaTeX мог их прочитать
             let html = text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-
-            html = html.replace(/\$\\rightarrow\$/g, '➔');
-            html = html.replace(/\$\\to\$/g, '➔');
-            html = html.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>');
-            html = html.replace(/(?<!\*)\*([^*]+)\*(?!\*)/g, '<i>$1</i>');
 
             const lines = html.split('\n');
             let result = '';
             let inUl = false;
             let inOl = false;
+            let inMath = false;
+            let mathBuffer = [];
 
             const closeLists = () => {
                 if (inUl) { result += '</ul>'; inUl = false; }
@@ -1392,11 +1434,40 @@
             };
 
             for (let line of lines) {
-                line = line.trim();
-                if (!line) {
+                let trimmed = line.trim();
+
+                // Обработка математических блоков (многострочных)
+                if (trimmed.startsWith('$$')) {
+                    if (trimmed.length > 2 && trimmed.endsWith('$$')) {
+                        closeLists();
+                        result += `<div style="text-align:center; margin: 10px 0;">${trimmed}</div>`;
+                        continue;
+                    }
+                    inMath = !inMath;
+                    if (inMath) {
+                        mathBuffer = ['$$'];
+                    } else {
+                        mathBuffer.push('$$');
+                        closeLists();
+                        result += `<div style="text-align:center; margin: 10px 0;">${mathBuffer.join('\n')}</div>`;
+                        mathBuffer = [];
+                    }
+                    continue;
+                }
+
+                if (inMath) {
+                    mathBuffer.push(line);
+                    continue;
+                }
+
+                if (!trimmed) {
                     closeLists();
                     continue;
                 }
+
+                // Форматирование Markdown
+                line = line.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>');
+                line = line.replace(/(?<!\*)\*([^*]+)\*(?!\*)/g, '<i>$1</i>');
 
                 if (line.startsWith('* ')) {
                     if (inOl) { result += '</ol>'; inOl = false; }
