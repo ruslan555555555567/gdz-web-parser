@@ -50,7 +50,6 @@
         html.no-auth #authScreen { display: flex !important; }
         html.no-auth #mainScreen { display: none !important; }
 
-        /* НОВЫЕ СТИЛИ ДЛЯ КНОПОК ДЕЙСТВИЙ */
         .action-buttons-row {
             display: flex;
             gap: 12px;
@@ -113,7 +112,6 @@
         .btn-modern-clear:active {
             transform: translateY(1px);
         }
-        /* Темная тема для кнопки очистки */
         .theme-dark .btn-modern-clear {
             background: rgba(74, 85, 104, 0.5);
             color: #fc8181;
@@ -204,8 +202,8 @@
             font-size: 15px;
             line-height: 1.6;
             color: #1a202c;
-            margin-bottom: 20px;
-            overflow-x: auto; /* Чтобы длинные формулы можно было скроллить */
+            margin-bottom: 12px; /* Уменьшил отступ снизу, так как теперь под ним будет текст задания */
+            overflow-x: auto;
         }
         .theme-dark .ai-text-block {
             background: rgba(66, 153, 225, 0.1);
@@ -231,7 +229,6 @@
         .ai-text-block b { color: #1a202c; }
         .theme-dark .ai-text-block b { color: #ffffff; }
 
-        /* Стили для математических блоков */
         .katex-display { margin: 15px 0 !important; }
 
         .welcome-greeting { text-align: center; font-size: 22px; font-weight: 700; margin-bottom: 20px; color: #2d3748; opacity: 0; transform: translateY(-20px); animation: slideDownFade 0.8s cubic-bezier(0.25, 0.8, 0.25, 1) forwards; }
@@ -1234,17 +1231,28 @@
                             });
 
                             if (allYears.length > 0) {
-                                // Сортируем по разнице с нужным годом
-                                allYears.sort((a, b) => Math.abs(a.year - targetYearNum) - Math.abs(b.year - targetYearNum));
-                                const closestYear = allYears[0].year;
+                                // Ищем только года, которые больше или равны нужному
+                                let futureYears = [...new Set(allYears.map(y => y.year))].filter(y => y >= targetYearNum).sort((a,b) => a - b);
+                                let selectedYear;
+
+                                if (futureYears.length > 0) {
+                                    selectedYear = futureYears[0]; // Берем ближайший впереди
+                                } else {
+                                    // Если впереди ничего нет, берем самый последний доступный
+                                    let allAvailable = [...new Set(allYears.map(y => y.year))].sort((a,b) => b - a);
+                                    selectedYear = allAvailable[0];
+                                }
 
                                 filteredSolutions = r.solutions.filter(sol =>
-                                    (sol.edition && sol.edition.includes(closestYear.toString())) ||
+                                    (sol.edition && sol.edition.includes(selectedYear.toString())) ||
                                     (sol.edition && sol.edition.includes('ИИ'))
                                 );
 
-                                if (closestYear.toString() !== targetYear) {
-                                    warningHtml = `<div class="img-error" style="color: #dd6b20; background: #fffaf0; border-color: #fbd38d; margin-bottom: 10px;">⚠️ За ${targetYear} год решений не найдено. Показываем ближайший доступный: <b>${closestYear}</b> год.</div>`;
+                                if (selectedYear.toString() !== targetYear) {
+                                    let msg = selectedYear > targetYearNum
+                                        ? `⚠️ За ${targetYear} год решений не найдено. Показываем ближайший будущий: <b>${selectedYear}</b> год.`
+                                        : `⚠️ За ${targetYear} год решений не найдено. Показываем самый свежий доступный: <b>${selectedYear}</b> год.`;
+                                    warningHtml = `<div class="img-error" style="color: #dd6b20; background: #fffaf0; border-color: #fbd38d; margin-bottom: 10px;">${msg}</div>`;
                                 }
                             } else {
                                 filteredSolutions = r.solutions;
@@ -1287,7 +1295,6 @@
                                 textDiv.className = 'ai-text-block';
                                 textDiv.innerHTML = renderMarkdown(sol.text);
 
-                                // Запускаем рендер математики (KaTeX)
                                 if (window.renderMathInElement) {
                                     renderMathInElement(textDiv, {
                                         delimiters: [
@@ -1301,6 +1308,22 @@
                                 }
 
                                 wrapper.appendChild(textDiv);
+
+                                // ДОБАВЛЯЕМ САМО ЗАДАНИЕ ПОСЛЕ ОТВЕТА ИИ
+                                if (r.raw_text) {
+                                    const taskTextDiv = document.createElement('div');
+                                    taskTextDiv.className = 'task-raw-text';
+
+                                    let displayText = r.raw_text;
+                                    if (r.subject) {
+                                        const regex = new RegExp(r.subject, 'gi');
+                                        displayText = displayText.replace(regex, '').replace(/^[:\-\s]+/, '').trim();
+                                    }
+                                    if (!displayText) displayText = r.numbers || 'Без текста';
+
+                                    taskTextDiv.textContent = displayText;
+                                    wrapper.appendChild(taskTextDiv);
+                                }
                             }
                             else if (sol.images) {
                                 sol.images.forEach((u, imgIndex) => {
@@ -1418,7 +1441,6 @@
 
         function renderMarkdown(text) {
             if (!text) return '';
-            // Не экранируем $ и \, чтобы KaTeX мог их прочитать
             let html = text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
             const lines = html.split('\n');
@@ -1436,7 +1458,6 @@
             for (let line of lines) {
                 let trimmed = line.trim();
 
-                // Обработка математических блоков (многострочных)
                 if (trimmed.startsWith('$$')) {
                     if (trimmed.length > 2 && trimmed.endsWith('$$')) {
                         closeLists();
@@ -1465,7 +1486,6 @@
                     continue;
                 }
 
-                // Форматирование Markdown
                 line = line.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>');
                 line = line.replace(/(?<!\*)\*([^*]+)\*(?!\*)/g, '<i>$1</i>');
 
