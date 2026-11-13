@@ -767,16 +767,16 @@
                         const label = document.createElement('label');
                         label.className = 'input-label';
 
-                        const activeYear = subjectYears[s.name] || s.default_year;
-                        const yearBadge = activeYear ? ` <span style="color:#48bb78; font-size:13px;">(${escapeHtml(activeYear)})</span>` : '';
+                        const currentPart = activeParts[s.name] || '1';
+                        const activeYear = subjectYears[s.name] || (currentPart === '2' ? (s.default_year_alt || s.default_year) : s.default_year);
+                        const yearBadge = `<span class="year-badge" style="color:#48bb78; font-size:13px;">${activeYear ? `(${escapeHtml(activeYear)})` : ''}</span>`;
 
                         let partBtn = '';
                         if (s.url_alt) {
-                            const currentPart = activeParts[s.name] || '1';
                             partBtn = `<button type="button" class="part-toggle-btn" onclick="togglePart('${s.name.replace(/'/g, "\\'")}', this)" data-part="${currentPart}">Часть ${currentPart}</button>`;
                         }
 
-                        label.innerHTML = escapeHtml(s.name) + yearBadge + partBtn;
+                        label.innerHTML = escapeHtml(s.name) + ' ' + yearBadge + partBtn;
                         headerRow.appendChild(label);
 
                         const gearBtn = document.createElement('button');
@@ -813,6 +813,15 @@
             activeParts[subjName] = next;
             btn.textContent = 'Часть ' + next;
             btn.dataset.part = next;
+
+            const subj = SUBJECTS.find(s => s.name === subjName);
+            if (subj) {
+                const activeYear = subjectYears[subjName] || (next === '2' ? (subj.default_year_alt || subj.default_year) : subj.default_year);
+                const yearSpan = btn.parentElement.querySelector('.year-badge');
+                if (yearSpan) {
+                    yearSpan.textContent = activeYear ? `(${activeYear})` : '';
+                }
+            }
         };
 
         function openSubjectSettings(subjectName) {
@@ -820,13 +829,14 @@
             $('subjectSettingsTitle').textContent = `⚙️ Настройки: ${subjectName}`;
 
             const subj = SUBJECTS.find(s => s.name === subjectName);
-            const adminDefault = subj ? subj.default_year : '';
+            const currentPart = activeParts[subjectName] || '1';
+            const adminDefault = currentPart === '2' ? (subj.default_year_alt || subj.default_year) : subj.default_year;
 
             $('subjectSetYear').value = subjectYears[subjectName] || '';
 
             const hintEl = $('subjectSettingsAdminHint');
             if (adminDefault) {
-                hintEl.innerHTML = `👑 Администратор установил год по умолчанию: <b>${adminDefault}</b>.`;
+                hintEl.innerHTML = `👑 Администратор установил год по умолчанию (для Части ${currentPart}): <b>${adminDefault}</b>.`;
                 $('subjectSetYear').placeholder = adminDefault;
             } else {
                 hintEl.innerHTML = 'Администратор не устанавливал год по умолчанию.';
@@ -1195,11 +1205,11 @@
                         let warningHtml = '';
 
                         const subjectObj = SUBJECTS.find(s => s.name === subject);
-                        const adminDefaultYear = subjectObj ? subjectObj.default_year : '';
+                        const currentPart = activeParts[subject] || '1';
+                        const adminDefaultYear = currentPart === '2' ? (subjectObj.default_year_alt || subjectObj.default_year) : subjectObj.default_year;
                         const userSubjectYear = subjectYears[subject];
                         const targetYear = userSubjectYear || adminDefaultYear;
 
-                        // Строгая фильтрация: если год выбран, ищем его (или ИИ-ответ)
                         if (targetYear) {
                             const yearMatches = r.solutions.filter(sol =>
                                 (sol.edition && sol.edition.includes(targetYear)) ||
@@ -1208,7 +1218,6 @@
                             if (yearMatches.length > 0) {
                                 filteredSolutions = yearMatches;
                             } else {
-                                // Если решений за этот год нет, показываем предупреждение, но оставляем картинки!
                                 warningHtml = `<div class="img-error" style="color: #dd6b20; background: #fffaf0; border-color: #fbd38d; margin-bottom: 10px;">⚠️ Решений для №${r.number} за <b>${targetYear}</b> год не найдено. Показываем другие доступные варианты:</div>`;
                             }
                         }
@@ -1363,20 +1372,13 @@
             finally { btn.disabled = false; }
         });
 
-        // ОБНОВЛЕННАЯ ФУНКЦИЯ РЕНДЕРА MARKDOWN
         function renderMarkdown(text) {
             if (!text) return '';
-            // Сначала экранируем HTML-теги, чтобы не сломать верстку
             let html = text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
-            // 1. Заменяем математические стрелочки на красивые символы
             html = html.replace(/\$\\rightarrow\$/g, '➔');
             html = html.replace(/\$\\to\$/g, '➔');
-
-            // 2. Жирный текст (**текст**)
             html = html.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>');
-
-            // 3. Курсив (*текст*) - но не в начале строки (чтобы не ломать списки)
             html = html.replace(/(?<!\*)\*([^*]+)\*(?!\*)/g, '<i>$1</i>');
 
             const lines = html.split('\n');
