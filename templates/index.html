@@ -122,6 +122,57 @@
             border-color: #fc8181;
         }
 
+        /* Стиль для иконки темы */
+        .theme-toggle-btn {
+            background: rgba(150, 150, 150, 0.1);
+            border: none;
+            font-size: 18px;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.2s, background 0.2s;
+            padding: 0;
+        }
+        .theme-toggle-btn:hover {
+            background: rgba(150, 150, 150, 0.2);
+            transform: scale(1.05);
+        }
+
+        /* Стиль для кнопки копирования */
+        .copy-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            margin-bottom: 10px;
+            padding: 6px 12px;
+            font-size: 13px;
+            font-weight: 600;
+            border-radius: 8px;
+            border: 1px solid #bee3f8;
+            background: rgba(66, 153, 225, 0.05);
+            color: #2b6cb0;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: inherit;
+        }
+        .copy-btn:hover {
+            background: rgba(66, 153, 225, 0.15);
+            border-color: #90cdf4;
+        }
+        .theme-dark .copy-btn {
+            background: rgba(66, 153, 225, 0.15);
+            border-color: rgba(66, 153, 225, 0.3);
+            color: #90cdf4;
+        }
+        .theme-dark .copy-btn:hover {
+            background: rgba(66, 153, 225, 0.25);
+            border-color: #63b3ed;
+        }
+
         .subject-header-row {
             display: flex;
             justify-content: space-between;
@@ -397,10 +448,15 @@
     </div>
 
     <div id="mainScreen" class="container hidden">
+        <!-- ТОПБАР с иконкой темы -->
         <div class="topbar">
-            <span class="version">v{{ version }}</span>
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <span class="version">v{{ version }}</span>
+                <button id="themeToggleBtn" class="theme-toggle-btn" title="Сменить тему">🌙</button>
+            </div>
             <div class="topbar-right" id="topbarRight"></div>
         </div>
+
         <div class="welcome-greeting" id="welcomeGreeting"></div>
         <h1>📚 GDZ Парсер</h1>
         <p class="subtitle">7 класс · Введи номера или текст задания</p>
@@ -672,6 +728,11 @@
                 localStorage.setItem('gdz_theme', 'light');
                 localStorage.removeItem('gdz_bg');
             }
+            // Обновляем иконку в топбаре
+            const toggleBtn = $('themeToggleBtn');
+            if (toggleBtn) {
+                toggleBtn.textContent = (theme === 'dark') ? '☀️' : '🌙';
+            }
         }
 
         function getInitial(name, email) {
@@ -694,6 +755,42 @@
                 return {};
             }
         }
+
+        async function copyTextToClipboard(text, btnElement) {
+            try {
+                await navigator.clipboard.writeText(text);
+                const originalText = btnElement.innerHTML;
+                btnElement.innerHTML = '✅ Скопировано';
+                btnElement.style.color = '#48bb78';
+                btnElement.style.borderColor = '#48bb78';
+                setTimeout(() => {
+                    btnElement.innerHTML = originalText;
+                    btnElement.style.color = '';
+                    btnElement.style.borderColor = '';
+                }, 2000);
+            } catch (err) {
+                alert('Не удалось скопировать текст. Попробуйте вручную.');
+            }
+        }
+
+        // Слушатель для быстрой смены темы
+        document.addEventListener('DOMContentLoaded', () => {
+            const toggleBtn = $('themeToggleBtn');
+            if (toggleBtn) {
+                // Ставим правильную иконку при загрузке
+                const current = localStorage.getItem('gdz_theme') || 'light';
+                toggleBtn.textContent = (current === 'dark') ? '☀️' : '🌙';
+
+                toggleBtn.addEventListener('click', () => {
+                    const current = localStorage.getItem('gdz_theme') || 'light';
+                    const next = (current === 'dark') ? 'light' : 'dark';
+                    applyTheme(next, null);
+
+                    // Синхронизируем кнопки в настройках, если они открыты
+                    document.querySelectorAll('.theme-btn').forEach(t => t.classList.toggle('active', t.dataset.theme === next));
+                });
+            }
+        });
 
         async function init() {
             if (authToken) {
@@ -1287,6 +1384,16 @@
                             edHeader.textContent = aiSolution.edition;
                             wrapper.appendChild(edHeader);
 
+                            // Кнопка копирования для ИИ
+                            const copyBtn = document.createElement('button');
+                            copyBtn.className = 'copy-btn';
+                            copyBtn.innerHTML = '📋 Скопировать текст';
+                            copyBtn.onclick = (e) => {
+                                e.stopPropagation();
+                                copyTextToClipboard(aiSolution.text, copyBtn);
+                            };
+                            wrapper.appendChild(copyBtn);
+
                             const textDiv = document.createElement('div');
                             textDiv.className = 'ai-text-block';
                             textDiv.innerHTML = renderMarkdown(aiSolution.text);
@@ -1368,12 +1475,10 @@
                                 wrapper.appendChild(edHeader);
                             }
 
-                            // ===== ЛОГИКА ВЫВОДА КАРТИНОК =====
                             const isMergedSubject = subject.toLowerCase().includes('англ') || subject.toLowerCase().includes('география (тетрадь)');
                             const isMultiImageSubject = subject.toLowerCase().includes('контурн');
 
                             if (isMergedSubject) {
-                                // СКЛЕЙКА (Английский, География-тетрадь)
                                 const imgContainer = document.createElement('div');
                                 imgContainer.className = 'merged-container';
 
@@ -1428,8 +1533,6 @@
                                 sec.appendChild(wrapper);
 
                             } else {
-                                // РАЗДЕЛЬНЫЕ КАРТИНКИ (все остальные + контурные карты)
-                                // Если это контурные карты — выводим все картинки, иначе только первую
                                 const imagesToRender = isMultiImageSubject ? selectedSolution.images : [selectedSolution.images[0]];
 
                                 imagesToRender.forEach((u, imgIndex) => {
@@ -1474,7 +1577,6 @@
                                     wrapper.appendChild(imgWrap);
                                 });
 
-                                // Текст под всеми картинками
                                 if (!aiSolution && r.raw_text) {
                                     const textDiv = document.createElement('div');
                                     textDiv.className = 'task-raw-text';
@@ -1525,7 +1627,19 @@
                                 header = `<span style="font-weight:700; color:#e53e3e; margin-right: 8px;">№${r.number}</span>`;
                             }
 
-                            div.innerHTML += `<div class="task-text">${header} ${content}</div>`;
+                            const textBlock = document.createElement('div');
+                            textBlock.className = 'task-text';
+                            textBlock.innerHTML = `${header} ${content}`;
+
+                            // Кнопка копирования для текстовых заданий
+                            const copyBtn = document.createElement('button');
+                            copyBtn.className = 'copy-btn';
+                            copyBtn.innerHTML = '📋 Скопировать текст';
+                            copyBtn.style.marginTop = '8px';
+                            copyBtn.onclick = () => copyTextToClipboard(r.raw_text, copyBtn);
+
+                            textBlock.appendChild(copyBtn);
+                            div.appendChild(textBlock);
                         });
 
                         sec.appendChild(div);
@@ -2057,7 +2171,6 @@
             }
         }
 
-        // СКЛЕЙКА ЧЕРЕЗ ПРОКСИ (обход CORS)
         async function downloadMergedImage(urls, filename) {
             try {
                 const images = [];
