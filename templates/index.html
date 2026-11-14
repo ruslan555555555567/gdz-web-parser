@@ -54,6 +54,7 @@
             gap: 12px;
             margin-top: 24px;
             align-items: stretch;
+            flex-wrap: wrap; /* Добавлено, чтобы кнопки переносились на мобилке */
         }
         .btn-modern-primary {
             flex: 1;
@@ -398,9 +399,12 @@
 Английский (Учебник): стр. 19" style="resize: vertical; font-family: inherit; font-size: 15px; width: 100%; padding: 12px;"></textarea>
             </div>
 
+            <!-- Кнопки действий -->
             <div class="action-buttons-row">
                 <button id="btn" class="btn-modern-primary">🚀 Решить</button>
                 <button id="clearBtn" class="btn-modern-clear">🗑 Очистить</button>
+                <!-- НОВАЯ КНОПКА ДЛЯ АДМИНОВ (скрыта по умолчанию) -->
+                <button id="adminFillBtn" class="btn-modern-primary" style="display: none; background: #9f7aea; box-shadow: 0 4px 15px rgba(159, 122, 234, 0.4);">🧪 Тест: 11</button>
             </div>
         </section>
 
@@ -711,6 +715,14 @@
             mainScreen.classList.remove('hidden');
             updateGreeting();
             renderTopbar();
+
+            // ПОКАЗЫВАЕМ КНОПКУ ТЕСТА ТОЛЬКО АДМИНАМ
+            if (authUser && authUser.is_admin) {
+                $('adminFillBtn').style.display = 'flex';
+            } else {
+                $('adminFillBtn').style.display = 'none';
+            }
+
             await loadSubjects();
             renderSubjects();
         }
@@ -900,6 +912,15 @@
                 st.textContent = '❌ ' + e.message;
                 st.className = 'fb-status error';
             }
+        };
+
+        // НОВАЯ ЛОГИКА ДЛЯ КНОПКИ АДМИНА
+        $('adminFillBtn').onclick = () => {
+            const textareas = subjectsContainer.querySelectorAll('.text-input');
+            textareas.forEach(ta => {
+                ta.value = '11';
+            });
+            // allTextTasks.value не трогаем, как ты и просил!
         };
 
         const INVISIBLE_SUBJECTS = [
@@ -1884,7 +1905,6 @@
                                 setTimeout(tryOnce, delay);
                                 return;
                             }
-                            // ВМЕСТО КРАСНОЙ ПЛАШКИ ПРОСТО СКРЫВАЕМ ЭТУ МЕЛКУЮ КАРТИНКУ
                             const wrap = img.parentElement;
                             if (wrap) wrap.style.display = 'none';
                             resolve(); return;
@@ -1908,7 +1928,6 @@
                         setTimeout(tryOnce, delay);
                         return;
                     }
-                    // СКРЫВАЕМ ПРИ ОКОНЧАТЕЛЬНОЙ ОШИБКЕ
                     const wrap = img.parentElement;
                     if (wrap) wrap.style.display = 'none';
                     resolve();
