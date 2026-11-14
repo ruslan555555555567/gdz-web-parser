@@ -412,7 +412,7 @@
             border: 1px solid rgba(255,255,255,0.2) !important;
         }
 
-        /* ─── ВЫБОР ФОНА ПРИ РЕГИСТРАЦИИ ─── */
+        /* ─── ВЫБОР ФОНА (при регистрации и в настройках) ─── */
         .bg-picker-label {
             display: block;
             margin-top: 4px;
@@ -435,6 +435,7 @@
         @media (min-width: 600px) {
             .bg-presets { grid-template-columns: repeat(6, 1fr); }
         }
+        #settingsBgPresets { grid-template-columns: repeat(3, 1fr) !important; }
         .bg-preset {
             height: 72px;
             border-radius: 10px;
@@ -601,6 +602,12 @@
                     <input type="text" id="setName" placeholder="Как тебя зовут">
                 </label>
             </div>
+            <div class="settings-section" id="bgSettingsSection">
+                <label class="form-label">🎨 Фон главной страницы</label>
+                <p class="hint" style="margin-bottom: 10px;">Выбери красивое фото или оставь светлую тему.</p>
+                <div class="bg-presets" id="settingsBgPresets"></div>
+                <button type="button" id="bgNoneBtn" class="btn-small" style="margin-top:10px; width:100%; background:#edf2f7; color:#4a5568;">❌ Без фона (светлая тема)</button>
+            </div>
             <div class="settings-section" id="hideAiSection">
                 <label class="form-label">🙈 Скрыть ИИ-решебник для предметов</label>
                 <p class="hint" style="margin-bottom: 8px;">Картинки останутся, но текстовый ответ от нейросети пропадет.</p>
@@ -698,9 +705,13 @@
         let activeParts = {};
         let selectedBgPreset = null;
 
+        // Для настроек: временные значения (применятся только по кнопке «Применить»)
+        let pendingTheme = 'light';
+        let pendingBgUrl = null;
+        let originalTheme = 'light';
+        let originalBgUrl = null;
+
         // ─── ПРЕСЕТЫ ФОНОВ (реальные фото с Unsplash) ───
-        // Фото бесплатные, разрешены для встраивания без ограничений.
-        // ?w=1920 — оптимизация под фон, ?w=400 — для превью в списке.
         const BG_PRESETS = [
             {
                 id: 'sunset',
@@ -885,7 +896,7 @@
                 });
             }
 
-            // Рендер пресетов фона (миниатюры реальных фото)
+            // Рендер пресетов фона на экране регистрации
             const presetsEl = $('bgPresets');
             if (presetsEl) {
                 BG_PRESETS.forEach(p => {
@@ -895,7 +906,7 @@
                     el.style.backgroundImage = 'url("' + p.preview + '")';
                     el.textContent = p.label;
                     el.onclick = () => {
-                        document.querySelectorAll('.bg-preset').forEach(x => x.classList.remove('active'));
+                        document.querySelectorAll('#bgPresets .bg-preset').forEach(x => x.classList.remove('active'));
                         if (selectedBgPreset === p.url) {
                             selectedBgPreset = null;
                         } else {
@@ -907,6 +918,40 @@
                 });
             }
         });
+
+        // Рендер пресетов фона в настройках
+        function renderSettingsBgPresets() {
+            const el = $('settingsBgPresets');
+            if (!el) return;
+            el.innerHTML = '';
+            BG_PRESETS.forEach(p => {
+                const btn = document.createElement('div');
+                btn.className = 'bg-preset';
+                if (pendingBgUrl === p.url) btn.classList.add('active');
+                btn.style.backgroundImage = 'url("' + p.preview + '")';
+                btn.textContent = p.label;
+                btn.onclick = () => {
+                    pendingTheme = 'custom';
+                    pendingBgUrl = p.url;
+                    document.querySelectorAll('#settingsBgPresets .bg-preset').forEach(x => x.classList.remove('active'));
+                    btn.classList.add('active');
+                    const noneBtn = $('bgNoneBtn');
+                    if (noneBtn) { noneBtn.style.background = '#edf2f7'; noneBtn.style.color = '#4a5568'; }
+                    applyTheme('custom', p.url);
+                };
+                el.appendChild(btn);
+            });
+            const noneBtn = $('bgNoneBtn');
+            if (noneBtn) {
+                if (!pendingBgUrl) {
+                    noneBtn.style.background = '#4299e1';
+                    noneBtn.style.color = '#ffffff';
+                } else {
+                    noneBtn.style.background = '#edf2f7';
+                    noneBtn.style.color = '#4a5568';
+                }
+            }
+        }
 
         async function init() {
             if (authToken) {
@@ -1930,7 +1975,6 @@
                 hideAiSubjects = parseJson(authUser.hide_ai_subjects);
                 localStorage.setItem('gdz_token', authToken);
 
-                // Применяем выбранный при регистрации фон
                 if (authMode === 'register' && selectedBgPreset) {
                     st.textContent = '🎨 Применяем фон...';
                     try {
@@ -2019,6 +2063,15 @@
             $('setNewPwd').value = '';
             updateAvatarPreview();
 
+            // Запоминаем исходное состояние темы (для «Отмена»)
+            originalTheme = currentTheme;
+            originalBgUrl = currentBgUrl;
+            pendingTheme = currentTheme;
+            pendingBgUrl = (currentTheme === 'custom') ? currentBgUrl : null;
+
+            // Рисуем пресеты фона
+            renderSettingsBgPresets();
+
             const hideList = $('hideAiList');
             hideList.innerHTML = '';
             SUBJECTS.forEach(s => {
@@ -2030,11 +2083,23 @@
         }
 
         function cancelSettings() {
+            // Возвращаем тему, которая была при открытии настроек
+            applyTheme(originalTheme, originalBgUrl);
             settingsModal.classList.add('hidden');
         }
 
         $('closeSettingsBtn').onclick = cancelSettings;
         settingsModal.onclick = (e) => { if (e.target === settingsModal) cancelSettings(); };
+
+        $('bgNoneBtn').onclick = () => {
+            pendingTheme = 'light';
+            pendingBgUrl = null;
+            document.querySelectorAll('#settingsBgPresets .bg-preset').forEach(x => x.classList.remove('active'));
+            applyTheme('light', null);
+            // Обновим подсветку «Без фона»
+            const noneBtn = $('bgNoneBtn');
+            if (noneBtn) { noneBtn.style.background = '#4299e1'; noneBtn.style.color = '#ffffff'; }
+        };
 
         $('avatarInput').onchange = async (e) => {
             const file = e.target.files[0]; if (!file) return;
@@ -2073,7 +2138,9 @@
             const payload = {
                 token: authToken,
                 name: newName,
-                hide_ai_subjects: JSON.stringify(newHideAi)
+                hide_ai_subjects: JSON.stringify(newHideAi),
+                theme: pendingTheme,
+                bg_url: pendingBgUrl || ''
             };
 
             try {
@@ -2085,12 +2152,15 @@
                 applyTheme(authUser.theme, authUser.bg_url);
                 updateGreeting();
                 renderTopbar();
+                // Обновим исходное состояние — чтобы повторная «Отмена» работала правильно
+                originalTheme = currentTheme;
+                originalBgUrl = currentBgUrl;
                 if (oldPwd && newPwd) {
                     const r2 = await fetch('/api/auth/change-password', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({token: authToken, old_password: oldPwd, new_password: newPwd}) });
                     const d2 = await r2.json();
                     if (!r2.ok) { st.textContent = '⚠️ Профиль применён, пароль: ' + (d2.detail || 'Ошибка'); st.className = 'fb-status error'; return; }
-                    st.textContent = '✅ Профиль и пароль применены';
-                } else { st.textContent = '✅ Настройки применены'; }
+                    st.textContent = '✅ Профиль, фон и пароль применены';
+                } else { st.textContent = '✅ Настройки и фон применены'; }
                 st.className = 'fb-status success';
                 setTimeout(() => settingsModal.classList.add('hidden'), 1500);
             } catch (e) { st.textContent = '❌ ' + e.message; st.className = 'fb-status error'; }
