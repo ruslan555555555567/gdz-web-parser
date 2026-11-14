@@ -39,11 +39,16 @@ DEFAULT_SUBJECTS = [
 
     {"name": "Информатика", "url": "https://gdz.ru/class-7/informatika/reshebnik-bosova-l-l-7/", "url_alt": "",
      "type": "numbers", "group_name": "🧮 Точные науки", "sort_order": 4, "max_number": 500, "note": "",
-     "default_year": "", "default_year_alt": ""},
+     "default_year": "2023", "default_year_alt": ""},
+
+    {"name": "Информатика (Тетрадь)",
+     "url": "https://gdz.ru/class-7/informatika/reshebnik-rabochaya-tetrad-bosova-l-l-2013/", "url_alt": "",
+     "type": "numbers", "group_name": "🧮 Точные науки", "sort_order": 4.5, "max_number": 500, "note": "",
+     "default_year": "2026", "default_year_alt": ""},
 
     {"name": "Русский язык", "url": "https://gdz.ru/class-7/russkii_yazik/baranova/", "url_alt": "", "type": "numbers",
      "group_name": "📖 Гуманитарные науки", "sort_order": 5, "max_number": 560, "note": "",
-     "default_year": "", "default_year_alt": ""},
+     "default_year": "2025", "default_year_alt": ""},
 
     {"name": "Английский язык(Учебник)",
      "url": "https://gdz.ru/class-7/english/reshebnik-angliyskiy-v-fokuse-vaulina-yu-e/", "url_alt": "",
@@ -54,8 +59,9 @@ DEFAULT_SUBJECTS = [
      "type": "numbers", "group_name": "📖 Гуманитарные науки", "sort_order": 8, "max_number": 500, "note": "",
      "default_year": "2026", "default_year_alt": ""},
 
-    {"name": "Физика", "url": "https://gdz.ru/class-7/fizika/peryshkin-7/", "url_alt": "", "type": "numbers", "group_name": "🌿 Естественные науки", "sort_order": 9,
-     "max_number": 1000, "note": "", "default_year": "", "default_year_alt": ""},
+    {"name": "Физика", "url": "https://gdz.ru/class-7/fizika/peryshkin-7/", "url_alt": "", "type": "numbers",
+     "group_name": "🌿 Естественные науки", "sort_order": 9, "max_number": 500, "note": "",
+     "default_year": "", "default_year_alt": ""},
 
     {"name": "Биология", "url": "", "url_alt": "", "type": "text", "group_name": "🌿 Естественные науки",
      "sort_order": 10, "max_number": 0, "note": "", "default_year": "", "default_year_alt": ""},
@@ -78,11 +84,6 @@ DEFAULT_SUBJECTS = [
     {"name": "Изобразительное искусство", "url": "", "url_alt": "", "type": "text",
      "group_name": "🎨 Остальные предметы", "sort_order": 16, "max_number": 0, "note": "", "default_year": "",
      "default_year_alt": ""},
-
-    {"name": "Информатика (Тетрадь)", "url": "https://gdz.ru/class-7/informatika/rabochaya-tetrad-bosova/",
-     "url_alt": "",
-     "type": "numbers", "group_name": "🧮 Точные науки", "sort_order": 4.5, "max_number": 500, "note": "",
-     "default_year": "", "default_year_alt": ""},
 ]
 
 DEFAULT_SETTINGS = {"site_title": "GDZ Парсер", "announcement": "", "footer_text": "", "custom_css": ""}
