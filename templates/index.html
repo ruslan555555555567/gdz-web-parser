@@ -312,7 +312,7 @@
             color: #ffffff;
         }
 
-        /* Стили для склеенных картинок (Английский) */
+        /* Стили для склеенных картинок (Английский и География-тетрадь) */
         .merged-container {
             display: flex;
             flex-direction: column;
@@ -1368,10 +1368,12 @@
                                 wrapper.appendChild(edHeader);
                             }
 
-                            const isEnglishSubject = subject.toLowerCase().includes('англ');
+                            // ===== ЛОГИКА ВЫВОДА КАРТИНОК =====
+                            const isMergedSubject = subject.toLowerCase().includes('англ') || subject.toLowerCase().includes('география (тетрадь)');
+                            const isMultiImageSubject = subject.toLowerCase().includes('контурн');
 
-                            if (isEnglishSubject) {
-                                // === ЛОГИКА ДЛЯ АНГЛИЙСКОГО ЯЗЫКА ===
+                            if (isMergedSubject) {
+                                // СКЛЕЙКА (Английский, География-тетрадь)
                                 const imgContainer = document.createElement('div');
                                 imgContainer.className = 'merged-container';
 
@@ -1426,55 +1428,61 @@
                                 sec.appendChild(wrapper);
 
                             } else {
-                                // === ЛОГИКА ДЛЯ ВСЕХ ОСТАЛЬНЫХ (1 КАРТИНКА) ===
-                                const u = selectedSolution.images[0];
-                                const imgWrap = document.createElement('div');
-                                imgWrap.style.cssText = 'display: flex; flex-direction: column; gap: 8px; margin-bottom: 15px;';
+                                // РАЗДЕЛЬНЫЕ КАРТИНКИ (все остальные + контурные карты)
+                                // Если это контурные карты — выводим все картинки, иначе только первую
+                                const imagesToRender = isMultiImageSubject ? selectedSolution.images : [selectedSolution.images[0]];
 
-                                const img = document.createElement('img');
-                                img.className = 'solution-img img-loading';
-                                img.style.marginTop = '0';
-                                img.alt = 'Загрузка...';
-                                loadImage(img, u);
-                                imgWrap.appendChild(img);
+                                imagesToRender.forEach((u, imgIndex) => {
+                                    const imgWrap = document.createElement('div');
+                                    imgWrap.style.cssText = 'display: flex; flex-direction: column; gap: 8px; margin-bottom: 15px;';
 
+                                    const img = document.createElement('img');
+                                    img.className = 'solution-img img-loading';
+                                    img.style.marginTop = '0';
+                                    img.alt = 'Загрузка...';
+                                    loadImage(img, u);
+                                    imgWrap.appendChild(img);
+
+                                    const controls = document.createElement('div');
+                                    controls.style.cssText = 'display: flex; gap: 10px; justify-content: flex-end; flex-wrap: wrap;';
+
+                                    const refreshBtn = document.createElement('button');
+                                    refreshBtn.innerHTML = '🔄 Обновить';
+                                    refreshBtn.style.cssText = 'padding: 8px 16px; display: flex; align-items: center; gap: 6px; background: rgba(150, 150, 150, 0.15); color: inherit; border: 1px solid rgba(150, 150, 150, 0.3); border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s;';
+                                    refreshBtn.onclick = (e) => {
+                                        e.stopPropagation();
+                                        img.classList.remove('img-tall', 'img-retrying');
+                                        img.classList.add('img-loading');
+                                        img.src = '';
+                                        loadImage(img, u);
+                                    };
+
+                                    const dlBtn = document.createElement('button');
+                                    dlBtn.innerHTML = '⬇️ Скачать';
+                                    dlBtn.style.cssText = 'padding: 8px 16px; display: flex; align-items: center; gap: 6px; background: #4299e1; color: #ffffff; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s; box-shadow: 0 2px 5px rgba(66, 153, 225, 0.3);';
+                                    dlBtn.onclick = (e) => {
+                                        e.stopPropagation();
+                                        if (img.src && img.src.includes('/api/image')) {
+                                            downloadSingleImage(img.src, `GDZ_${r.subject || 'Предмет'}_№${r.number || 1}_${imgIndex + 1}.jpg`);
+                                        } else {
+                                            alert('Картинка еще не загрузилась, подождите...');
+                                        }
+                                    };
+                                    controls.appendChild(refreshBtn);
+                                    controls.appendChild(dlBtn);
+                                    imgWrap.appendChild(controls);
+                                    wrapper.appendChild(imgWrap);
+                                });
+
+                                // Текст под всеми картинками
                                 if (!aiSolution && r.raw_text) {
                                     const textDiv = document.createElement('div');
                                     textDiv.className = 'task-raw-text';
                                     let displayText = r.raw_text.replace(new RegExp(r.subject, 'gi'), '').replace(/^[:\-\s]+/, '').trim() || r.numbers || 'Без текста';
                                     textDiv.textContent = displayText;
-                                    imgWrap.appendChild(textDiv);
+                                    wrapper.appendChild(textDiv);
                                 }
 
-                                const controls = document.createElement('div');
-                                controls.style.cssText = 'display: flex; gap: 10px; justify-content: flex-end; flex-wrap: wrap;';
-
-                                const refreshBtn = document.createElement('button');
-                                refreshBtn.innerHTML = '🔄 Обновить';
-                                refreshBtn.style.cssText = 'padding: 8px 16px; display: flex; align-items: center; gap: 6px; background: rgba(150, 150, 150, 0.15); color: inherit; border: 1px solid rgba(150, 150, 150, 0.3); border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s;';
-                                refreshBtn.onclick = (e) => {
-                                    e.stopPropagation();
-                                    img.classList.remove('img-tall', 'img-retrying');
-                                    img.classList.add('img-loading');
-                                    img.src = '';
-                                    loadImage(img, u);
-                                };
-
-                                const dlBtn = document.createElement('button');
-                                dlBtn.innerHTML = '⬇️ Скачать';
-                                dlBtn.style.cssText = 'padding: 8px 16px; display: flex; align-items: center; gap: 6px; background: #4299e1; color: #ffffff; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s; box-shadow: 0 2px 5px rgba(66, 153, 225, 0.3);';
-                                dlBtn.onclick = (e) => {
-                                    e.stopPropagation();
-                                    if (img.src && img.src.includes('/api/image')) {
-                                        downloadSingleImage(img.src, `GDZ_${r.subject || 'Предмет'}_№${r.number || 1}.jpg`);
-                                    } else {
-                                        alert('Картинка еще не загрузилась, подождите...');
-                                    }
-                                };
-                                controls.appendChild(refreshBtn);
-                                controls.appendChild(dlBtn);
-                                imgWrap.appendChild(controls);
-                                wrapper.appendChild(imgWrap);
                                 sec.appendChild(wrapper);
                             }
                         }
@@ -2049,7 +2057,7 @@
             }
         }
 
-        // ОБНОВЛЕННАЯ ФУНКЦИЯ СКЛЕЙКИ (ЧЕРЕЗ ПРОКСИ)
+        // СКЛЕЙКА ЧЕРЕЗ ПРОКСИ (обход CORS)
         async function downloadMergedImage(urls, filename) {
             try {
                 const images = [];
@@ -2057,7 +2065,6 @@
                 let totalHeight = 0;
 
                 for (let rawUrl of urls) {
-                    // ВАЖНО: Берем картинку через наш прокси, чтобы браузер не блокировал
                     const proxyUrl = '/api/image?url=' + encodeURIComponent(rawUrl) + '&w=2000';
                     const img = new Image();
                     img.crossOrigin = "Anonymous";
