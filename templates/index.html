@@ -312,6 +312,11 @@
             color: #ffffff;
         }
 
+        /* Стили для слитных картинок */
+        .merged-images-container { display: flex; flex-direction: column; margin-top: 10px; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        .merged-images-container img { display: block; width: 100%; height: auto; margin: 0 !important; border-radius: 0 !important; border-bottom: 1px solid rgba(0,0,0,0.05); }
+        .merged-images-container img:last-child { border-bottom: none; }
+
         .modal {
             position: fixed; inset: 0; background: rgba(0,0,0,0.85) !important;
             display: flex; align-items: center; justify-content: center;
@@ -471,7 +476,6 @@
                     <p class="hint" style="margin-top:6px;">Картинка сохранится в аккаунте.</p>
                 </div>
             </div>
-            <!-- НОВАЯ СЕКЦИЯ: Скрытие ИИ -->
             <div class="settings-section" id="hideAiSection">
                 <label class="form-label">🙈 Скрыть ИИ-решебник для предметов</label>
                 <p class="hint" style="margin-bottom: 8px;">Картинки останутся, но текстовый ответ от нейросети пропадет.</p>
@@ -1249,7 +1253,6 @@
 
                         let hasRenderedSomething = false;
 
-                        // ===== ПРОВЕРКА: СКРЫТ ЛИ ИИ ДЛЯ ЭТОГО ПРЕДМЕТА =====
                         let aiSolution = r.solutions.find(sol => sol.edition && sol.edition.includes('ИИ') && sol.text && sol.text.trim().length > 0);
                         if (aiSolution && !hideAiSubjects[subject]) {
                             hasRenderedSomething = true;
@@ -1352,61 +1355,67 @@
                             const isEnglishSubject = subject.toLowerCase().includes('англ');
                             const imagesToRender = isEnglishSubject ? selectedSolution.images : [selectedSolution.images[0]];
 
-                            imagesToRender.forEach((u, imgIndex) => {
-                                const imgWrap = document.createElement('div');
-                                imgWrap.style.cssText = 'display: flex; flex-direction: column; gap: 8px; margin-bottom: 15px;';
+                            // ВИЗУАЛЬНОЕ ОБЪЕДИНЕНИЕ
+                            const imgContainer = document.createElement('div');
+                            imgContainer.className = 'merged-images-container';
 
+                            imagesToRender.forEach((u, imgIndex) => {
                                 const img = document.createElement('img');
                                 img.className = 'solution-img img-loading';
                                 img.style.marginTop = '0';
                                 img.alt = 'Загрузка...';
                                 loadImage(img, u);
-                                imgWrap.appendChild(img);
-
-                                if (!aiSolution && r.raw_text) {
-                                    const textDiv = document.createElement('div');
-                                    textDiv.className = 'task-raw-text';
-                                    let displayText = r.raw_text;
-                                    if (r.subject) {
-                                        const regex = new RegExp(r.subject, 'gi');
-                                        displayText = displayText.replace(regex, '').replace(/^[:\-\s]+/, '').trim();
-                                    }
-                                    if (!displayText) displayText = r.numbers || 'Без текста';
-                                    textDiv.textContent = displayText;
-                                    imgWrap.appendChild(textDiv);
-                                }
-
-                                const controls = document.createElement('div');
-                                controls.style.cssText = 'display: flex; gap: 10px; justify-content: flex-end;';
-
-                                const refreshBtn = document.createElement('button');
-                                refreshBtn.innerHTML = '🔄 Обновить';
-                                refreshBtn.style.cssText = 'padding: 8px 16px; display: flex; align-items: center; gap: 6px; background: rgba(150, 150, 150, 0.15); color: inherit; border: 1px solid rgba(150, 150, 150, 0.3); border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s;';
-                                refreshBtn.onclick = (e) => {
-                                    e.stopPropagation();
-                                    img.classList.remove('img-tall', 'img-retrying');
-                                    img.classList.add('img-loading');
-                                    img.src = '';
-                                    loadImage(img, u);
-                                };
-
-                                const dlBtn = document.createElement('button');
-                                dlBtn.innerHTML = '⬇️ Скачать';
-                                dlBtn.style.cssText = 'padding: 8px 16px; display: flex; align-items: center; gap: 6px; background: #4299e1; color: #ffffff; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s; box-shadow: 0 2px 5px rgba(66, 153, 225, 0.3);';
-                                dlBtn.onclick = (e) => {
-                                    e.stopPropagation();
-                                    if (img.src && img.src.includes('/api/image')) {
-                                        const filename = `GDZ_${r.subject || 'Предмет'}_№${r.number || 1}_${imgIndex + 1}.jpg`.replace(/\s+/g, '_');
-                                        downloadSingleImage(img.src, filename);
-                                    } else {
-                                        alert('Картинка еще не загрузилась, подождите...');
-                                    }
-                                };
-                                controls.appendChild(refreshBtn);
-                                controls.appendChild(dlBtn);
-                                imgWrap.appendChild(controls);
-                                wrapper.appendChild(imgWrap);
+                                imgContainer.appendChild(img);
                             });
+                            wrapper.appendChild(imgContainer);
+
+                            if (!aiSolution && r.raw_text) {
+                                const textDiv = document.createElement('div');
+                                textDiv.className = 'task-raw-text';
+                                let displayText = r.raw_text;
+                                if (r.subject) {
+                                    const regex = new RegExp(r.subject, 'gi');
+                                    displayText = displayText.replace(regex, '').replace(/^[:\-\s]+/, '').trim();
+                                }
+                                if (!displayText) displayText = r.numbers || 'Без текста';
+                                textDiv.textContent = displayText;
+                                wrapper.appendChild(textDiv);
+                            }
+
+                            // Кнопки управления
+                            const controls = document.createElement('div');
+                            controls.style.cssText = 'display: flex; gap: 10px; justify-content: flex-end; flex-wrap: wrap; margin-top: 10px;';
+
+                            // Кнопка скачать ОДНОЙ картинкой (если картинок > 1)
+                            if (imagesToRender.length > 1) {
+                                const mergeBtn = document.createElement('button');
+                                mergeBtn.innerHTML = '🖼 Скачать одной картинкой';
+                                mergeBtn.style.cssText = 'padding: 8px 16px; display: flex; align-items: center; gap: 6px; background: #9f7aea; color: #ffffff; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s; box-shadow: 0 2px 5px rgba(159, 122, 234, 0.3);';
+                                mergeBtn.onclick = async (e) => {
+                                    e.stopPropagation();
+                                    mergeBtn.textContent = '⏳ Склеиваем...';
+                                    await downloadMergedImage(imagesToRender, `GDZ_${r.subject || 'Предмет'}_№${r.number || 1}_merged.jpg`);
+                                    mergeBtn.textContent = '🖼 Скачать одной картинкой';
+                                };
+                                controls.appendChild(mergeBtn);
+                            }
+
+                            const dlBtn = document.createElement('button');
+                            dlBtn.innerHTML = '⬇️ Скачать';
+                            dlBtn.style.cssText = 'padding: 8px 16px; display: flex; align-items: center; gap: 6px; background: #4299e1; color: #ffffff; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s; box-shadow: 0 2px 5px rgba(66, 153, 225, 0.3);';
+                            dlBtn.onclick = (e) => {
+                                e.stopPropagation();
+                                const firstImg = imgContainer.querySelector('img');
+                                if (firstImg && firstImg.src && firstImg.src.includes('/api/image')) {
+                                    const filename = `GDZ_${r.subject || 'Предмет'}_№${r.number || 1}.jpg`.replace(/\s+/g, '_');
+                                    downloadSingleImage(firstImg.src, filename);
+                                } else {
+                                    alert('Картинка еще не загрузилась, подождите...');
+                                }
+                            };
+
+                            controls.appendChild(dlBtn);
+                            wrapper.appendChild(controls);
                             sec.appendChild(wrapper);
                         }
 
@@ -1700,7 +1709,6 @@
             document.querySelectorAll('.theme-btn').forEach(t => t.classList.toggle('active', t.dataset.theme === currentTheme));
             $('customBgBlock').style.display = currentTheme === 'custom' ? 'block' : 'none';
 
-            // ЗАПОЛНЯЕМ СПИСОК СКРЫТИЯ ИИ
             const hideList = $('hideAiList');
             hideList.innerHTML = '';
             SUBJECTS.forEach(s => {
@@ -1781,7 +1789,6 @@
             st.textContent = '⏳ Применяем...';
             st.className = 'fb-status loading';
 
-            // СОБИРАЕМ ГАЛОЧКИ СКРЫТИЯ ИИ
             const hideCheckboxes = document.querySelectorAll('#hideAiList input[type="checkbox"]');
             let newHideAi = {};
             hideCheckboxes.forEach(cb => { if (cb.checked) newHideAi[cb.value] = true; });
@@ -1979,6 +1986,58 @@
                 window.URL.revokeObjectURL(blobUrl);
             } catch (e) {
                 console.error('Ошибка скачивания:', e);
+            }
+        }
+
+        // ФУНКЦИЯ ДЛЯ СКЛЕЙКИ КАРТИНОК ЧЕРЕЗ CANVAS
+        async function downloadMergedImage(urls, filename) {
+            try {
+                const images = [];
+                let maxWidth = 0;
+                let totalHeight = 0;
+
+                // Загружаем все картинки
+                for (let url of urls) {
+                    const img = new Image();
+                    img.crossOrigin = "Anonymous"; // Важно для canvas
+                    img.src = url;
+                    await new Promise((resolve, reject) => {
+                        img.onload = resolve;
+                        img.onerror = reject;
+                    });
+                    images.push(img);
+                    if (img.width > maxWidth) maxWidth = img.width;
+                    totalHeight += img.height;
+                }
+
+                // Создаем холст
+                const canvas = document.createElement('canvas');
+                canvas.width = maxWidth;
+                canvas.height = totalHeight;
+                const ctx = canvas.getContext('2d');
+
+                // Рисуем картинки одну под другой
+                let yOffset = 0;
+                for (let img of images) {
+                    ctx.drawImage(img, 0, yOffset);
+                    yOffset += img.height;
+                }
+
+                // Скачиваем результат
+                canvas.toBlob((blob) => {
+                    const blobUrl = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = blobUrl;
+                    a.download = filename || 'merged.jpg';
+                    document.body.appendChild(a);
+                    a.click();
+                    a.remove();
+                    window.URL.revokeObjectURL(blobUrl);
+                }, 'image/jpeg', 0.95);
+
+            } catch (e) {
+                console.error('Ошибка склейки:', e);
+                alert('Не удалось склеить картинки. Возможно, сервер блокирует скачивание.');
             }
         }
 
