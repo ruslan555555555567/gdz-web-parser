@@ -124,7 +124,7 @@
         .subject-header-row {
             display: flex;
             justify-content: space-between;
-            align-items: center;
+            align-items: flex-start;
             margin-bottom: 6px;
         }
         .gear-btn {
@@ -772,17 +772,23 @@
 
                         const label = document.createElement('label');
                         label.className = 'input-label';
+                        label.style.display = 'flex';
+                        label.style.flexDirection = 'column';
+                        label.style.alignItems = 'flex-start';
+                        label.style.gap = '2px';
 
                         const currentPart = activeParts[s.name] || '1';
                         const activeYear = subjectYears[s.name] || (currentPart === '2' ? (s.default_year_alt || s.default_year) : s.default_year);
                         const yearBadge = `<span class="year-badge" style="color:#48bb78; font-size:13px;">${activeYear ? `(${escapeHtml(activeYear)})` : ''}</span>`;
+
+                        const noteBadge = s.note ? `<span style="font-size: 12px; color: #a0aec0; font-weight: normal; line-height: 1.2;">📝 ${escapeHtml(s.note)}</span>` : '';
 
                         let partBtn = '';
                         if (s.url_alt) {
                             partBtn = `<button type="button" class="part-toggle-btn" onclick="togglePart('${s.name.replace(/'/g, "\\'")}', this)" data-part="${currentPart}">Часть ${currentPart}</button>`;
                         }
 
-                        label.innerHTML = escapeHtml(s.name) + ' ' + yearBadge + partBtn;
+                        label.innerHTML = `<div>${escapeHtml(s.name)} ${yearBadge} ${partBtn}</div>${noteBadge}`;
                         headerRow.appendChild(label);
 
                         const gearBtn = document.createElement('button');
@@ -921,7 +927,6 @@
 
         function extractNumbers(str, subjectName) {
             let clean = str;
-            // Умный поиск для страниц
             const isPageBased = /английск|географ/i.test(subjectName) || (/информатика/i.test(subjectName) && !/тетрад/i.test(subjectName));
 
             if (isPageBased) {
@@ -935,7 +940,6 @@
                     return [...new Set(pageMatches)].join(', ');
                 }
 
-                // Если нет слова "стр", но есть просто цифры (например, пользователь ввел просто 11)
                 let simpleNums = clean.match(/\b\d+\b/g);
                 if (simpleNums && simpleNums.length > 0) {
                     return [...new Set(simpleNums)].join(', ');
@@ -1191,7 +1195,6 @@
                     }
                 });
 
-                // ГЛОБАЛЬНАЯ ПРОВЕРКА: если вообще ничего не нашли
                 if (imageResults.length === 0 && textResults.length === 0) {
                     showStatus('⚠️ Решения не найдены. Проверьте правильность ввода.', 'error');
                     btn.disabled = false;
@@ -1222,7 +1225,6 @@
 
                         let hasRenderedSomething = false;
 
-                        // 1. СНАЧАЛА ИИ-РЕШЕНИЕ
                         let aiSolution = r.solutions.find(sol => sol.edition && sol.edition.includes('ИИ') && sol.text && sol.text.trim().length > 0);
                         if (aiSolution) {
                             hasRenderedSomething = true;
@@ -1274,7 +1276,6 @@
                             sec.appendChild(wrapper);
                         }
 
-                        // 2. ПОТОМ ПОИСК ГОДА И ОДНОЙ КАРТИНКИ
                         let imageSolutions = r.solutions.filter(sol => sol.images && sol.images.length > 0 && (!sol.edition || !sol.edition.includes('ИИ')));
 
                         if (imageSolutions.length > 0) {
@@ -1323,67 +1324,72 @@
                                 wrapper.appendChild(edHeader);
                             }
 
-                            const u = selectedSolution.images[0];
-                            const imgWrap = document.createElement('div');
-                            imgWrap.style.cssText = 'display: flex; flex-direction: column; gap: 8px; margin-bottom: 15px;';
+                            // ===== ИЗМЕНЕНИЕ ЛОГИКИ ВЫВОДА КАРТИНОК =====
+                            const isEnglishSubject = subject.toLowerCase().includes('англ');
+                            // Если это английский - выводим все картинки, если нет - только первую
+                            const imagesToRender = isEnglishSubject ? selectedSolution.images : [selectedSolution.images[0]];
 
-                            const img = document.createElement('img');
-                            img.className = 'solution-img img-loading';
-                            img.style.marginTop = '0';
-                            img.alt = 'Загрузка...';
-                            loadImage(img, u);
-                            imgWrap.appendChild(img);
+                            imagesToRender.forEach((u, imgIndex) => {
+                                const imgWrap = document.createElement('div');
+                                imgWrap.style.cssText = 'display: flex; flex-direction: column; gap: 8px; margin-bottom: 15px;';
 
-                            if (!aiSolution && r.raw_text) {
-                                const textDiv = document.createElement('div');
-                                textDiv.className = 'task-raw-text';
-                                let displayText = r.raw_text;
-                                if (r.subject) {
-                                    const regex = new RegExp(r.subject, 'gi');
-                                    displayText = displayText.replace(regex, '').replace(/^[:\-\s]+/, '').trim();
-                                }
-                                if (!displayText) displayText = r.numbers || 'Без текста';
-                                textDiv.textContent = displayText;
-                                imgWrap.appendChild(textDiv);
-                            }
-
-                            const controls = document.createElement('div');
-                            controls.style.cssText = 'display: flex; gap: 10px; justify-content: flex-end;';
-
-                            const refreshBtn = document.createElement('button');
-                            refreshBtn.innerHTML = '🔄 Обновить';
-                            refreshBtn.style.cssText = 'padding: 8px 16px; display: flex; align-items: center; gap: 6px; background: rgba(150, 150, 150, 0.15); color: inherit; border: 1px solid rgba(150, 150, 150, 0.3); border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s;';
-                            refreshBtn.onclick = (e) => {
-                                e.stopPropagation();
-                                img.classList.remove('img-tall', 'img-retrying');
-                                img.classList.add('img-loading');
-                                img.src = '';
+                                const img = document.createElement('img');
+                                img.className = 'solution-img img-loading';
+                                img.style.marginTop = '0';
+                                img.alt = 'Загрузка...';
                                 loadImage(img, u);
-                            };
+                                imgWrap.appendChild(img);
 
-                            const dlBtn = document.createElement('button');
-                            dlBtn.innerHTML = '⬇️ Скачать';
-                            dlBtn.style.cssText = 'padding: 8px 16px; display: flex; align-items: center; gap: 6px; background: #4299e1; color: #ffffff; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s; box-shadow: 0 2px 5px rgba(66, 153, 225, 0.3);';
-                            dlBtn.onclick = (e) => {
-                                e.stopPropagation();
-                                if (img.src && img.src.includes('/api/image')) {
-                                    const filename = `GDZ_${r.subject || 'Предмет'}_№${r.number || 1}.jpg`.replace(/\s+/g, '_');
-                                    downloadSingleImage(img.src, filename);
-                                } else {
-                                    alert('Картинка еще не загрузилась, подождите...');
+                                if (!aiSolution && r.raw_text) {
+                                    const textDiv = document.createElement('div');
+                                    textDiv.className = 'task-raw-text';
+                                    let displayText = r.raw_text;
+                                    if (r.subject) {
+                                        const regex = new RegExp(r.subject, 'gi');
+                                        displayText = displayText.replace(regex, '').replace(/^[:\-\s]+/, '').trim();
+                                    }
+                                    if (!displayText) displayText = r.numbers || 'Без текста';
+                                    textDiv.textContent = displayText;
+                                    imgWrap.appendChild(textDiv);
                                 }
-                            };
-                            controls.appendChild(refreshBtn);
-                            controls.appendChild(dlBtn);
-                            imgWrap.appendChild(controls);
-                            wrapper.appendChild(imgWrap);
+
+                                const controls = document.createElement('div');
+                                controls.style.cssText = 'display: flex; gap: 10px; justify-content: flex-end;';
+
+                                const refreshBtn = document.createElement('button');
+                                refreshBtn.innerHTML = '🔄 Обновить';
+                                refreshBtn.style.cssText = 'padding: 8px 16px; display: flex; align-items: center; gap: 6px; background: rgba(150, 150, 150, 0.15); color: inherit; border: 1px solid rgba(150, 150, 150, 0.3); border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s;';
+                                refreshBtn.onclick = (e) => {
+                                    e.stopPropagation();
+                                    img.classList.remove('img-tall', 'img-retrying');
+                                    img.classList.add('img-loading');
+                                    img.src = '';
+                                    loadImage(img, u);
+                                };
+
+                                const dlBtn = document.createElement('button');
+                                dlBtn.innerHTML = '⬇️ Скачать';
+                                dlBtn.style.cssText = 'padding: 8px 16px; display: flex; align-items: center; gap: 6px; background: #4299e1; color: #ffffff; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s; box-shadow: 0 2px 5px rgba(66, 153, 225, 0.3);';
+                                dlBtn.onclick = (e) => {
+                                    e.stopPropagation();
+                                    if (img.src && img.src.includes('/api/image')) {
+                                        const filename = `GDZ_${r.subject || 'Предмет'}_№${r.number || 1}_${imgIndex + 1}.jpg`.replace(/\s+/g, '_');
+                                        downloadSingleImage(img.src, filename);
+                                    } else {
+                                        alert('Картинка еще не загрузилась, подождите...');
+                                    }
+                                };
+                                controls.appendChild(refreshBtn);
+                                controls.appendChild(dlBtn);
+                                imgWrap.appendChild(controls);
+                                wrapper.appendChild(imgWrap);
+                            });
                             sec.appendChild(wrapper);
                         }
 
-                        // 3. ЕСЛИ НИЧЕГО НЕ ОТРИСОВАЛОСЬ - ПОКАЗЫВАЕМ ОШИБКУ
                         if (!hasRenderedSomething) {
                             const errorDiv = document.createElement('div');
-                            errorDiv.innerHTML = `<div class="img-error" style="margin-bottom: 15px;">⚠️ Решение для №${r.number || ''} не найдено на gdz.ru. Проверьте ссылку на предмет в админке (возможно, она неверная).</div>`;
+                            errorDiv.innerHTML = `<div class="img-error" style="margin-bottom: 15px;">⚠️ Решение для №${r.number || ''} не найдено на gdz.ru. Проверьте ссылку на предмет в админке.</div>`;
                             sec.appendChild(errorDiv);
                         }
                     });
