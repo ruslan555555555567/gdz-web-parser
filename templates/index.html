@@ -1324,9 +1324,7 @@
                                 wrapper.appendChild(edHeader);
                             }
 
-                            // ===== ИЗМЕНЕНИЕ ЛОГИКИ ВЫВОДА КАРТИНОК =====
                             const isEnglishSubject = subject.toLowerCase().includes('англ');
-                            // Если это английский - выводим все картинки, если нет - только первую
                             const imagesToRender = isEnglishSubject ? selectedSolution.images : [selectedSolution.images[0]];
 
                             imagesToRender.forEach((u, imgIndex) => {
@@ -1886,7 +1884,10 @@
                                 setTimeout(tryOnce, delay);
                                 return;
                             }
-                            showImageError(img, imgUrl); resolve(); return;
+                            // ВМЕСТО КРАСНОЙ ПЛАШКИ ПРОСТО СКРЫВАЕМ ЭТУ МЕЛКУЮ КАРТИНКУ
+                            const wrap = img.parentElement;
+                            if (wrap) wrap.style.display = 'none';
+                            resolve(); return;
                         }
                         img.classList.remove('img-loading', 'img-retrying');
                         if (h / w >= TALL_RATIO) img.classList.add('img-tall');
@@ -1907,7 +1908,10 @@
                         setTimeout(tryOnce, delay);
                         return;
                     }
-                    showImageError(img, imgUrl); resolve();
+                    // СКРЫВАЕМ ПРИ ОКОНЧАТЕЛЬНОЙ ОШИБКЕ
+                    const wrap = img.parentElement;
+                    if (wrap) wrap.style.display = 'none';
+                    resolve();
                 }
                 tryOnce();
             }));
