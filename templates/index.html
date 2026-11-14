@@ -120,18 +120,14 @@
             border: 3px solid rgba(66, 153, 225, 0.2); border-top-color: #4299e1;
             border-radius: 50%; animation: spin 0.8s linear infinite; flex-shrink: 0;
         }
-        .theme-dark .toast-spinner {
-            border-color: rgba(144, 205, 244, 0.2); border-top-color: #90cdf4;
-        }
+        .theme-dark .toast-spinner { border-color: rgba(144, 205, 244, 0.2); border-top-color: #90cdf4; }
 
         /* Таймер в уведомлении */
         .toast-timer {
             margin-left: auto; font-family: monospace; font-weight: 800; font-size: 15px;
             color: #ed8936; background: rgba(237, 137, 54, 0.15); padding: 3px 10px; border-radius: 8px;
         }
-        .theme-dark .toast-timer {
-            color: #fbd38d; background: rgba(237, 137, 54, 0.2);
-        }
+        .theme-dark .toast-timer { color: #fbd38d; background: rgba(237, 137, 54, 0.2); }
 
         /* ─── СТИЛИ ДЛЯ ТЕМНОЙ ТЕМЫ ─── */
         .theme-dark body, body.theme-dark { background: #0f172a; color: #e2e8f0; }
@@ -474,7 +470,6 @@
             if (type === 'success') icon = '✅';
             if (type === 'error') icon = '❌';
             if (type === 'loading') {
-                // Для загрузки мы вернем пустой тег, чтобы вставить туда спиннер и таймер вручную
                 toast.innerHTML = '';
             } else {
                 toast.innerHTML = `<span>${icon}</span> <span>${message}</span>`;
@@ -576,8 +571,6 @@
             currentTheme = theme;
             const root = document.documentElement;
             root.classList.remove('theme-dark');
-            root.style.backgroundImage = '';
-            root.style.backgroundColor = '';
 
             if (theme === 'dark') {
                 root.classList.add('theme-dark');
@@ -628,10 +621,21 @@
             if (toggleBtn) {
                 const current = localStorage.getItem('gdz_theme') || 'light';
                 toggleBtn.textContent = (current === 'dark') ? '☀️' : '🌙';
-                toggleBtn.addEventListener('click', () => {
+                toggleBtn.addEventListener('click', async () => {
                     const current = localStorage.getItem('gdz_theme') || 'light';
                     const next = (current === 'dark') ? 'light' : 'dark';
                     applyTheme(next);
+
+                    // СОХРАНЯЕМ ВЫБОР В БАЗУ ДАННЫХ (если вошел)
+                    if (authToken) {
+                        try {
+                            await fetch('/api/auth/update', {
+                                method: 'POST',
+                                headers: {'Content-Type': 'application/json'},
+                                body: JSON.stringify({ token: authToken, theme: next })
+                            });
+                        } catch (e) { console.error('Не удалось сохранить тему на сервере'); }
+                    }
                 });
             }
         });
@@ -647,7 +651,14 @@
                         currentAvatar = authUser.avatar || null;
                         subjectYears = parseJson(authUser.subject_years);
                         hideAiSubjects = parseJson(authUser.hide_ai_subjects);
-                        applyTheme(authUser.theme || 'light');
+
+                        // При загрузке применяем тему из базы (если она там есть)
+                        if (authUser.theme) {
+                            applyTheme(authUser.theme);
+                        } else {
+                            applyTheme('light');
+                        }
+
                         setAuthState(true);
                         await showMain();
                         return;
@@ -918,7 +929,7 @@
             subjectsContainer.querySelectorAll('.text-input').forEach(ta => ta.value = '');
             allTextTasks.value = ''; result.innerHTML = '';
             showToast('Поля очищены', 'info');
-            allTextTasks.focus();
+            // УБРАЛИ allTextTasks.focus(); - клавиатура больше не вылезает
         };
 
         btn.addEventListener('click', async () => {
@@ -967,13 +978,11 @@
 
             if (!jobs.length) return showToast('Заполни хотя бы одно поле', 'error');
 
-            // Анимация загрузки на кнопке
             const btnText = $('btnText');
             btn.disabled = true;
             btnText.innerHTML = '<span class="btn-spinner"></span> Решаю...';
             result.innerHTML = '';
 
-            // Уведомление с таймером и спиннером
             const loadingToast = showLoadingToast('Ищу решения...');
 
             try {
