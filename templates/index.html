@@ -492,6 +492,11 @@
                     <p class="hint" style="margin-top:6px;">Картинка сохранится в аккаунте.</p>
                 </div>
             </div>
+            <div class="settings-section" id="hideAiSection">
+                <label class="form-label">🙈 Скрыть ИИ-решебник для предметов</label>
+                <p class="hint" style="margin-bottom: 8px;">Картинки останутся, но текстовый ответ от нейросети пропадет.</p>
+                <div id="hideAiList" style="display: flex; flex-direction: column; gap: 8px; max-height: 200px; overflow-y: auto; padding-right: 5px;"></div>
+            </div>
             <div class="settings-section" id="passwordSection">
                 <label class="form-label">Смена пароля</label>
                 <input type="password" id="setOldPwd" class="num-input" placeholder="Текущий пароль" style="margin-bottom:8px;">
@@ -582,6 +587,7 @@
         let fbImageBase64 = "";
         let currentSubjectId = null;
         let subjectYears = {};
+        let hideAiSubjects = {};
         let activeParts = {};
 
         const $ = id => document.getElementById(id);
@@ -699,6 +705,7 @@
                         authUser = d.user;
                         currentAvatar = authUser.avatar || null;
                         subjectYears = parseJson(authUser.subject_years);
+                        hideAiSubjects = parseJson(authUser.hide_ai_subjects);
                         applyTheme(authUser.theme || 'light', authUser.bg_url);
                         setAuthState(true);
                         await showMain();
@@ -1262,8 +1269,9 @@
 
                         let hasRenderedSomething = false;
 
+                        // === ПРОВЕРКА: СКРЫТ ЛИ ИИ ДЛЯ ЭТОГО ПРЕДМЕТА ===
                         let aiSolution = r.solutions.find(sol => sol.edition && sol.edition.includes('ИИ') && sol.text && sol.text.trim().length > 0);
-                        if (aiSolution) {
+                        if (aiSolution && !hideAiSubjects[subject]) {
                             hasRenderedSomething = true;
                             const wrapper = document.createElement('div');
                             wrapper.style.cssText = 'display: flex; flex-direction: column; gap: 8px; margin-bottom: 25px;';
@@ -1390,7 +1398,6 @@
                                 const controls = document.createElement('div');
                                 controls.style.cssText = 'display: flex; gap: 10px; justify-content: flex-end; flex-wrap: wrap; margin-top: 10px;';
 
-                                // ОДНА кнопка обновить
                                 const refreshBtn = document.createElement('button');
                                 refreshBtn.innerHTML = '🔄 Обновить';
                                 refreshBtn.style.cssText = 'padding: 8px 16px; display: flex; align-items: center; gap: 6px; background: rgba(150, 150, 150, 0.15); color: inherit; border: 1px solid rgba(150, 150, 150, 0.3); border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s;';
@@ -1404,7 +1411,6 @@
                                     });
                                 };
 
-                                // ОДНА кнопка скачать (склейка)
                                 const dlBtn = document.createElement('button');
                                 dlBtn.innerHTML = '⬇️ Скачать одной картинкой';
                                 dlBtn.style.cssText = 'padding: 8px 16px; display: flex; align-items: center; gap: 6px; background: #4299e1; color: #ffffff; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s; box-shadow: 0 2px 5px rgba(66, 153, 225, 0.3);';
@@ -1685,6 +1691,7 @@
                 authUser = d.user;
                 currentAvatar = d.user.avatar || null;
                 subjectYears = parseJson(authUser.subject_years);
+                hideAiSubjects = parseJson(authUser.hide_ai_subjects);
                 localStorage.setItem('gdz_token', authToken);
                 applyTheme(authUser.theme || 'light', authUser.bg_url);
                 await showMain();
@@ -1698,7 +1705,7 @@
         async function logout() {
             if (!confirm('Выйти из аккаунта?')) return;
             try { await fetch('/api/auth/logout', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({token: authToken}) }); } catch {}
-            authToken = ''; authUser = null; currentAvatar = null; subjectYears = {}; activeParts = {};
+            authToken = ''; authUser = null; currentAvatar = null; subjectYears = {}; hideAiSubjects = {}; activeParts = {};
             localStorage.removeItem('gdz_token');
             applyTheme('light', null);
             topbarRight.innerHTML = '';
@@ -1762,6 +1769,15 @@
             originalBgUrl = authUser.bg_url || null;
             document.querySelectorAll('.theme-btn').forEach(t => t.classList.toggle('active', t.dataset.theme === currentTheme));
             $('customBgBlock').style.display = currentTheme === 'custom' ? 'block' : 'none';
+
+            const hideList = $('hideAiList');
+            hideList.innerHTML = '';
+            SUBJECTS.forEach(s => {
+                hideList.innerHTML += `<label style="display: flex; align-items: center; gap: 8px; cursor: pointer; padding: 4px 0;">
+                    <input type="checkbox" value="${s.name}" ${hideAiSubjects[s.name] ? 'checked' : ''} style="width: 18px; height: 18px; accent-color: #4299e1;">
+                    <span>${s.name}</span>
+                </label>`;
+            });
         }
 
         function cancelSettings() {
@@ -1833,12 +1849,25 @@
             const newPwd = $('setNewPwd').value;
             st.textContent = '⏳ Применяем...';
             st.className = 'fb-status loading';
-            const payload = { token: authToken, name: newName, theme: newTheme, bg_url: bgToSave };
+
+            const hideCheckboxes = document.querySelectorAll('#hideAiList input[type="checkbox"]');
+            let newHideAi = {};
+            hideCheckboxes.forEach(cb => { if (cb.checked) newHideAi[cb.value] = true; });
+
+            const payload = {
+                token: authToken,
+                name: newName,
+                theme: newTheme,
+                bg_url: bgToSave,
+                hide_ai_subjects: JSON.stringify(newHideAi)
+            };
+
             try {
                 const r1 = await fetch('/api/auth/update', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload) });
                 const d1 = await r1.json();
                 if (!r1.ok) { st.textContent = '❌ ' + (d1.detail || 'Ошибка'); st.className = 'fb-status error'; return; }
                 authUser = d1.user;
+                hideAiSubjects = parseJson(authUser.hide_ai_subjects);
                 if (authUser.bg_url) currentBgUrl = authUser.bg_url;
                 originalTheme = authUser.theme;
                 originalBgUrl = authUser.bg_url;
