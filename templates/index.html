@@ -21,7 +21,7 @@
     <script>
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/sw.js')
+                navigator.serviceWorker.register('/sw.js?v=' + Date.now())
                     .then(reg => console.log('✅ PWA: Service Worker зарегистрирован'))
                     .catch(err => console.log('❌ PWA: Ошибка SW', err));
             });
@@ -32,21 +32,10 @@
         (function() {
             try {
                 const theme = localStorage.getItem('gdz_theme') || 'light';
-                const bg = localStorage.getItem('gdz_bg');
                 const token = localStorage.getItem('gdz_token');
                 const root = document.documentElement;
 
                 if (theme === 'dark') root.classList.add('theme-dark');
-                else if (theme === 'custom' && bg) {
-                    root.classList.add('theme-custom');
-                    root.classList.add('btn-style-light');
-                    root.style.backgroundColor = '#0f172a';
-                    if (bg.startsWith('linear-gradient') || bg.startsWith('radial-gradient') || bg.startsWith('conic-gradient')) {
-                        root.style.backgroundImage = bg;
-                    } else {
-                        root.style.backgroundImage = 'linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.4)), url("' + bg + '")';
-                    }
-                }
 
                 if (token) root.classList.add('has-auth');
                 else root.classList.add('no-auth');
@@ -79,7 +68,6 @@
             margin-bottom: 24px;
         }
         .theme-dark .topbar { background: rgba(26, 32, 44, 0.85) !important; border-color: rgba(255,255,255,0.05); box-shadow: 0 4px 20px rgba(0,0,0,0.3); }
-        .theme-custom .topbar { background: rgba(15, 23, 42, 0.85) !important; border-color: rgba(255,255,255,0.1); box-shadow: 0 4px 20px rgba(0,0,0,0.5); color: white; }
 
         .action-buttons-row { display: flex; gap: 12px; margin-top: 24px; align-items: stretch; flex-wrap: wrap; }
 
@@ -92,7 +80,7 @@
         .btn-modern-primary:active:not(:disabled) { transform: translateY(1px); }
         .btn-modern-primary:disabled { background: #a0aec0; box-shadow: none; cursor: not-allowed; transform: none; }
 
-        /* Красивый спиннер */
+        /* Спиннер для кнопки */
         .btn-spinner { display: inline-block; width: 20px; height: 20px; border: 3px solid rgba(255, 255, 255, 0.3); border-radius: 50%; border-top-color: #ffffff; animation: spin 0.8s linear infinite; }
         @keyframes spin { to { transform: rotate(360deg); } }
 
@@ -103,13 +91,11 @@
         }
         .btn-modern-clear:hover { background: #fff5f5; border-color: #feb2b2; transform: translateY(-2px); }
         .theme-dark .btn-modern-clear { background: rgba(74, 85, 104, 0.5); color: #fc8181; border-color: #4a5568; }
-        .theme-custom .btn-modern-clear { background: rgba(255,255,255,0.1); color: #fc8181; border-color: rgba(255,255,255,0.2); }
 
         .theme-toggle-btn {
             background: rgba(150, 150, 150, 0.1); border: none; font-size: 18px; width: 36px; height: 36px;
             border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: transform 0.2s; padding: 0;
         }
-        .theme-custom .theme-toggle-btn { color: white; }
         .theme-toggle-btn:hover { background: rgba(150, 150, 150, 0.2); transform: scale(1.05); }
 
         /* ─── TOAST УВЕДОМЛЕНИЯ ─── */
@@ -118,89 +104,103 @@
             background: #ffffff; color: #1a202c; padding: 14px 20px; border-radius: 14px; box-shadow: 0 10px 30px rgba(0,0,0,0.15);
             font-weight: 700; font-size: 15px; display: flex; align-items: center; gap: 10px;
             animation: toastIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; pointer-events: auto; border-left: 4px solid #4299e1;
+            width: 100%; box-sizing: border-box;
         }
         .toast.error { border-left-color: #e53e3e; }
         .toast.success { border-left-color: #48bb78; }
         .toast.loading { border-left-color: #ed8936; }
-        .theme-dark .toast, .theme-custom .toast { background: #1e293b; color: #ffffff; box-shadow: 0 10px 30px rgba(0,0,0,0.6); border: 1px solid rgba(255,255,255,0.1); border-left-width: 4px; }
+        .theme-dark .toast { background: #1e293b; color: #ffffff; box-shadow: 0 10px 30px rgba(0,0,0,0.6); border: 1px solid rgba(255,255,255,0.1); border-left-width: 4px; }
 
         @keyframes toastIn { from { opacity: 0; transform: translateY(20px) scale(0.9); } to { opacity: 1; transform: translateY(0) scale(1); } }
         @keyframes toastOut { from { opacity: 1; transform: translateY(0) scale(1); } to { opacity: 0; transform: translateY(20px) scale(0.9); } }
 
-        /* ─── ПРЕМИАЛЬНЫЙ КАСТОМНЫЙ ФОН ─── */
-        html.theme-custom .card, html.theme-custom .subject-block {
-            background: rgba(15, 23, 42, 0.85) !important; /* Плотное тёмное стекло */
-            backdrop-filter: blur(24px) !important;
-            -webkit-backdrop-filter: blur(24px) !important;
-            border: 1px solid rgba(255, 255, 255, 0.1) !important;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4) !important;
+        /* Спиннер для уведомления */
+        .toast-spinner {
+            display: inline-block; width: 18px; height: 18px;
+            border: 3px solid rgba(66, 153, 225, 0.2); border-top-color: #4299e1;
+            border-radius: 50%; animation: spin 0.8s linear infinite; flex-shrink: 0;
+        }
+        .theme-dark .toast-spinner {
+            border-color: rgba(144, 205, 244, 0.2); border-top-color: #90cdf4;
         }
 
-        /* Убираем уродскую черную обводку, делаем мягкую тень */
-        .theme-custom h1, .theme-custom h2, .theme-custom h3,
-        body.theme-custom h1, body.theme-custom h2, body.theme-custom h3,
-        .theme-custom .input-label, body.theme-custom .input-label,
-        .theme-custom .group-title, body.theme-custom .group-title,
-        .theme-custom .subtitle, body.theme-custom .subtitle,
-        .theme-custom .footer, body.theme-custom .footer,
-        .theme-custom .hint, body.theme-custom .hint,
-        .theme-custom .form-label, body.theme-custom .form-label {
-            color: #f8fafc !important;
-            text-shadow: 0 2px 8px rgba(0,0,0,0.6) !important; /* Мягкая тень */
+        /* Таймер в уведомлении */
+        .toast-timer {
+            margin-left: auto; font-family: monospace; font-weight: 800; font-size: 15px;
+            color: #ed8936; background: rgba(237, 137, 54, 0.15); padding: 3px 10px; border-radius: 8px;
+        }
+        .theme-dark .toast-timer {
+            color: #fbd38d; background: rgba(237, 137, 54, 0.2);
         }
 
-        /* Поля ввода */
-        html.theme-custom textarea, html.theme-custom input[type="text"], html.theme-custom input[type="email"], html.theme-custom input[type="password"] {
-            background: rgba(0, 0, 0, 0.2) !important;
-            border: 1px solid rgba(255, 255, 255, 0.1) !important;
-            color: #ffffff !important;
-            border-radius: 12px;
+        /* ─── СТИЛИ ДЛЯ ТЕМНОЙ ТЕМЫ ─── */
+        .theme-dark body, body.theme-dark { background: #0f172a; color: #e2e8f0; }
+        .theme-dark .card, .theme-dark .subject-block, .theme-dark .modal-content, .theme-dark .image-modal-content { background: rgba(30, 41, 59, 0.85); color: #e2e8f0; border: 1px solid rgba(255,255,255,0.05); box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
+        .theme-dark h1, .theme-dark h2, .theme-dark h3 { color: #f7fafc; }
+        .theme-dark .input-label { color: #e2e8f0; }
+        .theme-dark .group-title { color: #cbd5e0; }
+        .theme-dark .subtitle { color: #94a3b8; }
+        .theme-dark .hint { color: #64748b; }
+        .theme-dark .version { background: rgba(74,85,104,0.6); color: #cbd5e0; }
+        .theme-dark .num-input, .theme-dark .text-input, .theme-dark select, .theme-dark .form-label input, .theme-dark .form-label textarea {
+            background: rgba(15,23,42,0.5); border-color: rgba(71,85,105,0.6); color: #e2e8f0;
         }
-        html.theme-custom textarea:focus, html.theme-custom input:focus {
-            border-color: #3b82f6 !important;
-            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3) !important;
-        }
-        html.theme-custom textarea::placeholder, html.theme-custom input::placeholder { color: rgba(255, 255, 255, 0.4) !important; }
+        .theme-dark .num-input::placeholder, .theme-dark .text-input::placeholder, .theme-dark .form-label input::placeholder, .theme-dark .form-label textarea::placeholder { color: #64748b; }
+        .theme-dark .form-label { color: #cbd5e0; }
+        .theme-dark .icon-btn, .theme-dark .support-btn { background: rgba(30,41,59,0.6); border-color: rgba(71,85,105,0.6); color: #e2e8f0; }
+        .theme-dark .footer { color: #64748b; }
+        .theme-dark .subject-block h2 { color: #63b3ed; }
+        .theme-dark .task-card { border-bottom-color: rgba(71,85,105,0.5); }
+        .theme-dark .history-row, .theme-dark .message-card, .theme-dark .user-card { background: rgba(15,23,42,0.5); color: #e2e8f0; }
+        .theme-dark .history-info strong { color: #e2e8f0; }
+        .theme-dark .history-info span { color: #94a3b8; }
+        .theme-dark .btn-secondary { background: rgba(71,85,105,0.6); color: #e2e8f0; }
+        .theme-dark .auth-tabs, .theme-dark .admin-tabs { background: rgba(15,23,42,0.5); }
+        .theme-dark .auth-tab, .theme-dark .admin-tab { color: #94a3b8; }
+        .theme-dark .auth-tab.active, .theme-dark .admin-tab.active { background: rgba(30,41,59,0.8); color: #f7fafc; }
+        .theme-dark .empty { color: #64748b; }
+        .theme-dark .modal-content h3 { color: #f7fafc; }
+        .theme-dark .modal-text { color: #cbd5e0; }
+        .theme-dark .settings-section { border-color: rgba(71,85,105,0.5); }
+        .theme-dark .theme-btn { background: rgba(30,41,59,0.5); border-color: rgba(71,85,105,0.6); color: #cbd5e0; }
+        .theme-dark .theme-btn.active { background: rgba(71,85,105,0.7); border-color: #4299e1; color: #f7fafc; }
+        .theme-dark .msg-body, .theme-dark .user-row { color: #e2e8f0; }
+        .theme-dark .msg-contact { color: #94a3b8; border-color: rgba(71,85,105,0.5); }
+        .theme-dark .user-row.small { color: #94a3b8; }
+        .theme-dark .msg-ver { background: rgba(71,85,105,0.6); color: #e2e8f0; }
+        .theme-dark .auth-screen-box { background: #1e293b; border: 1px solid rgba(255,255,255,0.05); }
+        .theme-dark .auth-screen-title { color: #f7fafc; }
+        .theme-dark .auth-screen-subtitle { color: #94a3b8; }
+        .theme-dark .subject-group { border-color: rgba(71,85,105,0.5); }
+        .theme-dark .task-text { background: rgba(15,23,42,0.5); color: #e2e8f0; }
 
-        /* Карточки предметов */
-        html.theme-custom .text-box { background: rgba(0,0,0,0.2) !important; border-color: rgba(255,255,255,0.1) !important; }
-        html.theme-custom .subject-group { border-color: rgba(255,255,255,0.1) !important; }
-
-        /* Кнопки в кастомной теме */
-        html.theme-custom .user-menu-btn { background: rgba(255, 255, 255, 0.1) !important; color: #ffffff !important; border: 1px solid rgba(255,255,255,0.2) !important; backdrop-filter: blur(10px); }
-        html.theme-custom .user-menu-btn:hover { background: rgba(255, 255, 255, 0.2) !important; }
-
+        /* Карточки и поля ввода */
         .subject-header-row { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px; }
         .gear-btn { background: transparent; border: none; font-size: 18px; cursor: pointer; padding: 0 5px; opacity: 0.6; transition: opacity 0.2s; }
         .gear-btn:hover { opacity: 1; transform: rotate(45deg); }
 
         .part-toggle-btn { background: #edf2f7; border: 1px solid #cbd5e0; border-radius: 12px; padding: 2px 8px; font-size: 12px; font-weight: 700; cursor: pointer; color: #4a5568; margin-left: 8px; }
-        .theme-dark .part-toggle-btn { background: #4a5568; border-color: #718096; color: #e2e8f0; }
-        .theme-custom .part-toggle-btn { background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.2); color: white; }
+        .theme-dark .part-toggle-btn { background: #334155; border-color: #475569; color: #e2e8f0; }
 
         .task-number-header { display: inline-block; font-size: 15px; font-weight: 800; color: #2b6cb0 !important; background: #ebf8ff; padding: 6px 14px; border-radius: 20px; margin-bottom: 12px; border: 1px solid #bee3f8; width: fit-content; }
         .theme-dark .task-number-header { color: #90cdf4 !important; background: rgba(66, 153, 225, 0.15); border-color: rgba(66, 153, 225, 0.3); }
-        .theme-custom .task-number-header { color: #ffffff !important; background: rgba(59, 130, 246, 0.6); border-color: rgba(255, 255, 255, 0.2); }
 
         .edition-header { font-size: 14px; font-weight: 700; color: #4a5568; margin: 15px 0 8px 0; padding-left: 10px; border-left: 3px solid #4299e1; }
         .theme-dark .edition-header { color: #a0aec0; border-left-color: #63b3ed; }
-        .theme-custom .edition-header { color: #cbd5e0; border-left-color: #4299e1; }
 
         .ai-text-block { background: rgba(66, 153, 225, 0.05); border: 1px solid #bee3f8; border-left: 4px solid #4299e1; border-radius: 12px; padding: 16px; font-size: 15px; line-height: 1.6; color: #1a202c; margin-bottom: 12px; overflow-x: auto; }
         .theme-dark .ai-text-block { background: rgba(66, 153, 225, 0.1); border-color: #2b6cb0; border-left-color: #63b3ed; color: #e2e8f0; }
-        .theme-custom .ai-text-block { background: rgba(0,0,0,0.4); border-color: rgba(255,255,255,0.1); border-left-color: #4299e1; color: #e2e8f0; }
 
         .ai-text-block h4 { margin: 15px 0 10px 0; font-size: 18px; color: #2b6cb0; border-bottom: 1px solid #bee3f8; padding-bottom: 4px; }
         .ai-text-block h5 { margin: 15px 0 5px 0; font-size: 16px; color: #2b6cb0; }
-        .theme-dark .ai-text-block h4, .theme-dark .ai-text-block h5, .theme-custom .ai-text-block h4, .theme-custom .ai-text-block h5 { color: #90cdf4; border-bottom-color: rgba(255,255,255,0.1); }
+        .theme-dark .ai-text-block h4, .theme-dark .ai-text-block h5 { color: #90cdf4; border-bottom-color: #4a5568; }
 
         .copy-btn { display: inline-flex; align-items: center; gap: 4px; margin-bottom: 10px; padding: 6px 12px; font-size: 13px; font-weight: 700; border-radius: 8px; border: 1px solid #bee3f8; background: rgba(66, 153, 225, 0.05); color: #2b6cb0; cursor: pointer; transition: all 0.2s; }
         .copy-btn:hover { background: rgba(66, 153, 225, 0.15); border-color: #90cdf4; }
-        .theme-dark .copy-btn, .theme-custom .copy-btn { background: rgba(66, 153, 225, 0.2); border-color: rgba(66, 153, 225, 0.3); color: #90cdf4; }
+        .theme-dark .copy-btn { background: rgba(66, 153, 225, 0.2); border-color: rgba(66, 153, 225, 0.3); color: #90cdf4; }
 
         .welcome-greeting { text-align: center; font-size: 24px; font-weight: 800; margin-bottom: 20px; margin-top: 10px; color: #2d3748; opacity: 0; transform: translateY(-20px); animation: slideDownFade 0.8s cubic-bezier(0.25, 0.8, 0.25, 1) forwards; }
         .theme-dark .welcome-greeting { color: #e2e8f0; }
-        .theme-custom .welcome-greeting { color: #ffffff; text-shadow: 0 2px 8px rgba(0,0,0,0.6); }
         .welcome-greeting span { color: #4299e1; }
         @keyframes slideDownFade { to { opacity: 1; transform: translateY(0); } }
 
@@ -208,65 +208,41 @@
         .user-menu-btn { display: flex; align-items: center; gap: 8px; background: #edf2f7; padding: 6px 14px; border-radius: 20px; border: none; cursor: pointer; font-weight: 700; color: #4a5568; transition: all 0.2s; }
         .user-menu-btn:hover { background: #e2e8f0; }
         .theme-dark .user-menu-btn { background: rgba(74,85,104,0.6); color: #e2e8f0; }
+        .theme-dark .user-menu-btn:hover { background: rgba(74,85,104,0.9); }
         .user-avatar-mini { width: 24px; height: 24px; border-radius: 50%; background: #4299e1; color: white; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; background-size: cover; background-position: center; }
 
         .dropdown-menu { position: absolute; top: calc(100% + 10px); right: 0; background: white; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.15); min-width: 220px; opacity: 0; visibility: hidden; transform: translateY(-10px) scale(0.95); transition: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275); z-index: 1000; overflow: hidden; border: 1px solid #e2e8f0; }
-        .theme-dark .dropdown-menu { background: #2d3748; border-color: #4a5568; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        .theme-dark .dropdown-menu { background: #1e293b; border-color: #334155; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
         .dropdown-menu.show { opacity: 1; visibility: visible; transform: translateY(0) scale(1); }
         .dropdown-header { padding: 15px; background: #f7fafc; border-bottom: 1px solid #e2e8f0; font-size: 14px; font-weight: 800; color: #2d3748; }
-        .theme-dark .dropdown-header { background: #1a202c; border-color: #4a5568; color: #f7fafc; }
+        .theme-dark .dropdown-header { background: #0f172a; border-color: #334155; color: #f7fafc; }
         .dropdown-item { display: flex; align-items: center; gap: 10px; width: 100%; padding: 12px 15px; border: none; background: transparent; text-align: left; font-size: 14px; font-weight: 600; color: #4a5568; cursor: pointer; transition: background 0.2s; }
         .theme-dark .dropdown-item { color: #cbd5e0; }
-        .dropdown-item:hover { background: #edf2f7; color: #2b6cb0; }
-        .theme-dark .dropdown-item:hover { background: #4a5568; color: #90cdf4; }
+        .dropdown-item:hover { background: #edf2f7; color: #2563eb; }
+        .theme-dark .dropdown-item:hover { background: #334155; color: #93c5fd; }
         .dropdown-divider { height: 1px; background: #e2e8f0; margin: 5px 0; }
-        .theme-dark .dropdown-divider { background: #4a5568; }
-        .dropdown-item.logout { color: #e53e3e; }
-        .dropdown-item.logout:hover { background: #fff5f5; color: #c53030; }
-        .theme-dark .dropdown-item.logout:hover { background: rgba(229,62,62,0.2); }
+        .theme-dark .dropdown-divider { background: #334155; }
+        .dropdown-item.logout { color: #ef4444; }
+        .dropdown-item.logout:hover { background: #fef2f2; color: #dc2626; }
+        .theme-dark .dropdown-item.logout:hover { background: rgba(239,68,68,0.2); }
 
-        .divider-text { display: flex; align-items: center; text-align: center; color: #a0aec0; margin: 25px 0; font-weight: 700; font-size: 14px; }
-        .divider-text::before, .divider-text::after { content: ''; flex: 1; border-bottom: 1px solid #e2e8f0; }
-        .theme-dark .divider-text::before, .theme-dark .divider-text::after { border-color: #4a5568; }
+        .divider-text { display: flex; align-items: center; text-align: center; color: #94a3b8; margin: 25px 0; font-weight: 700; font-size: 14px; }
+        .divider-text::before, .divider-text::after { content: ''; flex: 1; border-bottom: 1px solid #334155; }
         .divider-text::before { margin-right: 15px; }
         .divider-text::after { margin-left: 15px; }
 
-        .text-subject-block { background: linear-gradient(135deg, rgba(255,255,255,0.9), rgba(247,250,252,0.9)); border-left: 4px solid #4299e1; border-radius: 12px; padding: 16px; margin-bottom: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
-        .theme-dark .text-subject-block { background: linear-gradient(135deg, rgba(45,55,72,0.8), rgba(26,32,44,0.8)); border-left-color: #63b3ed; }
-        .theme-custom .text-subject-block { background: rgba(0,0,0,0.4) !important; border-color: rgba(255,255,255,0.1) !important; border-left-color: #4299e1 !important; }
-        .text-subject-block h3 { margin-bottom: 12px; font-size: 18px; font-weight: 800; }
-
-        .task-raw-text { background: #edf2f7; border: 1px solid #cbd5e0; border-left: 4px solid #3182ce; padding: 12px 16px; border-radius: 8px; font-size: 15px; font-weight: 500; color: #1a202c; white-space: pre-wrap; margin-top: 8px; line-height: 1.5; }
-        .theme-dark .task-raw-text { background: #2d3748; border-color: #4a5568; border-left-color: #4299e1; color: #ffffff; }
-        .theme-custom .task-raw-text { background: rgba(0,0,0,0.4); border-color: rgba(255,255,255,0.1); color: #ffffff; }
-
-        .merged-container { display: flex; flex-direction: column; gap: 0; border-radius: 8px; overflow: hidden; margin-top: 10px; }
-        .merged-container img { display: block; width: 100%; height: auto; margin: 0 !important; border-radius: 0 !important; border-bottom: 1px solid rgba(0,0,0,0.05); }
-        .merged-container img:last-child { border-bottom: none; }
+        .task-raw-text { background: #0f172a; border: 1px solid #334155; border-left: 4px solid #3b82f6; padding: 12px 16px; border-radius: 8px; font-size: 15px; font-weight: 500; color: #e2e8f0; white-space: pre-wrap; margin-top: 8px; line-height: 1.5; }
 
         .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.85) !important; display: flex; align-items: center; justify-content: center; padding: 20px; z-index: 9999 !important; }
         .modal-content { background: #ffffff !important; color: #1a202c !important; border-radius: 16px; padding: 24px; max-width: 450px; width: 100%; max-height: 90vh; overflow-y: auto; box-shadow: 0 10px 50px rgba(0,0,0,0.5) !important; }
-        .theme-dark .modal-content { background: #2d3748 !important; color: #e2e8f0 !important; border: 1px solid #4a5568 !important; }
-        .theme-custom .modal-content { background: #1e293b !important; color: #ffffff !important; border: 1px solid rgba(255,255,255,0.1) !important; }
+        .theme-dark .modal-content { background: #1e293b !important; color: #ffffff !important; border: 1px solid #334155 !important; }
 
-        .bg-picker-label { display: block; margin-top: 4px; margin-bottom: 6px; font-size: 14px; font-weight: 700; color: #4a5568; }
-        .theme-custom .bg-picker-label { color: #cbd5e0; }
-        .bg-picker-hint { font-size: 12px; color: #a0aec0; margin-bottom: 10px; font-weight: 500; }
-        .bg-presets { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
-        @media (min-width: 600px) { .bg-presets { grid-template-columns: repeat(6, 1fr); } }
-        #settingsBgPresets { grid-template-columns: repeat(3, 1fr) !important; }
-        .bg-preset { height: 72px; border-radius: 10px; border: 3px solid transparent; cursor: pointer; position: relative; display: flex; align-items: flex-end; justify-content: center; padding: 6px; font-size: 11px; font-weight: 800; color: #ffffff; text-shadow: 0 1px 4px rgba(0,0,0,0.95), 0 0 8px rgba(0,0,0,0.7); transition: all 0.2s; background-color: #1a202c; background-size: cover; background-position: center; background-repeat: no-repeat; }
-        .bg-preset:hover { transform: translateY(-2px); border-color: rgba(66, 153, 225, 0.5); }
-        .bg-preset.active { border-color: #4299e1; box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.4); }
-        .bg-preset.active::after { content: '✓'; position: absolute; top: 4px; right: 6px; background: #4299e1; color: #fff; width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 900; text-shadow: none; }
-
-        #status { display: none !important; } /* Скрываем старый статус, используем Toast */
+        #status { display: none !important; }
     </style>
-    <link rel="stylesheet" href="/static/style.css">
-    <link rel="stylesheet" href="/static/animations.css">
+    <link rel="stylesheet" href="/static/style.css?v=2">
+    <link rel="stylesheet" href="/static/animations.css?v=2">
 </head>
 <body>
-    <!-- Контейнер для всплывающих уведомлений -->
     <div id="toastContainer" class="toast-container"></div>
 
     <div class="floating-shapes">
@@ -291,11 +267,6 @@
                     Имя
                     <input type="text" id="authName" placeholder="Как тебя зовут">
                 </label>
-                <div id="bgPicker" style="display:none; margin-bottom: 14px;">
-                    <label class="bg-picker-label">🎨 Выбери фон (необязательно)</label>
-                    <div class="bg-picker-hint">Красивое фото на главной странице. Не выбрал — будет светлая тема.</div>
-                    <div class="bg-presets" id="bgPresets"></div>
-                </div>
                 <label class="form-label">
                     Email
                     <input type="email" id="authEmail" placeholder="you@example.com" required>
@@ -311,7 +282,6 @@
     </div>
 
     <div id="mainScreen" class="container hidden">
-        <!-- ЛИПКИЙ ТОПБАР -->
         <div class="topbar">
             <div style="display: flex; align-items: center; gap: 10px;">
                 <span class="version">v{{ version }}</span>
@@ -331,7 +301,7 @@
 
             <div class="divider-text">ТЕКСТОВЫЕ ЗАДАНИЯ ИЛИ ВЕСЬ ТЕКСТ СРАЗУ</div>
             <div class="text-box">
-                <div id="textHint" style="margin-bottom: 10px; font-size: 14px; color: #4a5568; font-weight: 500;">
+                <div id="textHint" style="margin-bottom: 10px; font-size: 14px; color: #94a3b8; font-weight: 500;">
                     Вставь сюда весь текст. Умный парсер сам найдет Алгебру, Геометрию и текстовые предметы.
                 </div>
                 <textarea id="allTextTasks" class="text-input" rows="6" placeholder="Например:
@@ -344,7 +314,7 @@
                     <span id="btnText">🚀 Решить</span>
                 </button>
                 <button id="clearBtn" class="btn-modern-clear">🗑 Очистить</button>
-                <button id="adminFillBtn" class="btn-modern-primary" style="display: none; background: #9f7aea; box-shadow: 0 4px 15px rgba(159, 122, 234, 0.4);">🧪 Тест: 11</button>
+                <button id="adminFillBtn" class="btn-modern-primary" style="display: none; background: #8b5cf6; box-shadow: 0 4px 15px rgba(139, 92, 246, 0.4);">🧪 Тест: 11</button>
             </div>
         </section>
 
@@ -384,12 +354,6 @@
                     Имя
                     <input type="text" id="setName" placeholder="Как тебя зовут">
                 </label>
-            </div>
-            <div class="settings-section" id="bgSettingsSection">
-                <label class="form-label">🎨 Фон главной страницы</label>
-                <p class="hint" style="margin-bottom: 10px;">Выбери красивое фото или оставь светлую тему.</p>
-                <div class="bg-presets" id="settingsBgPresets"></div>
-                <button type="button" id="bgNoneBtn" class="btn-small" style="margin-top:10px; width:100%; background:#edf2f7; color:#4a5568;">❌ Без фона (светлая тема)</button>
             </div>
             <div class="settings-section" id="hideAiSection">
                 <label class="form-label">🙈 Скрыть ИИ-решебник для предметов</label>
@@ -448,16 +412,14 @@
                     Контакт <span class="hint">(необязательно)</span>
                     <input type="text" id="fbContact" placeholder="Telegram, email">
                 </label>
-
                 <label class="form-label">
                     Прикрепить фото <span class="hint">(необязательно)</span>
                     <div style="display: flex; align-items: center; gap: 10px; margin-top: 6px;">
                         <button type="button" class="btn-small avatar-upload-btn" onclick="document.getElementById('fbImage').click()">🖼 Выбрать фото</button>
-                        <span id="fbImageName" style="font-size: 13px; color: #a0aec0;">Файл не выбран</span>
+                        <span id="fbImageName" style="font-size: 13px; color: #94a3b8;">Файл не выбран</span>
                         <input type="file" id="fbImage" accept="image/*" hidden>
                     </div>
                 </label>
-
                 <div id="fbStatus" class="fb-status"></div>
                 <div class="modal-actions">
                     <button type="button" id="closeSupport" class="btn-secondary">Отмена</button>
@@ -478,7 +440,6 @@
         let authToken = localStorage.getItem('gdz_token') || '';
         let authUser = null;
         let currentTheme = localStorage.getItem('gdz_theme') || 'light';
-        let currentBgUrl = localStorage.getItem('gdz_bg') || null;
         let currentAvatar = null;
         let SUBJECTS = [];
         let fbImageBase64 = "";
@@ -486,22 +447,6 @@
         let subjectYears = {};
         let hideAiSubjects = {};
         let activeParts = {};
-        let selectedBgPreset = null;
-
-        let pendingTheme = 'light';
-        let pendingBgUrl = null;
-        let originalTheme = 'light';
-        let originalBgUrl = null;
-
-        // ─── КРАСИВЫЕ ПРЕСЕТЫ ФОНОВ ───
-        const BG_PRESETS = [
-            { id: 'sunset', label: '🌅 Закат', url: 'https://images.unsplash.com/photo-1519681393784-d120267933ba?w=1920&q=80&auto=format&fit=crop', preview: 'https://images.unsplash.com/photo-1519681393784-d120267933ba?w=400&q=70&auto=format&fit=crop' },
-            { id: 'mountains', label: '🏔 Горы', url: 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=1920&q=80&auto=format&fit=crop', preview: 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=400&q=70&auto=format&fit=crop' },
-            { id: 'space', label: '🌌 Космос', url: 'https://images.unsplash.com/photo-1506318137071-a8e063b4bec0?w=1920&q=80&auto=format&fit=crop', preview: 'https://images.unsplash.com/photo-1506318137071-a8e063b4bec0?w=400&q=70&auto=format&fit=crop' },
-            { id: 'ocean', label: '🌊 Океан', url: 'https://images.unsplash.com/photo-1505118380757-91f5f5632de0?w=1920&q=80&auto=format&fit=crop', preview: 'https://images.unsplash.com/photo-1505118380757-91f5f5632de0?w=400&q=70&auto=format&fit=crop' },
-            { id: 'abstract', label: '🔷 Абстракция', url: 'https://images.unsplash.com/photo-1550684848-fac1c5b4e853?w=1920&q=80&auto=format&fit=crop', preview: 'https://images.unsplash.com/photo-1550684848-fac1c5b4e853?w=400&q=70&auto=format&fit=crop' },
-            { id: 'forest', label: '🌲 Лес', url: 'https://images.unsplash.com/photo-1448375240586-882707db888b?w=1920&q=80&auto=format&fit=crop', preview: 'https://images.unsplash.com/photo-1448375240586-882707db888b?w=400&q=70&auto=format&fit=crop' }
-        ];
 
         const $ = id => document.getElementById(id);
         const authScreen = $('authScreen');
@@ -518,7 +463,7 @@
         const allTextTasks = $('allTextTasks');
         const textHint = $('textHint');
 
-        // ─── КРАСИВЫЕ УВЕДОМЛЕНИЯ ───
+        // Функция для создания Toast-уведомления
         function showToast(message, type = 'info', duration = 3000) {
             const container = $('toastContainer');
             if (!container) return;
@@ -528,9 +473,13 @@
             let icon = 'ℹ️';
             if (type === 'success') icon = '✅';
             if (type === 'error') icon = '❌';
-            if (type === 'loading') icon = '⏳';
+            if (type === 'loading') {
+                // Для загрузки мы вернем пустой тег, чтобы вставить туда спиннер и таймер вручную
+                toast.innerHTML = '';
+            } else {
+                toast.innerHTML = `<span>${icon}</span> <span>${message}</span>`;
+            }
 
-            toast.innerHTML = `<span>${icon}</span> <span>${message}</span>`;
             container.appendChild(toast);
 
             if (type !== 'loading') {
@@ -540,6 +489,40 @@
                 }, duration);
             }
             return toast;
+        }
+
+        // Функция для Toast-уведомления с таймером и спиннером
+        function showLoadingToast(message) {
+            const container = $('toastContainer');
+            if (!container) return null;
+            const toast = document.createElement('div');
+            toast.className = 'toast loading';
+            toast.innerHTML = `
+                <span class="toast-spinner"></span>
+                <span>${message}</span>
+                <span class="toast-timer" id="toastTimer">00:00</span>
+            `;
+            container.appendChild(toast);
+
+            // Запускаем таймер
+            let seconds = 0;
+            const timerInterval = setInterval(() => {
+                seconds++;
+                const m = String(Math.floor(seconds / 60)).padStart(2, '0');
+                const s = String(seconds % 60).padStart(2, '0');
+                const timerEl = document.getElementById('toastTimer');
+                if (timerEl) timerEl.textContent = `${m}:${s}`;
+            }, 1000);
+
+            // Возвращаем объект с функцией для остановки и удаления
+            return {
+                element: toast,
+                stop: () => {
+                    clearInterval(timerInterval);
+                    toast.style.animation = 'toastOut 0.3s forwards';
+                    setTimeout(() => toast.remove(), 300);
+                }
+            };
         }
 
         function getDeviceInfo() {
@@ -589,36 +572,21 @@
             });
         }
 
-        function applyTheme(theme, bgUrl) {
+        function applyTheme(theme) {
             currentTheme = theme;
-            currentBgUrl = bgUrl;
             const root = document.documentElement;
-            root.classList.remove('theme-dark', 'theme-custom', 'btn-style-light');
+            root.classList.remove('theme-dark');
             root.style.backgroundImage = '';
             root.style.backgroundColor = '';
+
             if (theme === 'dark') {
                 root.classList.add('theme-dark');
                 localStorage.setItem('gdz_theme', 'dark');
-                localStorage.removeItem('gdz_bg');
-            } else if (theme === 'custom' && bgUrl) {
-                root.classList.add('theme-custom');
-                root.classList.add('btn-style-light');
-                root.style.backgroundColor = '#0f172a';
-                if (bgUrl.startsWith('linear-gradient') || bgUrl.startsWith('radial-gradient') || bgUrl.startsWith('conic-gradient')) {
-                    root.style.backgroundImage = bgUrl;
-                } else {
-                    root.style.backgroundImage = 'linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.4)), url("' + bgUrl + '")';
-                }
-                localStorage.setItem('gdz_theme', 'custom');
-                localStorage.setItem('gdz_bg', bgUrl);
             } else {
                 localStorage.setItem('gdz_theme', 'light');
-                localStorage.removeItem('gdz_bg');
             }
             const toggleBtn = $('themeToggleBtn');
-            if (toggleBtn) {
-                toggleBtn.textContent = (theme === 'dark') ? '☀️' : '🌙';
-            }
+            if (toggleBtn) toggleBtn.textContent = (theme === 'dark') ? '☀️' : '🌙';
         }
 
         function getInitial(name, email) {
@@ -643,8 +611,8 @@
                 await navigator.clipboard.writeText(text);
                 const originalText = btnElement.innerHTML;
                 btnElement.innerHTML = '✅ Скопировано';
-                btnElement.style.color = '#48bb78';
-                btnElement.style.borderColor = '#48bb78';
+                btnElement.style.color = '#10b981';
+                btnElement.style.borderColor = '#10b981';
                 setTimeout(() => {
                     btnElement.innerHTML = originalText;
                     btnElement.style.color = '';
@@ -663,55 +631,10 @@
                 toggleBtn.addEventListener('click', () => {
                     const current = localStorage.getItem('gdz_theme') || 'light';
                     const next = (current === 'dark') ? 'light' : 'dark';
-                    applyTheme(next, null);
-                });
-            }
-
-            const presetsEl = $('bgPresets');
-            if (presetsEl) {
-                BG_PRESETS.forEach(p => {
-                    const el = document.createElement('div');
-                    el.className = 'bg-preset';
-                    el.dataset.bg = p.url;
-                    el.style.backgroundImage = 'url("' + p.preview + '")';
-                    el.textContent = p.label;
-                    el.onclick = () => {
-                        document.querySelectorAll('#bgPresets .bg-preset').forEach(x => x.classList.remove('active'));
-                        if (selectedBgPreset === p.url) { selectedBgPreset = null; } else {
-                            el.classList.add('active'); selectedBgPreset = p.url;
-                        }
-                    };
-                    presetsEl.appendChild(el);
+                    applyTheme(next);
                 });
             }
         });
-
-        function renderSettingsBgPresets() {
-            const el = $('settingsBgPresets');
-            if (!el) return;
-            el.innerHTML = '';
-            BG_PRESETS.forEach(p => {
-                const btn = document.createElement('div');
-                btn.className = 'bg-preset';
-                if (pendingBgUrl === p.url) btn.classList.add('active');
-                btn.style.backgroundImage = 'url("' + p.preview + '")';
-                btn.textContent = p.label;
-                btn.onclick = () => {
-                    pendingTheme = 'custom'; pendingBgUrl = p.url;
-                    document.querySelectorAll('#settingsBgPresets .bg-preset').forEach(x => x.classList.remove('active'));
-                    btn.classList.add('active');
-                    const noneBtn = $('bgNoneBtn');
-                    if (noneBtn) { noneBtn.style.background = '#edf2f7'; noneBtn.style.color = '#4a5568'; }
-                    applyTheme('custom', p.url);
-                };
-                el.appendChild(btn);
-            });
-            const noneBtn = $('bgNoneBtn');
-            if (noneBtn) {
-                if (!pendingBgUrl) { noneBtn.style.background = '#4299e1'; noneBtn.style.color = '#ffffff'; }
-                else { noneBtn.style.background = '#edf2f7'; noneBtn.style.color = '#4a5568'; }
-            }
-        }
 
         async function init() {
             if (authToken) {
@@ -724,7 +647,7 @@
                         currentAvatar = authUser.avatar || null;
                         subjectYears = parseJson(authUser.subject_years);
                         hideAiSubjects = parseJson(authUser.hide_ai_subjects);
-                        applyTheme(authUser.theme || 'light', authUser.bg_url);
+                        applyTheme(authUser.theme || 'light');
                         setAuthState(true);
                         await showMain();
                         return;
@@ -818,8 +741,8 @@
 
                         const currentPart = activeParts[s.name] || '1';
                         const activeYear = subjectYears[s.name] || (currentPart === '2' ? (s.default_year_alt || s.default_year) : s.default_year);
-                        const yearBadge = `<span class="year-badge" style="color:#48bb78; font-size:13px;">${activeYear ? `(${escapeHtml(activeYear)})` : ''}</span>`;
-                        const noteBadge = s.note ? `<span style="font-size: 12px; color: #a0aec0; font-weight: normal; line-height: 1.2;">📝 ${escapeHtml(s.note)}</span>` : '';
+                        const yearBadge = `<span class="year-badge" style="color:#10b981; font-size:13px;">${activeYear ? `(${escapeHtml(activeYear)})` : ''}</span>`;
+                        const noteBadge = s.note ? `<span style="font-size: 12px; color: #94a3b8; font-weight: normal; line-height: 1.2;">📝 ${escapeHtml(s.note)}</span>` : '';
                         let partBtn = '';
                         if (s.url_alt) { partBtn = `<button type="button" class="part-toggle-btn" onclick="togglePart('${s.name.replace(/'/g, "\\'")}', this)" data-part="${currentPart}">Часть ${currentPart}</button>`; }
 
@@ -1050,13 +973,14 @@
             btnText.innerHTML = '<span class="btn-spinner"></span> Решаю...';
             result.innerHTML = '';
 
-            const loadingToast = showToast('Ищу решения, подождите...', 'loading');
+            // Уведомление с таймером и спиннером
+            const loadingToast = showLoadingToast('Ищу решения...');
 
             try {
                 const resp = await fetch('/api/parse', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({jobs, token: authToken}) });
                 const data = await resp.json();
 
-                loadingToast.remove();
+                if (loadingToast) loadingToast.stop();
 
                 if (!resp.ok) throw new Error(data.detail || 'Ошибка');
                 if (data.total === 0) {
@@ -1205,7 +1129,8 @@
                 }
 
             } catch (err) {
-                loadingToast.remove(); showToast(err.message, 'error');
+                if (loadingToast) loadingToast.stop();
+                showToast(err.message, 'error');
             } finally {
                 btn.disabled = false; btnText.innerHTML = '🚀 Решить';
             }
@@ -1277,7 +1202,6 @@
             authMode = mode;
             document.querySelectorAll('.auth-tab').forEach(t => t.classList.toggle('active', t.dataset.tab === mode));
             $('nameField').style.display = mode === 'register' ? 'block' : 'none';
-            $('bgPicker').style.display = mode === 'register' ? 'block' : 'none';
             $('authSubmit').textContent = mode === 'login' ? 'Войти' : 'Создать аккаунт';
         }
         document.querySelectorAll('.auth-tab').forEach(t => t.onclick = () => switchTab(t.dataset.tab));
@@ -1306,14 +1230,7 @@
                 subjectYears = parseJson(authUser.subject_years); hideAiSubjects = parseJson(authUser.hide_ai_subjects);
                 localStorage.setItem('gdz_token', authToken);
 
-                if (authMode === 'register' && selectedBgPreset) {
-                    st.textContent = '🎨 Применяем фон...';
-                    try {
-                        const upd = await fetch('/api/auth/update', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ token: authToken, theme: 'custom', bg_url: selectedBgPreset }) });
-                        if (upd.ok) authUser = (await upd.json()).user;
-                    } catch (err) {}
-                }
-                applyTheme(authUser.theme || 'light', authUser.bg_url);
+                applyTheme(authUser.theme || 'light');
                 await showMain();
             } catch (err) { st.textContent = '❌ ' + err.message; st.className = 'fb-status error'; }
         };
@@ -1322,7 +1239,7 @@
             if (!confirm('Выйти из аккаунта?')) return;
             try { await fetch('/api/auth/logout', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({token: authToken}) }); } catch {}
             authToken = ''; authUser = null; currentAvatar = null; subjectYears = {}; hideAiSubjects = {}; activeParts = {};
-            localStorage.removeItem('gdz_token'); applyTheme('light', null); topbarRight.innerHTML = ''; showAuth();
+            localStorage.removeItem('gdz_token'); applyTheme('light'); topbarRight.innerHTML = ''; showAuth();
         }
 
         async function openHistory() {
@@ -1360,23 +1277,13 @@
             settingsModal.classList.remove('hidden');
             $('settingsStatus').textContent = ''; $('settingsStatus').className = 'fb-status';
             $('setName').value = authUser?.name || ''; $('setOldPwd').value = ''; $('setNewPwd').value = ''; updateAvatarPreview();
-            originalTheme = currentTheme; originalBgUrl = currentBgUrl;
-            pendingTheme = currentTheme; pendingBgUrl = (currentTheme === 'custom') ? currentBgUrl : null;
-            renderSettingsBgPresets();
             const hideList = $('hideAiList'); hideList.innerHTML = '';
             SUBJECTS.forEach(s => { hideList.innerHTML += `<label style="display: flex; align-items: center; gap: 8px; cursor: pointer; padding: 4px 0;"><input type="checkbox" value="${s.name}" ${hideAiSubjects[s.name] ? 'checked' : ''} style="width: 18px; height: 18px; accent-color: #4299e1;"><span>${s.name}</span></label>`; });
         }
 
-        function cancelSettings() { applyTheme(originalTheme, originalBgUrl); settingsModal.classList.add('hidden'); }
+        function cancelSettings() { settingsModal.classList.add('hidden'); }
         $('closeSettingsBtn').onclick = cancelSettings;
         settingsModal.onclick = (e) => { if (e.target === settingsModal) cancelSettings(); };
-
-        $('bgNoneBtn').onclick = () => {
-            pendingTheme = 'light'; pendingBgUrl = null;
-            document.querySelectorAll('#settingsBgPresets .bg-preset').forEach(x => x.classList.remove('active'));
-            applyTheme('light', null);
-            const noneBtn = $('bgNoneBtn'); if (noneBtn) { noneBtn.style.background = '#4299e1'; noneBtn.style.color = '#ffffff'; }
-        };
 
         $('avatarInput').onchange = async (e) => {
             const file = e.target.files[0]; if (!file) return;
@@ -1395,17 +1302,16 @@
             st.textContent = '⏳ Применяем...'; st.className = 'fb-status loading';
             const hideCheckboxes = document.querySelectorAll('#hideAiList input[type="checkbox"]'); let newHideAi = {};
             hideCheckboxes.forEach(cb => { if (cb.checked) newHideAi[cb.value] = true; });
-            const payload = { token: authToken, name: newName, hide_ai_subjects: JSON.stringify(newHideAi), theme: pendingTheme, bg_url: pendingBgUrl || '' };
+            const payload = { token: authToken, name: newName, hide_ai_subjects: JSON.stringify(newHideAi) };
             try {
                 const r1 = await fetch('/api/auth/update', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload) });
                 const d1 = await r1.json(); if (!r1.ok) throw new Error(d1.detail || 'Ошибка');
-                authUser = d1.user; hideAiSubjects = parseJson(authUser.hide_ai_subjects); applyTheme(authUser.theme, authUser.bg_url); updateGreeting(); renderTopbar();
-                originalTheme = currentTheme; originalBgUrl = currentBgUrl;
+                authUser = d1.user; hideAiSubjects = parseJson(authUser.hide_ai_subjects); updateGreeting(); renderTopbar();
                 if (oldPwd && newPwd) {
                     const r2 = await fetch('/api/auth/change-password', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({token: authToken, old_password: oldPwd, new_password: newPwd}) });
                     const d2 = await r2.json(); if (!r2.ok) { st.textContent = '⚠️ Профиль применён, пароль: ' + (d2.detail || 'Ошибка'); st.className = 'fb-status error'; return; }
-                    st.textContent = '✅ Профиль, фон и пароль применены';
-                } else st.textContent = '✅ Настройки и фон применены';
+                    st.textContent = '✅ Профиль и пароль применены';
+                } else st.textContent = '✅ Настройки применены';
                 st.className = 'fb-status success';
                 setTimeout(() => settingsModal.classList.add('hidden'), 1500);
             } catch (e) { st.textContent = '❌ ' + e.message; st.className = 'fb-status error'; }
@@ -1420,8 +1326,8 @@
                 const r = await fetch('/api/auth/delete', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({token: authToken}) });
                 if (!r.ok) throw new Error('Ошибка удаления');
                 authToken = ''; authUser = null; currentAvatar = null;
-                localStorage.removeItem('gdz_token'); localStorage.removeItem('gdz_theme'); localStorage.removeItem('gdz_bg');
-                applyTheme('light', null); settingsModal.classList.add('hidden'); showAuth();
+                localStorage.removeItem('gdz_token'); localStorage.removeItem('gdz_theme');
+                applyTheme('light'); settingsModal.classList.add('hidden'); showAuth();
             } catch (e) { st.textContent = '❌ ' + e.message; st.className = 'fb-status error'; }
         };
 
