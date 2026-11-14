@@ -16,7 +16,7 @@ import asyncpg
 
 from parser import parse_tasks
 
-VERSION = "123.0.0"
+VERSION = "126.0.0"
 ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "")
 ADMIN_EMAIL = os.getenv("ADMIN_EMAIL", "admin@gdz.ru").lower().strip()
 DATABASE_URL = os.getenv("DATABASE_URL")
@@ -54,8 +54,8 @@ DEFAULT_SUBJECTS = [
      "type": "numbers", "group_name": "📖 Гуманитарные науки", "sort_order": 8, "max_number": 500, "note": "",
      "default_year": "2026", "default_year_alt": ""},
 
-    {"name": "Физика", "url": "", "url_alt": "", "type": "text", "group_name": "🌿 Естественные науки", "sort_order": 9,
-     "max_number": 0, "note": "", "default_year": "", "default_year_alt": ""},
+    {"name": "Физика", "url": "https://gdz.ru/class-7/fizika/peryshkin-7/", "url_alt": "", "type": "numbers", "group_name": "🌿 Естественные науки", "sort_order": 9,
+     "max_number": 1000, "note": "", "default_year": "", "default_year_alt": ""},
 
     {"name": "Биология", "url": "", "url_alt": "", "type": "text", "group_name": "🌿 Естественные науки",
      "sort_order": 10, "max_number": 0, "note": "", "default_year": "", "default_year_alt": ""},
