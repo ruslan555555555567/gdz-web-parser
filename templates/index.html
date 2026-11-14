@@ -1269,7 +1269,6 @@
 
                         let hasRenderedSomething = false;
 
-                        // === ПРОВЕРКА: СКРЫТ ЛИ ИИ ДЛЯ ЭТОГО ПРЕДМЕТА ===
                         let aiSolution = r.solutions.find(sol => sol.edition && sol.edition.includes('ИИ') && sol.text && sol.text.trim().length > 0);
                         if (aiSolution && !hideAiSubjects[subject]) {
                             hasRenderedSomething = true;
@@ -2050,17 +2049,19 @@
             }
         }
 
-        // ФУНКЦИЯ ДЛЯ СКЛЕЙКИ КАРТИНОК ЧЕРЕЗ CANVAS
+        // ОБНОВЛЕННАЯ ФУНКЦИЯ СКЛЕЙКИ (ЧЕРЕЗ ПРОКСИ)
         async function downloadMergedImage(urls, filename) {
             try {
                 const images = [];
                 let maxWidth = 0;
                 let totalHeight = 0;
 
-                for (let url of urls) {
+                for (let rawUrl of urls) {
+                    // ВАЖНО: Берем картинку через наш прокси, чтобы браузер не блокировал
+                    const proxyUrl = '/api/image?url=' + encodeURIComponent(rawUrl) + '&w=2000';
                     const img = new Image();
                     img.crossOrigin = "Anonymous";
-                    img.src = url;
+                    img.src = proxyUrl;
                     await new Promise((resolve, reject) => {
                         img.onload = resolve;
                         img.onerror = reject;
@@ -2094,7 +2095,7 @@
 
             } catch (e) {
                 console.error('Ошибка склейки:', e);
-                alert('Не удалось склеить картинки. Возможно, сервер блокирует скачивание.');
+                alert('Не удалось склеить картинки. Попробуйте обновить страницу.');
             }
         }
 
