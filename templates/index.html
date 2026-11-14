@@ -9,6 +9,11 @@
     <meta name="theme-color" content="#4299e1">
     <link rel="apple-touch-icon" href="/static/icon-192.png">
 
+    <!-- Современный шрифт -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
     <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js"></script>
@@ -35,12 +40,11 @@
                 else if (theme === 'custom' && bg) {
                     root.classList.add('theme-custom');
                     root.classList.add('btn-style-light');
-                    root.style.backgroundColor = '#0f172a'; // Тёмно-синяя подложка
+                    root.style.backgroundColor = '#0f172a';
                     if (bg.startsWith('linear-gradient') || bg.startsWith('radial-gradient') || bg.startsWith('conic-gradient')) {
                         root.style.backgroundImage = bg;
                     } else {
-                        // Усилили затемнение до 65%, чтобы текст читался
-                        root.style.backgroundImage = 'linear-gradient(rgba(0,0,0,0.65), rgba(0,0,0,0.65)), url("' + bg + '")';
+                        root.style.backgroundImage = 'linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.4)), url("' + bg + '")';
                     }
                 }
 
@@ -50,274 +54,168 @@
         })();
     </script>
     <style>
+        /* Шрифт Manrope для всего */
+        * {
+            font-family: 'Manrope', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+        }
+
         html.has-auth #authScreen { display: none !important; }
         html.has-auth #mainScreen { display: flex !important; flex-direction: column; }
         html.no-auth #authScreen { display: flex !important; }
         html.no-auth #mainScreen { display: none !important; }
 
-        .action-buttons-row {
-            display: flex;
-            gap: 12px;
-            margin-top: 24px;
-            align-items: stretch;
-            flex-wrap: wrap;
+        /* ─── ЛИПКИЙ ТОПБАР ─── */
+        .topbar {
+            position: sticky;
+            top: 10px;
+            z-index: 100;
+            background: rgba(255, 255, 255, 0.85) !important;
+            backdrop-filter: blur(16px) !important;
+            -webkit-backdrop-filter: blur(16px) !important;
+            border: 1px solid rgba(0, 0, 0, 0.05);
+            border-radius: 16px;
+            padding: 8px 16px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+            margin-bottom: 24px;
         }
+        .theme-dark .topbar { background: rgba(26, 32, 44, 0.85) !important; border-color: rgba(255,255,255,0.05); box-shadow: 0 4px 20px rgba(0,0,0,0.3); }
+        .theme-custom .topbar { background: rgba(15, 23, 42, 0.85) !important; border-color: rgba(255,255,255,0.1); box-shadow: 0 4px 20px rgba(0,0,0,0.5); color: white; }
+
+        .action-buttons-row { display: flex; gap: 12px; margin-top: 24px; align-items: stretch; flex-wrap: wrap; }
+
         .btn-modern-primary {
-            flex: 1;
-            background: linear-gradient(135deg, #4299e1, #3182ce);
-            color: white;
-            border: none;
-            border-radius: 14px;
-            padding: 15px 24px;
-            font-size: 16px;
-            font-weight: 700;
-            cursor: pointer;
-            box-shadow: 0 4px 15px rgba(66, 153, 225, 0.4);
-            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            font-family: inherit;
+            flex: 1; background: linear-gradient(135deg, #4299e1, #3182ce); color: white; border: none; border-radius: 14px;
+            padding: 15px 24px; font-size: 16px; font-weight: 800; cursor: pointer; box-shadow: 0 4px 15px rgba(66, 153, 225, 0.4);
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); display: flex; align-items: center; justify-content: center; gap: 10px;
         }
-        .btn-modern-primary:hover:not(:disabled) {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(66, 153, 225, 0.6);
-        }
-        .btn-modern-primary:active:not(:disabled) {
-            transform: translateY(1px);
-        }
-        .btn-modern-primary:disabled {
-            background: #a0aec0;
-            box-shadow: none;
-            cursor: not-allowed;
-            transform: none;
-        }
+        .btn-modern-primary:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(66, 153, 225, 0.6); }
+        .btn-modern-primary:active:not(:disabled) { transform: translateY(1px); }
+        .btn-modern-primary:disabled { background: #a0aec0; box-shadow: none; cursor: not-allowed; transform: none; }
+
+        /* Красивый спиннер */
+        .btn-spinner { display: inline-block; width: 20px; height: 20px; border: 3px solid rgba(255, 255, 255, 0.3); border-radius: 50%; border-top-color: #ffffff; animation: spin 0.8s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
         .btn-modern-clear {
-            background: #edf2f7;
-            color: #e53e3e;
-            border: 2px solid #fed7d7;
-            border-radius: 14px;
-            padding: 15px 20px;
-            font-size: 15px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 6px;
-            font-family: inherit;
-            white-space: nowrap;
+            background: #edf2f7; color: #e53e3e; border: 2px solid #fed7d7; border-radius: 14px;
+            padding: 15px 20px; font-size: 15px; font-weight: 700; cursor: pointer; transition: all 0.2s;
+            display: flex; align-items: center; justify-content: center; gap: 6px; white-space: nowrap;
         }
-        .btn-modern-clear:hover {
-            background: #fff5f5;
-            border-color: #feb2b2;
-            transform: translateY(-2px);
-        }
-        .btn-modern-clear:active {
-            transform: translateY(1px);
-        }
-        .theme-dark .btn-modern-clear {
-            background: rgba(74, 85, 104, 0.5);
-            color: #fc8181;
-            border-color: #4a5568;
-        }
-        .theme-dark .btn-modern-clear:hover {
-            background: rgba(229, 62, 62, 0.2);
-            border-color: #fc8181;
-        }
+        .btn-modern-clear:hover { background: #fff5f5; border-color: #feb2b2; transform: translateY(-2px); }
+        .theme-dark .btn-modern-clear { background: rgba(74, 85, 104, 0.5); color: #fc8181; border-color: #4a5568; }
+        .theme-custom .btn-modern-clear { background: rgba(255,255,255,0.1); color: #fc8181; border-color: rgba(255,255,255,0.2); }
 
-        /* Стиль для иконки темы */
         .theme-toggle-btn {
-            background: rgba(150, 150, 150, 0.1);
-            border: none;
-            font-size: 18px;
-            width: 32px;
-            height: 32px;
-            border-radius: 50%;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: transform 0.2s, background 0.2s;
-            padding: 0;
-            color: white;
+            background: rgba(150, 150, 150, 0.1); border: none; font-size: 18px; width: 36px; height: 36px;
+            border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: transform 0.2s; padding: 0;
         }
-        .theme-toggle-btn:hover {
-            background: rgba(150, 150, 150, 0.2);
-            transform: scale(1.05);
+        .theme-custom .theme-toggle-btn { color: white; }
+        .theme-toggle-btn:hover { background: rgba(150, 150, 150, 0.2); transform: scale(1.05); }
+
+        /* ─── TOAST УВЕДОМЛЕНИЯ ─── */
+        .toast-container { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); display: flex; flex-direction: column; gap: 10px; z-index: 10000; pointer-events: none; width: 90%; max-width: 400px; }
+        .toast {
+            background: #ffffff; color: #1a202c; padding: 14px 20px; border-radius: 14px; box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+            font-weight: 700; font-size: 15px; display: flex; align-items: center; gap: 10px;
+            animation: toastIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; pointer-events: auto; border-left: 4px solid #4299e1;
+        }
+        .toast.error { border-left-color: #e53e3e; }
+        .toast.success { border-left-color: #48bb78; }
+        .toast.loading { border-left-color: #ed8936; }
+        .theme-dark .toast, .theme-custom .toast { background: #1e293b; color: #ffffff; box-shadow: 0 10px 30px rgba(0,0,0,0.6); border: 1px solid rgba(255,255,255,0.1); border-left-width: 4px; }
+
+        @keyframes toastIn { from { opacity: 0; transform: translateY(20px) scale(0.9); } to { opacity: 1; transform: translateY(0) scale(1); } }
+        @keyframes toastOut { from { opacity: 1; transform: translateY(0) scale(1); } to { opacity: 0; transform: translateY(20px) scale(0.9); } }
+
+        /* ─── ПРЕМИАЛЬНЫЙ КАСТОМНЫЙ ФОН ─── */
+        html.theme-custom .card, html.theme-custom .subject-block {
+            background: rgba(15, 23, 42, 0.85) !important; /* Плотное тёмное стекло */
+            backdrop-filter: blur(24px) !important;
+            -webkit-backdrop-filter: blur(24px) !important;
+            border: 1px solid rgba(255, 255, 255, 0.1) !important;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4) !important;
         }
 
-        /* Стиль для кнопки копирования */
-        .copy-btn {
-            display: inline-flex;
-            align-items: center;
-            gap: 4px;
-            margin-bottom: 10px;
-            padding: 6px 12px;
-            font-size: 13px;
-            font-weight: 600;
-            border-radius: 8px;
-            border: 1px solid #bee3f8;
-            background: rgba(66, 153, 225, 0.05);
-            color: #2b6cb0;
-            cursor: pointer;
-            transition: all 0.2s;
-            font-family: inherit;
-        }
-        .copy-btn:hover {
-            background: rgba(66, 153, 225, 0.15);
-            border-color: #90cdf4;
-        }
-        .theme-dark .copy-btn {
-            background: rgba(66, 153, 225, 0.15);
-            border-color: rgba(66, 153, 225, 0.3);
-            color: #90cdf4;
-        }
-        .theme-dark .copy-btn:hover {
-            background: rgba(66, 153, 225, 0.25);
-            border-color: #63b3ed;
+        /* Убираем уродскую черную обводку, делаем мягкую тень */
+        .theme-custom h1, .theme-custom h2, .theme-custom h3,
+        body.theme-custom h1, body.theme-custom h2, body.theme-custom h3,
+        .theme-custom .input-label, body.theme-custom .input-label,
+        .theme-custom .group-title, body.theme-custom .group-title,
+        .theme-custom .subtitle, body.theme-custom .subtitle,
+        .theme-custom .footer, body.theme-custom .footer,
+        .theme-custom .hint, body.theme-custom .hint,
+        .theme-custom .form-label, body.theme-custom .form-label {
+            color: #f8fafc !important;
+            text-shadow: 0 2px 8px rgba(0,0,0,0.6) !important; /* Мягкая тень */
         }
 
-        .subject-header-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            margin-bottom: 6px;
-        }
-        .gear-btn {
-            background: transparent;
-            border: none;
-            font-size: 18px;
-            cursor: pointer;
-            padding: 0 5px;
-            opacity: 0.6;
-            transition: opacity 0.2s, transform 0.2s;
-        }
-        .gear-btn:hover {
-            opacity: 1;
-            transform: rotate(45deg);
-        }
-
-        .part-toggle-btn {
-            background: #edf2f7;
-            border: 1px solid #cbd5e0;
-            border-radius: 12px;
-            padding: 2px 8px;
-            font-size: 12px;
-            font-weight: 600;
-            cursor: pointer;
-            color: #4a5568;
-            margin-left: 8px;
-            transition: all 0.2s;
-        }
-        .part-toggle-btn:hover { background: #e2e8f0; }
-        .theme-dark .part-toggle-btn { background: #4a5568; border-color: #718096; color: #e2e8f0; }
-        .theme-dark .part-toggle-btn:hover { background: #718096; }
-
-        .task-number-header {
-            display: inline-block;
-            font-size: 15px;
-            font-weight: 700;
-            color: #2b6cb0 !important;
-            background: #ebf8ff;
-            padding: 6px 14px;
-            border-radius: 20px;
-            margin-bottom: 12px;
-            border: 1px solid #bee3f8;
-            width: fit-content;
-        }
-        .theme-dark .task-number-header {
-            color: #90cdf4 !important;
-            background: rgba(66, 153, 225, 0.15);
-            border-color: rgba(66, 153, 225, 0.3);
-        }
-        .theme-custom .task-number-header {
+        /* Поля ввода */
+        html.theme-custom textarea, html.theme-custom input[type="text"], html.theme-custom input[type="email"], html.theme-custom input[type="password"] {
+            background: rgba(0, 0, 0, 0.2) !important;
+            border: 1px solid rgba(255, 255, 255, 0.1) !important;
             color: #ffffff !important;
-            background: rgba(66, 153, 225, 0.4);
-            border-color: rgba(255, 255, 255, 0.3);
-            backdrop-filter: blur(5px);
+            border-radius: 12px;
         }
+        html.theme-custom textarea:focus, html.theme-custom input:focus {
+            border-color: #3b82f6 !important;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3) !important;
+        }
+        html.theme-custom textarea::placeholder, html.theme-custom input::placeholder { color: rgba(255, 255, 255, 0.4) !important; }
 
-        .edition-header {
-            font-size: 14px;
-            font-weight: 600;
-            color: #4a5568;
-            margin: 15px 0 8px 0;
-            padding-left: 10px;
-            border-left: 3px solid #4299e1;
-        }
+        /* Карточки предметов */
+        html.theme-custom .text-box { background: rgba(0,0,0,0.2) !important; border-color: rgba(255,255,255,0.1) !important; }
+        html.theme-custom .subject-group { border-color: rgba(255,255,255,0.1) !important; }
+
+        /* Кнопки в кастомной теме */
+        html.theme-custom .user-menu-btn { background: rgba(255, 255, 255, 0.1) !important; color: #ffffff !important; border: 1px solid rgba(255,255,255,0.2) !important; backdrop-filter: blur(10px); }
+        html.theme-custom .user-menu-btn:hover { background: rgba(255, 255, 255, 0.2) !important; }
+
+        .subject-header-row { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px; }
+        .gear-btn { background: transparent; border: none; font-size: 18px; cursor: pointer; padding: 0 5px; opacity: 0.6; transition: opacity 0.2s; }
+        .gear-btn:hover { opacity: 1; transform: rotate(45deg); }
+
+        .part-toggle-btn { background: #edf2f7; border: 1px solid #cbd5e0; border-radius: 12px; padding: 2px 8px; font-size: 12px; font-weight: 700; cursor: pointer; color: #4a5568; margin-left: 8px; }
+        .theme-dark .part-toggle-btn { background: #4a5568; border-color: #718096; color: #e2e8f0; }
+        .theme-custom .part-toggle-btn { background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.2); color: white; }
+
+        .task-number-header { display: inline-block; font-size: 15px; font-weight: 800; color: #2b6cb0 !important; background: #ebf8ff; padding: 6px 14px; border-radius: 20px; margin-bottom: 12px; border: 1px solid #bee3f8; width: fit-content; }
+        .theme-dark .task-number-header { color: #90cdf4 !important; background: rgba(66, 153, 225, 0.15); border-color: rgba(66, 153, 225, 0.3); }
+        .theme-custom .task-number-header { color: #ffffff !important; background: rgba(59, 130, 246, 0.6); border-color: rgba(255, 255, 255, 0.2); }
+
+        .edition-header { font-size: 14px; font-weight: 700; color: #4a5568; margin: 15px 0 8px 0; padding-left: 10px; border-left: 3px solid #4299e1; }
         .theme-dark .edition-header { color: #a0aec0; border-left-color: #63b3ed; }
-        .theme-custom .edition-header { color: #e2e8f0; border-left-color: #ffffff; }
+        .theme-custom .edition-header { color: #cbd5e0; border-left-color: #4299e1; }
 
-        .ai-text-block {
-            background: rgba(66, 153, 225, 0.05);
-            border: 1px solid #bee3f8;
-            border-left: 4px solid #4299e1;
-            border-radius: 10px;
-            padding: 16px;
-            font-size: 15px;
-            line-height: 1.6;
-            color: #1a202c;
-            margin-bottom: 12px;
-            overflow-x: auto;
-        }
-        .theme-dark .ai-text-block {
-            background: rgba(66, 153, 225, 0.1);
-            border-color: #2b6cb0;
-            border-left-color: #63b3ed;
-            color: #e2e8f0;
-        }
-        .theme-custom .ai-text-block {
-            background: rgba(255, 255, 255, 0.1);
-            border-color: rgba(255, 255, 255, 0.3);
-            border-left-color: #ffffff;
-            color: #ffffff;
-        }
+        .ai-text-block { background: rgba(66, 153, 225, 0.05); border: 1px solid #bee3f8; border-left: 4px solid #4299e1; border-radius: 12px; padding: 16px; font-size: 15px; line-height: 1.6; color: #1a202c; margin-bottom: 12px; overflow-x: auto; }
+        .theme-dark .ai-text-block { background: rgba(66, 153, 225, 0.1); border-color: #2b6cb0; border-left-color: #63b3ed; color: #e2e8f0; }
+        .theme-custom .ai-text-block { background: rgba(0,0,0,0.4); border-color: rgba(255,255,255,0.1); border-left-color: #4299e1; color: #e2e8f0; }
 
         .ai-text-block h4 { margin: 15px 0 10px 0; font-size: 18px; color: #2b6cb0; border-bottom: 1px solid #bee3f8; padding-bottom: 4px; }
         .ai-text-block h5 { margin: 15px 0 5px 0; font-size: 16px; color: #2b6cb0; }
-        .theme-dark .ai-text-block h4, .theme-dark .ai-text-block h5 { color: #90cdf4; border-bottom-color: #4a5568; }
-        .theme-custom .ai-text-block h4, .theme-custom .ai-text-block h5 { color: #ffffff; border-bottom-color: rgba(255,255,255,0.2); }
+        .theme-dark .ai-text-block h4, .theme-dark .ai-text-block h5, .theme-custom .ai-text-block h4, .theme-custom .ai-text-block h5 { color: #90cdf4; border-bottom-color: rgba(255,255,255,0.1); }
 
-        .ai-text-block ul, .ai-text-block ol { margin: 10px 0; padding-left: 20px; }
-        .ai-text-block li { margin-bottom: 6px; }
-        .ai-text-block p { margin-bottom: 10px; }
-        .ai-text-block b { color: #1a202c; }
-        .theme-dark .ai-text-block b { color: #ffffff; }
+        .copy-btn { display: inline-flex; align-items: center; gap: 4px; margin-bottom: 10px; padding: 6px 12px; font-size: 13px; font-weight: 700; border-radius: 8px; border: 1px solid #bee3f8; background: rgba(66, 153, 225, 0.05); color: #2b6cb0; cursor: pointer; transition: all 0.2s; }
+        .copy-btn:hover { background: rgba(66, 153, 225, 0.15); border-color: #90cdf4; }
+        .theme-dark .copy-btn, .theme-custom .copy-btn { background: rgba(66, 153, 225, 0.2); border-color: rgba(66, 153, 225, 0.3); color: #90cdf4; }
 
-        .katex-display { margin: 15px 0 !important; }
-
-        .welcome-greeting {
-            text-align: center;
-            font-size: 22px;
-            font-weight: 700;
-            margin-bottom: 20px;
-            margin-top: 10px; /* Чуть отодвинули от верха */
-            color: #2d3748;
-            opacity: 0;
-            transform: translateY(-20px);
-            animation: slideDownFade 0.8s cubic-bezier(0.25, 0.8, 0.25, 1) forwards;
-        }
+        .welcome-greeting { text-align: center; font-size: 24px; font-weight: 800; margin-bottom: 20px; margin-top: 10px; color: #2d3748; opacity: 0; transform: translateY(-20px); animation: slideDownFade 0.8s cubic-bezier(0.25, 0.8, 0.25, 1) forwards; }
         .theme-dark .welcome-greeting { color: #e2e8f0; }
-        .theme-custom .welcome-greeting { color: #ffffff; text-shadow: 0 2px 4px rgba(0,0,0,0.8); }
-        .welcome-greeting span { color: #4299e1; text-shadow: 0 0 10px rgba(66, 153, 225, 0.3); }
-        .theme-custom .welcome-greeting span { color: #90cdf4; }
+        .theme-custom .welcome-greeting { color: #ffffff; text-shadow: 0 2px 8px rgba(0,0,0,0.6); }
+        .welcome-greeting span { color: #4299e1; }
         @keyframes slideDownFade { to { opacity: 1; transform: translateY(0); } }
 
         .user-menu-container { position: relative; display: inline-block; }
-        .user-menu-btn { display: flex; align-items: center; gap: 8px; background: #edf2f7; padding: 6px 14px; border-radius: 20px; border: none; cursor: pointer; font-weight: 600; font-family: inherit; color: #4a5568; transition: all 0.2s; }
+        .user-menu-btn { display: flex; align-items: center; gap: 8px; background: #edf2f7; padding: 6px 14px; border-radius: 20px; border: none; cursor: pointer; font-weight: 700; color: #4a5568; transition: all 0.2s; }
         .user-menu-btn:hover { background: #e2e8f0; }
         .theme-dark .user-menu-btn { background: rgba(74,85,104,0.6); color: #e2e8f0; }
-        .theme-dark .user-menu-btn:hover { background: rgba(74,85,104,0.9); }
         .user-avatar-mini { width: 24px; height: 24px; border-radius: 50%; background: #4299e1; color: white; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; background-size: cover; background-position: center; }
+
         .dropdown-menu { position: absolute; top: calc(100% + 10px); right: 0; background: white; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.15); min-width: 220px; opacity: 0; visibility: hidden; transform: translateY(-10px) scale(0.95); transition: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275); z-index: 1000; overflow: hidden; border: 1px solid #e2e8f0; }
         .theme-dark .dropdown-menu { background: #2d3748; border-color: #4a5568; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
         .dropdown-menu.show { opacity: 1; visibility: visible; transform: translateY(0) scale(1); }
-        .dropdown-header { padding: 15px; background: #f7fafc; border-bottom: 1px solid #e2e8f0; font-size: 14px; font-weight: 700; color: #2d3748; }
+        .dropdown-header { padding: 15px; background: #f7fafc; border-bottom: 1px solid #e2e8f0; font-size: 14px; font-weight: 800; color: #2d3748; }
         .theme-dark .dropdown-header { background: #1a202c; border-color: #4a5568; color: #f7fafc; }
-        .dropdown-item { display: flex; align-items: center; gap: 10px; width: 100%; padding: 12px 15px; border: none; background: transparent; text-align: left; font-size: 14px; font-weight: 600; color: #4a5568; cursor: pointer; transition: background 0.2s; font-family: inherit; }
+        .dropdown-item { display: flex; align-items: center; gap: 10px; width: 100%; padding: 12px 15px; border: none; background: transparent; text-align: left; font-size: 14px; font-weight: 600; color: #4a5568; cursor: pointer; transition: background 0.2s; }
         .theme-dark .dropdown-item { color: #cbd5e0; }
         .dropdown-item:hover { background: #edf2f7; color: #2b6cb0; }
         .theme-dark .dropdown-item:hover { background: #4a5568; color: #90cdf4; }
@@ -327,217 +225,50 @@
         .dropdown-item.logout:hover { background: #fff5f5; color: #c53030; }
         .theme-dark .dropdown-item.logout:hover { background: rgba(229,62,62,0.2); }
 
-        /* ─── ИСПРАВЛЕННЫЙ КАСТОМНЫЙ ФОН ─── */
-        html.theme-custom .card, html.theme-custom .subject-block {
-            background: rgba(15, 23, 42, 0.7) !important; /* Плотный тёмный фон вместо прозрачного */
-            backdrop-filter: blur(20px) !important;
-            -webkit-backdrop-filter: blur(20px) !important;
-            border: 1px solid rgba(255, 255, 255, 0.1) !important;
-            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3) !important;
-        }
-        html.theme-custom textarea, html.theme-custom input[type="text"], html.theme-custom input[type="email"], html.theme-custom input[type="password"] {
-            background: rgba(255, 255, 255, 0.1) !important; /* Светлее внутри карточки */
-            border: 1px solid rgba(255, 255, 255, 0.2) !important;
-            color: #ffffff !important;
-            -webkit-appearance: none !important;
-            appearance: none !important;
-            box-shadow: none !important;
-            outline: none !important;
-        }
-        html.theme-custom textarea:focus, html.theme-custom input:focus {
-            background: rgba(255, 255, 255, 0.15) !important;
-            border-color: #4299e1 !important;
-        }
-        html.theme-custom textarea::placeholder, html.theme-custom input::placeholder { color: rgba(255, 255, 255, 0.5) !important; }
-        html.theme-custom .user-menu-btn { background: rgba(255, 255, 255, 0.1) !important; color: #ffffff !important; border: 1px solid rgba(255,255,255,0.3) !important; backdrop-filter: blur(10px); }
-        html.theme-custom .user-menu-btn:hover { background: rgba(255, 255, 255, 0.2) !important; }
-
-        /* Убираем уродливую черную обводку и делаем мягкую тень */
-        .theme-custom h1, .theme-custom h2, .theme-custom h3,
-        body.theme-custom h1, body.theme-custom h2, body.theme-custom h3,
-        .theme-custom .input-label, body.theme-custom .input-label,
-        .theme-custom .group-title, body.theme-custom .group-title,
-        .theme-custom .group-hint, body.theme-custom .group-hint,
-        .theme-custom .subtitle, body.theme-custom .subtitle,
-        .theme-custom .footer, body.theme-custom .footer,
-        .theme-custom .hint, body.theme-custom .hint,
-        .theme-custom .task-header h3, body.theme-custom .task-header h3,
-        .theme-custom .task-text, body.theme-custom .task-text,
-        .theme-custom .history-row, body.theme-custom .history-row,
-        .theme-custom .user-row, body.theme-custom .user-row,
-        .theme-custom .msg-body, body.theme-custom .msg-body,
-        .theme-custom .form-label, body.theme-custom .form-label {
-            color: #f8fafc !important;
-            text-shadow: 0 2px 5px rgba(0,0,0,0.8) !important; /* Мягкая тень */
-        }
-
-        .divider-text { display: flex; align-items: center; text-align: center; color: #a0aec0; margin: 25px 0; font-weight: 600; font-size: 14px; }
+        .divider-text { display: flex; align-items: center; text-align: center; color: #a0aec0; margin: 25px 0; font-weight: 700; font-size: 14px; }
         .divider-text::before, .divider-text::after { content: ''; flex: 1; border-bottom: 1px solid #e2e8f0; }
         .theme-dark .divider-text::before, .theme-dark .divider-text::after { border-color: #4a5568; }
         .divider-text::before { margin-right: 15px; }
         .divider-text::after { margin-left: 15px; }
 
-        .text-box { background: rgba(66, 153, 225, 0.05); border: 1px solid #bee3f8; padding: 15px; border-radius: 10px; }
-        .theme-dark .text-box { background: rgba(66, 153, 225, 0.1); border-color: #2b6cb0; }
-        .theme-custom .text-box { background: rgba(0,0,0,0.3) !important; border-color: rgba(255,255,255,0.1) !important; }
+        .text-subject-block { background: linear-gradient(135deg, rgba(255,255,255,0.9), rgba(247,250,252,0.9)); border-left: 4px solid #4299e1; border-radius: 12px; padding: 16px; margin-bottom: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+        .theme-dark .text-subject-block { background: linear-gradient(135deg, rgba(45,55,72,0.8), rgba(26,32,44,0.8)); border-left-color: #63b3ed; }
+        .theme-custom .text-subject-block { background: rgba(0,0,0,0.4) !important; border-color: rgba(255,255,255,0.1) !important; border-left-color: #4299e1 !important; }
+        .text-subject-block h3 { margin-bottom: 12px; font-size: 18px; font-weight: 800; }
 
-        .text-subject-block { background: linear-gradient(135deg, rgba(255,255,255,0.9), rgba(247,250,252,0.9)); border-left: 4px solid #4299e1; border-radius: 10px; padding: 16px; margin-bottom: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); transition: transform 0.2s; }
-        .theme-dark .text-subject-block { background: linear-gradient(135deg, rgba(45,55,72,0.8), rgba(26,32,44,0.8)); border-left-color: #63b3ed; box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
-        .text-subject-block:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(0,0,0,0.1); }
-        .text-subject-block h3 { margin-bottom: 12px; font-size: 18px; display: flex; align-items: center; gap: 8px; font-weight: 700; }
-        .text-subject-block .task-text { background: transparent !important; border: none !important; padding: 0 !important; font-size: 15px; line-height: 1.6; color: #4a5568; margin-bottom: 8px; }
-        .theme-dark .text-subject-block .task-text { color: #cbd5e0; }
+        .task-raw-text { background: #edf2f7; border: 1px solid #cbd5e0; border-left: 4px solid #3182ce; padding: 12px 16px; border-radius: 8px; font-size: 15px; font-weight: 500; color: #1a202c; white-space: pre-wrap; margin-top: 8px; line-height: 1.5; }
+        .theme-dark .task-raw-text { background: #2d3748; border-color: #4a5568; border-left-color: #4299e1; color: #ffffff; }
+        .theme-custom .task-raw-text { background: rgba(0,0,0,0.4); border-color: rgba(255,255,255,0.1); color: #ffffff; }
 
-        .color-blue { color: #3182ce !important; }
-        .theme-dark .color-blue { color: #63b3ed !important; }
-        .theme-custom .color-blue { color: #90cdf4 !important; }
+        .merged-container { display: flex; flex-direction: column; gap: 0; border-radius: 8px; overflow: hidden; margin-top: 10px; }
+        .merged-container img { display: block; width: 100%; height: auto; margin: 0 !important; border-radius: 0 !important; border-bottom: 1px solid rgba(0,0,0,0.05); }
+        .merged-container img:last-child { border-bottom: none; }
 
-        .task-raw-text {
-            background: #edf2f7;
-            border: 1px solid #cbd5e0;
-            border-left: 4px solid #3182ce;
-            padding: 12px 16px;
-            border-radius: 8px;
-            font-size: 15px;
-            font-weight: 500;
-            color: #1a202c;
-            white-space: pre-wrap;
-            margin-top: 8px;
-            line-height: 1.5;
-        }
-        .theme-dark .task-raw-text {
-            background: #2d3748;
-            border-color: #4a5568;
-            border-left-color: #4299e1;
-            color: #ffffff;
-        }
-        .theme-custom .task-raw-text {
-            background: rgba(0,0,0,0.5);
-            border-color: rgba(255,255,255,0.2);
-            border-left-color: #4299e1;
-            color: #ffffff;
-        }
+        .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.85) !important; display: flex; align-items: center; justify-content: center; padding: 20px; z-index: 9999 !important; }
+        .modal-content { background: #ffffff !important; color: #1a202c !important; border-radius: 16px; padding: 24px; max-width: 450px; width: 100%; max-height: 90vh; overflow-y: auto; box-shadow: 0 10px 50px rgba(0,0,0,0.5) !important; }
+        .theme-dark .modal-content { background: #2d3748 !important; color: #e2e8f0 !important; border: 1px solid #4a5568 !important; }
+        .theme-custom .modal-content { background: #1e293b !important; color: #ffffff !important; border: 1px solid rgba(255,255,255,0.1) !important; }
 
-        /* Стили для склеенных картинок (Английский и География-тетрадь) */
-        .merged-container {
-            display: flex;
-            flex-direction: column;
-            gap: 0;
-            border-radius: 8px;
-            overflow: hidden;
-            margin-top: 10px;
-        }
-        .merged-container img {
-            display: block;
-            width: 100%;
-            height: auto;
-            margin: 0 !important;
-            border-radius: 0 !important;
-            border-bottom: 1px solid rgba(0,0,0,0.05);
-        }
-        .merged-container img:last-child {
-            border-bottom: none;
-        }
-
-        .modal {
-            position: fixed; inset: 0; background: rgba(0,0,0,0.85) !important;
-            display: flex; align-items: center; justify-content: center;
-            padding: 20px; z-index: 9999 !important;
-        }
-        .modal-content {
-            background: #ffffff !important;
-            color: #1a202c !important;
-            border-radius: 12px; padding: 24px;
-            max-width: 450px; width: 100%; max-height: 90vh; overflow-y: auto;
-            box-shadow: 0 10px 50px rgba(0,0,0,0.5) !important;
-        }
-        .theme-dark .modal-content {
-            background: #2d3748 !important;
-            color: #e2e8f0 !important;
-            border: 1px solid #4a5568 !important;
-        }
-        .theme-custom .modal-content {
-            background: #1e293b !important;
-            color: #ffffff !important;
-            border: 1px solid rgba(255,255,255,0.1) !important;
-        }
-
-        /* ─── ВЫБОР ФОНА (при регистрации и в настройках) ─── */
-        .bg-picker-label {
-            display: block;
-            margin-top: 4px;
-            margin-bottom: 6px;
-            font-size: 14px;
-            font-weight: 600;
-            color: #4a5568;
-        }
+        .bg-picker-label { display: block; margin-top: 4px; margin-bottom: 6px; font-size: 14px; font-weight: 700; color: #4a5568; }
         .theme-custom .bg-picker-label { color: #cbd5e0; }
-        .bg-picker-hint {
-            font-size: 12px;
-            color: #a0aec0;
-            margin-bottom: 10px;
-            font-weight: 400;
-        }
-        .bg-presets {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 8px;
-        }
-        @media (min-width: 600px) {
-            .bg-presets { grid-template-columns: repeat(6, 1fr); }
-        }
+        .bg-picker-hint { font-size: 12px; color: #a0aec0; margin-bottom: 10px; font-weight: 500; }
+        .bg-presets { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+        @media (min-width: 600px) { .bg-presets { grid-template-columns: repeat(6, 1fr); } }
         #settingsBgPresets { grid-template-columns: repeat(3, 1fr) !important; }
-        .bg-preset {
-            height: 72px;
-            border-radius: 10px;
-            border: 3px solid transparent;
-            cursor: pointer;
-            position: relative;
-            display: flex;
-            align-items: flex-end;
-            justify-content: center;
-            padding: 6px;
-            font-size: 11px;
-            font-weight: 700;
-            color: #ffffff;
-            text-shadow: 0 1px 4px rgba(0,0,0,0.95), 0 0 8px rgba(0,0,0,0.7);
-            transition: all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1);
-            font-family: inherit;
-            background-color: #1a202c;
-            background-size: cover;
-            background-position: center;
-            background-repeat: no-repeat;
-        }
-        .bg-preset:hover {
-            transform: translateY(-2px);
-            border-color: rgba(66, 153, 225, 0.5);
-        }
-        .bg-preset.active {
-            border-color: #4299e1;
-            box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.4);
-        }
-        .bg-preset.active::after {
-            content: '✓';
-            position: absolute;
-            top: 4px;
-            right: 6px;
-            background: #4299e1;
-            color: #fff;
-            width: 20px;
-            height: 20px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 13px;
-            font-weight: 900;
-            text-shadow: none;
-        }
+        .bg-preset { height: 72px; border-radius: 10px; border: 3px solid transparent; cursor: pointer; position: relative; display: flex; align-items: flex-end; justify-content: center; padding: 6px; font-size: 11px; font-weight: 800; color: #ffffff; text-shadow: 0 1px 4px rgba(0,0,0,0.95), 0 0 8px rgba(0,0,0,0.7); transition: all 0.2s; background-color: #1a202c; background-size: cover; background-position: center; background-repeat: no-repeat; }
+        .bg-preset:hover { transform: translateY(-2px); border-color: rgba(66, 153, 225, 0.5); }
+        .bg-preset.active { border-color: #4299e1; box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.4); }
+        .bg-preset.active::after { content: '✓'; position: absolute; top: 4px; right: 6px; background: #4299e1; color: #fff; width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 900; text-shadow: none; }
+
+        #status { display: none !important; } /* Скрываем старый статус, используем Toast */
     </style>
     <link rel="stylesheet" href="/static/style.css">
     <link rel="stylesheet" href="/static/animations.css">
 </head>
 <body>
+    <!-- Контейнер для всплывающих уведомлений -->
+    <div id="toastContainer" class="toast-container"></div>
+
     <div class="floating-shapes">
         <div class="shape shape-1"></div>
         <div class="shape shape-2"></div>
@@ -580,7 +311,7 @@
     </div>
 
     <div id="mainScreen" class="container hidden">
-        <!-- ТОПБАР с иконкой темы -->
+        <!-- ЛИПКИЙ ТОПБАР -->
         <div class="topbar">
             <div style="display: flex; align-items: center; gap: 10px;">
                 <span class="version">v{{ version }}</span>
@@ -605,17 +336,18 @@
                 </div>
                 <textarea id="allTextTasks" class="text-input" rows="6" placeholder="Например:
 Алгебра: № 237, 268
-Английский (Учебник): стр. 19" style="resize: vertical; font-family: inherit; font-size: 15px; width: 100%; padding: 12px;"></textarea>
+Английский (Учебник): стр. 19" style="resize: vertical; font-size: 15px; width: 100%; padding: 12px;"></textarea>
             </div>
 
             <div class="action-buttons-row">
-                <button id="btn" class="btn-modern-primary">🚀 Решить</button>
+                <button id="btn" class="btn-modern-primary">
+                    <span id="btnText">🚀 Решить</span>
+                </button>
                 <button id="clearBtn" class="btn-modern-clear">🗑 Очистить</button>
                 <button id="adminFillBtn" class="btn-modern-primary" style="display: none; background: #9f7aea; box-shadow: 0 4px 15px rgba(159, 122, 234, 0.4);">🧪 Тест: 11</button>
             </div>
         </section>
 
-        <div id="status" class="status"></div>
         <div id="result" class="result"></div>
         <footer class="footer"><span>GDZ Парсер · v{{ version }}</span></footer>
     </div>
@@ -756,56 +488,25 @@
         let activeParts = {};
         let selectedBgPreset = null;
 
-        // Для настроек: временные значения (применятся только по кнопке «Применить»)
         let pendingTheme = 'light';
         let pendingBgUrl = null;
         let originalTheme = 'light';
         let originalBgUrl = null;
 
-        // ─── ПРЕСЕТЫ ФОНОВ (подобранные эстетичные фото с Unsplash) ───
+        // ─── КРАСИВЫЕ ПРЕСЕТЫ ФОНОВ ───
         const BG_PRESETS = [
-            {
-                id: 'sunset',
-                label: '🌅 Закат',
-                url: 'https://images.unsplash.com/photo-1495616811223-4d98c6e9c869?w=1920&q=80&auto=format&fit=crop',
-                preview: 'https://images.unsplash.com/photo-1495616811223-4d98c6e9c869?w=400&q=70&auto=format&fit=crop'
-            },
-            {
-                id: 'mountains',
-                label: '🏔 Горы',
-                url: 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=1920&q=80&auto=format&fit=crop',
-                preview: 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=400&q=70&auto=format&fit=crop'
-            },
-            {
-                id: 'space',
-                label: '🌌 Космос',
-                url: 'https://images.unsplash.com/photo-1534796636912-3b95b3ab5986?w=1920&q=80&auto=format&fit=crop',
-                preview: 'https://images.unsplash.com/photo-1534796636912-3b95b3ab5986?w=400&q=70&auto=format&fit=crop'
-            },
-            {
-                id: 'ocean',
-                label: '🌊 Океан',
-                url: 'https://images.unsplash.com/photo-1505118380757-91f5f5632de0?w=1920&q=80&auto=format&fit=crop',
-                preview: 'https://images.unsplash.com/photo-1505118380757-91f5f5632de0?w=400&q=70&auto=format&fit=crop'
-            },
-            {
-                id: 'abstract',
-                label: '🔷 Фигуры',
-                url: 'https://images.unsplash.com/photo-1550684848-fac1c5b4e853?w=1920&q=80&auto=format&fit=crop',
-                preview: 'https://images.unsplash.com/photo-1550684848-fac1c5b4e853?w=400&q=70&auto=format&fit=crop'
-            },
-            {
-                id: 'forest',
-                label: '🌲 Лес',
-                url: 'https://images.unsplash.com/photo-1473448912268-2022ce9509d8?w=1920&q=80&auto=format&fit=crop',
-                preview: 'https://images.unsplash.com/photo-1473448912268-2022ce9509d8?w=400&q=70&auto=format&fit=crop'
-            }
+            { id: 'sunset', label: '🌅 Закат', url: 'https://images.unsplash.com/photo-1519681393784-d120267933ba?w=1920&q=80&auto=format&fit=crop', preview: 'https://images.unsplash.com/photo-1519681393784-d120267933ba?w=400&q=70&auto=format&fit=crop' },
+            { id: 'mountains', label: '🏔 Горы', url: 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=1920&q=80&auto=format&fit=crop', preview: 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=400&q=70&auto=format&fit=crop' },
+            { id: 'space', label: '🌌 Космос', url: 'https://images.unsplash.com/photo-1506318137071-a8e063b4bec0?w=1920&q=80&auto=format&fit=crop', preview: 'https://images.unsplash.com/photo-1506318137071-a8e063b4bec0?w=400&q=70&auto=format&fit=crop' },
+            { id: 'ocean', label: '🌊 Океан', url: 'https://images.unsplash.com/photo-1505118380757-91f5f5632de0?w=1920&q=80&auto=format&fit=crop', preview: 'https://images.unsplash.com/photo-1505118380757-91f5f5632de0?w=400&q=70&auto=format&fit=crop' },
+            { id: 'abstract', label: '🔷 Абстракция', url: 'https://images.unsplash.com/photo-1550684848-fac1c5b4e853?w=1920&q=80&auto=format&fit=crop', preview: 'https://images.unsplash.com/photo-1550684848-fac1c5b4e853?w=400&q=70&auto=format&fit=crop' },
+            { id: 'forest', label: '🌲 Лес', url: 'https://images.unsplash.com/photo-1448375240586-882707db888b?w=1920&q=80&auto=format&fit=crop', preview: 'https://images.unsplash.com/photo-1448375240586-882707db888b?w=400&q=70&auto=format&fit=crop' }
         ];
 
         const $ = id => document.getElementById(id);
         const authScreen = $('authScreen');
         const mainScreen = $('mainScreen');
-        const btn = $('btn'), status = $('status'), result = $('result'), clearBtn = $('clearBtn');
+        const btn = $('btn'), result = $('result'), clearBtn = $('clearBtn');
         const historyModal = $('historyModal');
         const settingsModal = $('settingsModal');
         const subjectSettingsModal = $('subjectSettingsModal');
@@ -816,6 +517,30 @@
         const subjectsContainer = $('subjectsContainer');
         const allTextTasks = $('allTextTasks');
         const textHint = $('textHint');
+
+        // ─── КРАСИВЫЕ УВЕДОМЛЕНИЯ ───
+        function showToast(message, type = 'info', duration = 3000) {
+            const container = $('toastContainer');
+            if (!container) return;
+            const toast = document.createElement('div');
+            toast.className = 'toast ' + type;
+
+            let icon = 'ℹ️';
+            if (type === 'success') icon = '✅';
+            if (type === 'error') icon = '❌';
+            if (type === 'loading') icon = '⏳';
+
+            toast.innerHTML = `<span>${icon}</span> <span>${message}</span>`;
+            container.appendChild(toast);
+
+            if (type !== 'loading') {
+                setTimeout(() => {
+                    toast.style.animation = 'toastOut 0.3s forwards';
+                    setTimeout(() => toast.remove(), 300);
+                }, duration);
+            }
+            return toast;
+        }
 
         function getDeviceInfo() {
             const ua = navigator.userAgent;
@@ -882,7 +607,7 @@
                 if (bgUrl.startsWith('linear-gradient') || bgUrl.startsWith('radial-gradient') || bgUrl.startsWith('conic-gradient')) {
                     root.style.backgroundImage = bgUrl;
                 } else {
-                    root.style.backgroundImage = 'linear-gradient(rgba(0,0,0,0.65), rgba(0,0,0,0.65)), url("' + bgUrl + '")';
+                    root.style.backgroundImage = 'linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.4)), url("' + bgUrl + '")';
                 }
                 localStorage.setItem('gdz_theme', 'custom');
                 localStorage.setItem('gdz_bg', bgUrl);
@@ -910,11 +635,7 @@
         }
 
         function parseJson(str) {
-            try {
-                return JSON.parse(str || '{}');
-            } catch (e) {
-                return {};
-            }
+            try { return JSON.parse(str || '{}'); } catch (e) { return {}; }
         }
 
         async function copyTextToClipboard(text, btnElement) {
@@ -930,7 +651,7 @@
                     btnElement.style.borderColor = '';
                 }, 2000);
             } catch (err) {
-                alert('Не удалось скопировать текст. Попробуйте вручную.');
+                showToast('Не удалось скопировать текст', 'error');
             }
         }
 
@@ -939,7 +660,6 @@
             if (toggleBtn) {
                 const current = localStorage.getItem('gdz_theme') || 'light';
                 toggleBtn.textContent = (current === 'dark') ? '☀️' : '🌙';
-
                 toggleBtn.addEventListener('click', () => {
                     const current = localStorage.getItem('gdz_theme') || 'light';
                     const next = (current === 'dark') ? 'light' : 'dark';
@@ -947,7 +667,6 @@
                 });
             }
 
-            // Рендер пресетов фона на экране регистрации
             const presetsEl = $('bgPresets');
             if (presetsEl) {
                 BG_PRESETS.forEach(p => {
@@ -958,11 +677,8 @@
                     el.textContent = p.label;
                     el.onclick = () => {
                         document.querySelectorAll('#bgPresets .bg-preset').forEach(x => x.classList.remove('active'));
-                        if (selectedBgPreset === p.url) {
-                            selectedBgPreset = null;
-                        } else {
-                            el.classList.add('active');
-                            selectedBgPreset = p.url;
+                        if (selectedBgPreset === p.url) { selectedBgPreset = null; } else {
+                            el.classList.add('active'); selectedBgPreset = p.url;
                         }
                     };
                     presetsEl.appendChild(el);
@@ -970,7 +686,6 @@
             }
         });
 
-        // Рендер пресетов фона в настройках
         function renderSettingsBgPresets() {
             const el = $('settingsBgPresets');
             if (!el) return;
@@ -982,8 +697,7 @@
                 btn.style.backgroundImage = 'url("' + p.preview + '")';
                 btn.textContent = p.label;
                 btn.onclick = () => {
-                    pendingTheme = 'custom';
-                    pendingBgUrl = p.url;
+                    pendingTheme = 'custom'; pendingBgUrl = p.url;
                     document.querySelectorAll('#settingsBgPresets .bg-preset').forEach(x => x.classList.remove('active'));
                     btn.classList.add('active');
                     const noneBtn = $('bgNoneBtn');
@@ -994,13 +708,8 @@
             });
             const noneBtn = $('bgNoneBtn');
             if (noneBtn) {
-                if (!pendingBgUrl) {
-                    noneBtn.style.background = '#4299e1';
-                    noneBtn.style.color = '#ffffff';
-                } else {
-                    noneBtn.style.background = '#edf2f7';
-                    noneBtn.style.color = '#4a5568';
-                }
+                if (!pendingBgUrl) { noneBtn.style.background = '#4299e1'; noneBtn.style.color = '#ffffff'; }
+                else { noneBtn.style.background = '#edf2f7'; noneBtn.style.color = '#4a5568'; }
             }
         }
 
@@ -1021,16 +730,11 @@
                         return;
                     } else if (r.status === 403) {
                         const d = await r.json();
-                        authToken = '';
-                        localStorage.removeItem('gdz_token');
-                        setAuthState(false);
-                        showAuth();
-                        $('authStatus').innerHTML = '🚫 ' + (d.detail || 'Доступ заблокирован');
-                        $('authStatus').className = 'fb-status error';
+                        authToken = ''; localStorage.removeItem('gdz_token'); setAuthState(false); showAuth();
+                        showToast(d.detail || 'Доступ заблокирован', 'error');
                         return;
                     } else {
-                        authToken = '';
-                        localStorage.removeItem('gdz_token');
+                        authToken = ''; localStorage.removeItem('gdz_token');
                     }
                 } catch {}
             }
@@ -1051,11 +755,8 @@
             updateGreeting();
             renderTopbar();
 
-            if (authUser && authUser.is_admin) {
-                $('adminFillBtn').style.display = 'flex';
-            } else {
-                $('adminFillBtn').style.display = 'none';
-            }
+            if (authUser && authUser.is_admin) { $('adminFillBtn').style.display = 'flex'; }
+            else { $('adminFillBtn').style.display = 'none'; }
 
             await loadSubjects();
             renderSubjects();
@@ -1070,12 +771,9 @@
 
             const name = authUser.name || authUser.email.split('@')[0];
             const greetEl = $('welcomeGreeting');
-
             if (greetEl) {
                 greetEl.innerHTML = `${greeting}, <span>${escapeHtml(name)}</span>! 👋`;
-                greetEl.style.animation = 'none';
-                greetEl.offsetHeight;
-                greetEl.style.animation = null;
+                greetEl.style.animation = 'none'; greetEl.offsetHeight; greetEl.style.animation = null;
             }
         }
 
@@ -1112,48 +810,32 @@
                     items.forEach(s => {
                         const row = document.createElement('div');
                         row.className = 'input-row';
-
                         const headerRow = document.createElement('div');
                         headerRow.className = 'subject-header-row';
-
                         const label = document.createElement('label');
                         label.className = 'input-label';
-                        label.style.display = 'flex';
-                        label.style.flexDirection = 'column';
-                        label.style.alignItems = 'flex-start';
-                        label.style.gap = '2px';
+                        label.style.display = 'flex'; label.style.flexDirection = 'column'; label.style.alignItems = 'flex-start'; label.style.gap = '2px';
 
                         const currentPart = activeParts[s.name] || '1';
                         const activeYear = subjectYears[s.name] || (currentPart === '2' ? (s.default_year_alt || s.default_year) : s.default_year);
                         const yearBadge = `<span class="year-badge" style="color:#48bb78; font-size:13px;">${activeYear ? `(${escapeHtml(activeYear)})` : ''}</span>`;
-
                         const noteBadge = s.note ? `<span style="font-size: 12px; color: #a0aec0; font-weight: normal; line-height: 1.2;">📝 ${escapeHtml(s.note)}</span>` : '';
-
                         let partBtn = '';
-                        if (s.url_alt) {
-                            partBtn = `<button type="button" class="part-toggle-btn" onclick="togglePart('${s.name.replace(/'/g, "\\'")}', this)" data-part="${currentPart}">Часть ${currentPart}</button>`;
-                        }
+                        if (s.url_alt) { partBtn = `<button type="button" class="part-toggle-btn" onclick="togglePart('${s.name.replace(/'/g, "\\'")}', this)" data-part="${currentPart}">Часть ${currentPart}</button>`; }
 
                         label.innerHTML = `<div>${escapeHtml(s.name)} ${yearBadge} ${partBtn}</div>${noteBadge}`;
                         headerRow.appendChild(label);
 
                         const gearBtn = document.createElement('button');
-                        gearBtn.className = 'gear-btn';
-                        gearBtn.innerHTML = '⚙️';
-                        gearBtn.title = 'Настроить год для этого предмета';
+                        gearBtn.className = 'gear-btn'; gearBtn.innerHTML = '⚙️';
                         gearBtn.onclick = () => openSubjectSettings(s.name);
                         headerRow.appendChild(gearBtn);
-
                         row.appendChild(headerRow);
 
                         const ta = document.createElement('textarea');
-                        ta.className = 'text-input';
-                        ta.id = 'subj_' + s.id;
-                        ta.rows = 2;
-                        ta.dataset.subject = s.name;
-                        ta.dataset.type = s.type || 'numbers';
-                        ta.dataset.url = s.url || '';
-                        ta.dataset.urlAlt = s.url_alt || '';
+                        ta.className = 'text-input'; ta.id = 'subj_' + s.id; ta.rows = 2;
+                        ta.dataset.subject = s.name; ta.dataset.type = s.type || 'numbers';
+                        ta.dataset.url = s.url || ''; ta.dataset.urlAlt = s.url_alt || '';
                         ta.placeholder = '447, 449, 451 — или текст задания';
                         row.appendChild(ta);
                         groupDiv.appendChild(row);
@@ -1161,7 +843,6 @@
                     subjectsContainer.appendChild(groupDiv);
                 });
             }
-
             textHint.innerHTML = `Вставь сюда весь текст (История, Музыка и т.д.). Умный парсер сам разберет.`;
         }
 
@@ -1169,40 +850,26 @@
             const current = activeParts[subjName] || '1';
             const next = current === '1' ? '2' : '1';
             activeParts[subjName] = next;
-            btn.textContent = 'Часть ' + next;
-            btn.dataset.part = next;
-
+            btn.textContent = 'Часть ' + next; btn.dataset.part = next;
             const subj = SUBJECTS.find(s => s.name === subjName);
             if (subj) {
                 const activeYear = subjectYears[subjName] || (next === '2' ? (subj.default_year_alt || subj.default_year) : subj.default_year);
                 const yearSpan = btn.parentElement.querySelector('.year-badge');
-                if (yearSpan) {
-                    yearSpan.textContent = activeYear ? `(${activeYear})` : '';
-                }
+                if (yearSpan) yearSpan.textContent = activeYear ? `(${activeYear})` : '';
             }
         };
 
         function openSubjectSettings(subjectName) {
             currentSubjectId = subjectName;
             $('subjectSettingsTitle').textContent = `⚙️ Настройки: ${subjectName}`;
-
             const subj = SUBJECTS.find(s => s.name === subjectName);
             const currentPart = activeParts[subjectName] || '1';
             const adminDefault = currentPart === '2' ? (subj.default_year_alt || subj.default_year) : subj.default_year;
-
             $('subjectSetYear').value = subjectYears[subjectName] || '';
-
             const hintEl = $('subjectSettingsAdminHint');
-            if (adminDefault) {
-                hintEl.innerHTML = `👑 Администратор установил год по умолчанию (для Части ${currentPart}): <b>${adminDefault}</b>.`;
-                $('subjectSetYear').placeholder = adminDefault;
-            } else {
-                hintEl.innerHTML = 'Администратор не устанавливал год по умолчанию.';
-                $('subjectSetYear').placeholder = 'Например: 2025';
-            }
-
-            $('subjectSettingsStatus').textContent = '';
-            $('subjectSettingsStatus').className = 'fb-status';
+            if (adminDefault) { hintEl.innerHTML = `👑 Администратор установил год по умолчанию: <b>${adminDefault}</b>.`; $('subjectSetYear').placeholder = adminDefault; }
+            else { hintEl.innerHTML = 'Администратор не устанавливал год по умолчанию.'; $('subjectSetYear').placeholder = 'Например: 2025'; }
+            $('subjectSettingsStatus').textContent = ''; $('subjectSettingsStatus').className = 'fb-status';
             subjectSettingsModal.classList.remove('hidden');
         }
 
@@ -1213,67 +880,29 @@
             if (!currentSubjectId) return;
             const yearVal = $('subjectSetYear').value.trim();
             const st = $('subjectSettingsStatus');
-
-            st.textContent = '⏳ Сохраняем...';
-            st.className = 'fb-status loading';
-
-            if (yearVal) {
-                subjectYears[currentSubjectId] = yearVal;
-            } else {
-                delete subjectYears[currentSubjectId];
-            }
-
-            const jsonStr = JSON.stringify(subjectYears);
-
+            st.textContent = '⏳ Сохраняем...'; st.className = 'fb-status loading';
+            if (yearVal) subjectYears[currentSubjectId] = yearVal; else delete subjectYears[currentSubjectId];
             try {
-                const r = await fetch('/api/auth/update', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ token: authToken, subject_years: jsonStr })
-                });
+                const r = await fetch('/api/auth/update', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ token: authToken, subject_years: JSON.stringify(subjectYears) }) });
                 const d = await r.json();
                 if (!r.ok) throw new Error(d.detail || 'Ошибка');
-
-                authUser = d.user;
-                subjectYears = parseJson(authUser.subject_years);
-
-                renderSubjects();
-
-                st.textContent = '✅ Сохранено!';
-                st.className = 'fb-status success';
+                authUser = d.user; subjectYears = parseJson(authUser.subject_years); renderSubjects();
+                st.textContent = '✅ Сохранено!'; st.className = 'fb-status success';
                 setTimeout(() => subjectSettingsModal.classList.add('hidden'), 1000);
-            } catch (e) {
-                st.textContent = '❌ ' + e.message;
-                st.className = 'fb-status error';
-            }
+            } catch (e) { st.textContent = '❌ ' + e.message; st.className = 'fb-status error'; }
         };
 
-        $('adminFillBtn').onclick = () => {
-            const textareas = subjectsContainer.querySelectorAll('.text-input');
-            textareas.forEach(ta => {
-                ta.value = '11';
-            });
-        };
+        $('adminFillBtn').onclick = () => { subjectsContainer.querySelectorAll('.text-input').forEach(ta => ta.value = '11'); };
 
-        const INVISIBLE_SUBJECTS = [
-            { name: 'Разговоры о важном', url: '', type: 'text', keywords: ['разговоры о важном'] }
-        ];
+        const INVISIBLE_SUBJECTS = [{ name: 'Разговоры о важном', url: '', type: 'text', keywords: ['разговоры о важном'] }];
 
         function findSubjectInLine(line, subjectsList) {
             const lowerLine = line.toLowerCase();
-            for (let s of INVISIBLE_SUBJECTS) {
-                for (let kw of s.keywords) {
-                    if (lowerLine.includes(kw)) return s;
-                }
-            }
-            for (let s of subjectsList) {
-                if (lowerLine.includes(s.name.toLowerCase())) return s;
-            }
+            for (let s of INVISIBLE_SUBJECTS) for (let kw of s.keywords) if (lowerLine.includes(kw)) return s;
+            for (let s of subjectsList) if (lowerLine.includes(s.name.toLowerCase())) return s;
             for (let s of subjectsList) {
                 const keywords = s.name.toLowerCase().replace(/[()]/g, '').split(' ').filter(w => w.length > 3 && w !== 'язык' && w !== 'класс');
-                for (let kw of keywords) {
-                    if (lowerLine.includes(kw)) return s;
-                }
+                for (let kw of keywords) if (lowerLine.includes(kw)) return s;
             }
             return null;
         }
@@ -1281,24 +910,13 @@
         function extractNumbers(str, subjectName) {
             let clean = str;
             const isPageBased = /английск|географ/i.test(subjectName) || (/информатика/i.test(subjectName) && !/тетрад/i.test(subjectName));
-
             if (isPageBased) {
-                let pageMatches = [];
-                const pageRegex = /(?:стр\.?|страниц[ыа]?|page)\s*(\d+)/gi;
-                let match;
-                while ((match = pageRegex.exec(clean)) !== null) {
-                    pageMatches.push(match[1]);
-                }
-                if (pageMatches.length > 0) {
-                    return [...new Set(pageMatches)].join(', ');
-                }
-
+                let pageMatches = []; const pageRegex = /(?:стр\.?|страниц[ыа]?|page)\s*(\d+)/gi;
+                let match; while ((match = pageRegex.exec(clean)) !== null) pageMatches.push(match[1]);
+                if (pageMatches.length > 0) return [...new Set(pageMatches)].join(', ');
                 let simpleNums = clean.match(/\b\d+\b/g);
-                if (simpleNums && simpleNums.length > 0) {
-                    return [...new Set(simpleNums)].join(', ');
-                }
+                if (simpleNums && simpleNums.length > 0) return [...new Set(simpleNums)].join(', ');
             }
-
             clean = clean.replace(/\b(19|20)\d{2}\s*(год|г\.)?\b/gi, '');
             clean = clean.replace(/\([^)]*\)/g, '');
             clean = clean.replace(/(?:https?:\/\/|www\.)\S+/gi, '');
@@ -1308,11 +926,8 @@
             clean = clean.replace(/\b([5-9]|1[0-1])\s*(класс|кл)\b/gi, '');
             clean = clean.replace(/(?:страниц[ыа]?|стр\.?)\s*\d+(?:\s*,\s*\d+)*/gi, '');
             clean = clean.replace(/^\s*\d+[.):,\-]?\s+/g, '');
-
-            let matches = [];
-            const specificRegex = /(?:№|номер|номера|упражнение|задание|задача|упр\.?|вар\.?|вариант)\s*([\dA-Za-zА-Яа-я\s,и]+)/gi;
-            let match;
-            while ((match = specificRegex.exec(clean)) !== null) {
+            let matches = []; const specificRegex = /(?:№|номер|номера|упражнение|задание|задача|упр\.?|вар\.?|вариант)\s*([\dA-Za-zА-Яа-я\s,и]+)/gi;
+            let match; while ((match = specificRegex.exec(clean)) !== null) {
                 const nums = match[1].match(/\d+[A-Za-zА-Яа-я]?/g);
                 if (nums) matches.push(...nums);
             }
@@ -1330,65 +945,36 @@
         function parseDualTasks(subject, rawText) {
             const textLower = rawText.toLowerCase();
             const subjectNameLower = subject.name.toLowerCase();
-
             const isEnglishOnly = subjectNameLower.includes('англ');
-
-            if (!isEnglishOnly) {
-                return [{ subject: subject.name, url: subject.url, type: subject.type, numbers: extractNumbers(rawText, subject.name), raw_text: rawText }];
-            }
-
+            if (!isEnglishOnly) return [{ subject: subject.name, url: subject.url, type: subject.type, numbers: extractNumbers(rawText, subject.name), raw_text: rawText }];
             const hasWb = /тетрад|печатн|р\.т\.|тпо/.test(textLower);
             const hasTb = /учебник|учеб\./.test(textLower);
-
             if (hasWb && hasTb) {
                 const baseNameMatch = subject.name.match(/^(.*?)(?:\s*\(|$)/);
                 const baseName = baseNameMatch ? baseNameMatch[1].trim() : subject.name;
-
                 const textbookSubj = SUBJECTS.find(s => s.name.includes(baseName) && !s.name.toLowerCase().includes('тетрад') && s.type === 'numbers');
                 const workbookSubj = SUBJECTS.find(s => s.name.includes(baseName) && s.name.toLowerCase().includes('тетрад') && s.type === 'numbers');
-
                 if (textbookSubj && workbookSubj) {
-                    let tbNums = [];
-                    let tbRegex = /(?:стр\.?|страниц[ыа]?|page|номера|№)\s*([\d,\s\-]+)\s*(?:учебника|учеб\.)/gi;
+                    let tbNums = []; let tbRegex = /(?:стр\.?|страниц[ыа]?|page|номера|№)\s*([\d,\s\-]+)\s*(?:учебника|учеб\.)/gi;
                     let tbRegex2 = /(?:учебника|учеб\.)\s*(?:стр\.?|страниц[ыа]?|page|номера|№)?\s*([\d,\s\-]+)/gi;
                     let match;
-                    while ((match = tbRegex.exec(rawText)) !== null) {
-                        let nums = match[1].match(/\d+/g);
-                        if (nums) tbNums.push(...nums);
-                    }
-                    while ((match = tbRegex2.exec(rawText)) !== null) {
-                        let nums = match[1].match(/\d+/g);
-                        if (nums) tbNums.push(...nums);
-                    }
-
+                    while ((match = tbRegex.exec(rawText)) !== null) { let nums = match[1].match(/\d+/g); if (nums) tbNums.push(...nums); }
+                    while ((match = tbRegex2.exec(rawText)) !== null) { let nums = match[1].match(/\d+/g); if (nums) tbNums.push(...nums); }
                     let wbClean = rawText.replace(/(?:со|на|в|по|из)?\s*(?:стр|страниц[ыа]?|page)?\s*[\d,\s\-]+\s*(?:учебника|учеб\.)/gi, '');
                     wbClean = wbClean.replace(/(?:учебника|учеб\.)\s*(?:стр|страниц[ыа]?|page)?\s*[\d,\s\-]+/gi, '');
-
-                    let wbNums = [];
-                    let pRegex = /(?:стр\.?|страниц[ыа]?|page)\s*(\d+)/gi;
-                    while ((match = pRegex.exec(wbClean)) !== null) {
-                        wbNums.push(match[1]);
-                    }
-
+                    let wbNums = []; let pRegex = /(?:стр\.?|страниц[ыа]?|page)\s*(\d+)/gi;
+                    while ((match = pRegex.exec(wbClean)) !== null) wbNums.push(match[1]);
                     if (wbNums.length === 0) {
                         let nRegex = /(?:№|номер|номера|упражнение|задание|задача|упр\.?)\s*([\d\s,и]+)/gi;
-                        while ((match = nRegex.exec(wbClean)) !== null) {
-                            let nums = match[1].match(/\d+/g);
-                            if (nums) wbNums.push(...nums);
-                        }
+                        while ((match = nRegex.exec(wbClean)) !== null) { let nums = match[1].match(/\d+/g); if (nums) wbNums.push(...nums); }
                     }
-
                     let jobs = [];
                     if (wbNums.length > 0) jobs.push({ subject: workbookSubj.name, url: workbookSubj.url, type: 'numbers', numbers: [...new Set(wbNums)].join(', '), raw_text: rawText });
                     if (tbNums.length > 0) jobs.push({ subject: textbookSubj.name, url: textbookSubj.url, type: 'numbers', numbers: [...new Set(tbNums)].join(', '), raw_text: rawText });
-
                     if (jobs.length > 0) return jobs;
                 }
             }
-
-            let finalSubj = subject;
-            let cleanedText = rawText;
-
+            let finalSubj = subject; let cleanedText = rawText;
             if (hasWb) {
                 const baseNameMatch = subject.name.match(/^(.*?)(?:\s*\(|$)/);
                 const baseName = baseNameMatch ? baseNameMatch[1].trim() : subject.name;
@@ -1402,125 +988,84 @@
                 cleanedText = cleanedText.replace(/(?:со|на|в|по|из)?\s*(?:стр|страниц[ыа]?|page)?\s*[\d,\s\-]+\s*(?:тетради|тетрадь|р\.т\.)/gi, '');
                 cleanedText = cleanedText.replace(/(?:тетради|тетрадь|р\.т\.)\s*(?:стр|страниц[ыа]?|page)?\s*[\d,\s\-]+/gi, '');
             }
-
             return [{ subject: finalSubj.name, url: finalSubj.url, type: finalSubj.type, numbers: extractNumbers(cleanedText, finalSubj.name), raw_text: rawText }];
         }
 
         clearBtn.onclick = () => {
-            const textareas = subjectsContainer.querySelectorAll('.text-input');
-            textareas.forEach(ta => ta.value = '');
-            allTextTasks.value = '';
-            result.innerHTML = '';
-            status.textContent = '';
-            status.className = 'status';
+            subjectsContainer.querySelectorAll('.text-input').forEach(ta => ta.value = '');
+            allTextTasks.value = ''; result.innerHTML = '';
+            showToast('Поля очищены', 'info');
             allTextTasks.focus();
         };
 
         btn.addEventListener('click', async () => {
             let jobs = [];
-
-            const visibleTextareas = subjectsContainer.querySelectorAll('.text-input');
-            visibleTextareas.forEach(el => {
-                const v = el.value.trim();
-                if (!v) return;
-                const id = el.id.replace('subj_', '');
-                const subject = SUBJECTS.find(s => s.id == id);
+            subjectsContainer.querySelectorAll('.text-input').forEach(el => {
+                const v = el.value.trim(); if (!v) return;
+                const subject = SUBJECTS.find(s => s.id == el.id.replace('subj_', ''));
                 if (subject) {
                     const taskJobs = parseDualTasks(subject, v);
-
                     const activePart = activeParts[subject.name] || '1';
-                    taskJobs.forEach(job => {
-                        if (activePart === '2' && subject.url_alt) {
-                            job.url = subject.url_alt;
-                        }
-                    });
-
+                    taskJobs.forEach(job => { if (activePart === '2' && subject.url_alt) job.url = subject.url_alt; });
                     jobs.push(...taskJobs);
                 }
             });
 
             const textValue = allTextTasks.value.trim();
             if (textValue) {
-                let cleanText = textValue.replace(/на\s*\d{1,2}[./]\d{1,2}\s*(\([А-Яа-я]+\))?:?/gi, '');
-                cleanText = cleanText.replace(/\b\d{1,2}[./]\d{1,2}([./]\d{2,4})?\b/g, '');
-
-                const lines = cleanText.split('\n');
-                let currentSubj = null;
-                let currentText = [];
-
+                let cleanText = textValue.replace(/на\s*\d{1,2}[./]\d{1,2}\s*(\([А-Яа-я]+\))?:?/gi, '').replace(/\b\d{1,2}[./]\d{1,2}([./]\d{2,4})?\b/g, '');
+                const lines = cleanText.split('\n'); let currentSubj = null; let currentText = [];
                 for (let line of lines) {
-                    line = line.trim();
-                    if (!line) continue;
-
-                    let sanitizedLine = line.replace(/^\s*\d+[а-яa-z]?[.):\-\s]+/i, '').trim();
-                    if (!sanitizedLine) continue;
-
+                    line = line.trim(); if (!line) continue;
+                    let sanitizedLine = line.replace(/^\s*\d+[а-яa-z]?[.):\-\s]+/i, '').trim(); if (!sanitizedLine) continue;
                     let matchedSubj = findSubjectInLine(sanitizedLine, SUBJECTS);
-
                     if (matchedSubj) {
                         if (currentSubj && currentText.length > 0) {
-                            const rawText = currentText.join('\n').trim();
-                            const taskJobs = parseDualTasks(currentSubj, rawText);
-
+                            const taskJobs = parseDualTasks(currentSubj, currentText.join('\n').trim());
                             const activePart = activeParts[currentSubj.name] || '1';
-                            taskJobs.forEach(job => {
-                                if (activePart === '2' && currentSubj.url_alt) {
-                                    job.url = currentSubj.url_alt;
-                                }
-                            });
-
+                            taskJobs.forEach(job => { if (activePart === '2' && currentSubj.url_alt) job.url = currentSubj.url_alt; });
                             jobs.push(...taskJobs);
                         }
                         currentSubj = matchedSubj;
-
                         let cleanLine = sanitizedLine;
-                        const subjKeywords = matchedSubj.name.toLowerCase().replace(/[()]/g, '').split(' ').filter(w => w.length > 2);
-                        for (let kw of subjKeywords) {
-                            cleanLine = cleanLine.replace(new RegExp(kw, 'gi'), '');
-                        }
-                        cleanLine = cleanLine.replace(/иностранный|[()]/gi, '').replace(/^[:\-\s]+/, '').trim();
-                        cleanLine = cleanLine.replace(/на\s*\d{1,2}[./]\d{1,2}\s*(\([А-Яа-я]+\))?:?/gi, '').trim();
-
+                        matchedSubj.name.toLowerCase().replace(/[()]/g, '').split(' ').filter(w => w.length > 2).forEach(kw => cleanLine = cleanLine.replace(new RegExp(kw, 'gi'), ''));
+                        cleanLine = cleanLine.replace(/иностранный|[()]/gi, '').replace(/^[:\-\s]+/, '').trim().replace(/на\s*\d{1,2}[./]\d{1,2}\s*(\([А-Яа-я]+\))?:?/gi, '').trim();
                         currentText = cleanLine ? [cleanLine] : [];
-                    } else if (currentSubj) {
-                        currentText.push(line);
-                    } else {
-                        currentText.push(line);
-                    }
+                    } else currentText.push(line);
                 }
                 if (currentSubj && currentText.length > 0) {
-                    const rawText = currentText.join('\n').trim();
-                    const taskJobs = parseDualTasks(currentSubj, rawText);
-
+                    const taskJobs = parseDualTasks(currentSubj, currentText.join('\n').trim());
                     const activePart = activeParts[currentSubj.name] || '1';
-                    taskJobs.forEach(job => {
-                        if (activePart === '2' && currentSubj.url_alt) {
-                            job.url = currentSubj.url_alt;
-                        }
-                    });
-
+                    taskJobs.forEach(job => { if (activePart === '2' && currentSubj.url_alt) job.url = currentSubj.url_alt; });
                     jobs.push(...taskJobs);
                 }
-                if (currentText.length > 0 && jobs.length === 0) {
-                    jobs.push({ subject: "Текстовые задания", url: "", type: "text", numbers: "", raw_text: currentText.join('\n') });
-                }
+                if (currentText.length > 0 && jobs.length === 0) jobs.push({ subject: "Текстовые задания", url: "", type: "text", numbers: "", raw_text: currentText.join('\n') });
             }
 
-            if (!jobs.length) return showStatus('⚠️ Заполни хотя бы одно поле', 'error');
+            if (!jobs.length) return showToast('Заполни хотя бы одно поле', 'error');
 
+            // Анимация загрузки на кнопке
+            const btnText = $('btnText');
             btn.disabled = true;
+            btnText.innerHTML = '<span class="btn-spinner"></span> Решаю...';
             result.innerHTML = '';
-            let seconds = 0;
-            showStatus('⏳ Обрабатываю... 0 сек', 'loading');
-            const timer = setInterval(() => { seconds++; showStatus(`⏳ Обрабатываю... ${seconds} сек`, 'loading'); }, 1000);
+
+            const loadingToast = showToast('Ищу решения, подождите...', 'loading');
 
             try {
                 const resp = await fetch('/api/parse', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({jobs, token: authToken}) });
                 const data = await resp.json();
-                clearInterval(timer);
-                if (!resp.ok) return showStatus('❌ ' + (data.detail || 'Ошибка'), 'error');
-                if (data.total === 0) return showStatus('🤷 Ничего не найдено', 'error');
-                showStatus(`✅ Обработано ${data.total} заданий`, 'success');
+
+                loadingToast.remove();
+
+                if (!resp.ok) throw new Error(data.detail || 'Ошибка');
+                if (data.total === 0) {
+                    showToast('Ничего не найдено', 'error');
+                    btn.disabled = false; btnText.innerHTML = '🚀 Решить';
+                    return;
+                }
+
+                showToast(`Обработано ${data.total} заданий`, 'success');
 
                 if (authToken) {
                     for (const j of jobs) {
@@ -1529,28 +1074,19 @@
                     }
                 }
 
-                let imageResults = [];
-                let textResults = [];
-                let seenTexts = new Set();
-
+                let imageResults = []; let textResults = []; let seenTexts = new Set();
                 data.results.forEach(r => {
                     let isText = r.is_text || r.number === null;
                     if (r.subject === "Текстовые задания") isText = true;
-
                     if (isText) {
                         const textKey = r.subject + '|||' + (r.raw_text || '').trim();
-                        if (!seenTexts.has(textKey)) {
-                            seenTexts.add(textKey);
-                            textResults.push(r);
-                        }
-                    } else {
-                        imageResults.push(r);
-                    }
+                        if (!seenTexts.has(textKey)) { seenTexts.add(textKey); textResults.push(r); }
+                    } else imageResults.push(r);
                 });
 
                 if (imageResults.length === 0 && textResults.length === 0) {
-                    showStatus('⚠️ Решения не найдены. Проверьте правильность ввода.', 'error');
-                    btn.disabled = false;
+                    showToast('Решения не найдены. Проверьте ввод.', 'error');
+                    btn.disabled = false; btnText.innerHTML = '🚀 Решить';
                     return;
                 }
 
@@ -1558,383 +1094,149 @@
                 imageResults.forEach(r => { (bySubject[r.subject] = bySubject[r.subject] || []).push(r); });
 
                 Object.entries(bySubject).forEach(([subject, items]) => {
-                    const sec = document.createElement('section');
-                    sec.className = 'subject-block';
+                    const sec = document.createElement('section'); sec.className = 'subject-block';
                     sec.innerHTML = `<h2 class="color-blue">${escapeHtml(subject)}</h2>`;
 
                     items.forEach(r => {
                         if (!r.found || !r.solutions || r.solutions.length === 0) {
-                            const errorDiv = document.createElement('div');
-                            errorDiv.innerHTML = `<div class="img-error">⚠️ Решение для №${r.number || ''} не найдено на gdz.ru</div>`;
-                            sec.appendChild(errorDiv);
-                            return;
+                            sec.innerHTML += `<div class="img-error">⚠️ Решение для №${r.number || ''} не найдено на gdz.ru</div>`; return;
                         }
-
                         const subjectObj = SUBJECTS.find(s => s.name === subject);
                         const currentPart = activeParts[subject] || '1';
                         const adminDefaultYear = currentPart === '2' ? (subjectObj.default_year_alt || subjectObj.default_year) : subjectObj.default_year;
-                        const userSubjectYear = subjectYears[subject];
-                        const targetYear = userSubjectYear || adminDefaultYear;
-
+                        const targetYear = subjectYears[subject] || adminDefaultYear;
                         let hasRenderedSomething = false;
 
                         let aiSolution = r.solutions.find(sol => sol.edition && sol.edition.includes('ИИ') && sol.text && sol.text.trim().length > 0);
                         if (aiSolution && !hideAiSubjects[subject]) {
                             hasRenderedSomething = true;
-                            const wrapper = document.createElement('div');
-                            wrapper.style.cssText = 'display: flex; flex-direction: column; gap: 8px; margin-bottom: 25px;';
+                            const wrapper = document.createElement('div'); wrapper.style.cssText = 'display: flex; flex-direction: column; gap: 8px; margin-bottom: 25px;';
+                            if (r.number) { const numHeader = document.createElement('div'); numHeader.className = 'task-number-header'; numHeader.textContent = `Задание №${r.number}`; wrapper.appendChild(numHeader); }
+                            const edHeader = document.createElement('div'); edHeader.className = 'edition-header'; edHeader.textContent = aiSolution.edition; wrapper.appendChild(edHeader);
 
-                            if (r.number) {
-                                const numHeader = document.createElement('div');
-                                numHeader.className = 'task-number-header';
-                                numHeader.textContent = `Задание №${r.number}`;
-                                wrapper.appendChild(numHeader);
-                            }
+                            const copyBtn = document.createElement('button'); copyBtn.className = 'copy-btn'; copyBtn.innerHTML = '📋 Скопировать текст';
+                            copyBtn.onclick = (e) => { e.stopPropagation(); copyTextToClipboard(aiSolution.text, copyBtn); }; wrapper.appendChild(copyBtn);
 
-                            const edHeader = document.createElement('div');
-                            edHeader.className = 'edition-header';
-                            edHeader.textContent = aiSolution.edition;
-                            wrapper.appendChild(edHeader);
-
-                            const copyBtn = document.createElement('button');
-                            copyBtn.className = 'copy-btn';
-                            copyBtn.innerHTML = '📋 Скопировать текст';
-                            copyBtn.onclick = (e) => {
-                                e.stopPropagation();
-                                copyTextToClipboard(aiSolution.text, copyBtn);
-                            };
-                            wrapper.appendChild(copyBtn);
-
-                            const textDiv = document.createElement('div');
-                            textDiv.className = 'ai-text-block';
-                            textDiv.innerHTML = renderMarkdown(aiSolution.text);
-
-                            if (window.renderMathInElement) {
-                                renderMathInElement(textDiv, {
-                                    delimiters: [
-                                        {left: '$$', right: '$$', display: true},
-                                        {left: '$', right: '$', display: false},
-                                        {left: '\\(', right: '\\)', display: false},
-                                        {left: '\\[', right: '\\]', display: true}
-                                    ],
-                                    throwOnError: false
-                                });
-                            }
-
+                            const textDiv = document.createElement('div'); textDiv.className = 'ai-text-block'; textDiv.innerHTML = renderMarkdown(aiSolution.text);
+                            if (window.renderMathInElement) renderMathInElement(textDiv, { delimiters: [{left: '$$', right: '$$', display: true}, {left: '$', right: '$', display: false}, {left: '\\(', right: '\\)', display: false}, {left: '\\[', right: '\\]', display: true}], throwOnError: false });
                             wrapper.appendChild(textDiv);
 
                             if (r.raw_text) {
-                                const taskTextDiv = document.createElement('div');
-                                taskTextDiv.className = 'task-raw-text';
-                                let displayText = r.raw_text;
-                                if (r.subject) {
-                                    const regex = new RegExp(r.subject, 'gi');
-                                    displayText = displayText.replace(regex, '').replace(/^[:\-\s]+/, '').trim();
-                                }
-                                if (!displayText) displayText = r.numbers || 'Без текста';
-                                taskTextDiv.textContent = displayText;
-                                wrapper.appendChild(taskTextDiv);
+                                const taskTextDiv = document.createElement('div'); taskTextDiv.className = 'task-raw-text';
+                                let displayText = r.raw_text.replace(new RegExp(r.subject, 'gi'), '').replace(/^[:\-\s]+/, '').trim() || r.numbers || 'Без текста';
+                                taskTextDiv.textContent = displayText; wrapper.appendChild(taskTextDiv);
                             }
                             sec.appendChild(wrapper);
                         }
 
                         let imageSolutions = r.solutions.filter(sol => sol.images && sol.images.length > 0 && (!sol.edition || !sol.edition.includes('ИИ')));
-
                         if (imageSolutions.length > 0) {
                             hasRenderedSomething = true;
                             let selectedSolution = imageSolutions[0];
-
                             if (targetYear) {
-                                const targetYearNum = parseInt(targetYear);
-                                let allYears = [];
-
-                                imageSolutions.forEach(sol => {
-                                    if (sol.edition) {
-                                        const match = sol.edition.match(/\b(20\d{2})\b/g);
-                                        if (match) match.forEach(y => allYears.push(parseInt(y)));
-                                    }
-                                });
-
+                                const targetYearNum = parseInt(targetYear); let allYears = [];
+                                imageSolutions.forEach(sol => { if (sol.edition) { const match = sol.edition.match(/\b(20\d{2})\b/g); if (match) match.forEach(y => allYears.push(parseInt(y))); } });
                                 if (allYears.length > 0) {
                                     let futureYears = [...new Set(allYears)].filter(y => y >= targetYearNum).sort((a,b) => a - b);
-                                    let selectedYear;
-                                    if (futureYears.length > 0) {
-                                        selectedYear = futureYears[0];
-                                    } else {
-                                        selectedYear = Math.max(...allYears);
-                                    }
-
+                                    let selectedYear = futureYears.length > 0 ? futureYears[0] : Math.max(...allYears);
                                     let foundByYear = imageSolutions.find(sol => sol.edition && sol.edition.includes(selectedYear.toString()));
                                     if (foundByYear) selectedSolution = foundByYear;
                                 }
                             }
-
-                            const wrapper = document.createElement('div');
-                            wrapper.style.cssText = 'display: flex; flex-direction: column; gap: 8px; margin-bottom: 25px;';
-
-                            if (!aiSolution && r.number) {
-                                const numHeader = document.createElement('div');
-                                numHeader.className = 'task-number-header';
-                                numHeader.textContent = `Задание №${r.number}`;
-                                wrapper.appendChild(numHeader);
-                            }
-
-                            if (selectedSolution.edition) {
-                                const edHeader = document.createElement('div');
-                                edHeader.className = 'edition-header';
-                                edHeader.textContent = selectedSolution.edition;
-                                wrapper.appendChild(edHeader);
-                            }
+                            const wrapper = document.createElement('div'); wrapper.style.cssText = 'display: flex; flex-direction: column; gap: 8px; margin-bottom: 25px;';
+                            if (!aiSolution && r.number) { const numHeader = document.createElement('div'); numHeader.className = 'task-number-header'; numHeader.textContent = `Задание №${r.number}`; wrapper.appendChild(numHeader); }
+                            if (selectedSolution.edition) { const edHeader = document.createElement('div'); edHeader.className = 'edition-header'; edHeader.textContent = selectedSolution.edition; wrapper.appendChild(edHeader); }
 
                             const isMergedSubject = subject.toLowerCase().includes('англ') || subject.toLowerCase().includes('география (тетрадь)');
                             const isMultiImageSubject = subject.toLowerCase().includes('контурн');
 
                             if (isMergedSubject) {
-                                const imgContainer = document.createElement('div');
-                                imgContainer.className = 'merged-container';
-
+                                const imgContainer = document.createElement('div'); imgContainer.className = 'merged-container';
                                 const imgElements = [];
-                                selectedSolution.images.forEach((u) => {
-                                    const img = document.createElement('img');
-                                    img.className = 'solution-img img-loading';
-                                    img.alt = 'Загрузка...';
-                                    loadImage(img, u);
-                                    imgContainer.appendChild(img);
-                                    imgElements.push({ img, url: u });
-                                });
+                                selectedSolution.images.forEach((u) => { const img = document.createElement('img'); img.className = 'solution-img img-loading'; img.alt = 'Загрузка...'; loadImage(img, u); imgContainer.appendChild(img); imgElements.push({ img, url: u }); });
                                 wrapper.appendChild(imgContainer);
-
-                                if (r.raw_text) {
-                                    const textDiv = document.createElement('div');
-                                    textDiv.className = 'task-raw-text';
-                                    let displayText = r.raw_text.replace(new RegExp(r.subject, 'gi'), '').replace(/^[:\-\s]+/, '').trim() || r.numbers || 'Без текста';
-                                    textDiv.textContent = displayText;
-                                    wrapper.appendChild(textDiv);
-                                }
-
-                                const controls = document.createElement('div');
-                                controls.style.cssText = 'display: flex; gap: 10px; justify-content: flex-end; flex-wrap: wrap; margin-top: 10px;';
-
-                                const refreshBtn = document.createElement('button');
-                                refreshBtn.innerHTML = '🔄 Обновить';
-                                refreshBtn.style.cssText = 'padding: 8px 16px; display: flex; align-items: center; gap: 6px; background: rgba(150, 150, 150, 0.15); color: inherit; border: 1px solid rgba(150, 150, 150, 0.3); border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s;';
-                                refreshBtn.onclick = (e) => {
-                                    e.stopPropagation();
-                                    imgElements.forEach(item => {
-                                        item.img.classList.remove('img-tall', 'img-retrying');
-                                        item.img.classList.add('img-loading');
-                                        item.img.src = '';
-                                        loadImage(item.img, item.url);
-                                    });
-                                };
-
-                                const dlBtn = document.createElement('button');
-                                dlBtn.innerHTML = '⬇️ Скачать одной картинкой';
-                                dlBtn.style.cssText = 'padding: 8px 16px; display: flex; align-items: center; gap: 6px; background: #4299e1; color: #ffffff; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s; box-shadow: 0 2px 5px rgba(66, 153, 225, 0.3);';
-                                dlBtn.onclick = async (e) => {
-                                    e.stopPropagation();
-                                    dlBtn.textContent = '⏳ Склеиваем...';
-                                    await downloadMergedImage(selectedSolution.images, `GDZ_${r.subject || 'Предмет'}_№${r.number || 1}_merged.jpg`);
-                                    dlBtn.textContent = '⬇️ Скачать одной картинкой';
-                                };
-
-                                controls.appendChild(refreshBtn);
-                                controls.appendChild(dlBtn);
-                                wrapper.appendChild(controls);
-                                sec.appendChild(wrapper);
-
+                                if (r.raw_text) { const textDiv = document.createElement('div'); textDiv.className = 'task-raw-text'; textDiv.textContent = r.raw_text.replace(new RegExp(r.subject, 'gi'), '').replace(/^[:\-\s]+/, '').trim() || r.numbers || 'Без текста'; wrapper.appendChild(textDiv); }
+                                const controls = document.createElement('div'); controls.style.cssText = 'display: flex; gap: 10px; justify-content: flex-end; flex-wrap: wrap; margin-top: 10px;';
+                                const refreshBtn = document.createElement('button'); refreshBtn.innerHTML = '🔄 Обновить'; refreshBtn.style.cssText = 'padding: 8px 16px; display: flex; align-items: center; gap: 6px; background: rgba(150, 150, 150, 0.15); color: inherit; border: 1px solid rgba(150, 150, 150, 0.3); border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s;';
+                                refreshBtn.onclick = (e) => { e.stopPropagation(); imgElements.forEach(item => { item.img.classList.remove('img-tall', 'img-retrying'); item.img.classList.add('img-loading'); item.img.src = ''; loadImage(item.img, item.url); }); };
+                                const dlBtn = document.createElement('button'); dlBtn.innerHTML = '⬇️ Скачать одной картинкой'; dlBtn.style.cssText = 'padding: 8px 16px; display: flex; align-items: center; gap: 6px; background: #4299e1; color: #ffffff; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s; box-shadow: 0 2px 5px rgba(66, 153, 225, 0.3);';
+                                dlBtn.onclick = async (e) => { e.stopPropagation(); dlBtn.textContent = '⏳ Склеиваем...'; await downloadMergedImage(selectedSolution.images, `GDZ_${r.subject || 'Предмет'}_№${r.number || 1}_merged.jpg`); dlBtn.textContent = '⬇️ Скачать одной картинкой'; };
+                                controls.appendChild(refreshBtn); controls.appendChild(dlBtn); wrapper.appendChild(controls); sec.appendChild(wrapper);
                             } else {
                                 const imagesToRender = isMultiImageSubject ? selectedSolution.images : [selectedSolution.images[0]];
-
                                 imagesToRender.forEach((u, imgIndex) => {
-                                    const imgWrap = document.createElement('div');
-                                    imgWrap.style.cssText = 'display: flex; flex-direction: column; gap: 8px; margin-bottom: 15px;';
-
-                                    const img = document.createElement('img');
-                                    img.className = 'solution-img img-loading';
-                                    img.style.marginTop = '0';
-                                    img.alt = 'Загрузка...';
-                                    loadImage(img, u);
-                                    imgWrap.appendChild(img);
-
-                                    const controls = document.createElement('div');
-                                    controls.style.cssText = 'display: flex; gap: 10px; justify-content: flex-end; flex-wrap: wrap;';
-
-                                    const refreshBtn = document.createElement('button');
-                                    refreshBtn.innerHTML = '🔄 Обновить';
-                                    refreshBtn.style.cssText = 'padding: 8px 16px; display: flex; align-items: center; gap: 6px; background: rgba(150, 150, 150, 0.15); color: inherit; border: 1px solid rgba(150, 150, 150, 0.3); border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s;';
-                                    refreshBtn.onclick = (e) => {
-                                        e.stopPropagation();
-                                        img.classList.remove('img-tall', 'img-retrying');
-                                        img.classList.add('img-loading');
-                                        img.src = '';
-                                        loadImage(img, u);
-                                    };
-
-                                    const dlBtn = document.createElement('button');
-                                    dlBtn.innerHTML = '⬇️ Скачать';
-                                    dlBtn.style.cssText = 'padding: 8px 16px; display: flex; align-items: center; gap: 6px; background: #4299e1; color: #ffffff; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s; box-shadow: 0 2px 5px rgba(66, 153, 225, 0.3);';
-                                    dlBtn.onclick = (e) => {
-                                        e.stopPropagation();
-                                        if (img.src && img.src.includes('/api/image')) {
-                                            downloadSingleImage(img.src, `GDZ_${r.subject || 'Предмет'}_№${r.number || 1}_${imgIndex + 1}.jpg`);
-                                        } else {
-                                            alert('Картинка еще не загрузилась, подождите...');
-                                        }
-                                    };
-                                    controls.appendChild(refreshBtn);
-                                    controls.appendChild(dlBtn);
-                                    imgWrap.appendChild(controls);
-                                    wrapper.appendChild(imgWrap);
+                                    const imgWrap = document.createElement('div'); imgWrap.style.cssText = 'display: flex; flex-direction: column; gap: 8px; margin-bottom: 15px;';
+                                    const img = document.createElement('img'); img.className = 'solution-img img-loading'; img.style.marginTop = '0'; img.alt = 'Загрузка...'; loadImage(img, u); imgWrap.appendChild(img);
+                                    const controls = document.createElement('div'); controls.style.cssText = 'display: flex; gap: 10px; justify-content: flex-end; flex-wrap: wrap;';
+                                    const refreshBtn = document.createElement('button'); refreshBtn.innerHTML = '🔄 Обновить'; refreshBtn.style.cssText = 'padding: 8px 16px; display: flex; align-items: center; gap: 6px; background: rgba(150, 150, 150, 0.15); color: inherit; border: 1px solid rgba(150, 150, 150, 0.3); border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s;';
+                                    refreshBtn.onclick = (e) => { e.stopPropagation(); img.classList.remove('img-tall', 'img-retrying'); img.classList.add('img-loading'); img.src = ''; loadImage(img, u); };
+                                    const dlBtn = document.createElement('button'); dlBtn.innerHTML = '⬇️ Скачать'; dlBtn.style.cssText = 'padding: 8px 16px; display: flex; align-items: center; gap: 6px; background: #4299e1; color: #ffffff; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s; box-shadow: 0 2px 5px rgba(66, 153, 225, 0.3);';
+                                    dlBtn.onclick = (e) => { e.stopPropagation(); if (img.src && img.src.includes('/api/image')) downloadSingleImage(img.src, `GDZ_${r.subject || 'Предмет'}_№${r.number || 1}_${imgIndex + 1}.jpg`); else alert('Картинка еще не загрузилась, подождите...'); };
+                                    controls.appendChild(refreshBtn); controls.appendChild(dlBtn); imgWrap.appendChild(controls); wrapper.appendChild(imgWrap);
                                 });
-
-                                if (!aiSolution && r.raw_text) {
-                                    const textDiv = document.createElement('div');
-                                    textDiv.className = 'task-raw-text';
-                                    let displayText = r.raw_text.replace(new RegExp(r.subject, 'gi'), '').replace(/^[:\-\s]+/, '').trim() || r.numbers || 'Без текста';
-                                    textDiv.textContent = displayText;
-                                    wrapper.appendChild(textDiv);
-                                }
-
+                                if (!aiSolution && r.raw_text) { const textDiv = document.createElement('div'); textDiv.className = 'task-raw-text'; textDiv.textContent = r.raw_text.replace(new RegExp(r.subject, 'gi'), '').replace(/^[:\-\s]+/, '').trim() || r.numbers || 'Без текста'; wrapper.appendChild(textDiv); }
                                 sec.appendChild(wrapper);
                             }
                         }
-
-                        if (!hasRenderedSomething) {
-                            const errorDiv = document.createElement('div');
-                            errorDiv.innerHTML = `<div class="img-error" style="margin-bottom: 15px;">⚠️ Решение для №${r.number || ''} не найдено на gdz.ru. Проверьте ссылку на предмет в админке.</div>`;
-                            sec.appendChild(errorDiv);
-                        }
+                        if (!hasRenderedSomething) sec.innerHTML += `<div class="img-error" style="margin-bottom: 15px;">⚠️ Решение для №${r.number || ''} не найдено. Проверьте ссылку в админке.</div>`;
                     });
                     result.appendChild(sec);
                 });
 
                 if (textResults.length > 0) {
-                    const sec = document.createElement('section');
-                    sec.className = 'subject-block';
-
+                    const sec = document.createElement('section'); sec.className = 'subject-block';
                     const textBySubject = {};
-                    textResults.forEach(r => {
-                        textBySubject[r.subject] = textBySubject[r.subject] || [];
-                        textBySubject[r.subject].push(r);
-                    });
-
+                    textResults.forEach(r => { textBySubject[r.subject] = textBySubject[r.subject] || []; textBySubject[r.subject].push(r); });
                     Object.entries(textBySubject).forEach(([subject, items]) => {
-                        const div = document.createElement('div');
-                        div.className = 'text-subject-block';
+                        const div = document.createElement('div'); div.className = 'text-subject-block';
                         div.innerHTML = `<h3 class="color-blue">${escapeHtml(subject)}</h3>`;
-
                         items.forEach(r => {
-                            let content = escapeHtml(r.raw_text || '').trim();
-                            content = content.replace(/^№?\d+\s*/i, '');
-
-                            let lines = content.split('\n');
-                            lines = lines.map(l => l.trim());
-                            lines = lines.filter(l => l.length > 2 || (l.length > 0 && !/^[а-яa-z]$/i.test(l)));
+                            let content = escapeHtml(r.raw_text || '').trim().replace(/^№?\d+\s*/i, '');
+                            let lines = content.split('\n').map(l => l.trim()).filter(l => l.length > 2 || (l.length > 0 && !/^[а-яa-z]$/i.test(l)));
                             content = lines.join('<br>');
-
-                            let header = '';
-                            if (r.number && !content.includes(r.number)) {
-                                header = `<span style="font-weight:700; color:#e53e3e; margin-right: 8px;">№${r.number}</span>`;
-                            }
-
-                            const textBlock = document.createElement('div');
-                            textBlock.className = 'task-text';
-                            textBlock.innerHTML = `${header} ${content}`;
-
-                            const copyBtn = document.createElement('button');
-                            copyBtn.className = 'copy-btn';
-                            copyBtn.innerHTML = '📋 Скопировать текст';
-                            copyBtn.style.marginTop = '8px';
-                            copyBtn.onclick = () => copyTextToClipboard(r.raw_text, copyBtn);
-
-                            textBlock.appendChild(copyBtn);
+                            let header = (r.number && !content.includes(r.number)) ? `<span style="font-weight:700; color:#e53e3e; margin-right: 8px;">№${r.number}</span>` : '';
+                            const textBlock = document.createElement('div'); textBlock.className = 'task-text'; textBlock.innerHTML = `${header} ${content}`;
+                            const copyBtn = document.createElement('button'); copyBtn.className = 'copy-btn'; copyBtn.innerHTML = '📋 Скопировать текст'; copyBtn.style.marginTop = '8px'; copyBtn.onclick = () => copyTextToClipboard(r.raw_text, copyBtn); textBlock.appendChild(copyBtn);
                             div.appendChild(textBlock);
                         });
-
                         sec.appendChild(div);
                     });
                     result.appendChild(sec);
                 }
 
-            } catch (err) { clearInterval(timer); showStatus('❌ Ошибка: ' + err.message, 'error'); }
-            finally { btn.disabled = false; }
+            } catch (err) {
+                loadingToast.remove(); showToast(err.message, 'error');
+            } finally {
+                btn.disabled = false; btnText.innerHTML = '🚀 Решить';
+            }
         });
 
         function renderMarkdown(text) {
             if (!text) return '';
             let html = text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-
             const lines = html.split('\n');
-            let result = '';
-            let inUl = false;
-            let inOl = false;
-            let inMath = false;
-            let mathBuffer = [];
-
-            const closeLists = () => {
-                if (inUl) { result += '</ul>'; inUl = false; }
-                if (inOl) { result += '</ol>'; inOl = false; }
-            };
-
+            let result = ''; let inUl = false; let inOl = false; let inMath = false; let mathBuffer = [];
+            const closeLists = () => { if (inUl) { result += '</ul>'; inUl = false; } if (inOl) { result += '</ol>'; inOl = false; } };
             for (let line of lines) {
                 let trimmed = line.trim();
-
                 if (trimmed.startsWith('$$')) {
-                    if (trimmed.length > 2 && trimmed.endsWith('$$')) {
-                        closeLists();
-                        result += `<div style="text-align:center; margin: 10px 0;">${trimmed}</div>`;
-                        continue;
-                    }
+                    if (trimmed.length > 2 && trimmed.endsWith('$$')) { closeLists(); result += `<div style="text-align:center; margin: 10px 0;">${trimmed}</div>`; continue; }
                     inMath = !inMath;
-                    if (inMath) {
-                        mathBuffer = ['$$'];
-                    } else {
-                        mathBuffer.push('$$');
-                        closeLists();
-                        result += `<div style="text-align:center; margin: 10px 0;">${mathBuffer.join('\n')}</div>`;
-                        mathBuffer = [];
-                    }
+                    if (inMath) mathBuffer = ['$$']; else { mathBuffer.push('$$'); closeLists(); result += `<div style="text-align:center; margin: 10px 0;">${mathBuffer.join('\n')}</div>`; mathBuffer = []; }
                     continue;
                 }
-
-                if (inMath) {
-                    mathBuffer.push(line);
-                    continue;
-                }
-
-                if (!trimmed) {
-                    closeLists();
-                    continue;
-                }
-
-                line = line.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>');
-                line = line.replace(/(?<!\*)\*([^*]+)\*(?!\*)/g, '<i>$1</i>');
-
-                if (line.startsWith('* ')) {
-                    if (inOl) { result += '</ol>'; inOl = false; }
-                    if (!inUl) { result += '<ul>'; inUl = true; }
-                    result += `<li>${line.substring(2)}</li>`;
-                } else if (/^\d+\.\s/.test(line)) {
-                    if (inUl) { result += '</ul>'; inUl = false; }
-                    if (!inOl) { result += '<ol>'; inOl = true; }
-                    result += `<li>${line.replace(/^\d+\.\s/, '')}</li>`;
-                } else if (line.startsWith('#### ')) {
-                    closeLists();
-                    result += `<h5>${line.substring(5)}</h5>`;
-                } else if (line.startsWith('### ')) {
-                    closeLists();
-                    result += `<h4>${line.substring(4)}</h4>`;
-                } else {
-                    closeLists();
-                    result += `<p>${line}</p>`;
-                }
+                if (inMath) { mathBuffer.push(line); continue; }
+                if (!trimmed) { closeLists(); continue; }
+                line = line.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>').replace(/(?<!\*)\*([^*]+)\*(?!\*)/g, '<i>$1</i>');
+                if (line.startsWith('* ')) { if (inOl) { result += '</ol>'; inOl = false; } if (!inUl) { result += '<ul>'; inUl = true; } result += `<li>${line.substring(2)}</li>`; }
+                else if (/^\d+\.\s/.test(line)) { if (inUl) { result += '</ul>'; inUl = false; } if (!inOl) { result += '<ol>'; inOl = true; } result += `<li>${line.replace(/^\d+\.\s/, '')}</li>`; }
+                else if (line.startsWith('#### ')) { closeLists(); result += `<h5>${line.substring(5)}</h5>`; }
+                else if (line.startsWith('### ')) { closeLists(); result += `<h4>${line.substring(4)}</h4>`; }
+                else { closeLists(); result += `<p>${line}</p>`; }
             }
-            closeLists();
-            return result;
+            closeLists(); return result;
         }
 
-        function showStatus(text, type) { status.textContent = text; status.className = 'status ' + type; }
         function escapeHtml(t) { const d = document.createElement('div'); d.textContent = t || ''; return d.innerHTML; }
 
         function renderTopbar() {
@@ -1943,7 +1245,7 @@
             const initial = getInitial(authUser.name, authUser.email);
             const avatarStyle = currentAvatar ? `background-image: url('${currentAvatar}')` : '';
 
-            const menuHTML = `
+            topbarRight.innerHTML = `
                 <div class="user-menu-container" id="userMenuContainer">
                     <button class="user-menu-btn" id="userMenuBtn">
                         <div class="user-avatar-mini" style="${avatarStyle}">${currentAvatar ? '' : initial}</div>
@@ -1961,27 +1263,13 @@
                     </div>
                 </div>
             `;
-            topbarRight.innerHTML = menuHTML;
 
-            const hour = new Date().getHours();
-            let g = 'Доброй ночи';
-            if (hour >= 7 && hour < 9) g = 'Доброе утро';
-            else if (hour >= 9 && hour < 18) g = 'Добрый день';
-            else if (hour >= 18 && hour < 23) g = 'Добрый вечер';
+            const hour = new Date().getHours(); let g = 'Доброй ночи';
+            if (hour >= 7 && hour < 9) g = 'Доброе утро'; else if (hour >= 9 && hour < 18) g = 'Добрый день'; else if (hour >= 18 && hour < 23) g = 'Добрый вечер';
             $('dropdownGreeting').innerText = `${g}, ${name}!`;
 
-            const menuBtn = $('userMenuBtn');
-            const dropdown = $('userDropdown');
-            menuBtn.onclick = (e) => {
-                e.stopPropagation();
-                dropdown.classList.toggle('show');
-            };
-
-            document.addEventListener('click', (e) => {
-                if (!e.target.closest('#userMenuContainer')) {
-                    dropdown.classList.remove('show');
-                }
-            });
+            $('userMenuBtn').onclick = (e) => { e.stopPropagation(); $('userDropdown').classList.toggle('show'); };
+            document.addEventListener('click', (e) => { if (!e.target.closest('#userMenuContainer')) $('userDropdown').classList.remove('show'); });
         }
 
         let authMode = 'login';
@@ -2002,83 +1290,54 @@
             const st = $('authStatus');
             const device = getDeviceInfo();
 
-            st.textContent = '⏳ Подождите...';
-            st.className = 'fb-status loading';
-
+            st.textContent = '⏳ Подождите...'; st.className = 'fb-status loading';
             const url = authMode === 'login' ? '/api/auth/login' : '/api/auth/register';
             const body = authMode === 'login' ? {email, password, device} : {email, password, name, device};
 
             try {
                 const r = await fetch(url, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body) });
                 const d = await r.json();
-
                 if (!r.ok) {
                     if (r.status === 403) st.innerHTML = '🚫 ' + (d.detail || 'Доступ заблокирован');
                     else st.textContent = '❌ ' + (d.detail || 'Ошибка');
-                    st.className = 'fb-status error';
-                    return;
+                    st.className = 'fb-status error'; return;
                 }
-
-                authToken = d.token;
-                authUser = d.user;
-                currentAvatar = d.user.avatar || null;
-                subjectYears = parseJson(authUser.subject_years);
-                hideAiSubjects = parseJson(authUser.hide_ai_subjects);
+                authToken = d.token; authUser = d.user; currentAvatar = d.user.avatar || null;
+                subjectYears = parseJson(authUser.subject_years); hideAiSubjects = parseJson(authUser.hide_ai_subjects);
                 localStorage.setItem('gdz_token', authToken);
 
                 if (authMode === 'register' && selectedBgPreset) {
                     st.textContent = '🎨 Применяем фон...';
                     try {
-                        const upd = await fetch('/api/auth/update', {
-                            method: 'POST',
-                            headers: {'Content-Type': 'application/json'},
-                            body: JSON.stringify({ token: authToken, theme: 'custom', bg_url: selectedBgPreset })
-                        });
-                        if (upd.ok) {
-                            const ud = await upd.json();
-                            authUser = ud.user;
-                        }
-                    } catch (err) { console.warn('Не удалось применить фон:', err); }
+                        const upd = await fetch('/api/auth/update', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ token: authToken, theme: 'custom', bg_url: selectedBgPreset }) });
+                        if (upd.ok) authUser = (await upd.json()).user;
+                    } catch (err) {}
                 }
-
                 applyTheme(authUser.theme || 'light', authUser.bg_url);
                 await showMain();
-
-            } catch (err) {
-                st.textContent = '❌ ' + err.message;
-                st.className = 'fb-status error';
-            }
+            } catch (err) { st.textContent = '❌ ' + err.message; st.className = 'fb-status error'; }
         };
 
         async function logout() {
             if (!confirm('Выйти из аккаунта?')) return;
             try { await fetch('/api/auth/logout', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({token: authToken}) }); } catch {}
             authToken = ''; authUser = null; currentAvatar = null; subjectYears = {}; hideAiSubjects = {}; activeParts = {};
-            localStorage.removeItem('gdz_token');
-            applyTheme('light', null);
-            topbarRight.innerHTML = '';
-            showAuth();
+            localStorage.removeItem('gdz_token'); applyTheme('light', null); topbarRight.innerHTML = ''; showAuth();
         }
 
         async function openHistory() {
             document.getElementById('userDropdown')?.classList.remove('show');
             historyModal.classList.remove('hidden');
-            const list = $('historyList');
-            list.innerHTML = '<p class="empty">Загрузка...</p>';
+            const list = $('historyList'); list.innerHTML = '<p class="empty">Загрузка...</p>';
             try {
                 const r = await fetch('/api/history/list?token=' + encodeURIComponent(authToken));
-                const d = await r.json();
-                if (!r.ok) throw new Error(d.detail || 'Ошибка');
+                const d = await r.json(); if (!r.ok) throw new Error(d.detail || 'Ошибка');
                 if (!d.items.length) { list.innerHTML = '<p class="empty">История пуста</p>'; return; }
                 list.innerHTML = '';
                 d.items.forEach(it => {
-                    const row = document.createElement('div');
-                    row.className = 'history-row';
+                    const row = document.createElement('div'); row.className = 'history-row';
                     row.innerHTML = `<div class="history-info"><strong>${escapeHtml(it.subject)}</strong><span>${escapeHtml(it.numbers)}</span></div><span class="history-date">${escapeHtml(it.created)}</span>`;
-                    row.onclick = () => {
-                        allTextTasks.value = `${it.subject}: ${it.numbers}`;
-                        historyModal.classList.add('hidden');
-                    };
+                    row.onclick = () => { allTextTasks.value = `${it.subject}: ${it.numbers}`; historyModal.classList.add('hidden'); };
                     list.appendChild(row);
                 });
             } catch (e) { list.innerHTML = '<p class="empty">Ошибка: ' + e.message + '</p>'; }
@@ -2087,131 +1346,66 @@
         $('closeHistoryBtn').onclick = () => historyModal.classList.add('hidden');
         $('clearHistoryBtn').onclick = async () => {
             if (!confirm('Очистить всю историю?')) return;
-            try {
-                await fetch('/api/history/clear', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({token: authToken}) });
-                $('historyList').innerHTML = '<p class="empty">История пуста</p>';
-            } catch {}
+            try { await fetch('/api/history/clear', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({token: authToken}) }); $('historyList').innerHTML = '<p class="empty">История пуста</p>'; } catch {}
         };
 
         function updateAvatarPreview() {
             const preview = $('avatarPreview');
-            if (currentAvatar) {
-                preview.style.backgroundImage = 'url("' + currentAvatar + '")';
-                preview.textContent = '';
-            } else {
-                preview.style.backgroundImage = '';
-                preview.textContent = getInitial(authUser?.name, authUser?.email);
-            }
+            if (currentAvatar) { preview.style.backgroundImage = 'url("' + currentAvatar + '")'; preview.textContent = ''; }
+            else { preview.style.backgroundImage = ''; preview.textContent = getInitial(authUser?.name, authUser?.email); }
         }
 
         function openSettings() {
             document.getElementById('userDropdown')?.classList.remove('show');
             settingsModal.classList.remove('hidden');
-            $('settingsStatus').textContent = '';
-            $('settingsStatus').className = 'fb-status';
-            $('setName').value = authUser?.name || '';
-            $('setOldPwd').value = '';
-            $('setNewPwd').value = '';
-            updateAvatarPreview();
-
-            // Запоминаем исходное состояние темы (для «Отмена»)
-            originalTheme = currentTheme;
-            originalBgUrl = currentBgUrl;
-            pendingTheme = currentTheme;
-            pendingBgUrl = (currentTheme === 'custom') ? currentBgUrl : null;
-
-            // Рисуем пресеты фона
+            $('settingsStatus').textContent = ''; $('settingsStatus').className = 'fb-status';
+            $('setName').value = authUser?.name || ''; $('setOldPwd').value = ''; $('setNewPwd').value = ''; updateAvatarPreview();
+            originalTheme = currentTheme; originalBgUrl = currentBgUrl;
+            pendingTheme = currentTheme; pendingBgUrl = (currentTheme === 'custom') ? currentBgUrl : null;
             renderSettingsBgPresets();
-
-            const hideList = $('hideAiList');
-            hideList.innerHTML = '';
-            SUBJECTS.forEach(s => {
-                hideList.innerHTML += `<label style="display: flex; align-items: center; gap: 8px; cursor: pointer; padding: 4px 0;">
-                    <input type="checkbox" value="${s.name}" ${hideAiSubjects[s.name] ? 'checked' : ''} style="width: 18px; height: 18px; accent-color: #4299e1;">
-                    <span>${s.name}</span>
-                </label>`;
-            });
+            const hideList = $('hideAiList'); hideList.innerHTML = '';
+            SUBJECTS.forEach(s => { hideList.innerHTML += `<label style="display: flex; align-items: center; gap: 8px; cursor: pointer; padding: 4px 0;"><input type="checkbox" value="${s.name}" ${hideAiSubjects[s.name] ? 'checked' : ''} style="width: 18px; height: 18px; accent-color: #4299e1;"><span>${s.name}</span></label>`; });
         }
 
-        function cancelSettings() {
-            // Возвращаем тему, которая была при открытии настроек
-            applyTheme(originalTheme, originalBgUrl);
-            settingsModal.classList.add('hidden');
-        }
-
+        function cancelSettings() { applyTheme(originalTheme, originalBgUrl); settingsModal.classList.add('hidden'); }
         $('closeSettingsBtn').onclick = cancelSettings;
         settingsModal.onclick = (e) => { if (e.target === settingsModal) cancelSettings(); };
 
         $('bgNoneBtn').onclick = () => {
-            pendingTheme = 'light';
-            pendingBgUrl = null;
+            pendingTheme = 'light'; pendingBgUrl = null;
             document.querySelectorAll('#settingsBgPresets .bg-preset').forEach(x => x.classList.remove('active'));
             applyTheme('light', null);
-            // Обновим подсветку «Без фона»
-            const noneBtn = $('bgNoneBtn');
-            if (noneBtn) { noneBtn.style.background = '#4299e1'; noneBtn.style.color = '#ffffff'; }
+            const noneBtn = $('bgNoneBtn'); if (noneBtn) { noneBtn.style.background = '#4299e1'; noneBtn.style.color = '#ffffff'; }
         };
 
         $('avatarInput').onchange = async (e) => {
             const file = e.target.files[0]; if (!file) return;
-            try {
-                const b64 = await shrinkImage(file, 300, 0.85);
-                currentAvatar = b64;
-                updateAvatarPreview();
-                await fetch('/api/auth/avatar', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({token: authToken, avatar: b64}) });
-                renderTopbar();
-            } catch (err) { alert('Ошибка: ' + err.message); }
-            e.target.value = '';
+            try { const b64 = await shrinkImage(file, 300, 0.85); currentAvatar = b64; updateAvatarPreview(); await fetch('/api/auth/avatar', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({token: authToken, avatar: b64}) }); renderTopbar(); }
+            catch (err) { showToast('Ошибка: ' + err.message, 'error'); } e.target.value = '';
         };
 
         $('avatarRemoveBtn').onclick = async () => {
             if (!confirm('Убрать аватарку?')) return;
-            currentAvatar = null;
-            updateAvatarPreview();
-            try {
-                await fetch('/api/auth/avatar', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({token: authToken, avatar: ''}) });
-                renderTopbar();
-            } catch {}
+            currentAvatar = null; updateAvatarPreview();
+            try { await fetch('/api/auth/avatar', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({token: authToken, avatar: ''}) }); renderTopbar(); } catch {}
         };
 
         $('saveSettingsBtn').onclick = async () => {
-            const st = $('settingsStatus');
-            const newName = $('setName').value.trim();
-            const oldPwd = $('setOldPwd').value;
-            const newPwd = $('setNewPwd').value;
-            st.textContent = '⏳ Применяем...';
-            st.className = 'fb-status loading';
-
-            const hideCheckboxes = document.querySelectorAll('#hideAiList input[type="checkbox"]');
-            let newHideAi = {};
+            const st = $('settingsStatus'); const newName = $('setName').value.trim(); const oldPwd = $('setOldPwd').value; const newPwd = $('setNewPwd').value;
+            st.textContent = '⏳ Применяем...'; st.className = 'fb-status loading';
+            const hideCheckboxes = document.querySelectorAll('#hideAiList input[type="checkbox"]'); let newHideAi = {};
             hideCheckboxes.forEach(cb => { if (cb.checked) newHideAi[cb.value] = true; });
-
-            const payload = {
-                token: authToken,
-                name: newName,
-                hide_ai_subjects: JSON.stringify(newHideAi),
-                theme: pendingTheme,
-                bg_url: pendingBgUrl || ''
-            };
-
+            const payload = { token: authToken, name: newName, hide_ai_subjects: JSON.stringify(newHideAi), theme: pendingTheme, bg_url: pendingBgUrl || '' };
             try {
                 const r1 = await fetch('/api/auth/update', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload) });
-                const d1 = await r1.json();
-                if (!r1.ok) { st.textContent = '❌ ' + (d1.detail || 'Ошибка'); st.className = 'fb-status error'; return; }
-                authUser = d1.user;
-                hideAiSubjects = parseJson(authUser.hide_ai_subjects);
-                applyTheme(authUser.theme, authUser.bg_url);
-                updateGreeting();
-                renderTopbar();
-                // Обновим исходное состояние — чтобы повторная «Отмена» работала правильно
-                originalTheme = currentTheme;
-                originalBgUrl = currentBgUrl;
+                const d1 = await r1.json(); if (!r1.ok) throw new Error(d1.detail || 'Ошибка');
+                authUser = d1.user; hideAiSubjects = parseJson(authUser.hide_ai_subjects); applyTheme(authUser.theme, authUser.bg_url); updateGreeting(); renderTopbar();
+                originalTheme = currentTheme; originalBgUrl = currentBgUrl;
                 if (oldPwd && newPwd) {
                     const r2 = await fetch('/api/auth/change-password', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({token: authToken, old_password: oldPwd, new_password: newPwd}) });
-                    const d2 = await r2.json();
-                    if (!r2.ok) { st.textContent = '⚠️ Профиль применён, пароль: ' + (d2.detail || 'Ошибка'); st.className = 'fb-status error'; return; }
+                    const d2 = await r2.json(); if (!r2.ok) { st.textContent = '⚠️ Профиль применён, пароль: ' + (d2.detail || 'Ошибка'); st.className = 'fb-status error'; return; }
                     st.textContent = '✅ Профиль, фон и пароль применены';
-                } else { st.textContent = '✅ Настройки и фон применены'; }
+                } else st.textContent = '✅ Настройки и фон применены';
                 st.className = 'fb-status success';
                 setTimeout(() => settingsModal.classList.add('hidden'), 1500);
             } catch (e) { st.textContent = '❌ ' + e.message; st.className = 'fb-status error'; }
@@ -2220,21 +1414,14 @@
         $('logoutBtn').onclick = () => { settingsModal.classList.add('hidden'); logout(); };
 
         $('deleteAccountBtn').onclick = async () => {
-            if (!confirm('Удалить аккаунт?')) return;
-            if (!confirm('Точно удалить?')) return;
-            const st = $('settingsStatus');
-            st.textContent = '⏳ Удаляем...';
-            st.className = 'fb-status loading';
+            if (!confirm('Удалить аккаунт?') || !confirm('Точно удалить?')) return;
+            const st = $('settingsStatus'); st.textContent = '⏳ Удаляем...'; st.className = 'fb-status loading';
             try {
                 const r = await fetch('/api/auth/delete', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({token: authToken}) });
                 if (!r.ok) throw new Error('Ошибка удаления');
                 authToken = ''; authUser = null; currentAvatar = null;
-                localStorage.removeItem('gdz_token');
-                localStorage.removeItem('gdz_theme');
-                localStorage.removeItem('gdz_bg');
-                applyTheme('light', null);
-                settingsModal.classList.add('hidden');
-                showAuth();
+                localStorage.removeItem('gdz_token'); localStorage.removeItem('gdz_theme'); localStorage.removeItem('gdz_bg');
+                applyTheme('light', null); settingsModal.classList.add('hidden'); showAuth();
             } catch (e) { st.textContent = '❌ ' + e.message; st.className = 'fb-status error'; }
         };
 
@@ -2244,48 +1431,24 @@
         $('fbImage').onchange = async (e) => {
             const file = e.target.files[0];
             if (!file) { fbImageBase64 = ""; $('fbImageName').textContent = 'Файл не выбран'; return; }
-            try {
-                fbImageBase64 = await shrinkImage(file, 800, 0.8);
-                $('fbImageName').textContent = file.name;
-            } catch (err) {
-                alert("Ошибка при загрузке фото: " + err.message);
-                fbImageBase64 = "";
-                $('fbImageName').textContent = 'Файл не выбран';
-                e.target.value = '';
-            }
+            try { fbImageBase64 = await shrinkImage(file, 800, 0.8); $('fbImageName').textContent = file.name; }
+            catch (err) { alert("Ошибка: " + err.message); fbImageBase64 = ""; $('fbImageName').textContent = 'Файл не выбран'; e.target.value = ''; }
         };
 
         $('feedbackForm').onsubmit = async (e) => {
-            e.preventDefault();
-            const msg = $('fbMessage').value.trim();
-            if (!msg) return;
-            const st = $('fbStatus');
-            st.textContent = '⏳ Отправляем...';
-            st.className = 'fb-status loading';
+            e.preventDefault(); const msg = $('fbMessage').value.trim(); if (!msg) return;
+            const st = $('fbStatus'); st.textContent = '⏳ Отправляем...'; st.className = 'fb-status loading';
             try {
                 const r = await fetch('/api/feedback', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({message: msg, contact: $('fbContact').value.trim(), image: fbImageBase64}) });
                 if (!r.ok) throw new Error('Ошибка');
-                st.textContent = '✅ Отправлено! Спасибо.';
-                st.className = 'fb-status success';
-                $('fbMessage').value = '';
-                $('fbContact').value = '';
-                $('fbImage').value = '';
-                $('fbImageName').textContent = 'Файл не выбран';
-                fbImageBase64 = "";
+                st.textContent = '✅ Отправлено! Спасибо.'; st.className = 'fb-status success';
+                $('fbMessage').value = ''; $('fbContact').value = ''; $('fbImage').value = ''; $('fbImageName').textContent = 'Файл не выбран'; fbImageBase64 = "";
                 setTimeout(() => supportModal.classList.add('hidden'), 2000);
             } catch (err) { st.textContent = '❌ ' + err.message; st.className = 'fb-status error'; }
         };
 
-        function openImageModal(src) {
-            imageModalImg.src = src;
-            imageModal.classList.remove('hidden');
-            document.body.style.overflow = 'hidden';
-        }
-        function closeModal() {
-            imageModal.classList.add('hidden');
-            imageModalImg.src = '';
-            document.body.style.overflow = '';
-        }
+        function openImageModal(src) { imageModalImg.src = src; imageModal.classList.remove('hidden'); document.body.style.overflow = 'hidden'; }
+        function closeModal() { imageModal.classList.add('hidden'); imageModalImg.src = ''; document.body.style.overflow = ''; }
         $('closeImageModal').onclick = closeModal;
         imageModal.onclick = (e) => { if (e.target === imageModal) closeModal(); };
         document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeModal(); });
@@ -2296,19 +1459,15 @@
         const MIN_REAL_WIDTH = 200, MIN_REAL_HEIGHT = 150;
         const LOAD_TIMEOUT = 15000, TALL_RATIO = 3.0;
 
-        function scheduleLoad(fn) {
-            return new Promise((resolve) => { pendingQueue.push({ fn, resolve }); processQueue(); });
-        }
+        function scheduleLoad(fn) { return new Promise((resolve) => { pendingQueue.push({ fn, resolve }); processQueue(); }); }
         function processQueue() {
             while (activeLoads < MAX_PARALLEL && pendingQueue.length > 0) {
-                const { fn, resolve } = pendingQueue.shift();
-                activeLoads++;
+                const { fn, resolve } = pendingQueue.shift(); activeLoads++;
                 fn().then(resolve).finally(() => { activeLoads--; processQueue(); });
             }
         }
         function showImageError(img, imgUrl) {
-            const err = document.createElement('div');
-            err.className = 'img-error';
+            const err = document.createElement('div'); err.className = 'img-error';
             err.innerHTML = `⚠️ Не удалось получить решение<br><br><a href="${imgUrl}" target="_blank" class="img-error-link">Открыть напрямую с gdz.ru →</a>`;
             img.replaceWith(err);
         }
@@ -2316,50 +1475,32 @@
             scheduleLoad(() => new Promise((resolve) => {
                 let attempt = 0;
                 function tryOnce() {
-                    let tid = null;
-                    img.classList.remove('img-retrying', 'img-tall');
-                    img.classList.add('img-loading');
-                    img.alt = 'Загрузка...';
+                    let tid = null; img.classList.remove('img-retrying', 'img-tall'); img.classList.add('img-loading'); img.alt = 'Загрузка...';
                     tid = setTimeout(() => onFail('Timeout'), LOAD_TIMEOUT);
                     function cleanup() { if (tid) { clearTimeout(tid); tid = null; } img.removeEventListener('load', onLoad); img.removeEventListener('error', onError); }
                     function onLoad() {
-                        cleanup();
-                        const w = img.naturalWidth, h = img.naturalHeight;
+                        cleanup(); const w = img.naturalWidth, h = img.naturalHeight;
                         if (w < MIN_REAL_WIDTH || h < MIN_REAL_HEIGHT) {
                             attempt++;
                             if (attempt <= PLACEHOLDER_RETRIES) {
                                 const delay = RETRY_DELAYS[attempt - 1] || 3000;
-                                img.classList.remove('img-loading');
-                                img.classList.add('img-retrying');
-                                setTimeout(tryOnce, delay);
-                                return;
+                                img.classList.remove('img-loading'); img.classList.add('img-retrying'); setTimeout(tryOnce, delay); return;
                             }
-                            const wrap = img.parentElement;
-                            if (wrap) wrap.style.display = 'none';
-                            resolve(); return;
+                            const wrap = img.parentElement; if (wrap) wrap.style.display = 'none'; resolve(); return;
                         }
-                        img.classList.remove('img-loading', 'img-retrying');
-                        if (h / w >= TALL_RATIO) img.classList.add('img-tall');
-                        img.onclick = () => openImageModal(img.src);
-                        resolve();
+                        img.classList.remove('img-loading', 'img-retrying'); if (h / w >= TALL_RATIO) img.classList.add('img-tall'); img.onclick = () => openImageModal(img.src); resolve();
                     }
                     function onError() { cleanup(); onFail('Error'); }
-                    img.addEventListener('load', onLoad, { once: true });
-                    img.addEventListener('error', onError, { once: true });
+                    img.addEventListener('load', onLoad, { once: true }); img.addEventListener('error', onError, { once: true });
                     img.src = '/api/image?url=' + encodeURIComponent(imgUrl) + '&w=1000&t=' + Date.now();
                 }
                 function onFail(reason) {
                     attempt++;
                     if (attempt <= PLACEHOLDER_RETRIES) {
                         const delay = RETRY_DELAYS[attempt - 1] || 3000;
-                        img.classList.remove('img-loading');
-                        img.classList.add('img-retrying');
-                        setTimeout(tryOnce, delay);
-                        return;
+                        img.classList.remove('img-loading'); img.classList.add('img-retrying'); setTimeout(tryOnce, delay); return;
                     }
-                    const wrap = img.parentElement;
-                    if (wrap) wrap.style.display = 'none';
-                    resolve();
+                    const wrap = img.parentElement; if (wrap) wrap.style.display = 'none'; resolve();
                 }
                 tryOnce();
             }));
@@ -2367,96 +1508,49 @@
 
         async function downloadSingleImage(url, filename) {
             try {
-                const response = await fetch(url);
-                const blob = await response.blob();
-                const blobUrl = window.URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = blobUrl;
-                a.download = filename || 'image.jpg';
-                document.body.appendChild(a);
-                a.click();
-                a.remove();
-                window.URL.revokeObjectURL(blobUrl);
-            } catch (e) {
-                console.error('Ошибка скачивания:', e);
-            }
+                const response = await fetch(url); const blob = await response.blob(); const blobUrl = window.URL.createObjectURL(blob);
+                const a = document.createElement('a'); a.href = blobUrl; a.download = filename || 'image.jpg';
+                document.body.appendChild(a); a.click(); a.remove(); window.URL.revokeObjectURL(blobUrl);
+            } catch (e) { console.error('Ошибка скачивания:', e); }
         }
 
         async function downloadMergedImage(urls, filename) {
             try {
-                const images = [];
-                let maxWidth = 0;
-                let totalHeight = 0;
-
+                const images = []; let maxWidth = 0; let totalHeight = 0;
                 for (let rawUrl of urls) {
-                    const proxyUrl = '/api/image?url=' + encodeURIComponent(rawUrl) + '&w=2000';
-                    const img = new Image();
-                    img.crossOrigin = "Anonymous";
-                    img.src = proxyUrl;
-                    await new Promise((resolve, reject) => {
-                        img.onload = resolve;
-                        img.onerror = reject;
-                    });
-                    images.push(img);
-                    if (img.width > maxWidth) maxWidth = img.width;
-                    totalHeight += img.height;
+                    const proxyUrl = '/api/image?url=' + encodeURIComponent(rawUrl) + '&w=2000'; const img = new Image();
+                    img.crossOrigin = "Anonymous"; img.src = proxyUrl;
+                    await new Promise((resolve, reject) => { img.onload = resolve; img.onerror = reject; });
+                    images.push(img); if (img.width > maxWidth) maxWidth = img.width; totalHeight += img.height;
                 }
-
-                const canvas = document.createElement('canvas');
-                canvas.width = maxWidth;
-                canvas.height = totalHeight;
-                const ctx = canvas.getContext('2d');
-
-                let yOffset = 0;
-                for (let img of images) {
-                    ctx.drawImage(img, 0, yOffset);
-                    yOffset += img.height;
-                }
-
+                const canvas = document.createElement('canvas'); canvas.width = maxWidth; canvas.height = totalHeight; const ctx = canvas.getContext('2d');
+                let yOffset = 0; for (let img of images) { ctx.drawImage(img, 0, yOffset); yOffset += img.height; }
                 canvas.toBlob((blob) => {
-                    const blobUrl = window.URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = blobUrl;
-                    a.download = filename || 'merged.jpg';
-                    document.body.appendChild(a);
-                    a.click();
-                    a.remove();
-                    window.URL.revokeObjectURL(blobUrl);
+                    const blobUrl = window.URL.createObjectURL(blob); const a = document.createElement('a');
+                    a.href = blobUrl; a.download = filename || 'merged.jpg';
+                    document.body.appendChild(a); a.click(); a.remove(); window.URL.revokeObjectURL(blobUrl);
                 }, 'image/jpeg', 0.95);
-
-            } catch (e) {
-                console.error('Ошибка склейки:', e);
-                alert('Не удалось склеить картинки. Попробуйте обновить страницу.');
-            }
+            } catch (e) { console.error('Ошибка склейки:', e); alert('Не удалось склеить картинки. Попробуйте обновить страницу.'); }
         }
 
         function createParticles() {
-            const particlesContainer = document.getElementById('particles');
-            if (!particlesContainer) return;
+            const particlesContainer = document.getElementById('particles'); if (!particlesContainer) return;
             for (let i = 0; i < 40; i++) {
-                const particle = document.createElement('div');
-                particle.className = 'particle';
-                particle.style.left = Math.random() * 100 + '%';
-                particle.style.top = Math.random() * 100 + '%';
-                particle.style.animationDelay = Math.random() * 3 + 's';
-                particle.style.animationDuration = (Math.random() * 2 + 2) + 's';
+                const particle = document.createElement('div'); particle.className = 'particle';
+                particle.style.left = Math.random() * 100 + '%'; particle.style.top = Math.random() * 100 + '%';
+                particle.style.animationDelay = Math.random() * 3 + 's'; particle.style.animationDuration = (Math.random() * 2 + 2) + 's';
                 particlesContainer.appendChild(particle);
             }
         }
 
         document.addEventListener('mousemove', (e) => {
             const shapes = document.querySelectorAll('.shape');
-            const x = e.clientX / window.innerWidth;
-            const y = e.clientY / window.innerHeight;
-            shapes.forEach((shape, index) => {
-                const speed = (index + 1) * 15;
-                shape.style.transform = `translate(${x * speed}px, ${y * speed}px)`;
-            });
+            const x = e.clientX / window.innerWidth; const y = e.clientY / window.innerHeight;
+            shapes.forEach((shape, index) => { const speed = (index + 1) * 15; shape.style.transform = `translate(${x * speed}px, ${y * speed}px)`; });
         });
 
         document.querySelectorAll('.btn-primary, .btn-secondary').forEach(btn => btn.classList.add('ripple'));
         createParticles();
-
         init();
     </script>
 </body>

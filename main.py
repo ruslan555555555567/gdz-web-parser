@@ -1,4 +1,6 @@
 import os
+from dotenv import load_dotenv  # <-- Добавь это
+load_dotenv()  # <-- И это
 import hashlib
 import secrets
 from datetime import datetime, timedelta
