@@ -1,6 +1,4 @@
 import os
-from dotenv import load_dotenv  # <-- Добавь это
-load_dotenv()  # <-- И это
 import hashlib
 import secrets
 from datetime import datetime, timedelta
@@ -18,7 +16,7 @@ import asyncpg
 
 from parser import parse_tasks
 
-VERSION = "142.0.0"
+VERSION = "143.0.0"
 ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "")
 ADMIN_EMAIL = os.getenv("ADMIN_EMAIL", "admin@gdz.ru").lower().strip()
 DATABASE_URL = os.getenv("DATABASE_URL")
