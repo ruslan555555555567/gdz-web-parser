@@ -16,7 +16,7 @@ import asyncpg
 
 from parser import parse_tasks
 
-VERSION = "135.0.0"
+VERSION = "136.0.0"
 ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "")
 ADMIN_EMAIL = os.getenv("ADMIN_EMAIL", "admin@gdz.ru").lower().strip()
 DATABASE_URL = os.getenv("DATABASE_URL")
@@ -28,46 +28,69 @@ DEFAULT_SUBJECTS = [
      "url_alt": "https://gdz.ru/class-7/algebra/merzlyak-polonskij/", "type": "numbers",
      "group_name": "🧮 Точные науки", "sort_order": 1, "max_number": 1000, "note": "",
      "default_year": "2023", "default_year_alt": "2016"},
+
     {"name": "Геометрия", "url": "https://gdz.ru/class-7/geometria/merzljak/", "url_alt": "", "type": "numbers",
      "group_name": "🧮 Точные науки", "sort_order": 2, "max_number": 1000, "note": "",
      "default_year": "2016", "default_year_alt": ""},
+
     {"name": "Вероятность и статистика", "url": "https://gdz.ru/class-7/matematika/vysockij-yashenko-bazovij-uroven/",
      "url_alt": "", "type": "numbers", "group_name": "🧮 Точные науки", "sort_order": 3, "max_number": 500, "note": "",
      "default_year": "2023", "default_year_alt": ""},
+
     {"name": "Информатика", "url": "https://gdz.ru/class-7/informatika/reshebnik-bosova-l-l-7/", "url_alt": "",
      "type": "numbers", "group_name": "🧮 Точные науки", "sort_order": 4, "max_number": 500, "note": "",
      "default_year": "2023", "default_year_alt": ""},
+
     {"name": "Информатика (Тетрадь)",
      "url": "https://gdz.ru/class-7/informatika/reshebnik-rabochaya-tetrad-bosova-l-l-2013/", "url_alt": "",
      "type": "numbers", "group_name": "🧮 Точные науки", "sort_order": 4.5, "max_number": 500, "note": "",
      "default_year": "2026", "default_year_alt": ""},
+
     {"name": "Русский язык", "url": "https://gdz.ru/class-7/russkii_yazik/baranova/", "url_alt": "", "type": "numbers",
      "group_name": "📖 Гуманитарные науки", "sort_order": 5, "max_number": 560, "note": "",
      "default_year": "2025", "default_year_alt": ""},
+
     {"name": "Английский язык(Учебник)",
      "url": "https://gdz.ru/class-7/english/reshebnik-angliyskiy-v-fokuse-vaulina-yu-e/", "url_alt": "",
      "type": "numbers", "group_name": "📖 Гуманитарные науки", "sort_order": 7, "max_number": 500, "note": "",
      "default_year": "2025", "default_year_alt": ""},
+
     {"name": "Английский язык(Тетрадь)", "url": "https://gdz.ru/class-7/english/workbook-spotlight-7/", "url_alt": "",
      "type": "numbers", "group_name": "📖 Гуманитарные науки", "sort_order": 8, "max_number": 500, "note": "",
      "default_year": "2026", "default_year_alt": ""},
+
     {"name": "Физика", "url": "https://gdz.ru/class-7/fizika/peryshkin-7/", "url_alt": "", "type": "numbers",
      "group_name": "🌿 Естественные науки", "sort_order": 9, "max_number": 500, "note": "",
      "default_year": "", "default_year_alt": ""},
+
+    # --- НОВЫЕ ПРЕДМЕТЫ ГЕОГРАФИИ ---
+    {"name": "География (Тетрадь)", "url": "https://gdz.ru/class-7/geografiya/rabochaya-tetrad-nikolina/",
+     "url_alt": "", "type": "numbers",
+     "group_name": "🌿 Естественные науки", "sort_order": 10, "max_number": 500, "note": "",
+     "default_year": "", "default_year_alt": ""},
+
+    {"name": "География (Контурные карты)", "url": "https://gdz.ru/class-7/geografiya/konturnie-karti-kurbskij/",
+     "url_alt": "", "type": "numbers",
+     "group_name": "🌿 Естественные науки", "sort_order": 11, "max_number": 500, "note": "",
+     "default_year": "", "default_year_alt": ""},
+
     {"name": "Биология", "url": "", "url_alt": "", "type": "text", "group_name": "🌿 Естественные науки",
-     "sort_order": 10, "max_number": 0, "note": "", "default_year": "", "default_year_alt": ""},
-    {"name": "География", "url": "", "url_alt": "", "type": "text", "group_name": "🌿 Естественные науки",
-     "sort_order": 11, "max_number": 0, "note": "", "default_year": "", "default_year_alt": ""},
-    {"name": "Литература", "url": "", "url_alt": "", "type": "text", "group_name": "📖 Гуманитарные науки",
      "sort_order": 12, "max_number": 0, "note": "", "default_year": "", "default_year_alt": ""},
-    {"name": "История", "url": "", "url_alt": "", "type": "text", "group_name": "📖 Гуманитарные науки",
+
+    {"name": "Литература", "url": "", "url_alt": "", "type": "text", "group_name": "📖 Гуманитарные науки",
      "sort_order": 13, "max_number": 0, "note": "", "default_year": "", "default_year_alt": ""},
-    {"name": "Музыка", "url": "", "url_alt": "", "type": "text", "group_name": "🎨 Остальные предметы", "sort_order": 14,
+
+    {"name": "История", "url": "", "url_alt": "", "type": "text", "group_name": "📖 Гуманитарные науки",
+     "sort_order": 14, "max_number": 0, "note": "", "default_year": "", "default_year_alt": ""},
+
+    {"name": "Музыка", "url": "", "url_alt": "", "type": "text", "group_name": "🎨 Остальные предметы", "sort_order": 15,
      "max_number": 0, "note": "", "default_year": "", "default_year_alt": ""},
+
     {"name": "Труд (технология)", "url": "", "url_alt": "", "type": "text", "group_name": "🎨 Остальные предметы",
-     "sort_order": 15, "max_number": 0, "note": "", "default_year": "", "default_year_alt": ""},
+     "sort_order": 16, "max_number": 0, "note": "", "default_year": "", "default_year_alt": ""},
+
     {"name": "Изобразительное искусство", "url": "", "url_alt": "", "type": "text",
-     "group_name": "🎨 Остальные предметы", "sort_order": 16, "max_number": 0, "note": "", "default_year": "",
+     "group_name": "🎨 Остальные предметы", "sort_order": 17, "max_number": 0, "note": "", "default_year": "",
      "default_year_alt": ""},
 ]
 
