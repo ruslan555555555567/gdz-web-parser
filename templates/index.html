@@ -521,33 +521,6 @@
                     <input type="text" id="setName" placeholder="Как тебя зовут">
                 </label>
             </div>
-            <div class="settings-section">
-                <label class="form-label">Оформление главной</label>
-                <div class="theme-options">
-                    <button type="button" class="theme-btn active" data-theme="light">
-                        <span class="theme-preview light-preview"></span>
-                        ☀️ Светлая
-                    </button>
-                    <button type="button" class="theme-btn" data-theme="dark">
-                        <span class="theme-preview dark-preview"></span>
-                        🌙 Тёмная
-                    </button>
-                    <button type="button" class="theme-btn" data-theme="custom">
-                        <span class="theme-preview custom-preview">🖼</span>
-                        🎨 Своя картинка
-                    </button>
-                </div>
-                <div id="customBgBlock" style="display:none; margin-top:12px;">
-                    <div class="avatar-actions">
-                        <label class="btn-small avatar-upload-btn">
-                            🖼 Загрузить из галереи
-                            <input type="file" id="bgInput" accept="image/*" hidden>
-                        </label>
-                        <button type="button" id="bgRemoveBtn" class="btn-small avatar-remove-btn">🗑 Убрать фон</button>
-                    </div>
-                    <p class="hint" style="margin-top:6px;">Картинка сохранится в аккаунте.</p>
-                </div>
-            </div>
             <div class="settings-section" id="hideAiSection">
                 <label class="form-label">🙈 Скрыть ИИ-решебник для предметов</label>
                 <p class="hint" style="margin-bottom: 8px;">Картинки останутся, но текстовый ответ от нейросети пропадет.</p>
@@ -638,8 +611,6 @@
         let currentBgUrl = localStorage.getItem('gdz_bg') || null;
         let currentAvatar = null;
         let SUBJECTS = [];
-        let originalTheme = 'light';
-        let originalBgUrl = null;
         let fbImageBase64 = "";
         let currentSubjectId = null;
         let subjectYears = {};
@@ -728,7 +699,6 @@
                 localStorage.setItem('gdz_theme', 'light');
                 localStorage.removeItem('gdz_bg');
             }
-            // Обновляем иконку в топбаре
             const toggleBtn = $('themeToggleBtn');
             if (toggleBtn) {
                 toggleBtn.textContent = (theme === 'dark') ? '☀️' : '🌙';
@@ -773,11 +743,9 @@
             }
         }
 
-        // Слушатель для быстрой смены темы
         document.addEventListener('DOMContentLoaded', () => {
             const toggleBtn = $('themeToggleBtn');
             if (toggleBtn) {
-                // Ставим правильную иконку при загрузке
                 const current = localStorage.getItem('gdz_theme') || 'light';
                 toggleBtn.textContent = (current === 'dark') ? '☀️' : '🌙';
 
@@ -785,9 +753,6 @@
                     const current = localStorage.getItem('gdz_theme') || 'light';
                     const next = (current === 'dark') ? 'light' : 'dark';
                     applyTheme(next, null);
-
-                    // Синхронизируем кнопки в настройках, если они открыты
-                    document.querySelectorAll('.theme-btn').forEach(t => t.classList.toggle('active', t.dataset.theme === next));
                 });
             }
         });
@@ -1384,7 +1349,6 @@
                             edHeader.textContent = aiSolution.edition;
                             wrapper.appendChild(edHeader);
 
-                            // Кнопка копирования для ИИ
                             const copyBtn = document.createElement('button');
                             copyBtn.className = 'copy-btn';
                             copyBtn.innerHTML = '📋 Скопировать текст';
@@ -1631,7 +1595,6 @@
                             textBlock.className = 'task-text';
                             textBlock.innerHTML = `${header} ${content}`;
 
-                            // Кнопка копирования для текстовых заданий
                             const copyBtn = document.createElement('button');
                             copyBtn.className = 'copy-btn';
                             copyBtn.innerHTML = '📋 Скопировать текст';
@@ -1886,10 +1849,6 @@
             $('setOldPwd').value = '';
             $('setNewPwd').value = '';
             updateAvatarPreview();
-            originalTheme = authUser.theme || 'light';
-            originalBgUrl = authUser.bg_url || null;
-            document.querySelectorAll('.theme-btn').forEach(t => t.classList.toggle('active', t.dataset.theme === currentTheme));
-            $('customBgBlock').style.display = currentTheme === 'custom' ? 'block' : 'none';
 
             const hideList = $('hideAiList');
             hideList.innerHTML = '';
@@ -1902,23 +1861,11 @@
         }
 
         function cancelSettings() {
-            applyTheme(originalTheme, originalBgUrl);
-            document.querySelectorAll('.theme-btn').forEach(t => t.classList.toggle('active', t.dataset.theme === originalTheme));
             settingsModal.classList.add('hidden');
         }
 
         $('closeSettingsBtn').onclick = cancelSettings;
         settingsModal.onclick = (e) => { if (e.target === settingsModal) cancelSettings(); };
-
-        document.querySelectorAll('.theme-btn').forEach(t => {
-            t.onclick = () => {
-                const theme = t.dataset.theme;
-                document.querySelectorAll('.theme-btn').forEach(x => x.classList.toggle('active', x === t));
-                $('customBgBlock').style.display = theme === 'custom' ? 'block' : 'none';
-                const bg = theme === 'custom' ? currentBgUrl : null;
-                applyTheme(theme, bg);
-            };
-        });
 
         $('avatarInput').onchange = async (e) => {
             const file = e.target.files[0]; if (!file) return;
@@ -1942,30 +1889,9 @@
             } catch {}
         };
 
-        $('bgInput').onchange = async (e) => {
-            const file = e.target.files[0]; if (!file) return;
-            try {
-                const b64 = await shrinkImage(file, 1600, 0.82);
-                currentBgUrl = b64;
-                applyTheme('custom', b64);
-                document.querySelectorAll('.theme-btn').forEach(x => x.classList.toggle('active', x.dataset.theme === 'custom'));
-                $('customBgBlock').style.display = 'block';
-            } catch (err) { alert('Ошибка: ' + err.message); }
-            e.target.value = '';
-        };
-
-        $('bgRemoveBtn').onclick = () => {
-            currentBgUrl = null;
-            applyTheme('light', null);
-            document.querySelectorAll('.theme-btn').forEach(x => x.classList.toggle('active', x.dataset.theme === 'light'));
-            $('customBgBlock').style.display = 'none';
-        };
-
         $('saveSettingsBtn').onclick = async () => {
             const st = $('settingsStatus');
             const newName = $('setName').value.trim();
-            const newTheme = document.querySelector('.theme-btn.active')?.dataset.theme || 'light';
-            const bgToSave = newTheme === 'custom' ? (currentBgUrl || '') : '';
             const oldPwd = $('setOldPwd').value;
             const newPwd = $('setNewPwd').value;
             st.textContent = '⏳ Применяем...';
@@ -1978,8 +1904,6 @@
             const payload = {
                 token: authToken,
                 name: newName,
-                theme: newTheme,
-                bg_url: bgToSave,
                 hide_ai_subjects: JSON.stringify(newHideAi)
             };
 
@@ -1989,9 +1913,6 @@
                 if (!r1.ok) { st.textContent = '❌ ' + (d1.detail || 'Ошибка'); st.className = 'fb-status error'; return; }
                 authUser = d1.user;
                 hideAiSubjects = parseJson(authUser.hide_ai_subjects);
-                if (authUser.bg_url) currentBgUrl = authUser.bg_url;
-                originalTheme = authUser.theme;
-                originalBgUrl = authUser.bg_url;
                 applyTheme(authUser.theme, authUser.bg_url);
                 updateGreeting();
                 renderTopbar();
