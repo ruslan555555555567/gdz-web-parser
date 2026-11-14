@@ -35,7 +35,12 @@
                 else if (theme === 'custom' && bg) {
                     root.classList.add('theme-custom');
                     root.classList.add('btn-style-light');
-                    root.style.backgroundImage = 'url("' + bg + '")';
+                    root.style.backgroundColor = '#1a202c';
+                    if (bg.startsWith('linear-gradient') || bg.startsWith('radial-gradient') || bg.startsWith('conic-gradient')) {
+                        root.style.backgroundImage = bg;
+                    } else {
+                        root.style.backgroundImage = 'linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.4)), url("' + bg + '")';
+                    }
                 }
 
                 if (token) root.classList.add('has-auth');
@@ -406,6 +411,76 @@
             color: #ffffff !important;
             border: 1px solid rgba(255,255,255,0.2) !important;
         }
+
+        /* ─── ВЫБОР ФОНА ПРИ РЕГИСТРАЦИИ ─── */
+        .bg-picker-label {
+            display: block;
+            margin-top: 4px;
+            margin-bottom: 6px;
+            font-size: 14px;
+            font-weight: 600;
+            color: #4a5568;
+        }
+        .bg-picker-hint {
+            font-size: 12px;
+            color: #a0aec0;
+            margin-bottom: 10px;
+            font-weight: 400;
+        }
+        .bg-presets {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+        }
+        @media (min-width: 600px) {
+            .bg-presets { grid-template-columns: repeat(6, 1fr); }
+        }
+        .bg-preset {
+            height: 72px;
+            border-radius: 10px;
+            border: 3px solid transparent;
+            cursor: pointer;
+            position: relative;
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            padding: 6px;
+            font-size: 11px;
+            font-weight: 700;
+            color: #ffffff;
+            text-shadow: 0 1px 4px rgba(0,0,0,0.95), 0 0 8px rgba(0,0,0,0.7);
+            transition: all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1);
+            font-family: inherit;
+            background-color: #1a202c;
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+        }
+        .bg-preset:hover {
+            transform: translateY(-2px);
+            border-color: rgba(66, 153, 225, 0.5);
+        }
+        .bg-preset.active {
+            border-color: #4299e1;
+            box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.4);
+        }
+        .bg-preset.active::after {
+            content: '✓';
+            position: absolute;
+            top: 4px;
+            right: 6px;
+            background: #4299e1;
+            color: #fff;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 13px;
+            font-weight: 900;
+            text-shadow: none;
+        }
     </style>
     <link rel="stylesheet" href="/static/style.css">
     <link rel="stylesheet" href="/static/animations.css">
@@ -433,6 +508,11 @@
                     Имя
                     <input type="text" id="authName" placeholder="Как тебя зовут">
                 </label>
+                <div id="bgPicker" style="display:none; margin-bottom: 14px;">
+                    <label class="bg-picker-label">🎨 Выбери фон (необязательно)</label>
+                    <div class="bg-picker-hint">Красивое фото на главной странице. Не выбрал — будет светлая тема.</div>
+                    <div class="bg-presets" id="bgPresets"></div>
+                </div>
                 <label class="form-label">
                     Email
                     <input type="email" id="authEmail" placeholder="you@example.com" required>
@@ -616,6 +696,49 @@
         let subjectYears = {};
         let hideAiSubjects = {};
         let activeParts = {};
+        let selectedBgPreset = null;
+
+        // ─── ПРЕСЕТЫ ФОНОВ (реальные фото с Unsplash) ───
+        // Фото бесплатные, разрешены для встраивания без ограничений.
+        // ?w=1920 — оптимизация под фон, ?w=400 — для превью в списке.
+        const BG_PRESETS = [
+            {
+                id: 'sunset',
+                label: '🌅 Закат',
+                url: 'https://images.unsplash.com/photo-1470252649378-9c29740c9fa8?w=1920&q=80&auto=format&fit=crop',
+                preview: 'https://images.unsplash.com/photo-1470252649378-9c29740c9fa8?w=400&q=70&auto=format&fit=crop'
+            },
+            {
+                id: 'mountains',
+                label: '🏔 Горы',
+                url: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1920&q=80&auto=format&fit=crop',
+                preview: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400&q=70&auto=format&fit=crop'
+            },
+            {
+                id: 'space',
+                label: '🌌 Космос',
+                url: 'https://images.unsplash.com/photo-1462331940025-496dfbfc7564?w=1920&q=80&auto=format&fit=crop',
+                preview: 'https://images.unsplash.com/photo-1462331940025-496dfbfc7564?w=400&q=70&auto=format&fit=crop'
+            },
+            {
+                id: 'ocean',
+                label: '🌊 Океан',
+                url: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=1920&q=80&auto=format&fit=crop',
+                preview: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=400&q=70&auto=format&fit=crop'
+            },
+            {
+                id: 'abstract',
+                label: '🔷 Фигуры',
+                url: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=1920&q=80&auto=format&fit=crop',
+                preview: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=400&q=70&auto=format&fit=crop'
+            },
+            {
+                id: 'forest',
+                label: '🌲 Лес',
+                url: 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=1920&q=80&auto=format&fit=crop',
+                preview: 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=400&q=70&auto=format&fit=crop'
+            }
+        ];
 
         const $ = id => document.getElementById(id);
         const authScreen = $('authScreen');
@@ -685,6 +808,7 @@
             const root = document.documentElement;
             root.classList.remove('theme-dark', 'theme-custom', 'btn-style-light');
             root.style.backgroundImage = '';
+            root.style.backgroundColor = '';
             if (theme === 'dark') {
                 root.classList.add('theme-dark');
                 localStorage.setItem('gdz_theme', 'dark');
@@ -692,7 +816,12 @@
             } else if (theme === 'custom' && bgUrl) {
                 root.classList.add('theme-custom');
                 root.classList.add('btn-style-light');
-                root.style.backgroundImage = 'url("' + bgUrl + '")';
+                root.style.backgroundColor = '#1a202c';
+                if (bgUrl.startsWith('linear-gradient') || bgUrl.startsWith('radial-gradient') || bgUrl.startsWith('conic-gradient')) {
+                    root.style.backgroundImage = bgUrl;
+                } else {
+                    root.style.backgroundImage = 'linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.4)), url("' + bgUrl + '")';
+                }
                 localStorage.setItem('gdz_theme', 'custom');
                 localStorage.setItem('gdz_bg', bgUrl);
             } else {
@@ -753,6 +882,28 @@
                     const current = localStorage.getItem('gdz_theme') || 'light';
                     const next = (current === 'dark') ? 'light' : 'dark';
                     applyTheme(next, null);
+                });
+            }
+
+            // Рендер пресетов фона (миниатюры реальных фото)
+            const presetsEl = $('bgPresets');
+            if (presetsEl) {
+                BG_PRESETS.forEach(p => {
+                    const el = document.createElement('div');
+                    el.className = 'bg-preset';
+                    el.dataset.bg = p.url;
+                    el.style.backgroundImage = 'url("' + p.preview + '")';
+                    el.textContent = p.label;
+                    el.onclick = () => {
+                        document.querySelectorAll('.bg-preset').forEach(x => x.classList.remove('active'));
+                        if (selectedBgPreset === p.url) {
+                            selectedBgPreset = null;
+                        } else {
+                            el.classList.add('active');
+                            selectedBgPreset = p.url;
+                        }
+                    };
+                    presetsEl.appendChild(el);
                 });
             }
         });
@@ -1742,6 +1893,7 @@
             authMode = mode;
             document.querySelectorAll('.auth-tab').forEach(t => t.classList.toggle('active', t.dataset.tab === mode));
             $('nameField').style.display = mode === 'register' ? 'block' : 'none';
+            $('bgPicker').style.display = mode === 'register' ? 'block' : 'none';
             $('authSubmit').textContent = mode === 'login' ? 'Войти' : 'Создать аккаунт';
         }
         document.querySelectorAll('.auth-tab').forEach(t => t.onclick = () => switchTab(t.dataset.tab));
@@ -1777,6 +1929,23 @@
                 subjectYears = parseJson(authUser.subject_years);
                 hideAiSubjects = parseJson(authUser.hide_ai_subjects);
                 localStorage.setItem('gdz_token', authToken);
+
+                // Применяем выбранный при регистрации фон
+                if (authMode === 'register' && selectedBgPreset) {
+                    st.textContent = '🎨 Применяем фон...';
+                    try {
+                        const upd = await fetch('/api/auth/update', {
+                            method: 'POST',
+                            headers: {'Content-Type': 'application/json'},
+                            body: JSON.stringify({ token: authToken, theme: 'custom', bg_url: selectedBgPreset })
+                        });
+                        if (upd.ok) {
+                            const ud = await upd.json();
+                            authUser = ud.user;
+                        }
+                    } catch (err) { console.warn('Не удалось применить фон:', err); }
+                }
+
                 applyTheme(authUser.theme || 'light', authUser.bg_url);
                 await showMain();
 
