@@ -15,7 +15,7 @@ import asyncio
 import asyncpg
 from parser import parse_tasks
 
-VERSION = "160.0.0"
+VERSION = "161.0.0"
 ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "")
 ADMIN_EMAIL = os.getenv("ADMIN_EMAIL", "admin@gdz.ru").lower().strip()
 DATABASE_URL = os.getenv("DATABASE_URL")
