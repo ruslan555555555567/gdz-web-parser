@@ -504,16 +504,51 @@
         function cleanTextForSharing(text) {
             if (!text) return '';
             let clean = text;
-            // Убираем знаки доллара (LaTeX)
+
+            // 1. Убираем знаки доллара (LaTeX)
             clean = clean.replace(/\$\$/g, '');
             clean = clean.replace(/\$/g, '');
-            // Убираем маркеры Markdown (жирный, курсив, заголовки)
-            clean = clean.replace(/\*\*(.*?)\*\*/g, '$1');
-            clean = clean.replace(/\*(.*?)\*/g, '$1');
-            clean = clean.replace(/###\s/g, '');
-            clean = clean.replace(/####\s/g, '');
-            // Убираем лишние пустые строки (более 2 подряд)
+
+            // 2. Обрабатываем LaTeX-конструкции (системы, текст, переносы)
+            clean = clean.replace(/\\begin\{cases\}/g, '');
+            clean = clean.replace(/\\end\{cases\}/g, '');
+            clean = clean.replace(/\\text\{(.*?)\}/g, '$1');
+            clean = clean.replace(/\\\\/g, '\n');
+            clean = clean.replace(/&/g, ''); // выравнивание
+
+            // 3. Заменяем мат. символы на красивые аналоги
+            clean = clean.replace(/\\ge/g, '≥');
+            clean = clean.replace(/\\le/g, '≤');
+            clean = clean.replace(/\\ne/g, '≠');
+            clean = clean.replace(/\\approx/g, '≈');
+            clean = clean.replace(/\\times/g, '×');
+            clean = clean.replace(/\\div/g, '÷');
+            clean = clean.replace(/\\pm/g, '±');
+            clean = clean.replace(/\\cdot/g, '·');
+            clean = clean.replace(/\\infty/g, '∞');
+            clean = clean.replace(/\\pi/g, 'π');
+            clean = clean.replace(/\\alpha/g, 'α');
+            clean = clean.replace(/\\beta/g, 'β');
+            clean = clean.replace(/\\gamma/g, 'γ');
+            clean = clean.replace(/\\rightarrow/g, '→');
+            clean = clean.replace(/\\Rightarrow/g, '⇒');
+            clean = clean.replace(/\\in/g, '∈');
+            clean = clean.replace(/\\notin/g, '∉');
+            clean = clean.replace(/\\cup/g, '∪');
+            clean = clean.replace(/\\cap/g, '∩');
+            clean = clean.replace(/\\emptyset/g, '∅');
+            clean = clean.replace(/\\sqrt\{(.*?)\}/g, '√($1)');
+            clean = clean.replace(/\\frac\{(.*?)\}\{(.*?)\}/g, '($1)/($2)');
+
+            // 4. Убираем оставшиеся обратные слэши и фигурные скобки
+            clean = clean.replace(/\\/g, '');
+            clean = clean.replace(/\{/g, '');
+            clean = clean.replace(/\}/g, '');
+
+            // 5. Убираем лишние пробелы (больше 1) и лишние переносы строк (больше 2)
+            clean = clean.replace(/ +/g, ' ');
             clean = clean.replace(/\n{3,}/g, '\n\n');
+
             return clean.trim();
         }
 
