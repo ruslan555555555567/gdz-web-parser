@@ -606,6 +606,62 @@
             }
         }
 
+        // Функция для отправки ВСЕХ картинок
+        async function shareAllSolutions() {
+            const allImgs = document.querySelectorAll('.solution-img');
+            if (allImgs.length === 0) {
+                showToast('Нет картинок для отправки', 'error');
+                return;
+            }
+
+            const loadToast = showLoadingToast(`Скачиваю ${allImgs.length} картинок...`);
+            const files = [];
+
+            for (let img of allImgs) {
+                if (img.dataset.originalUrl) {
+                    try {
+                        const res = await fetch('/api/image?url=' + encodeURIComponent(img.dataset.originalUrl) + '&w=1000');
+                        const blob = await res.blob();
+                        const file = new File([blob], `task_${files.length + 1}.jpg`, { type: 'image/jpeg' });
+                        files.push(file);
+                    } catch (e) { console.error('Ошибка загрузки', e); }
+                }
+            }
+
+            if (loadToast) loadToast.stop();
+
+            if (files.length === 0) {
+                showToast('Не удалось загрузить картинки', 'error');
+                return;
+            }
+
+            if (navigator.canShare && navigator.canShare({ files: files })) {
+                try {
+                    await navigator.share({
+                        files: files,
+                        title: 'GDZ Решения',
+                        text: `Все решения (${files.length} шт.)`
+                    });
+                    showToast('Успешно отправлено!', 'success');
+                } catch (err) {
+                    if (err.name !== 'AbortError') showToast('Ошибка при отправке', 'error');
+                }
+            } else {
+                // Фолбэк: скачиваем все по одной
+                showToast('Телефон не поддерживает пачку файлов. Скачиваем...', 'info');
+                for (let i = 0; i < files.length; i++) {
+                    const a = document.createElement('a');
+                    a.href = URL.createObjectURL(files[i]);
+                    a.download = files[i].name;
+                    document.body.appendChild(a);
+                    a.click();
+                    a.remove();
+                    await new Promise(r => setTimeout(r, 300)); // Пауза, чтобы браузер не заблокировал
+                }
+                showToast('Все картинки скачаны!', 'success');
+            }
+        }
+
         document.addEventListener('DOMContentLoaded', () => {
             const toggleBtn = $('themeToggleBtn');
             if (toggleBtn) {
@@ -709,6 +765,20 @@
                 if (imageResults.length === 0 && textResults.length === 0) { showToast('Решения не найдены. Проверьте ввод.', 'error'); btn.disabled = false; btnText.innerHTML = '🚀 Решить'; return; }
 
                 const bySubject = {}; imageResults.forEach(r => { (bySubject[r.subject] = bySubject[r.subject] || []).push(r); });
+
+                // ДОБАВЛЯЕМ КНОПКУ "ПОДЕЛИТЬСЯ ВСЕМИ" ЕСЛИ КАРТИНОК МНОГО
+                if (imageResults.length > 1) {
+                    const shareAllDiv = document.createElement('div');
+                    shareAllDiv.style.cssText = 'margin-bottom: 20px; text-align: center;';
+                    const shareAllBtn = document.createElement('button');
+                    shareAllBtn.className = 'btn-modern-primary';
+                    shareAllBtn.style.cssText = 'background: linear-gradient(135deg, #48bb78, #38a169); width: 100%; font-size: 16px; padding: 15px;';
+                    shareAllBtn.innerHTML = `📤 Поделиться всеми (${imageResults.length} шт.)`;
+                    shareAllBtn.onclick = shareAllSolutions;
+                    shareAllDiv.appendChild(shareAllBtn);
+                    result.appendChild(shareAllDiv);
+                }
+
                 Object.entries(bySubject).forEach(([subject, items]) => {
                     const sec = document.createElement('section'); sec.className = 'subject-block'; sec.innerHTML = `<h2 class="color-blue">${escapeHtml(subject)}</h2>`;
                     items.forEach(r => {
@@ -765,7 +835,7 @@
 
                             if (isMergedSubject) {
                                 const imgContainer = document.createElement('div'); imgContainer.className = 'merged-container'; const imgElements = [];
-                                selectedSolution.images.forEach((u) => { const img = document.createElement('img'); img.className = 'solution-img img-loading'; img.alt = 'Загрузка...'; loadImage(img, u); imgContainer.appendChild(img); imgElements.push({ img, url: u }); });
+                                selectedSolution.images.forEach((u) => { const img = document.createElement('img'); img.className = 'solution-img img-loading'; img.alt = 'Загрузка...'; img.dataset.originalUrl = u; loadImage(img, u); imgContainer.appendChild(img); imgElements.push({ img, url: u }); });
                                 wrapper.appendChild(imgContainer);
                                 if (r.raw_text) { const textDiv = document.createElement('div'); textDiv.className = 'task-raw-text'; textDiv.textContent = r.raw_text.replace(new RegExp(r.subject, 'gi'), '').replace(/^[:\-\s]+/, '').trim() || r.numbers || 'Без текста'; wrapper.appendChild(textDiv); }
                                 const controls = document.createElement('div'); controls.style.cssText = 'display: flex; gap: 10px; justify-content: flex-end; flex-wrap: wrap; margin-top: 10px;';
@@ -785,7 +855,7 @@
                                 const imagesToRender = isMultiImageSubject ? selectedSolution.images : [selectedSolution.images[0]];
                                 imagesToRender.forEach((u, imgIndex) => {
                                     const imgWrap = document.createElement('div'); imgWrap.style.cssText = 'display: flex; flex-direction: column; gap: 8px; margin-bottom: 15px;';
-                                    const img = document.createElement('img'); img.className = 'solution-img img-loading'; img.style.marginTop = '0'; img.alt = 'Загрузка...'; loadImage(img, u); imgWrap.appendChild(img);
+                                    const img = document.createElement('img'); img.className = 'solution-img img-loading'; img.style.marginTop = '0'; img.alt = 'Загрузка...'; img.dataset.originalUrl = u; loadImage(img, u); imgWrap.appendChild(img);
                                     const controls = document.createElement('div'); controls.style.cssText = 'display: flex; gap: 10px; justify-content: flex-end; flex-wrap: wrap;';
                                     const refreshBtn = document.createElement('button'); refreshBtn.innerHTML = '🔄 Обновить'; refreshBtn.style.cssText = 'padding: 8px 16px; display: flex; align-items: center; gap: 6px; background: rgba(150, 150, 150, 0.15); color: inherit; border: 1px solid rgba(150, 150, 150, 0.3); border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s;'; refreshBtn.onclick = (e) => { e.stopPropagation(); img.classList.remove('img-tall', 'img-retrying'); img.classList.add('img-loading'); img.src = ''; loadImage(img, u); };
                                     const dlBtn = document.createElement('button'); dlBtn.innerHTML = '⬇️ Скачать'; dlBtn.style.cssText = 'padding: 8px 16px; display: flex; align-items: center; gap: 6px; background: #4299e1; color: #ffffff; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s; box-shadow: 0 2px 5px rgba(66, 153, 225, 0.3);'; dlBtn.onclick = (e) => { e.stopPropagation(); if (img.src && img.src.includes('/api/image')) { downloadSingleImage(img.src, `GDZ_${subject}_${r.number || 1}_${imgIndex + 1}.jpg`); fetch('/api/track-download', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({token: authToken}) }).catch(()=>{}); } else alert('Картинка еще не загрузилась, подождите...'); };
