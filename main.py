@@ -22,7 +22,7 @@ from aiogram import Bot, Dispatcher, types
 from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
 
-VERSION = "170.0.0"
+VERSION = "172.0.0"
 ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "")
 ADMIN_EMAIL = os.getenv("ADMIN_EMAIL", "admin@gdz.ru").lower().strip()
 DATABASE_URL = os.getenv("DATABASE_URL")
@@ -251,111 +251,104 @@ app = FastAPI(title="GDZ Парсер")
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
-
 # =========================================================================
 # ЛОГИКА TELEGRAM-БОТА
 # =========================================================================
 
-@dp.message()
-async def handle_telegram_message(message: types.Message):
-    if not db_pool: return
+if dp is not None:
+    @dp.message()
+    async def handle_telegram_message(message: types.Message):
+        if not db_pool: return
 
-    # 1. Обработка привязки аккаунта (/start <код>)
-    if message.text and message.text.startswith('/start '):
-        code = message.text.split(' ', 1)[1].strip().upper()
+        if message.text and message.text.startswith('/start '):
+            code = message.text.split(' ', 1)[1].strip().upper()
+            async with db_pool.acquire() as conn:
+                user = await conn.fetchrow("SELECT id, email FROM users WHERE telegram_link_code = $1", code)
+                if user:
+                    await conn.execute(
+                        "UPDATE users SET telegram_chat_id = $1, telegram_link_code = NULL WHERE id = $2",
+                        message.chat.id, user["id"])
+                    await message.answer(
+                        f"✅ Аккаунт <b>{user['email']}</b> успешно привязан!\nТеперь просто пиши мне: <i>Алгебра 41</i>")
+                else:
+                    await message.answer("❌ Неверный код привязки. Сгенерируй новый в настройках на сайте.")
+            return
+
+        if message.text == '/start':
+            await message.answer(
+                "Привет! Я бот для поиска ГДЗ.\n\nЕсли ты в личке — пиши: <b>Алгебра 41</b>\nЕсли в группе — пиши: <b>@ТвойБот Алгебра 41</b>\n\nЧтобы привязать аккаунт, зайди в настройки на сайте.")
+            return
+
+        text = message.text or ""
+        if message.chat.type in ['group', 'supergroup']:
+            bot_info = await bot.get_me()
+            if f"@{bot_info.username}" not in text:
+                return
+            text = text.replace(f"@{bot_info.username}", "").strip()
+
+        if not text: return
+
+        parts = text.split()
+        if len(parts) < 2:
+            await message.answer("⚠️ Пиши в формате: <b>Предмет Номер</b>\nНапример: Алгебра 41")
+            return
+
+        subject = parts[0].capitalize()
+        match = re.search(r'\d+', text)
+        if not match:
+            await message.answer("⚠️ Не могу найти номер задания. Пиши: Алгебра 41")
+            return
+        number = match.group(0)
+
+        status_msg = await message.answer(f"🔍 Ищу: <b>{subject} №{number}</b>...")
+
         async with db_pool.acquire() as conn:
-            user = await conn.fetchrow("SELECT id, email FROM users WHERE telegram_link_code = $1", code)
-            if user:
-                await conn.execute("UPDATE users SET telegram_chat_id = $1, telegram_link_code = NULL WHERE id = $2",
-                                   message.chat.id, user["id"])
-                await message.answer(
-                    f"✅ Аккаунт <b>{user['email']}</b> успешно привязан!\nТеперь просто пиши мне: <i>Алгебра 41</i>")
-            else:
-                await message.answer("❌ Неверный код привязки. Сгенерируй новый в настройках на сайте.")
-        return
+            subj_row = await conn.fetchrow(
+                "SELECT url, url_alt, type FROM subjects WHERE LOWER(name) LIKE LOWER($1) AND user_id IS NULL LIMIT 1",
+                f"%{subject}%")
 
-    if message.text == '/start':
-        await message.answer(
-            "Привет! Я бот для поиска ГДЗ.\n\nЕсли ты в личке — пиши: <b>Алгебра 41</b>\nЕсли в группе — пиши: <b>@ТвойБот Алгебра 41</b>\n\nЧтобы привязать аккаунт, зайди в настройки на сайте.")
-        return
+        if not subj_row or not subj_row['url']:
+            await status_msg.edit_text(f"❌ Предмет '{subject}' не найден в базе.")
+            return
 
-    # 2. Проверка на упоминание в группе
-    text = message.text or ""
-    if message.chat.type in ['group', 'supergroup']:
-        bot_info = await bot.get_me()
-        if f"@{bot_info.username}" not in text:
-            return  # Игнорируем, если не позвали
-        text = text.replace(f"@{bot_info.username}", "").strip()
+        job = {"subject": subject, "url": subj_row['url'], "numbers": number, "raw_text": text,
+               "type": subj_row['type'] or 'numbers'}
 
-    if not text: return
+        try:
+            results = await parse_tasks([job])
+        except Exception as e:
+            await status_msg.edit_text(f"❌ Ошибка парсера: {e}")
+            return
 
-    # 3. Поиск задания
-    # Разбираем текст (например: "Алгебра 41" или "Алгебра №41")
-    parts = text.split()
-    if len(parts) < 2:
-        await message.answer("⚠️ Пиши в формате: <b>Предмет Номер</b>\nНапример: Алгебра 41")
-        return
+        if not results or not results[0]['found']:
+            await status_msg.edit_text(f"😔 Решение для {subject} №{number} не найдено на gdz.ru.")
+            return
 
-    subject = parts[0].capitalize()
-    # Ищем все цифры в сообщении
-    match = re.search(r'\d+', text)
-    if not match:
-        await message.answer("⚠️ Не могу найти номер задания. Пиши: Алгебра 41")
-        return
-    number = match.group(0)
+        r = results[0]
+        await status_msg.edit_text(f"✅ Найдено! Отправляю...")
 
-    status_msg = await message.answer(f"🔍 Ищу: <b>{subject} №{number}</b>...")
+        img_solutions = [sol for sol in r['solutions'] if
+                         sol.get('images') and not sol.get('edition', '').startswith('ИИ')]
+        if img_solutions:
+            images_to_send = img_solutions[0]['images']
+            for i, img_url in enumerate(images_to_send):
+                try:
+                    await message.answer_photo(photo=types.URLInputFile(img_url, filename=f"sol_{i}.jpg"),
+                                               caption=f"📚 {subject} · № {number}" if i == 0 else "")
+                except Exception as e:
+                    print("Ошибка отправки фото:", e)
+                    await message.answer(f"⚠️ Не удалось загрузить картинку {i + 1}.")
 
-    # Ищем предмет в БД, чтобы взять ссылку
-    async with db_pool.acquire() as conn:
-        subj_row = await conn.fetchrow(
-            "SELECT url, url_alt, type FROM subjects WHERE LOWER(name) LIKE LOWER($1) AND user_id IS NULL LIMIT 1",
-            f"%{subject}%")
+        ai_solution = next(
+            (sol for sol in r['solutions'] if sol.get('edition', '').startswith('ИИ') and sol.get('text')), None)
+        if ai_solution:
+            txt = ai_solution['text']
+            if len(txt) > 4000:
+                txt = txt[:4000] + "\n\n... (текст обрезан)"
+            await message.answer(f"🤖 <b>ИИ-решение:</b>\n\n{txt}")
 
-    if not subj_row or not subj_row['url']:
-        await status_msg.edit_text(f"❌ Предмет '{subject}' не найден в базе.")
-        return
-
-    job = {"subject": subject, "url": subj_row['url'], "numbers": number, "raw_text": text,
-           "type": subj_row['type'] or 'numbers'}
-
-    try:
-        results = await parse_tasks([job])
-    except Exception as e:
-        await status_msg.edit_text(f"❌ Ошибка парсера: {e}")
-        return
-
-    if not results or not results[0]['found']:
-        await status_msg.edit_text(f"😔 Решение для {subject} №{number} не найдено на gdz.ru.")
-        return
-
-    r = results[0]
-    await status_msg.edit_text(f"✅ Найдено! Отправляю...")
-
-    # Собираем картинки
-    img_solutions = [sol for sol in r['solutions'] if sol.get('images') and not sol.get('edition', '').startswith('ИИ')]
-    if img_solutions:
-        images_to_send = img_solutions[0]['images']
-        for i, img_url in enumerate(images_to_send):
-            try:
-                await message.answer_photo(photo=types.URLInputFile(img_url, filename=f"sol_{i}.jpg"),
-                                           caption=f"📚 {subject} · № {number}" if i == 0 else "")
-            except Exception as e:
-                print("Ошибка отправки фото:", e)
-                await message.answer(f"⚠️ Не удалось загрузить картинку {i + 1}.")
-
-    # Собираем ИИ-текст
-    ai_solution = next((sol for sol in r['solutions'] if sol.get('edition', '').startswith('ИИ') and sol.get('text')),
-                       None)
-    if ai_solution:
-        txt = ai_solution['text']
-        # Telegram имеет лимит 4096 символов, обрезаем если надо
-        if len(txt) > 4000:
-            txt = txt[:4000] + "\n\n... (текст обрезан)"
-        await message.answer(f"🤖 <b>ИИ-решение:</b>\n\n{txt}")
-
-    if not img_solutions and not ai_solution:
-        await message.answer(f"⚠️ Найдено решение, но текста и картинок нет.")
+        if not img_solutions and not ai_solution:
+            await message.answer(f"⚠️ Найдено решение, но текста и картинок нет.")
 
 
 # =========================================================================
@@ -365,11 +358,9 @@ async def handle_telegram_message(message: types.Message):
 @app.post("/api/telegram/webhook")
 async def telegram_webhook(request: Request):
     if not bot or not dp: raise HTTPException(500, "Bot not configured")
-
     secret = request.headers.get("X-Telegram-Bot-Api-Secret-Token", "")
     if not secrets.compare_digest(secret, TELEGRAM_WEBHOOK_SECRET):
         raise HTTPException(403, "Forbidden")
-
     update_data = await request.json()
     update = types.Update.model_validate(update_data, context={"bot": bot})
     await dp.feed_update(bot, update)
@@ -380,11 +371,9 @@ async def telegram_webhook(request: Request):
 async def get_telegram_link_code(token: str = ""):
     user = await get_user_by_token(token)
     if not user: raise HTTPException(401, "Не авторизован")
-
-    new_code = secrets.token_hex(4).upper()  # Например: A1B2C3D4
+    new_code = secrets.token_hex(4).upper()
     async with db_pool.acquire() as conn:
         await conn.execute("UPDATE users SET telegram_link_code = $1 WHERE id = $2", new_code, user["id"])
-
     return {"code": new_code}
 
 
