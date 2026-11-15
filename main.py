@@ -15,7 +15,7 @@ import asyncio
 import asyncpg
 from parser import parse_tasks
 
-VERSION = "159.0.0"
+VERSION = "160.0.0"
 ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "")
 ADMIN_EMAIL = os.getenv("ADMIN_EMAIL", "admin@gdz.ru").lower().strip()
 DATABASE_URL = os.getenv("DATABASE_URL")
@@ -122,6 +122,9 @@ async def init_db():
             await conn.execute(
                 "CREATE TABLE IF NOT EXISTS feedback (id SERIAL PRIMARY KEY, date TEXT, message TEXT, contact TEXT, version TEXT)")
             await conn.execute("ALTER TABLE feedback ADD COLUMN IF NOT EXISTS image TEXT")
+            await conn.execute("ALTER TABLE feedback ADD COLUMN IF NOT EXISTS subject TEXT")
+            await conn.execute("ALTER TABLE feedback ADD COLUMN IF NOT EXISTS task_number TEXT")
+            await conn.execute("ALTER TABLE feedback ADD COLUMN IF NOT EXISTS context_type TEXT")
             await conn.execute(
                 "CREATE TABLE IF NOT EXISTS logs (id SERIAL PRIMARY KEY, user_id INTEGER, action TEXT, details TEXT, ip TEXT, created_at TIMESTAMP DEFAULT NOW())")
             await conn.execute(
@@ -132,8 +135,6 @@ async def init_db():
                 "CREATE TABLE IF NOT EXISTS user_achievements (user_id INTEGER REFERENCES users(id) ON DELETE CASCADE, achievement_id TEXT NOT NULL, unlocked_at TIMESTAMP DEFAULT NOW(), PRIMARY KEY (user_id, achievement_id))")
             await conn.execute(
                 "CREATE TABLE IF NOT EXISTS announcements (id SERIAL PRIMARY KEY, message TEXT NOT NULL, target_type TEXT DEFAULT 'all', target_users TEXT DEFAULT '', created_at TIMESTAMP DEFAULT NOW(), expires_at TIMESTAMP)")
-
-            # Добавляем колонку expires_at, если таблица уже была создана ранее
             await conn.execute("ALTER TABLE announcements ADD COLUMN IF NOT EXISTS expires_at TIMESTAMP")
 
             count = await conn.fetchval("SELECT COUNT(*) FROM subjects WHERE user_id IS NULL")
@@ -243,7 +244,14 @@ class Job(BaseModel): subject: str; url: str = ""; numbers: str = ""; raw_text: 
 class ParseRequest(BaseModel): jobs: List[Job]; token: str = ""
 
 
-class FeedbackRequest(BaseModel): message: str; contact: str = ""; image: str = ""
+class FeedbackRequest(BaseModel):
+    message: str
+    contact: str = ""
+    image: str = ""
+    subject: str = ""
+    task_number: str = ""
+    context_type: str = ""
+    token: str = ""
 
 
 class RegisterRequest(BaseModel): email: str; password: str; name: str = ""; device: str = ""
@@ -692,17 +700,24 @@ async def history_clear(req: TokenRequest):
 
 
 @app.post("/api/feedback")
-async def feedback(req: FeedbackRequest):
+async def feedback(req: FeedbackRequest, request: Request):
     if not req.message.strip(): raise HTTPException(400, "Сообщение пустое")
+    ip = request.client.host if request.client else ""
+    user = await get_user_by_token(req.token) if req.token else None
+    user_id = user["id"] if user else None
     if db_pool is not None:
         try:
             async with db_pool.acquire() as conn:
                 await conn.execute(
-                    "INSERT INTO feedback (date, message, contact, version, image) VALUES ($1, $2, $3, $4, $5)",
+                    "INSERT INTO feedback (date, message, contact, version, image, subject, task_number, context_type) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)",
                     datetime.now().strftime("%d.%m.%Y %H:%M"), req.message.strip(), req.contact.strip(), VERSION,
-                    req.image)
+                    req.image, req.subject.strip(), req.task_number.strip(), req.context_type.strip())
         except Exception as e:
             print(f"[main] Ошибка feedback: {e}")
+    details = req.message.strip()[:200]
+    if req.subject or req.task_number:
+        details = f"[{req.subject} №{req.task_number}] {details}"
+    await log_action(user_id, "feedback", details, ip)
     return {"ok": True}
 
 
@@ -717,7 +732,8 @@ async def admin_messages(data: dict):
     if not await check_admin(data): raise HTTPException(401, "Нет доступа")
     if db_pool is None: return {"messages": [], "total": 0}
     async with db_pool.acquire() as conn:
-        rows = await conn.fetch("SELECT id, date, message, contact, version, image FROM feedback ORDER BY id DESC")
+        rows = await conn.fetch(
+            "SELECT id, date, message, contact, version, image, subject, task_number, context_type FROM feedback ORDER BY id DESC")
     return {"messages": [dict(r) for r in rows], "total": len(rows)}
 
 
@@ -838,6 +854,9 @@ CREATE TABLE IF NOT EXISTS sessions (token TEXT PRIMARY KEY, user_id INTEGER REF
 CREATE TABLE IF NOT EXISTS history (id SERIAL PRIMARY KEY, user_id INTEGER REFERENCES users(id) ON DELETE CASCADE, subject TEXT, numbers TEXT, created_at TIMESTAMP DEFAULT NOW());
 CREATE TABLE IF NOT EXISTS feedback (id SERIAL PRIMARY KEY, date TEXT, message TEXT, contact TEXT, version TEXT);
 ALTER TABLE feedback ADD COLUMN IF NOT EXISTS image TEXT;
+ALTER TABLE feedback ADD COLUMN IF NOT EXISTS subject TEXT;
+ALTER TABLE feedback ADD COLUMN IF NOT EXISTS task_number TEXT;
+ALTER TABLE feedback ADD COLUMN IF NOT EXISTS context_type TEXT;
 CREATE TABLE IF NOT EXISTS logs (id SERIAL PRIMARY KEY, user_id INTEGER, action TEXT, details TEXT, ip TEXT, created_at TIMESTAMP DEFAULT NOW());
 CREATE TABLE IF NOT EXISTS templates (name TEXT PRIMARY KEY, content TEXT NOT NULL, updated_at TIMESTAMP DEFAULT NOW());
 CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT, updated_at TIMESTAMP DEFAULT NOW());
@@ -1060,6 +1079,10 @@ async def admin_templates_save(req: TemplateSaveRequest):
     if req.name not in ALLOWED_TEMPLATES: raise HTTPException(400, "Недопустимое имя")
     if not req.content.strip(): raise HTTPException(400, "Пустой шаблон")
     if len(req.content) > MAX_TEMPLATE_SIZE: raise HTTPException(400, "Слишком большой файл")
+    try:
+        templates.env.from_string(req.content)
+    except Exception as e:
+        raise HTTPException(400, f"Синтаксическая ошибка в шаблоне: {e}")
     if db_pool is None: raise HTTPException(500, "БД недоступна")
     async with db_pool.acquire() as conn:
         await conn.execute(
@@ -1198,14 +1221,6 @@ async def track_download(req: DownloadTrack):
     user = await get_user_by_token(req.token)
     if user: await log_action(user["id"], "download", "image")
     return {"ok": True}
-
-
-class AnnouncementSend(BaseModel):
-    token: str;
-    message: str;
-    target_type: str;
-    target_users: str = "";
-    duration_days: int = 3
 
 
 @app.post("/api/admin/announcements/send")
