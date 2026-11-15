@@ -15,7 +15,7 @@ import asyncio
 import asyncpg
 from parser import parse_tasks
 
-VERSION = "149.0.0"
+VERSION = "150.0.0"
 ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "")
 ADMIN_EMAIL = os.getenv("ADMIN_EMAIL", "admin@gdz.ru").lower().strip()
 DATABASE_URL = os.getenv("DATABASE_URL")
@@ -128,11 +128,11 @@ async def init_db():
                 "CREATE TABLE IF NOT EXISTS templates (name TEXT PRIMARY KEY, content TEXT NOT NULL, updated_at TIMESTAMP DEFAULT NOW())")
             await conn.execute(
                 "CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT, updated_at TIMESTAMP DEFAULT NOW())")
-
-            # --- НОВАЯ ТАБЛИЦА ДЛЯ АЧИВОК ---
             await conn.execute(
                 "CREATE TABLE IF NOT EXISTS user_achievements (user_id INTEGER REFERENCES users(id) ON DELETE CASCADE, achievement_id TEXT NOT NULL, unlocked_at TIMESTAMP DEFAULT NOW(), PRIMARY KEY (user_id, achievement_id))")
-            # --------------------------------
+            # НОВАЯ ТАБЛИЦА ОБЪЯВЛЕНИЙ
+            await conn.execute(
+                "CREATE TABLE IF NOT EXISTS announcements (id SERIAL PRIMARY KEY, message TEXT NOT NULL, target_type TEXT DEFAULT 'all', target_users TEXT DEFAULT '', created_at TIMESTAMP DEFAULT NOW())")
 
             count = await conn.fetchval("SELECT COUNT(*) FROM subjects WHERE user_id IS NULL")
             if count == 0:
@@ -276,6 +276,9 @@ class SettingsSaveRequest(BaseModel): password: str = ""; token: str = ""; setti
 
 
 class ScheduleSaveRequest(BaseModel): token: str; schedule: dict
+
+
+class AnnouncementSend(BaseModel): token: str; message: str; target_type: str; target_users: str = ""
 
 
 @app.on_event("startup")
@@ -835,14 +838,13 @@ ALTER TABLE feedback ADD COLUMN IF NOT EXISTS image TEXT;
 CREATE TABLE IF NOT EXISTS logs (id SERIAL PRIMARY KEY, user_id INTEGER, action TEXT, details TEXT, ip TEXT, created_at TIMESTAMP DEFAULT NOW());
 CREATE TABLE IF NOT EXISTS templates (name TEXT PRIMARY KEY, content TEXT NOT NULL, updated_at TIMESTAMP DEFAULT NOW());
 CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT, updated_at TIMESTAMP DEFAULT NOW());
-
--- Таблица ачивок
 CREATE TABLE IF NOT EXISTS user_achievements (user_id INTEGER REFERENCES users(id) ON DELETE CASCADE, achievement_id TEXT NOT NULL, unlocked_at TIMESTAMP DEFAULT NOW(), PRIMARY KEY (user_id, achievement_id));
+CREATE TABLE IF NOT EXISTS announcements (id SERIAL PRIMARY KEY, message TEXT NOT NULL, target_type TEXT DEFAULT 'all', target_users TEXT DEFAULT '', created_at TIMESTAMP DEFAULT NOW());
 """
 
     async with db_pool.acquire() as conn:
         tables = ['users', 'blocked_devices', 'subjects', 'user_subjects', 'user_schedule', 'sessions', 'history',
-                  'feedback', 'templates', 'settings', 'logs', 'user_achievements']
+                  'feedback', 'templates', 'settings', 'logs', 'user_achievements', 'announcements']
         for table in tables:
             sql_dump += f"\n-- Данные таблицы {table}\n"
             try:
@@ -874,7 +876,7 @@ CREATE TABLE IF NOT EXISTS user_achievements (user_id INTEGER REFERENCES users(i
             except Exception as e:
                 sql_dump += f"-- Ошибка при чтении {table}: {e}\n"
 
-        sql_dump += "\n-- Обновляем счетчики SERIAL\nSELECT setval('users_id_seq', COALESCE((SELECT MAX(id) FROM users), 0) + 1, false);\nSELECT setval('subjects_id_seq', COALESCE((SELECT MAX(id) FROM subjects), 0) + 1, false);\nSELECT setval('history_id_seq', COALESCE((SELECT MAX(id) FROM history), 0) + 1, false);\nSELECT setval('feedback_id_seq', COALESCE((SELECT MAX(id) FROM feedback), 0) + 1, false);\nSELECT setval('logs_id_seq', COALESCE((SELECT MAX(id) FROM logs), 0) + 1, false);\n"
+        sql_dump += "\n-- Обновляем счетчики SERIAL\nSELECT setval('users_id_seq', COALESCE((SELECT MAX(id) FROM users), 0) + 1, false);\nSELECT setval('subjects_id_seq', COALESCE((SELECT MAX(id) FROM subjects), 0) + 1, false);\nSELECT setval('history_id_seq', COALESCE((SELECT MAX(id) FROM history), 0) + 1, false);\nSELECT setval('feedback_id_seq', COALESCE((SELECT MAX(id) FROM feedback), 0) + 1, false);\nSELECT setval('logs_id_seq', COALESCE((SELECT MAX(id) FROM logs), 0) + 1, false);\nSELECT setval('announcements_id_seq', COALESCE((SELECT MAX(id) FROM announcements), 0) + 1, false);\n"
     return Response(content=sql_dump.encode('utf-8'), media_type="application/sql",
                     headers={"Content-Disposition": "attachment; filename=gdz_backup.sql"})
 
@@ -1089,16 +1091,13 @@ async def parse(req: ParseRequest, request: Request):
     return {"results": results, "total": len(results)}
 
 
-# --- ЭНДПОИНТЫ ДЛЯ АЧИВОК ---
 @app.get("/api/achievements")
 async def get_achievements(token: str = ""):
     user = await get_user_by_token(token)
     if not user: raise HTTPException(401, "Не авторизован")
     if db_pool is None: return {"achievements": []}
-
     uid = user["id"]
     async with db_pool.acquire() as conn:
-        # 1. Сбор статистики
         total_parses = await conn.fetchval("SELECT COUNT(*) FROM logs WHERE user_id = $1 AND action = 'parse'", uid)
         parses_morning = await conn.fetchval(
             "SELECT COUNT(*) FROM logs WHERE user_id = $1 AND action = 'parse' AND EXTRACT(HOUR FROM created_at) < 7",
@@ -1109,7 +1108,6 @@ async def get_achievements(token: str = ""):
         parses_weekend = await conn.fetchval(
             "SELECT COUNT(*) FROM logs WHERE user_id = $1 AND action = 'parse' AND EXTRACT(DOW FROM created_at) IN (0, 6)",
             uid)
-
         math_parses = await conn.fetchval(
             "SELECT COUNT(*) FROM logs WHERE user_id = $1 AND action = 'parse' AND (details ILIKE '%Алгебра%' OR details ILIKE '%Геометрия%')",
             uid)
@@ -1119,24 +1117,17 @@ async def get_achievements(token: str = ""):
             "SELECT COUNT(*) FROM logs WHERE user_id = $1 AND action = 'parse' AND details ILIKE '%Английский%'", uid)
         geo_parses = await conn.fetchval(
             "SELECT COUNT(*) FROM logs WHERE user_id = $1 AND action = 'parse' AND details ILIKE '%География%'", uid)
-
         downloads = await conn.fetchval("SELECT COUNT(*) FROM logs WHERE user_id = $1 AND action = 'download'", uid)
         feedbacks = await conn.fetchval("SELECT COUNT(*) FROM logs WHERE user_id = $1 AND action = 'feedback'", uid)
-
-        # Перепроверка (два одинаковых поиска подряд)
         last_two = await conn.fetch("SELECT numbers FROM history WHERE user_id = $1 ORDER BY id DESC LIMIT 2", uid)
         double_check = len(last_two) == 2 and last_two[0]["numbers"] == last_two[1]["numbers"] and last_two[0][
             "numbers"] != ""
-
-        # Ураган (3 поиска за 10 секунд)
         recent_parses = await conn.fetch(
             "SELECT created_at FROM logs WHERE user_id = $1 AND action = 'parse' ORDER BY created_at DESC LIMIT 3", uid)
         hurricane = False
         if len(recent_parses) == 3:
             diff = (recent_parses[0]["created_at"] - recent_parses[2]["created_at"]).total_seconds()
             if diff <= 10: hurricane = True
-
-        # Железная выдержка / В ударе (стрики)
         dates_rows = await conn.fetch(
             "SELECT DISTINCT DATE(created_at) as d FROM logs WHERE user_id = $1 AND action = 'parse' ORDER BY d DESC",
             uid)
@@ -1150,16 +1141,12 @@ async def get_achievements(token: str = ""):
                 cur_streak += 1
             else:
                 cur_streak = 1
-
             if cur_streak >= 3: streak_3 = True
             if cur_streak >= 7: streak_7 = True
-
-        # Первооткрыватель (зашел в первый день месяца)
         pioneer = await conn.fetchval(
             "SELECT COUNT(*) FROM logs WHERE user_id = $1 AND action = 'login' AND EXTRACT(DAY FROM created_at) = 1",
             uid) > 0
 
-        # 2. Список всех ачивок
         ach_list = [
             {"id": "lark", "icon": "🌅", "title": "Жаворонок", "desc": "Поиск до 7 утра",
              "unlocked": parses_morning > 0},
@@ -1169,7 +1156,6 @@ async def get_achievements(token: str = ""):
              "unlocked": parses_weekend > 0},
             {"id": "night", "icon": "🐢", "title": "Мастер откладывания", "desc": "5 поисков после 23:00",
              "unlocked": parses_night >= 5},
-
             {"id": "pythagoras", "icon": "🧮", "title": "Пифагор", "desc": "20 раз Алгебра/Геометрия",
              "unlocked": math_parses >= 20},
             {"id": "historian", "icon": "🏺", "title": "Юный историк", "desc": "10 раз История",
@@ -1178,7 +1164,6 @@ async def get_achievements(token: str = ""):
              "unlocked": eng_parses >= 10},
             {"id": "columbus", "icon": "🌍", "title": "Колумб", "desc": "10 раз География",
              "unlocked": geo_parses >= 10},
-
             {"id": "robot_friend", "icon": "🤖", "title": "Друг робота", "desc": "10 поисков",
              "unlocked": total_parses >= 10},
             {"id": "double_check", "icon": "🔁", "title": "Перепроверка", "desc": "2 одинаковых поиска",
@@ -1187,13 +1172,10 @@ async def get_achievements(token: str = ""):
              "unlocked": downloads >= 20},
             {"id": "helper", "icon": "🕵️", "title": "Помощник проекта", "desc": "Написать в техподдержку",
              "unlocked": feedbacks > 0},
-
             {"id": "pioneer", "icon": "🥇", "title": "Первооткрыватель", "desc": "Зашел 1-го числа",
              "unlocked": pioneer},
             {"id": "hurricane", "icon": "🌪", "title": "Ураган", "desc": "3 поиска за 10 сек", "unlocked": hurricane},
         ]
-
-        # 3. Сохраняем новые
         unlocked_ids = {r["achievement_id"] for r in
                         await conn.fetch("SELECT achievement_id FROM user_achievements WHERE user_id = $1", uid)}
         for a in ach_list:
@@ -1201,7 +1183,6 @@ async def get_achievements(token: str = ""):
                 await conn.execute(
                     "INSERT INTO user_achievements (user_id, achievement_id) VALUES ($1, $2) ON CONFLICT DO NOTHING",
                     uid, a["id"])
-
     return {"achievements": ach_list}
 
 
@@ -1216,22 +1197,95 @@ async def track_download(req: DownloadTrack):
     return {"ok": True}
 
 
-class FeedbackTrack(BaseModel):
+class AnnouncementSend(BaseModel):
+    token: str;
     message: str;
-    contact: str = "";
-    image: str = ""
+    target_type: str;
+    target_users: str = ""
 
 
-@app.post("/api/feedback")
-async def feedback(req: FeedbackRequest):
-    if not req.message.strip(): raise HTTPException(400, "Сообщение пустое")
-    if db_pool is not None:
-        try:
-            async with db_pool.acquire() as conn:
-                await conn.execute(
-                    "INSERT INTO feedback (date, message, contact, version, image) VALUES ($1, $2, $3, $4, $5)",
-                    datetime.now().strftime("%d.%m.%Y %H:%M"), req.message.strip(), req.contact.strip(), VERSION,
-                    req.image)
-        except Exception as e:
-            print(f"[main] Ошибка feedback: {e}")
+@app.post("/api/admin/announcements/send")
+async def admin_send_announcement(req: AnnouncementSend):
+    if not await check_main_admin({"token": req.token}): raise HTTPException(403, "Только главный админ")
+    if not req.message.strip(): raise HTTPException(400, "Пустое сообщение")
+    async with db_pool.acquire() as conn:
+        await conn.execute("INSERT INTO announcements (message, target_type, target_users) VALUES ($1, $2, $3)",
+                           req.message.strip(), req.target_type, req.target_users)
     return {"ok": True}
+
+
+@app.post("/api/admin/announcements/list")
+async def admin_list_announcements(data: dict):
+    if not await check_admin(data): raise HTTPException(401, "Нет доступа")
+    async with db_pool.acquire() as conn:
+        rows = await conn.fetch(
+            "SELECT id, message, target_type, target_users, to_char(created_at, 'DD.MM HH24:MI') AS created FROM announcements ORDER BY id DESC")
+    return {"announcements": [dict(r) for r in rows]}
+
+
+@app.post("/api/admin/announcements/delete/{ann_id}")
+async def admin_delete_announcement(ann_id: int, data: dict):
+    if not await check_main_admin(data): raise HTTPException(403, "Только главный админ")
+    async with db_pool.acquire() as conn:
+        await conn.execute("DELETE FROM announcements WHERE id = $1", ann_id)
+    return {"ok": True}
+
+
+@app.get("/api/announcements/active")
+async def get_active_announcement(token: str = ""):
+    user = await get_user_by_token(token) if token else None
+    user_id = user["id"] if user else None
+    if db_pool is None: return {"announcement": None}
+    async with db_pool.acquire() as conn:
+        row = await conn.fetchrow(
+            "SELECT id, message, target_type, target_users FROM announcements ORDER BY id DESC LIMIT 1")
+        if not row: return {"announcement": None}
+        target_type = row["target_type"]
+        target_users = [int(x) for x in row["target_users"].split(",") if x.strip().isdigit()]
+        show = False
+        if target_type == "all":
+            show = True
+        elif user_id:
+            if target_type == "specific" and user_id in target_users:
+                show = True
+            elif target_type == "exclude" and user_id not in target_users:
+                show = True
+        elif target_type == "exclude" and not user_id:
+            show = True
+        if show:
+            return {"announcement": {"id": row["id"], "message": row["message"]}}
+    return {"announcement": None}
+
+
+@app.get("/api/image")
+async def proxy_image(url: str, w: int = 1000):
+    if not url.startswith("https://gdz.ru/"): raise HTTPException(400, "Недопустимый URL")
+    w = max(400, min(w, 2000))
+
+    def fetch_and_compress():
+        r = cffi_requests.get(url, impersonate="chrome", timeout=8, headers={"Referer": "https://gdz.ru/"})
+        if r.status_code != 200: raise Exception(f"HTTP {r.status_code}")
+        try:
+            img = Image.open(BytesIO(r.content))
+            if img.width > w:
+                ratio = w / img.width
+                img = img.resize((w, int(img.height * ratio)), Image.LANCZOS)
+            if img.mode in ("RGBA", "P", "LA"):
+                bg = Image.new("RGB", img.size, (255, 255, 255))
+                if img.mode in ("RGBA", "LA"):
+                    bg.paste(img, mask=img.split()[-1])
+                else:
+                    bg.paste(img)
+                img = bg
+            buf = BytesIO()
+            img.save(buf, format="JPEG", quality=80, optimize=True)
+            return buf.getvalue(), "image/jpeg"
+        except Exception:
+            return r.content, r.headers.get("content-type", "image/jpeg")
+
+    try:
+        data, content_type = await asyncio.to_thread(fetch_and_compress)
+    except Exception:
+        return Response(content=PLACEHOLDER_JPEG, media_type="image/jpeg", headers={"Cache-Control": "no-cache"})
+    return Response(content=data, media_type=content_type or "image/jpeg",
+                    headers={"Cache-Control": "public, max-age=86400"})

@@ -12,196 +12,80 @@
                 const btnColor = localStorage.getItem('gdz_admin_btn_color') || '#4299e1';
                 const token = localStorage.getItem('gdz_token');
                 const root = document.documentElement;
-
                 if (adminTheme === 'dark') root.classList.add('admin-theme-dark');
-                else if (adminTheme === 'custom' && adminBg) {
-                    root.classList.add('admin-theme-custom');
-                    root.style.setProperty('--admin-bg-image', 'url("' + adminBg + '")');
-                } else {
+                else if (adminTheme === 'custom' && adminBg) { root.classList.add('admin-theme-custom'); root.style.setProperty('--admin-bg-image', 'url("' + adminBg + '")'); }
+                else {
                     const mainTheme = localStorage.getItem('gdz_theme') || 'light';
                     const mainBg = localStorage.getItem('gdz_bg');
                     if (mainTheme === 'dark') root.classList.add('theme-dark');
-                    else if (mainTheme === 'custom' && mainBg) {
-                        root.classList.add('theme-custom');
-                        root.style.backgroundImage = 'url("' + mainBg + '")';
-                    }
+                    else if (mainTheme === 'custom' && mainBg) { root.classList.add('theme-custom'); root.style.backgroundImage = 'url("' + mainBg + '")'; }
                 }
-
                 root.style.setProperty('--admin-btn-color', btnColor);
-                if (token) root.classList.add('has-token');
-                else root.classList.add('no-token');
+                if (token) root.classList.add('has-token'); else root.classList.add('no-token');
             } catch (e) {}
         })();
     </script>
     <style>
-        .modal {
-            background: rgba(0, 0, 0, 0.85) !important;
-            backdrop-filter: blur(5px) !important;
-        }
-        .modal-content {
-            background: #ffffff !important;
-            color: #1a202c !important;
-            opacity: 1 !important;
-            box-shadow: 0 10px 50px rgba(0,0,0,0.5) !important;
-            border: none !important;
-        }
-        html.theme-dark .modal-content,
-        html.admin-theme-dark .modal-content {
-            background: #2d3748 !important;
-            color: #e2e8f0 !important;
-            border: 1px solid #4a5568 !important;
-        }
-        html.theme-custom .modal-content,
-        html.admin-theme-custom .modal-content {
-            background: #1a202c !important;
-            color: #ffffff !important;
-            border: 1px solid rgba(255,255,255,0.2) !important;
-        }
-
+        .modal { background: rgba(0, 0, 0, 0.85) !important; backdrop-filter: blur(5px) !important; }
+        .modal-content { background: #ffffff !important; color: #1a202c !important; opacity: 1 !important; box-shadow: 0 10px 50px rgba(0,0,0,0.5) !important; border: none !important; }
+        html.theme-dark .modal-content, html.admin-theme-dark .modal-content { background: #2d3748 !important; color: #e2e8f0 !important; border: 1px solid #4a5568 !important; }
+        html.theme-custom .modal-content, html.admin-theme-custom .modal-content { background: #1a202c !important; color: #ffffff !important; border: 1px solid rgba(255,255,255,0.2) !important; }
         #editModal { z-index: 9999 !important; }
-
         html.has-token #loginCard { display: none !important; }
         html.no-token #loginCard { display: block !important; }
         html.has-token #adminContent { display: block; }
         html.no-token #adminContent { display: none; }
 
-        .theme-options {
-            display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
-            gap: 12px; margin-top: 10px;
-        }
-        .theme-btn {
-            display: flex; flex-direction: column; align-items: center;
-            gap: 8px; padding: 12px 8px;
-            border: 2px solid #e2e8f0; border-radius: 10px;
-            background: #ffffff; cursor: pointer;
-            font-size: 13px; font-weight: 600; font-family: inherit;
-            color: #4a5568; transition: all 0.2s;
-        }
-        .theme-btn.active {
-            border-color: #4299e1; background: #ebf8ff; color: #2b6cb0;
-            box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.2);
-        }
-        .theme-preview {
-            display: flex; align-items: center; justify-content: center;
-            width: 44px; height: 32px; border-radius: 6px;
-            border: 1px solid #cbd5e0; font-size: 18px;
-            background-size: cover; background-position: center;
-        }
+        .theme-options { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 12px; margin-top: 10px; }
+        .theme-btn { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 12px 8px; border: 2px solid #e2e8f0; border-radius: 10px; background: #ffffff; cursor: pointer; font-size: 13px; font-weight: 600; font-family: inherit; color: #4a5568; transition: all 0.2s; }
+        .theme-btn.active { border-color: #4299e1; background: #ebf8ff; color: #2b6cb0; box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.2); }
+        .theme-preview { display: flex; align-items: center; justify-content: center; width: 44px; height: 32px; border-radius: 6px; border: 1px solid #cbd5e0; font-size: 18px; background-size: cover; background-position: center; }
         .light-preview { background: linear-gradient(135deg, #ffffff 50%, #f5f7fa 50%); }
         .dark-preview  { background: linear-gradient(135deg, #2d3748 50%, #1a202c 50%); }
         .custom-preview { background: linear-gradient(135deg, #e2e8f0 50%, #a0aec0 50%); }
         .auto-preview { background: linear-gradient(135deg, #ffffff 50%, #2d3748 50%); color: #ffffff; font-weight: 900; }
 
-        html.admin-theme-dark #tabSettings .theme-btn,
-        html.theme-dark #tabSettings .theme-btn {
-            background: rgba(45, 55, 72, 0.6) !important;
-            border-color: #4a5568 !important;
-            color: #cbd5e0 !important;
-        }
-        html.admin-theme-dark #tabSettings .theme-btn.active,
-        html.theme-dark #tabSettings .theme-btn.active {
-            background: rgba(66, 153, 225, 0.2) !important;
-            border-color: #4299e1 !important;
-            color: #90cdf4 !important;
-        }
-
-        html.admin-theme-dark #tabSettings .input-label,
-        html.theme-dark #tabSettings .input-label {
-            color: #f7fafc !important;
-        }
+        html.admin-theme-dark #tabSettings .theme-btn, html.theme-dark #tabSettings .theme-btn { background: rgba(45, 55, 72, 0.6) !important; border-color: #4a5568 !important; color: #cbd5e0 !important; }
+        html.admin-theme-dark #tabSettings .theme-btn.active, html.theme-dark #tabSettings .theme-btn.active { background: rgba(66, 153, 225, 0.2) !important; border-color: #4299e1 !important; color: #90cdf4 !important; }
+        html.admin-theme-dark #tabSettings .input-label, html.theme-dark #tabSettings .input-label { color: #f7fafc !important; }
 
         .btn-block { background: #ed8936 !important; color: #fff !important; border: none; padding: 6px 10px; border-radius: 6px; cursor: pointer; font-size: 12px; }
-        .btn-block:hover { background: #dd6b20 !important; }
         .btn-unblock { background: #48bb78 !important; color: #fff !important; border: none; padding: 6px 10px; border-radius: 6px; cursor: pointer; font-size: 12px; }
-        .btn-unblock:hover { background: #38a169 !important; }
         .blocked-device-row { display: flex; justify-content: space-between; align-items: center; background: #f7fafc; border: 1px solid #e2e8f0; padding: 10px 15px; border-radius: 8px; margin-bottom: 8px; font-size: 13px; }
         .admin-theme-dark .blocked-device-row { background: rgba(45,55,72,0.5); border-color: #4a5568; color: #e2e8f0; }
-
-        .user-del {
-            background: rgba(229, 62, 62, 0.1) !important;
-            border: 1px solid #e53e3e !important;
-            color: #e53e3e !important;
-            border-radius: 6px; padding: 4px 8px; cursor: pointer; font-size: 16px;
-            transition: all 0.2s;
-        }
+        .user-del { background: rgba(229, 62, 62, 0.1) !important; border: 1px solid #e53e3e !important; color: #e53e3e !important; border-radius: 6px; padding: 4px 8px; cursor: pointer; font-size: 16px; transition: all 0.2s; }
         .user-del:hover { background: rgba(229, 62, 62, 0.3) !important; }
-        .admin-theme-dark .user-del, .theme-dark .user-del {
-            background: rgba(229, 62, 62, 0.2) !important;
-            color: #fc8181 !important;
-            border-color: #fc8181 !important;
-        }
-        .admin-theme-dark .user-del:hover, .theme-dark .user-del:hover {
-            background: rgba(229, 62, 62, 0.4) !important;
-        }
-
         .btn-admin-toggle { background: #ecc94b !important; color: #1a202c !important; border: none; padding: 6px 10px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600; }
         .btn-subjects { background: #9f7aea !important; color: #fff !important; border: none; padding: 6px 10px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600;}
 
-        .subj-checkbox-label {
-            display: flex; align-items: center; gap: 10px; padding: 10px;
-            border-radius: 8px; background: rgba(255,255,255,0.05);
-            cursor: pointer; transition: background 0.2s;
-            font-size: 15px; color: inherit; margin-bottom: 5px;
-        }
+        .subj-checkbox-label { display: flex; align-items: center; gap: 10px; padding: 10px; border-radius: 8px; background: rgba(255,255,255,0.05); cursor: pointer; transition: background 0.2s; font-size: 15px; color: inherit; margin-bottom: 5px; }
         .subj-checkbox-label:hover { background: rgba(255,255,255,0.1); }
         .subj-checkbox-label input { display: none; }
-        .subj-checkmark {
-            width: 20px; height: 20px; border: 2px solid #4a5568;
-            border-radius: 4px; display: flex; align-items: center; justify-content: center;
-            transition: all 0.2s; flex-shrink: 0;
-        }
-        .subj-checkbox-label input:checked + .subj-checkmark {
-            background: #4299e1; border-color: #4299e1;
-        }
-        .subj-checkbox-label input:checked + .subj-checkmark::after {
-            content: '✔'; color: white; font-size: 14px; font-weight: bold;
-        }
+        .subj-checkmark { width: 20px; height: 20px; border: 2px solid #4a5568; border-radius: 4px; display: flex; align-items: center; justify-content: center; transition: all 0.2s; flex-shrink: 0; }
+        .subj-checkbox-label input:checked + .subj-checkmark { background: #4299e1; border-color: #4299e1; }
+        .subj-checkbox-label input:checked + .subj-checkmark::after { content: '✔'; color: white; font-size: 14px; font-weight: bold; }
 
-        .custom-subject-card {
-            display: flex; justify-content: space-between; align-items: center;
-            background: rgba(159, 122, 234, 0.15); border: 1px solid #9f7aea;
-            padding: 8px 12px; border-radius: 8px; margin-bottom: 8px;
-            font-size: 14px; color: inherit;
-        }
-
+        .custom-subject-card { display: flex; justify-content: space-between; align-items: center; background: rgba(159, 122, 234, 0.15); border: 1px solid #9f7aea; padding: 8px 12px; border-radius: 8px; margin-bottom: 8px; font-size: 14px; color: inherit; }
         .log-filters { display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap; }
-        .log-filters input, .log-filters select {
-            padding: 8px 12px; border-radius: 8px; border: 1px solid #cbd5e0;
-            font-family: inherit; font-size: 14px; flex: 1; min-width: 150px;
-            background: white; color: #1a202c;
-        }
-        html.admin-theme-dark .log-filters input, html.admin-theme-dark .log-filters select,
-        html.theme-dark .log-filters input, html.theme-dark .log-filters select {
-            background: rgba(26,32,44,0.6); border-color: #4a5568; color: #e2e8f0;
-        }
-
+        .log-filters input, .log-filters select { padding: 8px 12px; border-radius: 8px; border: 1px solid #cbd5e0; font-family: inherit; font-size: 14px; flex: 1; min-width: 150px; background: white; color: #1a202c; }
+        html.admin-theme-dark .log-filters input, html.admin-theme-dark .log-filters select, html.theme-dark .log-filters input, html.theme-dark .log-filters select { background: rgba(26,32,44,0.6); border-color: #4a5568; color: #e2e8f0; }
         .action-login { border-left-color: #48bb78 !important; }
         .action-login_fail { border-left-color: #e53e3e !important; }
         .action-parse { border-left-color: #4299e1 !important; }
         .action-subject { border-left-color: #9f7aea !important; }
         .action-admin { border-left-color: #ecc94b !important; }
-
-        .log-action-badge {
-            display: inline-block; padding: 3px 8px; border-radius: 6px;
-            font-size: 12px; font-weight: 600; margin-bottom: 4px;
-        }
+        .log-action-badge { display: inline-block; padding: 3px 8px; border-radius: 6px; font-size: 12px; font-weight: 600; margin-bottom: 4px; }
         .badge-green { background: rgba(72, 187, 120, 0.2); color: #276749; }
         .badge-red { background: rgba(229, 62, 62, 0.2); color: #9b2c2c; }
         .badge-blue { background: rgba(66, 153, 225, 0.2); color: #2c5282; }
         .badge-purple { background: rgba(159, 122, 234, 0.2); color: #553c9a; }
         .badge-yellow { background: rgba(236, 201, 75, 0.2); color: #975a16; }
-
         html.admin-theme-dark .badge-green, html.theme-dark .badge-green { color: #9ae6b4; }
         html.admin-theme-dark .badge-red, html.theme-dark .badge-red { color: #feb2b2; }
         html.admin-theme-dark .badge-blue, html.theme-dark .badge-blue { color: #90cdf4; }
         html.admin-theme-dark .badge-purple, html.theme-dark .badge-purple { color: #d6bcfa; }
         html.admin-theme-dark .badge-yellow, html.theme-dark .badge-yellow { color: #faf089; }
-
-        .log-delete-btn {
-            background: transparent; border: none; font-size: 16px; cursor: pointer;
-            margin-left: auto; padding: 0 5px; opacity: 0.6; transition: opacity 0.2s;
-            color: inherit;
-        }
+        .log-delete-btn { background: transparent; border: none; font-size: 16px; cursor: pointer; margin-left: auto; padding: 0 5px; opacity: 0.6; transition: opacity 0.2s; color: inherit; }
         .log-delete-btn:hover { opacity: 1; transform: scale(1.1); }
     </style>
     <link rel="stylesheet" href="/static/style.css">
@@ -233,6 +117,7 @@
                 <button class="admin-tab" data-tab="blocked">🚫 Блокировки</button>
                 <button class="admin-tab" data-tab="messages">📬 Сообщения</button>
                 <button class="admin-tab" data-tab="logs">📋 Логи</button>
+                <button class="admin-tab" data-tab="announcements">📢 Объявления</button>
                 <button class="admin-tab" data-tab="settings">⚙️ Настройки</button>
             </div>
 
@@ -300,7 +185,6 @@
                     </div>
                 </div>
                 <p class="hint" style="margin-bottom:12px;">Последние 500 действий.</p>
-
                 <div class="log-filters">
                     <input type="text" id="logSearchInput" placeholder="Поиск по email или деталям..." oninput="renderLogs()">
                     <select id="logActionFilter" onchange="renderLogs()">
@@ -311,39 +195,49 @@
                         <option value="admin">Админы</option>
                     </select>
                 </div>
-
                 <div id="logsList"></div>
                 <div id="emptyLogs" class="empty">Логов пока нет</div>
             </div>
 
-            <div id="tabSettings" class="hidden">
+            <div id="tabAnnouncements" class="hidden">
                 <div class="section-header">
-                    <h2>⚙️ Настройки аккаунта</h2>
+                    <h2>📢 Отправка объявлений</h2>
                 </div>
-                <p class="hint" style="margin-bottom:15px;">Эти настройки сохраняются в ваш аккаунт.</p>
+                <div style="background: rgba(66,153,225,0.1); padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                    <label class="form-label">Текст объявления <textarea id="annMessage" rows="3" placeholder="Внимание, завтра техработы!"></textarea></label>
 
+                    <label class="form-label">Кому отправить
+                        <select id="annTargetType" class="num-input" onchange="document.getElementById('annUserList').style.display = (this.value === 'all' ? 'none' : 'block')">
+                            <option value="all">👥 Всем пользователям</option>
+                            <option value="specific">🎯 Только выбранным</option>
+                            <option value="exclude">🚫 Всем, КРОМЕ выбранных</option>
+                        </select>
+                    </label>
+
+                    <div id="annUserList" style="display: none; max-height: 200px; overflow-y: auto; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 8px; margin-bottom: 15px;">
+                        <p class="hint" style="margin-bottom:10px;">Выбери пользователей:</p>
+                        <div id="annUsersCheckboxes"></div>
+                    </div>
+
+                    <button onclick="sendAnnouncement()" class="btn-primary" style="width: auto;">🚀 Отправить</button>
+                    <div id="annStatus" class="fb-status"></div>
+                </div>
+                <h3>История объявлений</h3>
+                <div id="annHistoryList"></div>
+            </div>
+
+            <div id="tabSettings" class="hidden">
+                <div class="section-header"><h2>⚙️ Настройки аккаунта</h2></div>
+                <p class="hint" style="margin-bottom:15px;">Эти настройки сохраняются в ваш аккаунт.</p>
                 <div class="settings-section">
                     <label class="input-label">Оформление главной</label>
                     <div class="theme-options">
-                        <button type="button" class="theme-btn" data-theme="light" onclick="selectAdminTheme('light')">
-                            <span class="theme-preview light-preview"></span>
-                            ☀️ Светлая
-                        </button>
-                        <button type="button" class="theme-btn" data-theme="dark" onclick="selectAdminTheme('dark')">
-                            <span class="theme-preview dark-preview"></span>
-                            🌙 Тёмная
-                        </button>
-                        <button type="button" class="theme-btn" data-theme="custom" onclick="selectAdminTheme('custom')">
-                            <span class="theme-preview custom-preview" id="adminCustomPreviewBg">🖼</span>
-                            🎨 Своя картинка
-                        </button>
-                        <button type="button" class="theme-btn" data-theme="auto" onclick="selectAdminTheme('auto')">
-                            <span class="theme-preview auto-preview">A</span>
-                            🔄 Авто
-                        </button>
+                        <button type="button" class="theme-btn" data-theme="light" onclick="selectAdminTheme('light')"><span class="theme-preview light-preview"></span>☀️ Светлая</button>
+                        <button type="button" class="theme-btn" data-theme="dark" onclick="selectAdminTheme('dark')"><span class="theme-preview dark-preview"></span>🌙 Тёмная</button>
+                        <button type="button" class="theme-btn" data-theme="custom" onclick="selectAdminTheme('custom')"><span class="theme-preview custom-preview" id="adminCustomPreviewBg">🖼</span>🎨 Своя картинка</button>
+                        <button type="button" class="theme-btn" data-theme="auto" onclick="selectAdminTheme('auto')"><span class="theme-preview auto-preview">A</span>🔄 Авто</button>
                     </div>
                 </div>
-
                 <div class="settings-section" id="adminBgUploadSection" style="display: none;">
                     <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top: 10px;">
                         <input type="file" id="adminBgFileInput" accept="image/*" style="display:none;" onchange="handleAdminBgUpload(event)">
@@ -352,16 +246,7 @@
                     </div>
                     <p class="hint" style="margin-top: 8px;">Картинка сохранится в аккаунте.</p>
                 </div>
-
                 <div id="settingsStatus" class="fb-status"></div>
-
-                <div id="downloadDbSection" style="margin-bottom: 20px; padding-top: 20px; border-top: 1px dashed #4a5568; display: none;">
-                    <button id="downloadDbBtn" class="btn-small" style="background: #805ad5; font-size: 14px; padding: 10px 15px; width: 100%;">
-                        📥 Скачать базу данных (SQL)
-                    </button>
-                    <span id="downloadStatus" class="fb-status" style="margin-top: 10px; display: block;"></span>
-                </div>
-
                 <div class="modal-actions" style="justify-content: flex-end; gap: 10px; margin-top: 30px;">
                     <button id="cancelSettingsBtn" class="btn-secondary">Отмена</button>
                     <button id="saveSettingsBtn" class="btn-primary" style="width:auto;">💾 Применить</button>
@@ -408,12 +293,10 @@
         <div class="modal-content" style="max-width: 600px;">
             <h3>📚 Настройка предметов</h3>
             <p class="hint" style="margin-bottom:15px;" id="userSubjectsModalSubtitle">Пользователь: ...</p>
-
             <div style="display: flex; gap: 15px; margin-bottom: 15px; border-bottom: 1px solid #4a5568; padding-bottom: 10px;">
                 <button id="showCustomBtn" class="btn-small" style="background: #9f7aea;">Личные предметы</button>
                 <button id="showGlobalBtn" class="btn-small">Общие предметы</button>
             </div>
-
             <div id="customSubjectsSection">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
                     <span class="hint">Эти предметы видит только этот пользователь.</span>
@@ -422,7 +305,6 @@
                 <div id="customSubjectsList" style="display:flex; flex-direction:column; gap:8px; max-height:40vh; overflow-y:auto; margin-bottom:15px; padding-right:5px;"></div>
                 <div id="emptyCustomSubjects" class="empty" style="padding: 20px;">Нет личных предметов</div>
             </div>
-
             <div id="globalSubjectsSection" style="display: none;">
                 <div style="margin-bottom: 15px; background: rgba(66, 153, 225, 0.1); padding: 10px; border-radius: 8px; border: 1px solid #4299e1;">
                     <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
@@ -431,15 +313,12 @@
                     </label>
                     <p class="hint" style="margin-top: 5px; margin-left: 28px;">Если снять галочку, у пользователя будут <b>только</b> выбранные ниже.</p>
                 </div>
-
                 <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
                     <span class="hint">Выберите, какие общие предметы разрешить.</span>
                 </div>
-
                 <div id="userSubjectsList" style="display:flex; flex-direction:column; gap:8px; max-height:40vh; overflow-y:auto; margin-bottom:15px; padding-right:5px;"></div>
                 <div id="emptyGlobalSubjects" class="empty" style="padding: 20px;">Нет общих предметов</div>
             </div>
-
             <div class="modal-actions" style="justify-content: space-between;">
                 <button type="button" onclick="document.getElementById('userSubjectsModal').classList.add('hidden')" class="btn-secondary">Закрыть</button>
                 <button type="button" id="saveUserSubjectsBtn" class="btn-primary" style="width:auto;">💾 Сохранить общие</button>
@@ -498,7 +377,6 @@
                 const u = d.user;
                 if (!u || (!u.is_admin && !u.is_main_admin)) return;
                 isMainAdmin = u.is_main_admin;
-
                 if (u.is_main_admin) document.getElementById('downloadDbSection').style.display = 'block';
                 else document.getElementById('downloadDbSection').style.display = 'none';
 
@@ -506,10 +384,8 @@
                 currentAdminBgUrl = u.admin_bg_url || '';
                 originalAdminTheme = currentAdminTheme;
                 originalAdminBgUrl = currentAdminBgUrl;
-
                 updateAdminSettingsUI();
                 applyAdminThemeToPage(currentAdminTheme, currentAdminBgUrl);
-
                 const color = u.admin_btn_color || '#4299e1';
                 localStorage.setItem('gdz_admin_btn_color', color);
                 document.documentElement.style.setProperty('--admin-btn-color', color);
@@ -541,14 +417,12 @@
         }
 
         function selectAdminTheme(theme) { currentAdminTheme = theme; updateAdminSettingsUI(); applyAdminThemeToPage(theme, currentAdminTheme === 'custom' ? currentAdminBgUrl : null); }
-
         function handleAdminBgUpload(event) {
             const file = event.target.files[0]; if (!file) return;
             const reader = new FileReader();
             reader.onload = function(e) { currentAdminBgUrl = e.target.result; updateAdminSettingsUI(); applyAdminThemeToPage('custom', currentAdminBgUrl); };
             reader.readAsDataURL(file);
         }
-
         function removeAdminBg() { currentAdminBgUrl = ''; document.getElementById('adminBgFileInput').value = ''; updateAdminSettingsUI(); applyAdminThemeToPage('light', null); currentAdminTheme = 'light'; updateAdminSettingsUI(); }
 
         async function init() {
@@ -592,10 +466,14 @@
             t.addEventListener('click', () => {
                 document.querySelectorAll('.admin-tab').forEach(x => x.classList.toggle('active', x === t));
                 const tab = t.dataset.tab;
-                ['subjects', 'online', 'users', 'blocked', 'messages', 'logs', 'settings'].forEach(name => {
+                ['subjects', 'online', 'users', 'blocked', 'messages', 'logs', 'settings', 'announcements'].forEach(name => {
                     const el = document.getElementById('tab' + name.charAt(0).toUpperCase() + name.slice(1));
                     if (el) el.classList.toggle('hidden', name !== tab);
                 });
+                if (tab === 'announcements') {
+                    loadUsersForAnn();
+                    loadAnnHistory();
+                }
             });
         });
 
@@ -815,11 +693,8 @@
             try {
                 const r = await fetch('/api/admin/get-user-subjects', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({...getAuthPayload(), user_id: userId}) });
                 const d = await r.json();
-
                 document.getElementById('toggleAllSubjects').checked = !d.subjects_configured;
-
                 currentCustomSubjects = d.custom_subjects;
-
                 const customList = document.getElementById('customSubjectsList'); const emptyCustom = document.getElementById('emptyCustomSubjects'); customList.innerHTML = '';
                 if (!d.custom_subjects.length) { emptyCustom.style.display = 'block'; }
                 else {
@@ -830,7 +705,6 @@
                         customList.appendChild(div);
                     });
                 }
-
                 const checkList = document.getElementById('userSubjectsList'); const emptyGlobal = document.getElementById('emptyGlobalSubjects'); checkList.innerHTML = '';
                 const globalSubjs = subjectsCache.filter(s => !s.user_id);
                 if (!globalSubjs.length) { emptyGlobal.style.display = 'block'; }
@@ -853,7 +727,6 @@
         document.getElementById('showGlobalBtn').onclick = () => { document.getElementById('customSubjectsSection').style.display = 'none'; document.getElementById('globalSubjectsSection').style.display = 'block'; document.getElementById('showCustomBtn').style.background = 'transparent'; document.getElementById('showCustomBtn').style.color = 'inherit'; document.getElementById('showGlobalBtn').style.background = '#9f7aea'; document.getElementById('showGlobalBtn').style.color = 'white'; };
 
         document.getElementById('addCustomSubjectBtn').onclick = () => { openEditModal(null, currentEditingUserId); };
-
         window.editCustomSubject = (id) => { const s = currentCustomSubjects.find(x => x.id === id); if (s) openEditModal(s, currentEditingUserId); };
         window.deleteCustomSubject = async (id) => {
             if (!confirm('Удалить этот личный предмет?')) return;
@@ -923,57 +796,37 @@
         function renderLogs() {
             const list = document.getElementById('logsList'); const empty = document.getElementById('emptyLogs');
             list.innerHTML = '';
-
             const searchQuery = document.getElementById('logSearchInput').value.toLowerCase().trim();
             const actionFilter = document.getElementById('logActionFilter').value;
 
             const filteredLogs = allLogsCache.filter(l => {
-                const searchMatch = !searchQuery ||
-                    (l.email && l.email.toLowerCase().includes(searchQuery)) ||
-                    (l.name && l.name.toLowerCase().includes(searchQuery)) ||
-                    (l.details && l.details.toLowerCase().includes(searchQuery)) ||
-                    (l.ip && l.ip.includes(searchQuery));
-
+                const searchMatch = !searchQuery || (l.email && l.email.toLowerCase().includes(searchQuery)) || (l.name && l.name.toLowerCase().includes(searchQuery)) || (l.details && l.details.toLowerCase().includes(searchQuery)) || (l.ip && l.ip.includes(searchQuery));
                 let actionMatch = true;
                 if (actionFilter === 'login') actionMatch = ['login', 'login_fail', 'logout'].includes(l.action);
                 else if (actionFilter === 'parse') actionMatch = l.action === 'parse';
                 else if (actionFilter === 'subject') actionMatch = l.action.startsWith('subject');
                 else if (actionFilter === 'admin') actionMatch = ['admin_delete_user', 'block_device', 'unblock_device', 'toggle_admin'].includes(l.action);
-
                 return searchMatch && actionMatch;
             });
 
-            if (!filteredLogs.length) {
-                empty.style.display = 'block';
-                return;
-            }
+            if (!filteredLogs.length) { empty.style.display = 'block'; return; }
             empty.style.display = 'none';
 
             filteredLogs.forEach(l => {
                 const div = document.createElement('div'); div.className = 'log-row';
                 const icon = ACTION_ICONS[l.action] || '📌';
                 const actionName = ACTION_NAMES[l.action] || l.action;
-
-                let badgeClass = 'badge-blue';
-                let borderClass = 'action-parse';
+                let badgeClass = 'badge-blue'; let borderClass = 'action-parse';
                 if (['login', 'register', 'unblock_device'].includes(l.action)) { badgeClass = 'badge-green'; borderClass = 'action-login'; }
                 else if (['login_fail', 'account_delete', 'admin_delete_user'].includes(l.action)) { badgeClass = 'badge-red'; borderClass = 'action-login_fail'; }
                 else if (l.action.startsWith('subject')) { badgeClass = 'badge-purple'; borderClass = 'action-subject'; }
                 else if (['block_device', 'toggle_admin', 'subjects_reset'].includes(l.action)) { badgeClass = 'badge-yellow'; borderClass = 'action-admin'; }
-
                 div.classList.add(borderClass);
-
                 const avatarHtml = l.avatar ? `<span class="log-avatar" style="background-image:url('${l.avatar}')"></span>` : `<span class="log-avatar">${getInitial(l.name, l.email)}</span>`;
-
                 div.innerHTML = `
                     <div class="log-icon">${icon}</div>
                     <div class="log-content">
-                        <div class="log-head">
-                            ${avatarHtml}
-                            <strong>${escapeHtml(l.name || l.email || 'Гость')}</strong>
-                            <span class="log-action-badge ${badgeClass}">${actionName}</span>
-                            <button class="log-delete-btn" onclick="deleteLog(${l.id})" title="Удалить лог">🗑</button>
-                        </div>
+                        <div class="log-head">${avatarHtml}<strong>${escapeHtml(l.name || l.email || 'Гость')}</strong><span class="log-action-badge ${badgeClass}">${actionName}</span><button class="log-delete-btn" onclick="deleteLog(${l.id})" title="Удалить лог">🗑</button></div>
                         <div class="log-details">${escapeHtml(l.details || '')}</div>
                         <div class="log-meta">${escapeHtml(l.created)} · IP: ${escapeHtml(l.ip || '—')}</div>
                     </div>
@@ -984,11 +837,8 @@
 
         window.deleteLog = async (id) => {
             if (!confirm('Удалить эту запись из логов?')) return;
-            try {
-                const r = await fetch('/api/admin/logs/delete/' + id, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(getAuthPayload()) });
-                if (!r.ok) throw new Error('Ошибка удаления');
-                loadLogs();
-            } catch (e) { alert('Ошибка: ' + e.message); }
+            try { const r = await fetch('/api/admin/logs/delete/' + id, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(getAuthPayload()) }); if (!r.ok) throw new Error('Ошибка удаления'); loadLogs(); }
+            catch (e) { alert('Ошибка: ' + e.message); }
         };
 
         document.getElementById('refreshBlockedBtn').onclick = loadBlockedDevices;
@@ -998,17 +848,6 @@
         document.getElementById('clearLogsBtn').onclick = async () => { if (!confirm('Очистить все логи?')) return; try { await fetch('/api/admin/logs/clear', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(getAuthPayload()) }); loadLogs(); } catch (e) { alert('Ошибка: ' + e.message); } };
 
         function escapeHtml(t) { const d = document.createElement('div'); d.textContent = t || ''; return d.innerHTML; }
-
-        document.getElementById('downloadDbBtn').onclick = async () => {
-            const st = document.getElementById('downloadStatus'); st.textContent = '⏳ Создаем резервную копию...'; st.className = 'fb-status loading';
-            try {
-                const r = await fetch('/api/admin/export-db', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(getAuthPayload()) }); if (!r.ok) throw new Error('Ошибка сервера');
-                const blob = await r.blob(); const url = window.URL.createObjectURL(blob); const a = document.createElement('a');
-                a.href = url; a.download = `gdz_backup_${new Date().toISOString().slice(0, 10)}.sql`;
-                document.body.appendChild(a); a.click(); a.remove(); window.URL.revokeObjectURL(url);
-                st.textContent = '✅ Файл скачан!'; st.className = 'fb-status success';
-            } catch (e) { st.textContent = '❌ ' + e.message; st.className = 'fb-status error'; }
-        };
 
         document.getElementById('saveSettingsBtn').onclick = async () => {
             const st = document.getElementById('settingsStatus'); const token = localStorage.getItem('gdz_token');
@@ -1025,6 +864,65 @@
         };
 
         document.getElementById('cancelSettingsBtn').onclick = () => { currentAdminTheme = originalAdminTheme; currentAdminBgUrl = originalAdminBgUrl; updateAdminSettingsUI(); applyAdminThemeToPage(currentAdminTheme, originalAdminBgUrl); };
+
+        // --- ЛОГИКА ОБЪЯВЛЕНИЙ ---
+        async function loadUsersForAnn() {
+            try {
+                const r = await fetch('/api/admin/users', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(getAuthPayload()) });
+                const d = await r.json();
+                const container = document.getElementById('annUsersCheckboxes');
+                container.innerHTML = '';
+                d.users.forEach(u => {
+                    container.innerHTML += `<label style="display:flex; align-items:center; gap:8px; margin-bottom:5px; cursor:pointer;">
+                        <input type="checkbox" value="${u.id}" class="ann-user-cb" style="width:16px; height:16px;">
+                        <span>${escapeHtml(u.name || 'Без имени')} (${escapeHtml(u.email)})</span>
+                    </label>`;
+                });
+            } catch(e) {}
+        }
+
+        async function sendAnnouncement() {
+            const msg = document.getElementById('annMessage').value.trim();
+            if (!msg) return alert('Напиши текст!');
+            const type = document.getElementById('annTargetType').value;
+            const cbs = document.querySelectorAll('.ann-user-cb:checked');
+            const ids = Array.from(cbs).map(cb => cb.value).join(',');
+            if (type !== 'all' && !ids) return alert('Выбери хотя бы одного пользователя!');
+            const st = document.getElementById('annStatus');
+            st.textContent = '⏳ Отправляем...'; st.className = 'fb-status loading';
+            try {
+                const r = await fetch('/api/admin/announcements/send', {
+                    method: 'POST', headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ token: authData.token, message: msg, target_type: type, target_users: ids })
+                });
+                if (!r.ok) throw new Error('Ошибка');
+                st.textContent = '✅ Объявление отправлено!'; st.className = 'fb-status success';
+                document.getElementById('annMessage').value = '';
+                loadAnnHistory();
+            } catch(e) { st.textContent = '❌ ' + e.message; st.className = 'fb-status error'; }
+        }
+
+        async function loadAnnHistory() {
+            try {
+                const r = await fetch('/api/admin/announcements/list', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(getAuthPayload()) });
+                const d = await r.json();
+                const list = document.getElementById('annHistoryList');
+                list.innerHTML = '';
+                if (!d.announcements.length) { list.innerHTML = '<p class="empty">Нет объявлений</p>'; return; }
+                d.announcements.forEach(a => {
+                    list.innerHTML += `<div style="background:rgba(255,255,255,0.05); padding:10px; border-radius:8px; margin-bottom:8px; display:flex; justify-content:space-between;">
+                        <div><strong>${escapeHtml(a.message)}</strong><br><span style="font-size:12px; color:#a0aec0;">${a.created} · ${a.target_type}</span></div>
+                        <button onclick="deleteAnn(${a.id})" style="background:none; border:none; cursor:pointer; font-size:16px;">🗑</button>
+                    </div>`;
+                });
+            } catch(e) {}
+        }
+
+        async function deleteAnn(id) {
+            if (!confirm('Удалить?')) return;
+            await fetch('/api/admin/announcements/delete/' + id, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(getAuthPayload()) });
+            loadAnnHistory();
+        }
 
         init();
     </script>
