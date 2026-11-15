@@ -500,6 +500,23 @@
             return `${subject} · №${number}`;
         }
 
+        // Функция для очистки текста от сырого LaTeX и Markdown перед отправкой
+        function cleanTextForSharing(text) {
+            if (!text) return '';
+            let clean = text;
+            // Убираем знаки доллара (LaTeX)
+            clean = clean.replace(/\$\$/g, '');
+            clean = clean.replace(/\$/g, '');
+            // Убираем маркеры Markdown (жирный, курсив, заголовки)
+            clean = clean.replace(/\*\*(.*?)\*\*/g, '$1');
+            clean = clean.replace(/\*(.*?)\*/g, '$1');
+            clean = clean.replace(/###\s/g, '');
+            clean = clean.replace(/####\s/g, '');
+            // Убираем лишние пустые строки (более 2 подряд)
+            clean = clean.replace(/\n{3,}/g, '\n\n');
+            return clean.trim();
+        }
+
         // Функция для создания File из картинки для отправки
         async function shareImageFile(imageUrls, filename, caption) {
             try {
@@ -684,8 +701,10 @@
                             shareBtn.onclick = (e) => {
                                 e.stopPropagation();
                                 const caption = getTaskLabel(subject, r.number);
-                                if(navigator.share) { navigator.share({ title: 'GDZ Решение', text: caption + '\n\n' + aiSolution.text }).catch(()=>{}); }
-                                else { copyTextToClipboard(caption + '\n\n' + aiSolution.text, shareBtn); }
+                                const cleanText = cleanTextForSharing(aiSolution.text);
+                                const fullText = `${caption}\n\n${cleanText}`;
+                                if(navigator.share) { navigator.share({ title: 'GDZ Решение', text: fullText }).catch(()=>{}); }
+                                else { copyTextToClipboard(fullText, shareBtn); }
                             };
                             btnRow.appendChild(shareBtn);
 
@@ -778,8 +797,10 @@
                             const shareBtn = document.createElement('button'); shareBtn.className = 'copy-btn'; shareBtn.innerHTML = '📤 Поделиться'; shareBtn.style.margin = '0';
                             shareBtn.onclick = () => {
                                 const caption = getTaskLabel(subject, r.number);
-                                if(navigator.share) { navigator.share({ title: 'GDZ Решение', text: caption + '\n\n' + r.raw_text }).catch(()=>{}); }
-                                else { copyTextToClipboard(caption + '\n\n' + r.raw_text, shareBtn); }
+                                const cleanText = cleanTextForSharing(r.raw_text);
+                                const fullText = `${caption}\n\n${cleanText}`;
+                                if(navigator.share) { navigator.share({ title: 'GDZ Решение', text: fullText }).catch(()=>{}); }
+                                else { copyTextToClipboard(fullText, shareBtn); }
                             };
                             btnRow.appendChild(shareBtn);
 
