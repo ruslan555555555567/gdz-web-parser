@@ -14,11 +14,7 @@
     <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js"></script>
     <script>
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/sw.js?v=' + Date.now()).catch(err => console.log('SW err', err));
-            });
-        }
+        if ('serviceWorker' in navigator) { window.addEventListener('load', () => { navigator.serviceWorker.register('/sw.js?v=' + Date.now()).catch(err => console.log('SW err', err)); }); }
     </script>
     <script>
         (function() {
@@ -57,9 +53,9 @@
         .btn-modern-clear { background: #edf2f7; color: #e53e3e; border: 2px solid #fed7d7; border-radius: 14px; padding: 15px 20px; font-size: 15px; font-weight: 700; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 6px; white-space: nowrap; }
         .btn-modern-clear:hover { background: #fff5f5; border-color: #feb2b2; transform: translateY(-2px); }
         .theme-dark .btn-modern-clear { background: rgba(74, 85, 104, 0.5); color: #fc8181; border-color: #4a5568; }
-        .theme-toggle-btn, .stealth-toggle-btn, .offline-toggle-btn { background: rgba(150, 150, 150, 0.1); border: none; font-size: 18px; width: 36px; height: 36px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: transform 0.2s; padding: 0; position: relative; }
-        .theme-toggle-btn:hover, .stealth-toggle-btn:hover, .offline-toggle-btn:hover { background: rgba(150, 150, 150, 0.2); transform: scale(1.05); }
-        .offline-count-badge { position: absolute; top: -2px; right: -4px; background: #ed8936; color: white; font-size: 10px; font-weight: 800; padding: 2px 5px; border-radius: 10px; min-width: 16px; text-align: center; line-height: 12px; }
+        .theme-toggle-btn, .stealth-toggle-btn, .history-toggle-btn { background: rgba(150, 150, 150, 0.1); border: none; font-size: 18px; width: 36px; height: 36px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: transform 0.2s; padding: 0; position: relative; }
+        .theme-toggle-btn:hover, .stealth-toggle-btn:hover, .history-toggle-btn:hover { background: rgba(150, 150, 150, 0.2); transform: scale(1.05); }
+        .history-count-badge { position: absolute; top: -2px; right: -4px; background: #ed8936; color: white; font-size: 10px; font-weight: 800; padding: 2px 5px; border-radius: 10px; min-width: 16px; text-align: center; line-height: 12px; }
         .toast-container { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); display: flex; flex-direction: column; gap: 10px; z-index: 10000; pointer-events: none; width: 90%; max-width: 400px; }
         .toast { background: #ffffff; color: #1a202c; padding: 14px 20px; border-radius: 14px; box-shadow: 0 10px 30px rgba(0,0,0,0.15); font-weight: 700; font-size: 15px; display: flex; align-items: center; gap: 10px; animation: toastIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; pointer-events: auto; border-left: 4px solid #4299e1; }
         .toast.error { border-left-color: #e53e3e; }
@@ -86,7 +82,7 @@
         .theme-dark .icon-btn, .theme-dark .support-btn { background: rgba(30,41,59,0.6); border-color: rgba(71,85,105,0.6); color: #e2e8f0; }
         .theme-dark .footer { color: #64748b; }
         .theme-dark .subject-block h2 { color: #63b3ed; }
-        .theme-dark .history-row, .theme-dark .message-card, .theme-dark .user-card, .theme-dark .offline-row { background: rgba(15,23,42,0.5); color: #e2e8f0; }
+        .theme-dark .history-row, .theme-dark .message-card, .theme-dark .user-card { background: rgba(15,23,42,0.5); color: #e2e8f0; }
         .theme-dark .btn-secondary { background: rgba(71,85,105,0.6); color: #e2e8f0; }
         .theme-dark .auth-tabs, .theme-dark .admin-tabs { background: rgba(15,23,42,0.5); }
         .theme-dark .auth-tab, .theme-dark .admin-tab { color: #94a3b8; }
@@ -123,25 +119,39 @@
         .report-error-btn:hover { background: #fff5f5; border-color: #feb2b2; color: #e53e3e; }
         .theme-dark .report-error-btn { background: rgba(30,41,59,0.6); border-color: #475569; color: #94a3b8; }
         .theme-dark .report-error-btn:hover { background: rgba(239,68,68,0.15); border-color: #f87171; color: #fca5a5; }
-        /* ОФЛАЙН-БАННЕР */
         .offline-banner { display: none; background: linear-gradient(135deg, #e53e3e, #c53030); color: white; padding: 10px 16px; border-radius: 12px; margin-bottom: 16px; font-weight: 700; font-size: 14px; box-shadow: 0 4px 15px rgba(229,62,62,0.3); align-items: center; gap: 10px; }
         .offline-banner.show { display: flex; animation: fadeInAnn 0.4s ease-out; }
         .offline-banner-icon { font-size: 20px; }
-        /* СПИСОК ПОСЛЕДНИХ РЕШЕНИЙ */
-        .offline-row { background: #f7fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 12px 14px; margin-bottom: 8px; cursor: pointer; transition: all 0.2s; display: flex; justify-content: space-between; align-items: center; gap: 10px; }
-        .offline-row:hover { background: #edf2f7; border-color: #cbd5e0; transform: translateX(2px); }
-        .offline-row-info { flex: 1; min-width: 0; }
-        .offline-row-subject { font-weight: 800; font-size: 15px; color: #2d3748; margin-bottom: 2px; }
-        .theme-dark .offline-row-subject { color: #f7fafc; }
-        .offline-row-numbers { font-size: 13px; color: #718096; }
-        .theme-dark .offline-row-numbers { color: #94a3b8; }
-        .offline-row-date { font-size: 11px; color: #94a3b8; white-space: nowrap; }
-        .theme-dark .offline-row-date { color: #64748b; }
+        /* ИСТОРИЯ — вкладки и пачки */
+        .history-tabs { display: flex; gap: 6px; background: #f7fafc; padding: 4px; border-radius: 10px; margin-bottom: 15px; }
+        .theme-dark .history-tabs { background: rgba(15,23,42,0.5); }
+        .history-tab { flex: 1; padding: 10px 12px; border: none; background: transparent; border-radius: 8px; font-weight: 700; font-size: 13px; color: #718096; cursor: pointer; transition: all 0.2s; font-family: inherit; }
+        .history-tab.active { background: white; color: #2d3748; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+        .theme-dark .history-tab { color: #94a3b8; }
+        .theme-dark .history-tab.active { background: #1e293b; color: #f7fafc; }
+        .pkg-row { background: #f7fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 14px; margin-bottom: 8px; cursor: pointer; transition: all 0.2s; display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+        .pkg-row:hover { background: #edf2f7; border-color: #4299e1; transform: translateX(2px); }
+        .pkg-row-date { font-size: 11px; color: #94a3b8; margin-bottom: 2px; }
+        .pkg-row-title { font-weight: 800; font-size: 15px; color: #2d3748; margin-bottom: 2px; }
+        .pkg-row-subj { font-size: 12px; color: #718096; }
+        .pkg-row-arrow { font-size: 20px; color: #4299e1; font-weight: 800; }
+        .theme-dark .pkg-row { background: rgba(15,23,42,0.5); border-color: #334155; }
+        .theme-dark .pkg-row:hover { background: rgba(30,41,59,0.8); border-color: #4299e1; }
+        .theme-dark .pkg-row-title { color: #f7fafc; }
+        .theme-dark .pkg-row-subj { color: #94a3b8; }
         .offline-empty { text-align: center; padding: 30px 20px; color: #94a3b8; font-size: 14px; }
-        .offline-viewer { margin-top: 16px; padding: 16px; background: #f7fafc; border-radius: 12px; border: 1px solid #e2e8f0; }
-        .theme-dark .offline-viewer { background: rgba(15,23,42,0.5); border-color: #334155; }
-        .offline-viewer img { max-width: 100%; border-radius: 8px; margin-top: 8px; }
-        .offline-cached-note { font-size: 12px; font-weight: 700; color: #ed8936; margin-bottom: 8px; padding: 4px 8px; background: rgba(237,137,54,0.1); border-radius: 6px; display: inline-block; }
+        .pkg-item-card { margin-bottom: 20px; padding-bottom: 20px; border-bottom: 1px solid #e2e8f0; }
+        .theme-dark .pkg-item-card { border-bottom-color: #334155; }
+        .history-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; background: #f7fafc; border: 1px solid #e2e8f0; border-radius: 8px; margin-bottom: 6px; cursor: pointer; transition: all 0.2s; }
+        .history-row:hover { background: #edf2f7; border-color: #cbd5e0; }
+        .history-info { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; }
+        .history-info strong { font-size: 14px; color: #2d3748; font-weight: 800; }
+        .history-info span { font-size: 12px; color: #718096; word-break: break-word; }
+        .history-date { font-size: 11px; color: #94a3b8; white-space: nowrap; margin-left: 10px; }
+        .theme-dark .history-info strong { color: #f7fafc; }
+        .theme-dark .history-info span { color: #94a3b8; }
+        .theme-dark .history-row { background: rgba(15,23,42,0.5); border-color: #334155; }
+        .theme-dark .history-row:hover { background: rgba(30,41,59,0.8); }
         @keyframes fadeInAnn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
         .welcome-greeting { text-align: center; font-size: 24px; font-weight: 800; margin-bottom: 20px; margin-top: 10px; color: #2d3748; opacity: 0; transform: translateY(-20px); animation: slideDownFade 0.8s cubic-bezier(0.25, 0.8, 0.25, 1) forwards; }
         .theme-dark .welcome-greeting { color: #e2e8f0; }
@@ -230,14 +240,14 @@
             <div style="display: flex; align-items: center; gap: 10px;">
                 <span class="version">v{{ version }}</span>
                 <button id="stealthBtn" class="stealth-toggle-btn" title="Режим невидимки">🥷</button>
-                <button id="offlineBtn" class="offline-toggle-btn" title="Последние решения (офлайн)">📜<span id="offlineCountBadge" class="offline-count-badge" style="display:none;">0</span></button>
+                <button id="historyBtn" class="history-toggle-btn" title="История решений">📜<span id="historyCountBadge" class="history-count-badge" style="display:none;">0</span></button>
                 <button id="themeToggleBtn" class="theme-toggle-btn" title="Сменить тему">🌙</button>
             </div>
             <div class="topbar-right" id="topbarRight"></div>
         </div>
         <div id="offlineBanner" class="offline-banner">
             <span class="offline-banner-icon">📡</span>
-            <span>Вы офлайн. Доступны только сохранённые решения — нажми 📜 в шапке.</span>
+            <span>Вы офлайн. Открой 📜 — там сохранённые решения.</span>
         </div>
         <div id="globalAnnouncement" class="announcement-banner" style="display:none;">
             <div class="ann-content"><span class="ann-icon">📢</span><span id="annText"></span></div>
@@ -263,8 +273,36 @@
         <div id="result" class="result"></div>
         <footer class="footer"><span>GDZ Парсер · v{{ version }}</span></footer>
     </div>
-    <div id="historyModal" class="modal hidden"><div class="modal-content"><h3>📜 История поисков</h3><div id="historyList"></div><div class="modal-actions"><button id="clearHistoryBtn" class="btn-secondary">🗑 Очистить</button><button id="closeHistoryBtn" class="btn-primary">Закрыть</button></div></div></div>
-    <div id="offlineModal" class="modal hidden"><div class="modal-content" style="max-width: 500px;"><h3>📜 Последние решения (офлайн)</h3><p class="hint" style="margin-bottom: 15px;">10 последних решений сохраняются в памяти телефона. Работают даже без интернета.</p><div id="offlineList"></div><div id="offlineViewer" class="offline-viewer" style="display:none;"></div><div class="modal-actions" style="margin-top: 20px; justify-content:space-between;"><button type="button" id="clearOfflineBtn" class="btn-danger">🗑 Очистить всё</button><button type="button" onclick="document.getElementById('offlineModal').classList.add('hidden')" class="btn-secondary">Закрыть</button></div></div></div>
+    <!-- ИСТОРИЯ (объединённая: офлайн + онлайн) -->
+    <div id="historyModal" class="modal hidden">
+        <div class="modal-content" style="max-width: 600px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <h3 style="margin: 0;">📜 История решений</h3>
+                <button id="historyBackBtn" class="btn-secondary" style="display:none; padding: 6px 12px; font-size: 13px; width: auto;">← Назад</button>
+            </div>
+            <div id="historyTabs" class="history-tabs">
+                <button class="history-tab active" data-htab="offline">📡 Офлайн <span id="historyPkgCount" style="font-size:11px; opacity:0.7;"></span></button>
+                <button class="history-tab" data-htab="online">☁️ Онлайн</button>
+            </div>
+            <div id="historyListView">
+                <div id="offlineTabContent">
+                    <p class="hint" style="font-size: 12px; margin-bottom: 12px;">📦 Каждая запись — это весь один запуск «Решить» (все задачи вместе). Храним последние 30 пачек.</p>
+                    <div id="offlinePackageList"></div>
+                </div>
+                <div id="onlineTabContent" style="display:none;">
+                    <p class="hint" style="font-size: 12px; margin-bottom: 12px;">☁️ Последние поиски с сервера (что искал, когда). Решения не хранятся.</p>
+                    <div id="onlineHistoryList"></div>
+                </div>
+            </div>
+            <div id="historyPkgView" style="display:none;">
+                <div id="historyPkgContent"></div>
+            </div>
+            <div class="modal-actions" style="margin-top: 20px; justify-content: space-between;">
+                <button type="button" id="clearOfflineBtn" class="btn-danger" style="font-size:13px; padding:8px 14px;">🗑 Очистить офлайн</button>
+                <button type="button" id="closeHistoryBtn" class="btn-primary" style="width:auto;">Закрыть</button>
+            </div>
+        </div>
+    </div>
     <div id="achievementsModal" class="modal hidden"><div class="modal-content" style="max-width: 500px;"><h3>🏆 Ваши достижения</h3><p class="hint" style="margin-bottom: 15px;">Выполняйте задания, чтобы открывать новые бейджи!</p><div id="achievementsList" class="achievements-grid"></div><div class="modal-actions" style="margin-top: 20px;"><button type="button" onclick="document.getElementById('achievementsModal').classList.add('hidden')" class="btn-secondary">Закрыть</button></div></div></div>
     <div id="settingsModal" class="modal hidden">
         <div class="modal-content">
@@ -327,107 +365,169 @@
         let hideAiSubjects = {};
         let activeParts = {};
         let isStealthMode = false;
-        const OFFLINE_KEY = 'gdz_offline_results';
-        const OFFLINE_MAX = 10;
+        let currentHistoryTab = 'offline';
+        let currentPackageId = null;
+        const HISTORY_PKG_KEY = 'gdz_history_packages';
+        const HISTORY_PKG_MAX = 30;
         const $ = id => document.getElementById(id);
         const authScreen = $('authScreen'), mainScreen = $('mainScreen');
         const btn = $('btn'), result = $('result'), clearBtn = $('clearBtn');
-        const historyModal = $('historyModal'), settingsModal = $('settingsModal'), subjectSettingsModal = $('subjectSettingsModal'), supportModal = $('supportModal'), imageModal = $('imageModal'), imageModalImg = $('imageModalImg'), topbarRight = $('topbarRight'), subjectsContainer = $('subjectsContainer'), allTextTasks = $('allTextTasks'), textHint = $('textHint');
+        const settingsModal = $('settingsModal'), subjectSettingsModal = $('subjectSettingsModal'), supportModal = $('supportModal'), imageModal = $('imageModal'), imageModalImg = $('imageModalImg'), topbarRight = $('topbarRight'), subjectsContainer = $('subjectsContainer'), allTextTasks = $('allTextTasks'), textHint = $('textHint');
 
-        // ===== ОФЛАЙН: Сохранение и чтение =====
-        function getOfflineResults() { try { return JSON.parse(localStorage.getItem(OFFLINE_KEY) || '[]'); } catch (e) { return []; } }
-        function saveOfflineResult(record) {
+        // ===== ИСТОРИЯ (пачки) =====
+        function plural(n, one, few, many) { const m10 = n % 10, m100 = n % 100; if (m10 === 1 && m100 !== 11) return one; if (m10 >= 2 && m10 <= 4 && (m100 < 10 || m100 >= 20)) return few; return many; }
+        function getHistoryPackages() { try { return JSON.parse(localStorage.getItem(HISTORY_PKG_KEY) || '[]'); } catch (e) { return []; } }
+        function saveHistoryPackage(results) {
+            const items = [];
+            results.forEach(r => {
+                if (!r.found || !r.solutions || !r.solutions.length) return;
+                const aiS = r.solutions.find(sol => sol.edition && sol.edition.includes('ИИ') && sol.text && sol.text.trim().length > 0);
+                const imgS = r.solutions.filter(sol => sol.images && sol.images.length > 0 && (!sol.edition || !sol.edition.includes('ИИ')));
+                const allImages = [];
+                imgS.forEach(s => { if (s.images) allImages.push(...s.images); });
+                if (!aiS && allImages.length === 0) return;
+                items.push({
+                    subject: r.subject, number: r.number,
+                    aiText: aiS ? aiS.text : '',
+                    images: allImages,
+                    edition: (imgS[0] && imgS[0].edition) || (aiS && aiS.edition) || '',
+                    rawText: r.raw_text || ''
+                });
+            });
+            if (items.length === 0) return;
+            let pkgs = getHistoryPackages();
+            const pkg = {
+                id: Date.now() + '_' + Math.random().toString(36).slice(2, 8),
+                ts: Date.now(),
+                items: items
+            };
+            pkgs.unshift(pkg);
+            if (pkgs.length > HISTORY_PKG_MAX) pkgs = pkgs.slice(0, HISTORY_PKG_MAX);
+            try { localStorage.setItem(HISTORY_PKG_KEY, JSON.stringify(pkgs)); updateHistoryBadge(); }
+            catch (e) {
+                console.warn('storage full, trimming', e);
+                pkgs = pkgs.slice(0, 10);
+                try { localStorage.setItem(HISTORY_PKG_KEY, JSON.stringify(pkgs)); updateHistoryBadge(); } catch (e2) { console.error('cannot save', e2); }
+            }
+        }
+        function updateHistoryBadge() { const b = $('historyCountBadge'); if (!b) return; const pkgs = getHistoryPackages(); if (pkgs.length === 0) b.style.display = 'none'; else { b.style.display = 'inline-block'; b.textContent = pkgs.length; } }
+        function openHistoryModal(tab = 'offline') {
+            $('historyModal').classList.remove('hidden');
+            $('historyListView').style.display = 'block';
+            $('historyPkgView').style.display = 'none';
+            $('historyBackBtn').style.display = 'none';
+            $('historyTabs').style.display = 'flex';
+            currentPackageId = null;
+            switchHistoryTab(tab);
+        }
+        function switchHistoryTab(tab) {
+            currentHistoryTab = tab;
+            document.querySelectorAll('.history-tab').forEach(t => t.classList.toggle('active', t.dataset.htab === tab));
+            $('offlineTabContent').style.display = tab === 'offline' ? 'block' : 'none';
+            $('onlineTabContent').style.display = tab === 'online' ? 'block' : 'none';
+            if (tab === 'offline') renderOfflinePackages();
+            else loadOnlineHistoryList();
+        }
+        function renderOfflinePackages() {
+            const pkgs = getHistoryPackages();
+            $('historyPkgCount').textContent = pkgs.length ? `(${pkgs.length})` : '';
+            const list = $('offlinePackageList');
+            if (pkgs.length === 0) { list.innerHTML = '<div class="offline-empty">📭 Пока нет сохранённых пачек.<br>Реши любые задачи онлайн — пачка появится здесь.</div>'; return; }
+            list.innerHTML = '';
+            pkgs.forEach(pkg => {
+                const row = document.createElement('div'); row.className = 'pkg-row';
+                const dt = new Date(pkg.ts);
+                const dateStr = dt.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit' }) + ' ' + dt.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+                const sc = {};
+                pkg.items.forEach(it => { sc[it.subject] = (sc[it.subject] || 0) + 1; });
+                const subjStr = Object.entries(sc).map(([s, n]) => n > 1 ? `${s} ×${n}` : s).join(' · ');
+                row.innerHTML = `<div><div class="pkg-row-date">📅 ${dateStr}</div><div class="pkg-row-title">${pkg.items.length} ${plural(pkg.items.length, 'задание', 'задания', 'заданий')}</div><div class="pkg-row-subj">${escapeHtml(subjStr)}</div></div><div class="pkg-row-arrow">→</div>`;
+                row.onclick = () => openPackage(pkg.id);
+                list.appendChild(row);
+            });
+        }
+        function openPackage(pkgId) {
+            const pkg = getHistoryPackages().find(p => p.id === pkgId);
+            if (!pkg) return;
+            currentPackageId = pkgId;
+            $('historyListView').style.display = 'none';
+            $('historyTabs').style.display = 'none';
+            $('historyPkgView').style.display = 'block';
+            $('historyBackBtn').style.display = 'inline-block';
+            const content = $('historyPkgContent'); content.innerHTML = '';
+            const dt = new Date(pkg.ts);
+            const dateStr = dt.toLocaleDateString('ru-RU') + ' ' + dt.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+            const head = document.createElement('div');
+            head.style.cssText = 'padding: 10px 14px; background: rgba(66,153,225,0.1); border-radius: 8px; margin-bottom: 15px; font-weight: 700; font-size: 14px; color: #2b6cb0;';
+            head.textContent = `📅 ${dateStr} · ${pkg.items.length} ${plural(pkg.items.length, 'задание', 'задания', 'заданий')}`;
+            content.appendChild(head);
+            pkg.items.forEach(item => {
+                const card = document.createElement('div'); card.className = 'pkg-item-card';
+                const title = document.createElement('div'); title.className = 'task-number-header'; title.textContent = `${item.subject}${item.number ? ' · № ' + item.number : ''}`; card.appendChild(title);
+                if (item.edition) { const ed = document.createElement('div'); ed.className = 'edition-header'; ed.textContent = item.edition; card.appendChild(ed); }
+                if (item.aiText) { const tb = document.createElement('div'); tb.className = 'ai-text-block'; tb.innerHTML = renderMarkdown(item.aiText); if (window.renderMathInElement) renderMathInElement(tb, { delimiters: [{left: '$$', right: '$$', display: true}, {left: '$', right: '$', display: false}, {left: '\\(', right: '\\)', display: false}, {left: '\\[', right: '\\]', display: true}], throwOnError: false }); card.appendChild(tb); }
+                if (item.rawText && !/^\s*\d+\s*$/.test(item.rawText)) { const rt = document.createElement('div'); rt.className = 'task-raw-text'; rt.textContent = item.rawText; card.appendChild(rt); }
+                if (item.images && item.images.length > 0) {
+                    item.images.forEach((u) => {
+                        const img = document.createElement('img');
+                        img.src = '/api/image?url=' + encodeURIComponent(u) + '&w=1000';
+                        img.style.cssText = 'width: 100%; border-radius: 8px; margin-top: 8px; cursor: zoom-in;';
+                        img.alt = 'Решение';
+                        img.onclick = () => openImageModal(img.src);
+                        img.onerror = () => {
+                            const warn = document.createElement('div');
+                            warn.className = 'hint'; warn.style.cssText = 'padding:8px; background:rgba(237,137,54,0.1); border-radius:6px; font-size:12px; margin-top:6px;';
+                            warn.textContent = '⚠️ Картинка не сохранилась в кэше. Открой её онлайн — потом будет доступна офлайн.';
+                            img.parentElement.appendChild(warn);
+                        };
+                        card.appendChild(img);
+                    });
+                }
+                content.appendChild(card);
+            });
+        }
+        function backToHistoryList() {
+            $('historyListView').style.display = 'block';
+            $('historyPkgView').style.display = 'none';
+            $('historyBackBtn').style.display = 'none';
+            $('historyTabs').style.display = 'flex';
+            currentPackageId = null;
+        }
+        async function loadOnlineHistoryList() {
+            const list = $('onlineHistoryList');
+            if (!authToken) { list.innerHTML = '<p class="empty">Войди в аккаунт, чтобы видеть историю</p>'; return; }
+            list.innerHTML = '<p class="empty">Загрузка...</p>';
             try {
-                let arr = getOfflineResults();
-                arr = arr.filter(x => !(x.subject === record.subject && x.number === record.number));
-                arr.unshift(record);
-                if (arr.length > OFFLINE_MAX) arr = arr.slice(0, OFFLINE_MAX);
-                localStorage.setItem(OFFLINE_KEY, JSON.stringify(arr));
-                updateOfflineBadge();
-            } catch (e) { console.warn('offline save fail', e); }
+                const r = await fetch('/api/history/list?token=' + encodeURIComponent(authToken));
+                const d = await r.json();
+                if (!r.ok) throw new Error(d.detail || 'Ошибка');
+                if (!d.items.length) { list.innerHTML = '<p class="empty">История пуста</p>'; return; }
+                list.innerHTML = '';
+                d.items.forEach(it => {
+                    const row = document.createElement('div'); row.className = 'history-row';
+                    row.innerHTML = `<div class="history-info"><strong>${escapeHtml(it.subject)}</strong><span>${escapeHtml(it.numbers)}</span></div><span class="history-date">${escapeHtml(it.created)}</span>`;
+                    row.onclick = () => { allTextTasks.value = `${it.subject}: ${it.numbers}`; $('historyModal').classList.add('hidden'); };
+                    list.appendChild(row);
+                });
+            } catch (e) { list.innerHTML = '<p class="empty">Ошибка: ' + e.message + '</p>'; }
         }
-        function updateOfflineBadge() {
-            const arr = getOfflineResults();
-            const b = $('offlineCountBadge');
-            if (!b) return;
-            if (arr.length === 0) { b.style.display = 'none'; }
-            else { b.style.display = 'inline-block'; b.textContent = arr.length; }
-        }
-        function updateOnlineStatus() {
-            const banner = $('offlineBanner');
-            if (!banner) return;
-            if (navigator.onLine) { banner.classList.remove('show'); }
-            else { banner.classList.add('show'); }
-        }
+        document.getElementById('historyBtn').onclick = () => openHistoryModal('offline');
+        document.getElementById('closeHistoryBtn').onclick = () => $('historyModal').classList.add('hidden');
+        document.getElementById('historyBackBtn').onclick = backToHistoryList;
+        document.getElementById('historyModal').onclick = (e) => { if (e.target.id === 'historyModal') $('historyModal').classList.add('hidden'); };
+        document.getElementById('clearOfflineBtn').onclick = () => {
+            if (!confirm('Удалить все сохранённые пачки решений?')) return;
+            localStorage.removeItem(HISTORY_PKG_KEY);
+            updateHistoryBadge();
+            if (currentHistoryTab === 'offline') renderOfflinePackages();
+            if (currentPackageId) backToHistoryList();
+        };
+        document.querySelectorAll('.history-tab').forEach(t => t.onclick = () => switchHistoryTab(t.dataset.htab));
+
+        function updateOnlineStatus() { const b = $('offlineBanner'); if (!b) return; if (navigator.onLine) b.classList.remove('show'); else b.classList.add('show'); }
         window.addEventListener('online', updateOnlineStatus);
         window.addEventListener('offline', updateOnlineStatus);
         document.addEventListener('DOMContentLoaded', updateOnlineStatus);
-
-        function openOfflineModal() {
-            const modal = $('offlineModal');
-            const list = $('offlineList');
-            const viewer = $('offlineViewer');
-            viewer.style.display = 'none';
-            viewer.innerHTML = '';
-            const arr = getOfflineResults();
-            list.innerHTML = '';
-            if (arr.length === 0) {
-                list.innerHTML = '<div class="offline-empty">📭 Пока нет сохранённых решений.<br>Реши любую задачу онлайн — и она появится здесь.</div>';
-            } else {
-                arr.forEach((item, idx) => {
-                    const row = document.createElement('div');
-                    row.className = 'offline-row';
-                    const dt = new Date(item.ts);
-                    const dateStr = dt.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit' }) + ' ' + dt.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
-                    row.innerHTML = `<div class="offline-row-info"><div class="offline-row-subject">${escapeHtml(item.subject)}</div><div class="offline-row-numbers">${item.number ? '№ ' + escapeHtml(String(item.number)) : 'Текстовое задание'}</div></div><div class="offline-row-date">${dateStr}</div>`;
-                    row.onclick = () => showOfflineRecord(item);
-                    list.appendChild(row);
-                });
-            }
-            modal.classList.remove('hidden');
-        }
-        function showOfflineRecord(item) {
-            const viewer = $('offlineViewer');
-            viewer.style.display = 'block';
-            viewer.innerHTML = '';
-            const note = document.createElement('div'); note.className = 'offline-cached-note'; note.textContent = '📡 Из кэша' + (navigator.onLine ? '' : ' · офлайн'); viewer.appendChild(note);
-            const title = document.createElement('div'); title.className = 'task-number-header'; title.textContent = `${item.subject}${item.number ? ' · № ' + item.number : ''}`; viewer.appendChild(title);
-            if (item.edition) { const ed = document.createElement('div'); ed.className = 'edition-header'; ed.textContent = item.edition; viewer.appendChild(ed); }
-            if (item.aiText) {
-                const tb = document.createElement('div'); tb.className = 'ai-text-block'; tb.innerHTML = renderMarkdown(item.aiText);
-                if (window.renderMathInElement) renderMathInElement(tb, { delimiters: [{left: '$$', right: '$$', display: true}, {left: '$', right: '$', display: false}, {left: '\\(', right: '\\)', display: false}, {left: '\\[', right: '\\]', display: true}], throwOnError: false });
-                viewer.appendChild(tb);
-            }
-            if (item.rawText && !/^\s*\d+\s*$/.test(item.rawText)) {
-                const rtt = document.createElement('div'); rtt.className = 'task-raw-text'; rtt.textContent = item.rawText; viewer.appendChild(rtt);
-            }
-            if (item.images && item.images.length > 0) {
-                item.images.forEach((u, idx) => {
-                    const img = document.createElement('img');
-                    img.src = '/api/image?url=' + encodeURIComponent(u) + '&w=1000';
-                    img.alt = 'Решение ' + (idx + 1);
-                    img.style.cssText = 'width:100%; cursor:zoom-in;';
-                    img.onclick = () => openImageModal(img.src);
-                    img.onerror = () => {
-                        const warn = document.createElement('div');
-                        warn.className = 'hint';
-                        warn.style.cssText = 'padding:8px; background:rgba(237,137,54,0.1); border-radius:6px; font-size:12px; margin-top:6px;';
-                        warn.textContent = '⚠️ Картинка не сохранилась в кэше. Открой её один раз онлайн — потом будет доступна офлайн.';
-                        img.parentElement.appendChild(warn);
-                    };
-                    viewer.appendChild(img);
-                });
-            }
-            viewer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-        }
-        document.getElementById('clearOfflineBtn').onclick = () => {
-            if (!confirm('Удалить все сохранённые решения?')) return;
-            localStorage.removeItem(OFFLINE_KEY);
-            updateOfflineBadge();
-            openOfflineModal();
-        };
-        document.getElementById('offlineBtn').onclick = openOfflineModal;
-        document.getElementById('offlineModal').onclick = (e) => { if (e.target.id === 'offlineModal') document.getElementById('offlineModal').classList.add('hidden'); };
 
         function toggleStealth() { isStealthMode = !isStealthMode; const ss = $('stealthScreen'); if (isStealthMode) { ss.style.display = 'block'; mainScreen.style.display = 'none'; authScreen.style.display = 'none'; document.title = "Круговорот воды в природе"; } else { ss.style.display = 'none'; mainScreen.style.display = 'flex'; authScreen.style.display = 'none'; document.title = "GDZ Парсер — 7 класс"; } }
         document.addEventListener('keydown', (e) => { if (e.key === 'Escape') toggleStealth(); });
@@ -453,9 +553,9 @@
         document.getElementById('reportErrorModal').onclick = (e) => { if (e.target.id === 'reportErrorModal') document.getElementById('reportErrorModal').classList.add('hidden'); };
         document.getElementById('reportErrorSend').onclick = async () => { const text = document.getElementById('reportErrorText').value.trim(); const st = document.getElementById('reportErrorStatus'); if (text.length < 3) { st.textContent = '⚠️ Напиши хоть пару слов'; st.className = 'fb-status error'; return; } st.textContent = '⏳ Отправка...'; st.className = 'fb-status loading'; try { const r = await fetch('/api/feedback', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ message: text, contact: '', image: reportCtx.image || '', subject: reportCtx.subject, task_number: reportCtx.task_number, context_type: reportCtx.type, token: authToken || '' }) }); if (r.ok) { st.textContent = '✅ Спасибо!'; st.className = 'fb-status success'; setTimeout(() => document.getElementById('reportErrorModal').classList.add('hidden'), 1200); } else { st.textContent = '❌ Ошибка'; st.className = 'fb-status error'; } } catch (e) { st.textContent = '❌ Сеть'; st.className = 'fb-status error'; } };
         document.addEventListener('DOMContentLoaded', () => { const t = $('themeToggleBtn'); if (t) { const c = localStorage.getItem('gdz_theme') || 'light'; t.textContent = (c === 'dark') ? '☀️' : '🌙'; t.addEventListener('click', async () => { const c = localStorage.getItem('gdz_theme') || 'light'; const n = (c === 'dark') ? 'light' : 'dark'; applyTheme(n); if (authToken) { try { await fetch('/api/auth/update', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ token: authToken, theme: n }) }); } catch (e) {} } }); } });
-        async function init() { updateOfflineBadge(); if (authToken) { try { const device = getDeviceInfo(); const r = await fetch('/api/auth/me?token=' + encodeURIComponent(authToken) + '&device=' + encodeURIComponent(device) + '&t=' + Date.now()); if (r.ok) { const d = await r.json(); authUser = d.user; currentAvatar = authUser.avatar || null; subjectYears = parseJson(authUser.subject_years); hideAiSubjects = parseJson(authUser.hide_ai_subjects); applyTheme(authUser.theme || 'light'); setAuthState(true); await showMain(); return; } else if (r.status === 403) { const d = await r.json(); authToken = ''; localStorage.removeItem('gdz_token'); setAuthState(false); showAuth(); showToast(d.detail || 'Заблокирован', 'error'); return; } else { authToken = ''; localStorage.removeItem('gdz_token'); } } catch {} } setAuthState(false); showAuth(); }
+        async function init() { updateHistoryBadge(); if (authToken) { try { const device = getDeviceInfo(); const r = await fetch('/api/auth/me?token=' + encodeURIComponent(authToken) + '&device=' + encodeURIComponent(device) + '&t=' + Date.now()); if (r.ok) { const d = await r.json(); authUser = d.user; currentAvatar = authUser.avatar || null; subjectYears = parseJson(authUser.subject_years); hideAiSubjects = parseJson(authUser.hide_ai_subjects); applyTheme(authUser.theme || 'light'); setAuthState(true); await showMain(); return; } else if (r.status === 403) { const d = await r.json(); authToken = ''; localStorage.removeItem('gdz_token'); setAuthState(false); showAuth(); showToast(d.detail || 'Заблокирован', 'error'); return; } else { authToken = ''; localStorage.removeItem('gdz_token'); } } catch {} } setAuthState(false); showAuth(); }
         function showAuth() { setAuthState(false); authScreen.classList.remove('hidden'); mainScreen.classList.add('hidden'); }
-        async function showMain() { setAuthState(true); authScreen.classList.add('hidden'); mainScreen.classList.remove('hidden'); updateGreeting(); renderTopbar(); if (authUser && authUser.is_admin) { $('adminFillBtn').style.display = 'flex'; } else { $('adminFillBtn').style.display = 'none'; } await loadSubjects(); renderSubjects(); checkAnnouncements(); updateOfflineBadge(); updateOnlineStatus(); }
+        async function showMain() { setAuthState(true); authScreen.classList.add('hidden'); mainScreen.classList.remove('hidden'); updateGreeting(); renderTopbar(); if (authUser && authUser.is_admin) { $('adminFillBtn').style.display = 'flex'; } else { $('adminFillBtn').style.display = 'none'; } await loadSubjects(); renderSubjects(); checkAnnouncements(); updateHistoryBadge(); updateOnlineStatus(); }
         function updateGreeting() { const h = new Date().getHours(); let g = 'Доброй ночи'; if (h >= 7 && h < 9) g = 'Доброе утро'; else if (h >= 9 && h < 18) g = 'Добрый день'; else if (h >= 18 && h < 23) g = 'Добрый вечер'; const name = authUser.name || authUser.email.split('@')[0]; const el = $('welcomeGreeting'); if (el) { el.innerHTML = `${g}, <span>${escapeHtml(name)}</span>! 👋`; el.style.animation = 'none'; el.offsetHeight; el.style.animation = null; } }
         async function loadSubjects() { try { const r = await fetch('/api/subjects?token=' + encodeURIComponent(authToken) + '&t=' + Date.now()); const d = await r.json(); SUBJECTS = d.subjects || []; } catch (e) { subjectsContainer.innerHTML = '<p class="empty">Не удалось загрузить</p>'; } }
         function renderSubjects() { subjectsContainer.innerHTML = ''; const ns = SUBJECTS.filter(s => s.type === 'numbers'); if (ns.length === 0) { subjectsContainer.innerHTML = `<p class="empty" style="padding: 20px; background: rgba(237, 137, 54, 0.1); border-radius: 8px; border: 1px solid #ed8936;">Нет предметов с картинками.</p>`; } else { const groups = {}; ns.forEach(s => { const g = s.group_name || 'Прочее'; if (!groups[g]) groups[g] = []; groups[g].push(s); }); Object.entries(groups).forEach(([gN, items]) => { const gD = document.createElement('div'); gD.className = 'subject-group'; const t = document.createElement('h3'); t.className = 'group-title'; t.textContent = gN; gD.appendChild(t); items.forEach(s => { const row = document.createElement('div'); row.className = 'input-row'; const hR = document.createElement('div'); hR.className = 'subject-header-row'; const lbl = document.createElement('label'); lbl.className = 'input-label'; lbl.style.display = 'flex'; lbl.style.flexDirection = 'column'; lbl.style.alignItems = 'flex-start'; lbl.style.gap = '2px'; const cp = activeParts[s.name] || '1'; const aY = subjectYears[s.name] || (cp === '2' ? (s.default_year_alt || s.default_year) : s.default_year); const yB = `<span class="year-badge" style="color:#10b981; font-size:13px;">${aY ? `(${escapeHtml(aY)})` : ''}</span>`; const nB = s.note ? `<span style="font-size: 12px; color: #94a3b8; font-weight: normal; line-height: 1.2;">📝 ${escapeHtml(s.note)}</span>` : ''; let pB = ''; if (s.url_alt) { pB = `<button type="button" class="part-toggle-btn" onclick="togglePart('${s.name.replace(/'/g, "\\'")}', this)" data-part="${cp}">Часть ${cp}</button>`; } lbl.innerHTML = `<div>${escapeHtml(s.name)} ${yB} ${pB}</div>${nB}`; hR.appendChild(lbl); const gB = document.createElement('button'); gB.className = 'gear-btn'; gB.innerHTML = '⚙️'; gB.onclick = () => openSubjectSettings(s.name); hR.appendChild(gB); row.appendChild(hR); const ta = document.createElement('textarea'); ta.className = 'text-input'; ta.id = 'subj_' + s.id; ta.rows = 2; ta.dataset.subject = s.name; ta.dataset.type = s.type || 'numbers'; ta.dataset.url = s.url || ''; ta.dataset.urlAlt = s.url_alt || ''; ta.placeholder = '447, 449, 451 — или текст задания'; row.appendChild(ta); gD.appendChild(row); }); subjectsContainer.appendChild(gD); }); } textHint.innerHTML = `Вставь сюда весь текст (История, Музыка и т.д.). Умный парсер сам разберет.`; }
@@ -484,29 +584,11 @@
                 if (data.total === 0) { showToast('Ничего не найдено', 'error'); btn.disabled = false; btnText.innerHTML = '🚀 Решить'; return; }
                 showToast(`Обработано ${data.total} заданий`, 'success');
                 if (authToken) { for (const j of jobs) { if (!j.numbers) continue; fetch('/api/history/save', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({token: authToken, subject: j.subject, numbers: j.numbers}) }).catch(() => {}); } }
+                // СОХРАНЯЕМ ВСЮ ПАЧКУ ЦЕЛИКОМ (все результаты за один запуск)
+                saveHistoryPackage(data.results);
                 let imgR = []; let textR = []; let seenT = new Set();
                 data.results.forEach(r => { let isT = r.is_text || r.number === null; if (r.subject === "Текстовые задания") isT = true; if (isT) { const k = r.subject + '|||' + (r.raw_text || '').trim(); if (!seenT.has(k)) { seenT.add(k); textR.push(r); } } else imgR.push(r); });
                 if (imgR.length === 0 && textR.length === 0) { showToast('Решения не найдены', 'error'); btn.disabled = false; btnText.innerHTML = '🚀 Решить'; return; }
-
-                // ===== СОХРАНЕНИЕ В ОФЛАЙН =====
-                data.results.forEach(r => {
-                    if (!r.found || !r.solutions || !r.solutions.length) return;
-                    const aiS = r.solutions.find(sol => sol.edition && sol.edition.includes('ИИ') && sol.text && sol.text.trim().length > 0);
-                    const imgS = r.solutions.filter(sol => sol.images && sol.images.length > 0 && (!sol.edition || !sol.edition.includes('ИИ')));
-                    const allImages = [];
-                    imgS.forEach(s => { if (s.images) allImages.push(...s.images); });
-                    const rec = {
-                        subject: r.subject,
-                        number: r.number,
-                        aiText: aiS ? aiS.text : '',
-                        images: allImages,
-                        rawText: r.raw_text || '',
-                        edition: (imgS[0] && imgS[0].edition) || (aiS && aiS.edition) || '',
-                        ts: Date.now()
-                    };
-                    if (rec.aiText || rec.images.length > 0) saveOfflineResult(rec);
-                });
-
                 const byS = {}; imgR.forEach(r => { (byS[r.subject] = byS[r.subject] || []).push(r); });
                 if (imgR.length > 1) { const sd = document.createElement('div'); sd.style.cssText = 'margin-bottom: 20px; text-align: center;'; const sb = document.createElement('button'); sb.className = 'btn-modern-primary'; sb.style.cssText = 'background: linear-gradient(135deg, #48bb78, #38a169); width: 100%; font-size: 16px; padding: 15px;'; sb.innerHTML = `📤 Поделиться всеми (${imgR.length} шт.)`; sb.onclick = shareAllSolutions; sd.appendChild(sb); result.appendChild(sd); }
                 Object.entries(byS).forEach(([subject, items]) => {
@@ -590,7 +672,7 @@
         });
         function renderMarkdown(text) { if (!text) return ''; let h = text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); const lines = h.split('\n'); let r = ''; let inU = false, inO = false, inM = false, mb = []; const cl = () => { if (inU) { r += '</ul>'; inU = false; } if (inO) { r += '</ol>'; inO = false; } }; for (let line of lines) { let t = line.trim(); if (t.startsWith('$$')) { if (t.length > 2 && t.endsWith('$$')) { cl(); r += `<div style="text-align:center; margin: 10px 0;">${t}</div>`; continue; } inM = !inM; if (inM) mb = ['$$']; else { mb.push('$$'); cl(); r += `<div style="text-align:center; margin: 10px 0;">${mb.join('\n')}</div>`; mb = []; } continue; } if (inM) { mb.push(line); continue; } if (!t) { cl(); continue; } line = line.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>').replace(/(?<!\*)\*([^*]+)\*(?!\*)/g, '<i>$1</i>'); if (line.startsWith('* ')) { if (inO) { r += '</ol>'; inO = false; } if (!inU) { r += '<ul>'; inU = true; } r += `<li>${line.substring(2)}</li>`; } else if (/^\d+\.\s/.test(line)) { if (inU) { r += '</ul>'; inU = false; } if (!inO) { r += '<ol>'; inO = true; } r += `<li>${line.replace(/^\d+\.\s/, '')}</li>`; } else if (line.startsWith('#### ')) { cl(); r += `<h5>${line.substring(5)}</h5>`; } else if (line.startsWith('### ')) { cl(); r += `<h4>${line.substring(4)}</h4>`; } else { cl(); r += `<p>${line}</p>`; } } cl(); return r; }
         function escapeHtml(t) { const d = document.createElement('div'); d.textContent = t || ''; return d.innerHTML; }
-        function renderTopbar() { topbarRight.innerHTML = ''; const name = authUser.name || authUser.email.split('@')[0]; const init = getInitial(authUser.name, authUser.email); const as = currentAvatar ? `background-image: url('${currentAvatar}')` : ''; topbarRight.innerHTML = `<div class="user-menu-container" id="userMenuContainer"><button class="user-menu-btn" id="userMenuBtn"><div class="user-avatar-mini" style="${as}">${currentAvatar ? '' : init}</div><span>${escapeHtml(name)}</span><span style="font-size:10px; opacity:0.6;">▼</span></button><div class="dropdown-menu" id="userDropdown"><div class="dropdown-header" id="dropdownGreeting"></div><button class="dropdown-item" onclick="openAchievements()">🏆 Достижения</button><button class="dropdown-item" onclick="openSettings()">⚙️ Настройки</button><button class="dropdown-item" onclick="openHistory()">📜 История</button><button class="dropdown-item" onclick="document.getElementById('userDropdown').classList.remove('show'); supportModal.classList.remove('hidden')">❓ Поддержка</button>${authUser.is_admin ? '<button class="dropdown-item" onclick="document.getElementById(\'userDropdown\').classList.remove(\'show\'); window.location.href=\'/admin\'">👑 Админка</button>' : ''}<div class="dropdown-divider"></div><button class="dropdown-item logout" onclick="logout()">🚪 Выйти</button></div></div>`; const h = new Date().getHours(); let g = 'Доброй ночи'; if (h >= 7 && h < 9) g = 'Доброе утро'; else if (h >= 9 && h < 18) g = 'Добрый день'; else if (h >= 18 && h < 23) g = 'Добрый вечер'; $('dropdownGreeting').innerText = `${g}, ${name}!`; $('userMenuBtn').onclick = (e) => { e.stopPropagation(); $('userDropdown').classList.toggle('show'); }; document.addEventListener('click', (e) => { if (!e.target.closest('#userMenuContainer')) $('userDropdown').classList.remove('show'); }); }
+        function renderTopbar() { topbarRight.innerHTML = ''; const name = authUser.name || authUser.email.split('@')[0]; const init = getInitial(authUser.name, authUser.email); const as = currentAvatar ? `background-image: url('${currentAvatar}')` : ''; topbarRight.innerHTML = `<div class="user-menu-container" id="userMenuContainer"><button class="user-menu-btn" id="userMenuBtn"><div class="user-avatar-mini" style="${as}">${currentAvatar ? '' : init}</div><span>${escapeHtml(name)}</span><span style="font-size:10px; opacity:0.6;">▼</span></button><div class="dropdown-menu" id="userDropdown"><div class="dropdown-header" id="dropdownGreeting"></div><button class="dropdown-item" onclick="openAchievements()">🏆 Достижения</button><button class="dropdown-item" onclick="openSettings()">⚙️ Настройки</button><button class="dropdown-item" onclick="document.getElementById('userDropdown').classList.remove('show'); openHistoryModal('offline')">📜 История</button><button class="dropdown-item" onclick="document.getElementById('userDropdown').classList.remove('show'); supportModal.classList.remove('hidden')">❓ Поддержка</button>${authUser.is_admin ? '<button class="dropdown-item" onclick="document.getElementById(\'userDropdown\').classList.remove(\'show\'); window.location.href=\'/admin\'">👑 Админка</button>' : ''}<div class="dropdown-divider"></div><button class="dropdown-item logout" onclick="logout()">🚪 Выйти</button></div></div>`; const h = new Date().getHours(); let g = 'Доброй ночи'; if (h >= 7 && h < 9) g = 'Доброе утро'; else if (h >= 9 && h < 18) g = 'Добрый день'; else if (h >= 18 && h < 23) g = 'Добрый вечер'; $('dropdownGreeting').innerText = `${g}, ${name}!`; $('userMenuBtn').onclick = (e) => { e.stopPropagation(); $('userDropdown').classList.toggle('show'); }; document.addEventListener('click', (e) => { if (!e.target.closest('#userMenuContainer')) $('userDropdown').classList.remove('show'); }); }
         async function openAchievements() { document.getElementById('userDropdown')?.classList.remove('show'); const m = document.getElementById('achievementsModal'); const l = document.getElementById('achievementsList'); m.classList.remove('hidden'); l.innerHTML = '<p class="empty" style="grid-column: 1 / -1;">Загрузка...</p>'; try { const r = await fetch('/api/achievements?token=' + encodeURIComponent(authToken)); const d = await r.json(); l.innerHTML = ''; d.achievements.forEach(a => { const div = document.createElement('div'); div.className = 'ach-card' + (a.unlocked ? ' unlocked' : ''); div.innerHTML = `<div class="ach-icon">${a.icon}</div><div class="ach-title">${a.title}</div><div class="ach-desc">${a.desc}</div>`; l.appendChild(div); }); } catch (e) { l.innerHTML = '<p class="empty" style="grid-column: 1 / -1;">Ошибка</p>'; } }
         async function checkAnnouncements() { try { const r = await fetch('/api/announcements/active?token=' + encodeURIComponent(authToken)); const d = await r.json(); if (d.announcement) { const h = localStorage.getItem('hidden_ann_' + d.announcement.id); if (!h) { document.getElementById('annText').textContent = d.announcement.message; const b = document.getElementById('globalAnnouncement'); b.style.display = 'flex'; b.dataset.id = d.announcement.id; } } } catch(e) {} }
         function closeAnnouncement() { const b = document.getElementById('globalAnnouncement'); const id = b.dataset.id; if (id) localStorage.setItem('hidden_ann_' + id, 'true'); b.style.display = 'none'; }
@@ -598,8 +680,6 @@
         document.querySelectorAll('.auth-tab').forEach(t => t.onclick = () => switchTab(t.dataset.tab));
         $('authForm').onsubmit = async (e) => { e.preventDefault(); const em = $('authEmail').value.trim(); const pw = $('authPwd').value; const nm = $('authName').value.trim(); const st = $('authStatus'); const dv = getDeviceInfo(); st.textContent = '⏳ Подождите...'; st.className = 'fb-status loading'; const url = authMode === 'login' ? '/api/auth/login' : '/api/auth/register'; const body = authMode === 'login' ? {email: em, password: pw, device: dv} : {email: em, password: pw, name: nm, device: dv}; try { const r = await fetch(url, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body) }); const d = await r.json(); if (!r.ok) { if (r.status === 403) st.innerHTML = '🚫 ' + (d.detail || 'Доступ заблокирован'); else st.textContent = '❌ ' + (d.detail || 'Ошибка'); st.className = 'fb-status error'; return; } authToken = d.token; authUser = d.user; currentAvatar = d.user.avatar || null; subjectYears = parseJson(authUser.subject_years); hideAiSubjects = parseJson(authUser.hide_ai_subjects); localStorage.setItem('gdz_token', authToken); applyTheme(authUser.theme || 'light'); await showMain(); } catch (err) { st.textContent = '❌ ' + err.message; st.className = 'fb-status error'; } };
         async function logout() { if (!confirm('Выйти из аккаунта?')) return; try { await fetch('/api/auth/logout', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({token: authToken}) }); } catch {} authToken = ''; authUser = null; currentAvatar = null; subjectYears = {}; hideAiSubjects = {}; activeParts = {}; localStorage.removeItem('gdz_token'); applyTheme('light'); topbarRight.innerHTML = ''; showAuth(); }
-        async function openHistory() { document.getElementById('userDropdown')?.classList.remove('show'); historyModal.classList.remove('hidden'); const l = $('historyList'); l.innerHTML = '<p class="empty">Загрузка...</p>'; try { const r = await fetch('/api/history/list?token=' + encodeURIComponent(authToken)); const d = await r.json(); if (!r.ok) throw new Error(d.detail || 'Ошибка'); if (!d.items.length) { l.innerHTML = '<p class="empty">История пуста</p>'; return; } l.innerHTML = ''; d.items.forEach(it => { const row = document.createElement('div'); row.className = 'history-row'; row.innerHTML = `<div class="history-info"><strong>${escapeHtml(it.subject)}</strong><span>${escapeHtml(it.numbers)}</span></div><span class="history-date">${escapeHtml(it.created)}</span>`; row.onclick = () => { allTextTasks.value = `${it.subject}: ${it.numbers}`; historyModal.classList.add('hidden'); }; l.appendChild(row); }); } catch (e) { l.innerHTML = '<p class="empty">Ошибка: ' + e.message + '</p>'; } }
-        $('closeHistoryBtn').onclick = () => historyModal.classList.add('hidden'); $('clearHistoryBtn').onclick = async () => { if (!confirm('Очистить историю?')) return; try { await fetch('/api/history/clear', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({token: authToken}) }); $('historyList').innerHTML = '<p class="empty">История пуста</p>'; } catch {} };
         function updateAvatarPreview() { const p = $('avatarPreview'); if (currentAvatar) { p.style.backgroundImage = 'url("' + currentAvatar + '")'; p.textContent = ''; } else { p.style.backgroundImage = ''; p.textContent = getInitial(authUser?.name, authUser?.email); } }
         function openSettings() { document.getElementById('userDropdown')?.classList.remove('show'); settingsModal.classList.remove('hidden'); $('settingsStatus').textContent = ''; $('settingsStatus').className = 'fb-status'; $('setName').value = authUser?.name || ''; $('setOldPwd').value = ''; $('setNewPwd').value = ''; updateAvatarPreview(); const hl = $('hideAiList'); hl.innerHTML = ''; SUBJECTS.forEach(s => { hl.innerHTML += `<label style="display: flex; align-items: center; gap: 8px; cursor: pointer; padding: 4px 0;"><input type="checkbox" value="${s.name}" ${hideAiSubjects[s.name] ? 'checked' : ''} style="width: 18px; height: 18px; accent-color: #4299e1;"><span>${s.name}</span></label>`; }); }
         function cancelSettings() { settingsModal.classList.add('hidden'); }
