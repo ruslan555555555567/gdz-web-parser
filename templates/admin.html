@@ -248,6 +248,14 @@
                     </div>
                     <p class="hint" style="margin-top: 8px;">Картинка сохранится в аккаунте.</p>
                 </div>
+
+                <!-- СКАЧАТЬ БД -->
+                <div class="settings-section" id="downloadDbSection" style="display: none; margin-top: 20px; background: rgba(72, 187, 120, 0.1); padding: 15px; border-radius: 8px; border: 1px solid #48bb78;">
+                    <label class="input-label" style="color: #276749;">💾 Резервная копия</label>
+                    <p class="hint" style="margin-bottom: 10px; color: #276749;">Скачай все данные (пользователи, предметы, логи) в формате SQL.</p>
+                    <button onclick="downloadDb()" class="btn-small" style="background: #48bb78; color: white; border: none; width: 100%; font-size: 14px; padding: 10px;">⬇️ Скачать БД (SQL)</button>
+                </div>
+
                 <div id="settingsStatus" class="fb-status"></div>
                 <div class="modal-actions" style="justify-content: flex-end; gap: 10px; margin-top: 30px;">
                     <button id="cancelSettingsBtn" class="btn-secondary">Отмена</button>
@@ -379,6 +387,11 @@
                 const u = d.user;
                 if (!u || (!u.is_admin && !u.is_main_admin)) return;
                 isMainAdmin = u.is_main_admin;
+
+                // ПОКАЗЫВАЕМ КНОПКУ СКАЧИВАНИЯ ТОЛЬКО ГЛАВНОМУ АДМИНУ
+                if (u.is_main_admin) document.getElementById('downloadDbSection').style.display = 'block';
+                else document.getElementById('downloadDbSection').style.display = 'none';
+
                 currentAdminTheme = u.admin_theme || 'auto';
                 currentAdminBgUrl = u.admin_bg_url || '';
                 originalAdminTheme = currentAdminTheme;
@@ -456,9 +469,27 @@
                 const r = await fetch('/api/admin/check', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({password}) });
                 if (!r.ok) { loginStatus.textContent = '❌ Неверный пароль'; loginStatus.className = 'fb-status error'; return; }
                 authData.password = password;
+                document.getElementById('downloadDbSection').style.display = 'block'; // Всегда показываем при входе по паролю
                 isMainAdmin = true; openAdmin();
             } catch (err) { loginStatus.textContent = '❌ ' + err.message; loginStatus.className = 'fb-status error'; }
         });
+
+        async function downloadDb() {
+            const payload = authData.token ? { token: authData.token } : { password: authData.password };
+            try {
+                const r = await fetch('/api/admin/export-db', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload) });
+                if (!r.ok) { const err = await r.json(); throw new Error(err.detail || 'Ошибка'); }
+                const blob = await r.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'gdz_backup.sql';
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                window.URL.revokeObjectURL(url);
+            } catch (e) { alert('Ошибка скачивания: ' + e.message); }
+        }
 
         document.querySelectorAll('.admin-tab').forEach(t => {
             t.addEventListener('click', () => {
@@ -770,7 +801,6 @@
                 d.messages.forEach(m => {
                     const div = document.createElement('div'); div.className = 'message-card';
                     const imgHtml = m.image ? `<div style="margin-top:10px;"><img src="${m.image}" style="max-width:100%; border-radius:8px; max-height:300px; cursor:zoom-in;" onclick="window.open(this.src)"></div>` : '';
-                    // ПОМЕТКА: предмет + номер + тип
                     let contextHtml = '';
                     if (m.subject || m.task_number || m.context_type) {
                         const parts = [];
@@ -874,7 +904,6 @@
 
         document.getElementById('cancelSettingsBtn').onclick = () => { currentAdminTheme = originalAdminTheme; currentAdminBgUrl = originalAdminBgUrl; updateAdminSettingsUI(); applyAdminThemeToPage(currentAdminTheme, originalAdminBgUrl); };
 
-        // --- ЛОГИКА ОБЪЯВЛЕНИЙ ---
         async function loadUsersForAnn() {
             try {
                 const r = await fetch('/api/admin/users', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(getAuthPayload()) });
