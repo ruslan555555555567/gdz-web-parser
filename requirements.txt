@@ -8,3 +8,4 @@ pydantic
 Pillow
 jinja2
 httpx
+aiogram==3.5.0

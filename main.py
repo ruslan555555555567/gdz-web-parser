@@ -2,6 +2,7 @@ import os
 import hashlib
 import secrets
 import json as _json
+import re
 from datetime import datetime, timedelta
 from io import BytesIO
 from typing import List
@@ -16,12 +17,27 @@ import asyncio
 import asyncpg
 from parser import parse_tasks
 
-VERSION = "169.0.0"
+# --- ИМПОРТЫ ДЛЯ TELEGRAM ---
+from aiogram import Bot, Dispatcher, types
+from aiogram.client.default import DefaultBotProperties
+from aiogram.enums import ParseMode
+
+VERSION = "170.0.0"
 ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "")
 ADMIN_EMAIL = os.getenv("ADMIN_EMAIL", "admin@gdz.ru").lower().strip()
 DATABASE_URL = os.getenv("DATABASE_URL")
 
+# --- НАСТРОЙКИ БОТА ---
+TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
+TELEGRAM_WEBHOOK_SECRET = os.getenv("TELEGRAM_WEBHOOK_SECRET", "gdz_secret")
+RENDER_EXTERNAL_URL = os.getenv("RENDER_EXTERNAL_URL", "https://твой-сайт.onrender.com")
+
 db_pool = None
+bot = None
+dp = Dispatcher() if TELEGRAM_BOT_TOKEN else None
+
+if TELEGRAM_BOT_TOKEN:
+    bot = Bot(token=TELEGRAM_BOT_TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
 
 DEFAULT_SUBJECTS = [
     {"name": "Алгебра", "url": "https://gdz.ru/class-7/algebra/makarichev-18/",
@@ -102,6 +118,10 @@ async def init_db():
             await conn.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS subject_years TEXT DEFAULT '{}'")
             await conn.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS hide_ai_subjects TEXT DEFAULT '{}'")
             await conn.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS hide_images_subjects TEXT DEFAULT '{}'")
+
+            # --- КОЛОНКИ ДЛЯ TELEGRAM ---
+            await conn.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS telegram_chat_id BIGINT")
+            await conn.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS telegram_link_code TEXT")
 
             await conn.execute(
                 "CREATE TABLE IF NOT EXISTS blocked_devices (device TEXT PRIMARY KEY, blocked_at TIMESTAMP DEFAULT NOW())")
@@ -185,7 +205,7 @@ async def get_user_by_token(token: str):
     if not db_pool or not token: return None
     async with db_pool.acquire() as conn:
         row = await conn.fetchrow(
-            "SELECT u.id, u.email, u.name, u.is_admin, u.theme, u.bg_url, u.avatar, u.admin_bg_url, u.admin_btn_color, u.admin_theme, u.btn_style, u.subjects_configured, u.year, u.subject_years, u.hide_ai_subjects, u.hide_images_subjects FROM sessions s JOIN users u ON u.id = s.user_id WHERE s.token = $1",
+            "SELECT u.id, u.email, u.name, u.is_admin, u.theme, u.bg_url, u.avatar, u.admin_bg_url, u.admin_btn_color, u.admin_theme, u.btn_style, u.subjects_configured, u.year, u.subject_years, u.hide_ai_subjects, u.hide_images_subjects, u.telegram_chat_id FROM sessions s JOIN users u ON u.id = s.user_id WHERE s.token = $1",
             token)
         if row: await conn.execute("UPDATE users SET last_seen = NOW() WHERE id = $1", row["id"])
     return dict(row) if row else None
@@ -230,6 +250,158 @@ async def check_main_admin(data: dict):
 app = FastAPI(title="GDZ Парсер")
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
+
+
+# =========================================================================
+# ЛОГИКА TELEGRAM-БОТА
+# =========================================================================
+
+@dp.message()
+async def handle_telegram_message(message: types.Message):
+    if not db_pool: return
+
+    # 1. Обработка привязки аккаунта (/start <код>)
+    if message.text and message.text.startswith('/start '):
+        code = message.text.split(' ', 1)[1].strip().upper()
+        async with db_pool.acquire() as conn:
+            user = await conn.fetchrow("SELECT id, email FROM users WHERE telegram_link_code = $1", code)
+            if user:
+                await conn.execute("UPDATE users SET telegram_chat_id = $1, telegram_link_code = NULL WHERE id = $2",
+                                   message.chat.id, user["id"])
+                await message.answer(
+                    f"✅ Аккаунт <b>{user['email']}</b> успешно привязан!\nТеперь просто пиши мне: <i>Алгебра 41</i>")
+            else:
+                await message.answer("❌ Неверный код привязки. Сгенерируй новый в настройках на сайте.")
+        return
+
+    if message.text == '/start':
+        await message.answer(
+            "Привет! Я бот для поиска ГДЗ.\n\nЕсли ты в личке — пиши: <b>Алгебра 41</b>\nЕсли в группе — пиши: <b>@ТвойБот Алгебра 41</b>\n\nЧтобы привязать аккаунт, зайди в настройки на сайте.")
+        return
+
+    # 2. Проверка на упоминание в группе
+    text = message.text or ""
+    if message.chat.type in ['group', 'supergroup']:
+        bot_info = await bot.get_me()
+        if f"@{bot_info.username}" not in text:
+            return  # Игнорируем, если не позвали
+        text = text.replace(f"@{bot_info.username}", "").strip()
+
+    if not text: return
+
+    # 3. Поиск задания
+    # Разбираем текст (например: "Алгебра 41" или "Алгебра №41")
+    parts = text.split()
+    if len(parts) < 2:
+        await message.answer("⚠️ Пиши в формате: <b>Предмет Номер</b>\nНапример: Алгебра 41")
+        return
+
+    subject = parts[0].capitalize()
+    # Ищем все цифры в сообщении
+    match = re.search(r'\d+', text)
+    if not match:
+        await message.answer("⚠️ Не могу найти номер задания. Пиши: Алгебра 41")
+        return
+    number = match.group(0)
+
+    status_msg = await message.answer(f"🔍 Ищу: <b>{subject} №{number}</b>...")
+
+    # Ищем предмет в БД, чтобы взять ссылку
+    async with db_pool.acquire() as conn:
+        subj_row = await conn.fetchrow(
+            "SELECT url, url_alt, type FROM subjects WHERE LOWER(name) LIKE LOWER($1) AND user_id IS NULL LIMIT 1",
+            f"%{subject}%")
+
+    if not subj_row or not subj_row['url']:
+        await status_msg.edit_text(f"❌ Предмет '{subject}' не найден в базе.")
+        return
+
+    job = {"subject": subject, "url": subj_row['url'], "numbers": number, "raw_text": text,
+           "type": subj_row['type'] or 'numbers'}
+
+    try:
+        results = await parse_tasks([job])
+    except Exception as e:
+        await status_msg.edit_text(f"❌ Ошибка парсера: {e}")
+        return
+
+    if not results or not results[0]['found']:
+        await status_msg.edit_text(f"😔 Решение для {subject} №{number} не найдено на gdz.ru.")
+        return
+
+    r = results[0]
+    await status_msg.edit_text(f"✅ Найдено! Отправляю...")
+
+    # Собираем картинки
+    img_solutions = [sol for sol in r['solutions'] if sol.get('images') and not sol.get('edition', '').startswith('ИИ')]
+    if img_solutions:
+        images_to_send = img_solutions[0]['images']
+        for i, img_url in enumerate(images_to_send):
+            try:
+                await message.answer_photo(photo=types.URLInputFile(img_url, filename=f"sol_{i}.jpg"),
+                                           caption=f"📚 {subject} · № {number}" if i == 0 else "")
+            except Exception as e:
+                print("Ошибка отправки фото:", e)
+                await message.answer(f"⚠️ Не удалось загрузить картинку {i + 1}.")
+
+    # Собираем ИИ-текст
+    ai_solution = next((sol for sol in r['solutions'] if sol.get('edition', '').startswith('ИИ') and sol.get('text')),
+                       None)
+    if ai_solution:
+        txt = ai_solution['text']
+        # Telegram имеет лимит 4096 символов, обрезаем если надо
+        if len(txt) > 4000:
+            txt = txt[:4000] + "\n\n... (текст обрезан)"
+        await message.answer(f"🤖 <b>ИИ-решение:</b>\n\n{txt}")
+
+    if not img_solutions and not ai_solution:
+        await message.answer(f"⚠️ Найдено решение, но текста и картинок нет.")
+
+
+# =========================================================================
+# ЭНДПОИНТЫ ДЛЯ TELEGRAM
+# =========================================================================
+
+@app.post("/api/telegram/webhook")
+async def telegram_webhook(request: Request):
+    if not bot or not dp: raise HTTPException(500, "Bot not configured")
+
+    secret = request.headers.get("X-Telegram-Bot-Api-Secret-Token", "")
+    if not secrets.compare_digest(secret, TELEGRAM_WEBHOOK_SECRET):
+        raise HTTPException(403, "Forbidden")
+
+    update_data = await request.json()
+    update = types.Update.model_validate(update_data, context={"bot": bot})
+    await dp.feed_update(bot, update)
+    return {"ok": True}
+
+
+@app.get("/api/telegram/link-code")
+async def get_telegram_link_code(token: str = ""):
+    user = await get_user_by_token(token)
+    if not user: raise HTTPException(401, "Не авторизован")
+
+    new_code = secrets.token_hex(4).upper()  # Например: A1B2C3D4
+    async with db_pool.acquire() as conn:
+        await conn.execute("UPDATE users SET telegram_link_code = $1 WHERE id = $2", new_code, user["id"])
+
+    return {"code": new_code}
+
+
+# =========================================================================
+# ОСТАЛЬНЫЕ ЭНДПОИНТЫ
+# =========================================================================
+
+@app.on_event("startup")
+async def startup():
+    await init_db()
+    if bot:
+        webhook_url = f"{RENDER_EXTERNAL_URL}/api/telegram/webhook"
+        try:
+            await bot.set_webhook(url=webhook_url, secret_token=TELEGRAM_WEBHOOK_SECRET)
+            print(f"✅ Webhook установлен: {webhook_url}")
+        except Exception as e:
+            print(f"❌ Ошибка установки Webhook: {e}")
 
 
 @app.get("/sw.js")
@@ -312,10 +484,6 @@ class AnnouncementSend(
 class SavePackageRequest(BaseModel): token: str; items: list = []
 
 
-@app.on_event("startup")
-async def startup(): await init_db()
-
-
 async def render_page(request: Request, name: str, context: dict):
     html = None
     if db_pool is not None:
@@ -394,126 +562,20 @@ async def get_subjects(token: str = ""):
     return {"subjects": [dict(r) for r in rows]}
 
 
-@app.get("/api/schedule")
-async def get_schedule(token: str = ""):
-    user = await get_user_by_token(token)
-    if not user or db_pool is None: return {"schedule": {}}
-    async with db_pool.acquire() as conn:
-        rows = await conn.fetch("SELECT day_of_week, subject_id FROM user_schedule WHERE user_id = $1", user["id"])
-    schedule = {}
-    for r in rows:
-        day = str(r["day_of_week"])
-        if day not in schedule: schedule[day] = []
-        schedule[day].append(r["subject_id"])
-    return {"schedule": schedule}
-
-
-@app.post("/api/schedule/save")
-async def save_schedule(req: ScheduleSaveRequest):
-    user = await get_user_by_token(req.token)
-    if not user or db_pool is None: raise HTTPException(401, "Не авторизован")
-    async with db_pool.acquire() as conn:
-        await conn.execute("DELETE FROM user_schedule WHERE user_id = $1", user["id"])
-        for day_str, subject_ids in req.schedule.items():
-            day = int(day_str)
-            for sid in subject_ids: await conn.execute(
-                "INSERT INTO user_schedule (user_id, day_of_week, subject_id) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING",
-                user["id"], day, int(sid))
-    return {"ok": True}
-
-
-@app.post("/api/admin/subjects/add")
-async def admin_add_subject(data: dict):
-    if not await check_admin(data): raise HTTPException(401, "Нет доступа")
-    if data.get("user_id") and not await check_main_admin(data): raise HTTPException(403, "Только главный админ")
-    if db_pool is None: raise HTTPException(500, "БД недоступна")
-    name = (data.get("name") or "").strip();
-    url = (data.get("url") or "").strip();
-    url_alt = (data.get("url_alt") or "").strip()
-    s_type = (data.get("type") or "numbers").strip();
-    group_name = (data.get("group_name") or "").strip()
-    sort_order = int(data.get("sort_order") or 999);
-    max_number = int(data.get("max_number") or 0);
-    note = (data.get("note") or "").strip()
-    user_id = data.get("user_id");
-    default_year = (data.get("default_year") or "").strip();
-    default_year_alt = (data.get("default_year_alt") or "").strip()
-    if not name: raise HTTPException(400, "Нужно название")
-    if s_type not in ("numbers", "text"): raise HTTPException(400, "Неверный type")
-    if s_type == "numbers" and not url: raise HTTPException(400, "Нужна ссылка")
-    async with db_pool.acquire() as conn:
-        try:
-            new_id = await conn.fetchval(
-                "INSERT INTO subjects (name, url, url_alt, type, group_name, sort_order, max_number, note, user_id, default_year, default_year_alt) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING id",
-                name, url, url_alt, s_type, group_name, sort_order, max_number, note, user_id, default_year,
-                default_year_alt)
-        except asyncpg.UniqueViolationError:
-            raise HTTPException(400, "Такой предмет уже есть")
-    await log_action(None, "subject_add", name)
-    return {"ok": True, "id": new_id}
-
-
-@app.post("/api/admin/subjects/update")
-async def admin_update_subject(data: dict):
-    if not await check_admin(data): raise HTTPException(401, "Нет доступа")
-    if db_pool is None: raise HTTPException(500, "БД недоступна")
-    subj_id = data.get("id")
-    if not subj_id: raise HTTPException(400, "Нужен id")
-    fields, params, idx = [], [], 1
-    for key in ("name", "url", "url_alt", "type", "group_name", "note", "default_year", "default_year_alt"):
-        if key in data and data[key] is not None: fields.append(f"{key} = ${idx}"); params.append(
-            str(data[key]).strip()); idx += 1
-    for key in ("sort_order", "max_number"):
-        if key in data and data[key] is not None:
-            try:
-                fields.append(f"{key} = ${idx}"); params.append(int(data[key])); idx += 1
-            except:
-                pass
-    if not fields: raise HTTPException(400, "Нечего обновлять")
-    params.append(int(subj_id))
-    async with db_pool.acquire() as conn:
-        await conn.execute(f"UPDATE subjects SET {', '.join(fields)} WHERE id = ${idx}", *params)
-    await log_action(None, "subject_update", f"id={subj_id}")
-    return {"ok": True}
-
-
-@app.post("/api/admin/subjects/delete")
-async def admin_delete_subject(data: dict):
-    if not await check_admin(data): raise HTTPException(401, "Нет доступа")
-    subj_id = data.get("id")
-    if not subj_id: raise HTTPException(400, "Нужен id")
-    if db_pool is not None:
-        async with db_pool.acquire() as conn: await conn.execute("DELETE FROM subjects WHERE id = $1", int(subj_id))
-    return {"ok": True}
-
-
-@app.post("/api/admin/subjects/reorder")
-async def admin_reorder_subjects(data: dict):
-    if not await check_admin(data): raise HTTPException(401, "Нет доступа")
-    ids = data.get("ids", [])
-    if not ids: raise HTTPException(400, "Нужен список ids")
-    if db_pool is None: raise HTTPException(500, "БД недоступна")
-    async with db_pool.acquire() as conn:
-        for index, subj_id in enumerate(ids, start=1):
-            try:
-                await conn.execute("UPDATE subjects SET sort_order = $1 WHERE id = $2", index, int(subj_id))
-            except:
-                continue
-    return {"ok": True, "updated": len(ids)}
-
-
-@app.post("/api/admin/subjects/reset")
-async def admin_reset_subjects(data: dict):
-    if not await check_admin(data): raise HTTPException(401, "Нет доступа")
-    if db_pool is None: raise HTTPException(500, "БД недоступна")
-    async with db_pool.acquire() as conn:
-        await conn.execute("DELETE FROM subjects WHERE user_id IS NULL")
-        for s in DEFAULT_SUBJECTS:
-            await conn.execute(
-                "INSERT INTO subjects (name, url, url_alt, type, group_name, sort_order, max_number, note, default_year, default_year_alt) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) ON CONFLICT (name) DO NOTHING",
-                s["name"], s["url"], s["url_alt"], s["type"], s["group_name"], s["sort_order"], s["max_number"],
-                s["note"], s["default_year"], s["default_year_alt"])
-    return {"ok": True, "count": len(DEFAULT_SUBJECTS)}
+@app.post("/api/parse")
+async def parse(req: ParseRequest, request: Request):
+    jobs = [j for j in req.jobs if (j.numbers.strip() or j.raw_text.strip())]
+    if not jobs: raise HTTPException(400, "Введи номера")
+    try:
+        results = await parse_tasks([j.dict() for j in jobs])
+    except Exception as e:
+        raise HTTPException(500, f"Ошибка парсинга: {e}")
+    subjects = ", ".join(j.subject for j in jobs)[:200]
+    ip = request.client.host if request.client else ""
+    user = await get_user_by_token(req.token) if req.token else None
+    user_id = user["id"] if user else None
+    await log_action(user_id, "parse", subjects, ip)
+    return {"results": results, "total": len(results)}
 
 
 @app.post("/api/auth/register")
@@ -538,7 +600,7 @@ async def register(req: RegisterRequest, request: Request):
             "user": {"id": user_id, "email": email, "name": req.name.strip(), "is_admin": is_admin, "theme": "light",
                      "bg_url": None, "avatar": None, "admin_bg_url": None, "admin_btn_color": "#4299e1",
                      "admin_theme": "auto", "btn_style": "light", "year": "", "subject_years": "{}",
-                     "hide_ai_subjects": "{}", "hide_images_subjects": "{}"}}
+                     "hide_ai_subjects": "{}", "hide_images_subjects": "{}", "telegram_chat_id": None}}
 
 
 @app.post("/api/auth/login")
@@ -550,7 +612,7 @@ async def login(req: LoginRequest, request: Request):
     email = req.email.lower().strip()
     async with db_pool.acquire() as conn:
         row = await conn.fetchrow(
-            "SELECT id, email, password_hash, name, is_admin, theme, bg_url, avatar, admin_bg_url, admin_btn_color, admin_theme, btn_style, year, subject_years, hide_ai_subjects, hide_images_subjects FROM users WHERE email = $1",
+            "SELECT id, email, password_hash, name, is_admin, theme, bg_url, avatar, admin_bg_url, admin_btn_color, admin_theme, btn_style, year, subject_years, hide_ai_subjects, hide_images_subjects, telegram_chat_id FROM users WHERE email = $1",
             email)
         if not row or not verify_password(req.password, row["password_hash"]):
             ip = request.client.host if request.client else ""
@@ -572,7 +634,8 @@ async def login(req: LoginRequest, request: Request):
                      "admin_theme": row["admin_theme"] or "auto", "btn_style": row["btn_style"] or "light",
                      "year": row["year"] or "", "subject_years": row["subject_years"] or "{}",
                      "hide_ai_subjects": row["hide_ai_subjects"] or "{}",
-                     "hide_images_subjects": row["hide_images_subjects"] or "{}"}}
+                     "hide_images_subjects": row["hide_images_subjects"] or "{}",
+                     "telegram_chat_id": row["telegram_chat_id"]}}
 
 
 @app.post("/api/auth/logout")
@@ -641,7 +704,7 @@ async def update_profile(req: UpdateProfileRequest):
     async with db_pool.acquire() as conn:
         await conn.execute(f"UPDATE users SET {', '.join(updates)} WHERE id = ${idx}", *params)
         row = await conn.fetchrow(
-            "SELECT id, email, name, is_admin, theme, bg_url, avatar, admin_bg_url, admin_btn_color, admin_theme, btn_style, year, subject_years, hide_ai_subjects, hide_images_subjects FROM users WHERE id = $1",
+            "SELECT id, email, name, is_admin, theme, bg_url, avatar, admin_bg_url, admin_btn_color, admin_theme, btn_style, year, subject_years, hide_ai_subjects, hide_images_subjects, telegram_chat_id FROM users WHERE id = $1",
             user["id"])
     return {"ok": True, "user": dict(row)}
 
@@ -817,6 +880,198 @@ async def feedback(req: FeedbackRequest, request: Request):
     return {"ok": True}
 
 
+@app.get("/api/achievements")
+async def get_achievements(token: str = ""):
+    user = await get_user_by_token(token)
+    if not user: raise HTTPException(401, "Не авторизован")
+    if db_pool is None: return {"achievements": []}
+    uid = user["id"]
+    async with db_pool.acquire() as conn:
+        total_parses = await conn.fetchval("SELECT COUNT(*) FROM logs WHERE user_id = $1 AND action = 'parse'", uid)
+        parses_morning = await conn.fetchval(
+            "SELECT COUNT(*) FROM logs WHERE user_id = $1 AND action = 'parse' AND EXTRACT(HOUR FROM created_at) < 7",
+            uid)
+        parses_night = await conn.fetchval(
+            "SELECT COUNT(*) FROM logs WHERE user_id = $1 AND action = 'parse' AND EXTRACT(HOUR FROM created_at) >= 23",
+            uid)
+        parses_weekend = await conn.fetchval(
+            "SELECT COUNT(*) FROM logs WHERE user_id = $1 AND action = 'parse' AND EXTRACT(DOW FROM created_at) IN (0, 6)",
+            uid)
+        math_parses = await conn.fetchval(
+            "SELECT COUNT(*) FROM logs WHERE user_id = $1 AND action = 'parse' AND (details ILIKE '%Алгебра%' OR details ILIKE '%Геометрия%')",
+            uid)
+        hist_parses = await conn.fetchval(
+            "SELECT COUNT(*) FROM logs WHERE user_id = $1 AND action = 'parse' AND details ILIKE '%История%'", uid)
+        eng_parses = await conn.fetchval(
+            "SELECT COUNT(*) FROM logs WHERE user_id = $1 AND action = 'parse' AND details ILIKE '%Английский%'", uid)
+        geo_parses = await conn.fetchval(
+            "SELECT COUNT(*) FROM logs WHERE user_id = $1 AND action = 'parse' AND details ILIKE '%География%'", uid)
+        downloads = await conn.fetchval("SELECT COUNT(*) FROM logs WHERE user_id = $1 AND action = 'download'", uid)
+        feedbacks = await conn.fetchval("SELECT COUNT(*) FROM logs WHERE user_id = $1 AND action = 'feedback'", uid)
+        last_two = await conn.fetch("SELECT numbers FROM history WHERE user_id = $1 ORDER BY id DESC LIMIT 2", uid)
+        double_check = len(last_two) == 2 and last_two[0]["numbers"] == last_two[1]["numbers"] and last_two[0][
+            "numbers"] != ""
+        recent_parses = await conn.fetch(
+            "SELECT created_at FROM logs WHERE user_id = $1 AND action = 'parse' ORDER BY created_at DESC LIMIT 3", uid)
+        hurricane = False
+        if len(recent_parses) == 3:
+            diff = (recent_parses[0]["created_at"] - recent_parses[2]["created_at"]).total_seconds()
+            if diff <= 10: hurricane = True
+        dates_rows = await conn.fetch(
+            "SELECT DISTINCT DATE(created_at) as d FROM logs WHERE user_id = $1 AND action = 'parse' ORDER BY d DESC",
+            uid)
+        dates = [r["d"] for r in dates_rows]
+        streak_3 = streak_7 = False
+        cur_streak = 0
+        for i in range(len(dates)):
+            if i == 0:
+                cur_streak = 1
+            elif (dates[i - 1] - dates[i]).days == 1:
+                cur_streak += 1
+            else:
+                cur_streak = 1
+            if cur_streak >= 3: streak_3 = True
+            if cur_streak >= 7: streak_7 = True
+        pioneer = await conn.fetchval(
+            "SELECT COUNT(*) FROM logs WHERE user_id = $1 AND action = 'login' AND EXTRACT(DAY FROM created_at) = 1",
+            uid) > 0
+        ach_list = [
+            {"id": "lark", "icon": "🌅", "title": "Жаворонок", "desc": "Поиск до 7 утра",
+             "unlocked": parses_morning > 0},
+            {"id": "streak3", "icon": "🔥", "title": "В ударе", "desc": "3 дня подряд", "unlocked": streak_3},
+            {"id": "streak7", "icon": "🛡", "title": "Железная выдержка", "desc": "7 дней подряд", "unlocked": streak_7},
+            {"id": "weekend", "icon": "🏖", "title": "Выходной?", "desc": "Поиск в сб/вс",
+             "unlocked": parses_weekend > 0},
+            {"id": "night", "icon": "🐢", "title": "Мастер откладывания", "desc": "5 поисков после 23:00",
+             "unlocked": parses_night >= 5},
+            {"id": "pythagoras", "icon": "🧮", "title": "Пифагор", "desc": "20 раз Алгебра/Геометрия",
+             "unlocked": math_parses >= 20},
+            {"id": "historian", "icon": "🏺", "title": "Юный историк", "desc": "10 раз История",
+             "unlocked": hist_parses >= 10},
+            {"id": "polyglot", "icon": "🗣", "title": "Полиглот", "desc": "10 раз Английский",
+             "unlocked": eng_parses >= 10},
+            {"id": "columbus", "icon": "🌍", "title": "Колумб", "desc": "10 раз География",
+             "unlocked": geo_parses >= 10},
+            {"id": "robot_friend", "icon": "🤖", "title": "Друг робота", "desc": "10 поисков",
+             "unlocked": total_parses >= 10},
+            {"id": "double_check", "icon": "🔁", "title": "Перепроверка", "desc": "2 одинаковых поиска",
+             "unlocked": double_check},
+            {"id": "collector", "icon": "📸", "title": "Коллекционер", "desc": "Скачать 20 картинок",
+             "unlocked": downloads >= 20},
+            {"id": "helper", "icon": "🕵️", "title": "Помощник проекта", "desc": "Написать в техподдержку",
+             "unlocked": feedbacks > 0},
+            {"id": "pioneer", "icon": "🥇", "title": "Первооткрыватель", "desc": "Зашел 1-го числа",
+             "unlocked": pioneer},
+            {"id": "hurricane", "icon": "🌪", "title": "Ураган", "desc": "3 поиска за 10 сек", "unlocked": hurricane},
+        ]
+        unlocked_ids = {r["achievement_id"] for r in
+                        await conn.fetch("SELECT achievement_id FROM user_achievements WHERE user_id = $1", uid)}
+        for a in ach_list:
+            if a["unlocked"] and a["id"] not in unlocked_ids:
+                await conn.execute(
+                    "INSERT INTO user_achievements (user_id, achievement_id) VALUES ($1, $2) ON CONFLICT DO NOTHING",
+                    uid, a["id"])
+    return {"achievements": ach_list}
+
+
+class DownloadTrack(BaseModel):
+    token: str
+
+
+@app.post("/api/track-download")
+async def track_download(req: DownloadTrack):
+    user = await get_user_by_token(req.token)
+    if user: await log_action(user["id"], "download", "image")
+    return {"ok": True}
+
+
+@app.post("/api/admin/announcements/send")
+async def admin_send_announcement(req: AnnouncementSend):
+    if not await check_main_admin({"token": req.token}): raise HTTPException(403, "Только главный админ")
+    if not req.message.strip(): raise HTTPException(400, "Пустое сообщение")
+    expires_at = datetime.utcnow() + timedelta(days=req.duration_days)
+    async with db_pool.acquire() as conn:
+        await conn.execute(
+            "INSERT INTO announcements (message, target_type, target_users, expires_at) VALUES ($1, $2, $3, $4)",
+            req.message.strip(), req.target_type, req.target_users, expires_at)
+    return {"ok": True}
+
+
+@app.post("/api/admin/announcements/list")
+async def admin_list_announcements(data: dict):
+    if not await check_admin(data): raise HTTPException(401, "Нет доступа")
+    async with db_pool.acquire() as conn:
+        rows = await conn.fetch(
+            "SELECT id, message, target_type, target_users, to_char(created_at, 'DD.MM HH24:MI') AS created, to_char(expires_at, 'DD.MM HH24:MI') AS expires FROM announcements ORDER BY id DESC")
+    return {"announcements": [dict(r) for r in rows]}
+
+
+@app.post("/api/admin/announcements/delete/{ann_id}")
+async def admin_delete_announcement(ann_id: int, data: dict):
+    if not await check_main_admin(data): raise HTTPException(403, "Только главный админ")
+    async with db_pool.acquire() as conn: await conn.execute("DELETE FROM announcements WHERE id = $1", ann_id)
+    return {"ok": True}
+
+
+@app.get("/api/announcements/active")
+async def get_active_announcement(token: str = ""):
+    user = await get_user_by_token(token) if token else None
+    user_id = user["id"] if user else None
+    if db_pool is None: return {"announcement": None}
+    async with db_pool.acquire() as conn:
+        row = await conn.fetchrow(
+            "SELECT id, message, target_type, target_users FROM announcements WHERE expires_at > NOW() ORDER BY id DESC LIMIT 1")
+        if not row: return {"announcement": None}
+        target_type = row["target_type"]
+        target_users = [int(x) for x in row["target_users"].split(",") if x.strip().isdigit()]
+        show = False
+        if target_type == "all":
+            show = True
+        elif user_id:
+            if target_type == "specific" and user_id in target_users:
+                show = True
+            elif target_type == "exclude" and user_id not in target_users:
+                show = True
+        elif target_type == "exclude" and not user_id:
+            show = True
+        if show: return {"announcement": {"id": row["id"], "message": row["message"]}}
+    return {"announcement": None}
+
+
+@app.get("/api/image")
+async def proxy_image(url: str, w: int = 1000):
+    if not url.startswith("https://gdz.ru/"): raise HTTPException(400, "Недопустимый URL")
+    w = max(400, min(w, 2000))
+
+    def fetch_and_compress():
+        r = cffi_requests.get(url, impersonate="chrome", timeout=8, headers={"Referer": "https://gdz.ru/"})
+        if r.status_code != 200: raise Exception(f"HTTP {r.status_code}")
+        try:
+            img = Image.open(BytesIO(r.content))
+            if img.width > w:
+                ratio = w / img.width
+                img = img.resize((w, int(img.height * ratio)), Image.LANCZOS)
+            if img.mode in ("RGBA", "P", "LA"):
+                bg = Image.new("RGB", img.size, (255, 255, 255))
+                if img.mode in ("RGBA", "LA"):
+                    bg.paste(img, mask=img.split()[-1])
+                else:
+                    bg.paste(img)
+                img = bg
+            buf = BytesIO()
+            img.save(buf, format="JPEG", quality=80, optimize=True)
+            return buf.getvalue(), "image/jpeg"
+        except Exception:
+            return r.content, r.headers.get("content-type", "image/jpeg")
+
+    try:
+        data, content_type = await asyncio.to_thread(fetch_and_compress)
+    except Exception:
+        return Response(content=PLACEHOLDER_JPEG, media_type="image/jpeg", headers={"Cache-Control": "no-cache"})
+    return Response(content=data, media_type=content_type or "image/jpeg",
+                    headers={"Cache-Control": "public, max-age=86400"})
+
+
 @app.post("/api/admin/check")
 async def admin_check(data: dict):
     if await check_admin(data): return {"ok": True, "is_admin": True}
@@ -934,6 +1189,8 @@ ALTER TABLE users ADD COLUMN IF NOT EXISTS year TEXT DEFAULT '';
 ALTER TABLE users ADD COLUMN IF NOT EXISTS subject_years TEXT DEFAULT '{}';
 ALTER TABLE users ADD COLUMN IF NOT EXISTS hide_ai_subjects TEXT DEFAULT '{}';
 ALTER TABLE users ADD COLUMN IF NOT EXISTS hide_images_subjects TEXT DEFAULT '{}';
+ALTER TABLE users ADD COLUMN IF NOT EXISTS telegram_chat_id BIGINT;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS telegram_link_code TEXT;
 CREATE TABLE IF NOT EXISTS blocked_devices (device TEXT PRIMARY KEY, blocked_at TIMESTAMP DEFAULT NOW());
 CREATE TABLE IF NOT EXISTS subjects (id SERIAL PRIMARY KEY, name TEXT UNIQUE NOT NULL, url TEXT DEFAULT '', type TEXT DEFAULT 'numbers', group_name TEXT DEFAULT '', sort_order INTEGER DEFAULT 0, created_at TIMESTAMP DEFAULT NOW());
 ALTER TABLE subjects ADD COLUMN IF NOT EXISTS max_number INTEGER DEFAULT 0;
@@ -1191,211 +1448,3 @@ async def admin_templates_reset(data: dict):
     if db_pool is not None:
         async with db_pool.acquire() as conn: await conn.execute("DELETE FROM templates WHERE name = $1", name)
     return {"ok": True}
-
-
-@app.post("/api/parse")
-async def parse(req: ParseRequest, request: Request):
-    jobs = [j for j in req.jobs if (j.numbers.strip() or j.raw_text.strip())]
-    if not jobs: raise HTTPException(400, "Введи номера")
-    try:
-        results = await parse_tasks([j.dict() for j in jobs])
-    except Exception as e:
-        raise HTTPException(500, f"Ошибка парсинга: {e}")
-    subjects = ", ".join(j.subject for j in jobs)[:200]
-    ip = request.client.host if request.client else ""
-    user = await get_user_by_token(req.token) if req.token else None
-    user_id = user["id"] if user else None
-    await log_action(user_id, "parse", subjects, ip)
-    return {"results": results, "total": len(results)}
-
-
-@app.get("/api/achievements")
-async def get_achievements(token: str = ""):
-    user = await get_user_by_token(token)
-    if not user: raise HTTPException(401, "Не авторизован")
-    if db_pool is None: return {"achievements": []}
-    uid = user["id"]
-    async with db_pool.acquire() as conn:
-        total_parses = await conn.fetchval("SELECT COUNT(*) FROM logs WHERE user_id = $1 AND action = 'parse'", uid)
-        parses_morning = await conn.fetchval(
-            "SELECT COUNT(*) FROM logs WHERE user_id = $1 AND action = 'parse' AND EXTRACT(HOUR FROM created_at) < 7",
-            uid)
-        parses_night = await conn.fetchval(
-            "SELECT COUNT(*) FROM logs WHERE user_id = $1 AND action = 'parse' AND EXTRACT(HOUR FROM created_at) >= 23",
-            uid)
-        parses_weekend = await conn.fetchval(
-            "SELECT COUNT(*) FROM logs WHERE user_id = $1 AND action = 'parse' AND EXTRACT(DOW FROM created_at) IN (0, 6)",
-            uid)
-        math_parses = await conn.fetchval(
-            "SELECT COUNT(*) FROM logs WHERE user_id = $1 AND action = 'parse' AND (details ILIKE '%Алгебра%' OR details ILIKE '%Геометрия%')",
-            uid)
-        hist_parses = await conn.fetchval(
-            "SELECT COUNT(*) FROM logs WHERE user_id = $1 AND action = 'parse' AND details ILIKE '%История%'", uid)
-        eng_parses = await conn.fetchval(
-            "SELECT COUNT(*) FROM logs WHERE user_id = $1 AND action = 'parse' AND details ILIKE '%Английский%'", uid)
-        geo_parses = await conn.fetchval(
-            "SELECT COUNT(*) FROM logs WHERE user_id = $1 AND action = 'parse' AND details ILIKE '%География%'", uid)
-        downloads = await conn.fetchval("SELECT COUNT(*) FROM logs WHERE user_id = $1 AND action = 'download'", uid)
-        feedbacks = await conn.fetchval("SELECT COUNT(*) FROM logs WHERE user_id = $1 AND action = 'feedback'", uid)
-        last_two = await conn.fetch("SELECT numbers FROM history WHERE user_id = $1 ORDER BY id DESC LIMIT 2", uid)
-        double_check = len(last_two) == 2 and last_two[0]["numbers"] == last_two[1]["numbers"] and last_two[0][
-            "numbers"] != ""
-        recent_parses = await conn.fetch(
-            "SELECT created_at FROM logs WHERE user_id = $1 AND action = 'parse' ORDER BY created_at DESC LIMIT 3", uid)
-        hurricane = False
-        if len(recent_parses) == 3:
-            diff = (recent_parses[0]["created_at"] - recent_parses[2]["created_at"]).total_seconds()
-            if diff <= 10: hurricane = True
-        dates_rows = await conn.fetch(
-            "SELECT DISTINCT DATE(created_at) as d FROM logs WHERE user_id = $1 AND action = 'parse' ORDER BY d DESC",
-            uid)
-        dates = [r["d"] for r in dates_rows]
-        streak_3 = streak_7 = False
-        cur_streak = 0
-        for i in range(len(dates)):
-            if i == 0:
-                cur_streak = 1
-            elif (dates[i - 1] - dates[i]).days == 1:
-                cur_streak += 1
-            else:
-                cur_streak = 1
-            if cur_streak >= 3: streak_3 = True
-            if cur_streak >= 7: streak_7 = True
-        pioneer = await conn.fetchval(
-            "SELECT COUNT(*) FROM logs WHERE user_id = $1 AND action = 'login' AND EXTRACT(DAY FROM created_at) = 1",
-            uid) > 0
-        ach_list = [
-            {"id": "lark", "icon": "🌅", "title": "Жаворонок", "desc": "Поиск до 7 утра",
-             "unlocked": parses_morning > 0},
-            {"id": "streak3", "icon": "🔥", "title": "В ударе", "desc": "3 дня подряд", "unlocked": streak_3},
-            {"id": "streak7", "icon": "🛡", "title": "Железная выдержка", "desc": "7 дней подряд", "unlocked": streak_7},
-            {"id": "weekend", "icon": "🏖", "title": "Выходной?", "desc": "Поиск в сб/вс",
-             "unlocked": parses_weekend > 0},
-            {"id": "night", "icon": "🐢", "title": "Мастер откладывания", "desc": "5 поисков после 23:00",
-             "unlocked": parses_night >= 5},
-            {"id": "pythagoras", "icon": "🧮", "title": "Пифагор", "desc": "20 раз Алгебра/Геометрия",
-             "unlocked": math_parses >= 20},
-            {"id": "historian", "icon": "🏺", "title": "Юный историк", "desc": "10 раз История",
-             "unlocked": hist_parses >= 10},
-            {"id": "polyglot", "icon": "🗣", "title": "Полиглот", "desc": "10 раз Английский",
-             "unlocked": eng_parses >= 10},
-            {"id": "columbus", "icon": "🌍", "title": "Колумб", "desc": "10 раз География",
-             "unlocked": geo_parses >= 10},
-            {"id": "robot_friend", "icon": "🤖", "title": "Друг робота", "desc": "10 поисков",
-             "unlocked": total_parses >= 10},
-            {"id": "double_check", "icon": "🔁", "title": "Перепроверка", "desc": "2 одинаковых поиска",
-             "unlocked": double_check},
-            {"id": "collector", "icon": "📸", "title": "Коллекционер", "desc": "Скачать 20 картинок",
-             "unlocked": downloads >= 20},
-            {"id": "helper", "icon": "🕵️", "title": "Помощник проекта", "desc": "Написать в техподдержку",
-             "unlocked": feedbacks > 0},
-            {"id": "pioneer", "icon": "🥇", "title": "Первооткрыватель", "desc": "Зашел 1-го числа",
-             "unlocked": pioneer},
-            {"id": "hurricane", "icon": "🌪", "title": "Ураган", "desc": "3 поиска за 10 сек", "unlocked": hurricane},
-        ]
-        unlocked_ids = {r["achievement_id"] for r in
-                        await conn.fetch("SELECT achievement_id FROM user_achievements WHERE user_id = $1", uid)}
-        for a in ach_list:
-            if a["unlocked"] and a["id"] not in unlocked_ids:
-                await conn.execute(
-                    "INSERT INTO user_achievements (user_id, achievement_id) VALUES ($1, $2) ON CONFLICT DO NOTHING",
-                    uid, a["id"])
-    return {"achievements": ach_list}
-
-
-class DownloadTrack(BaseModel):
-    token: str
-
-
-@app.post("/api/track-download")
-async def track_download(req: DownloadTrack):
-    user = await get_user_by_token(req.token)
-    if user: await log_action(user["id"], "download", "image")
-    return {"ok": True}
-
-
-@app.post("/api/admin/announcements/send")
-async def admin_send_announcement(req: AnnouncementSend):
-    if not await check_main_admin({"token": req.token}): raise HTTPException(403, "Только главный админ")
-    if not req.message.strip(): raise HTTPException(400, "Пустое сообщение")
-    expires_at = datetime.utcnow() + timedelta(days=req.duration_days)
-    async with db_pool.acquire() as conn:
-        await conn.execute(
-            "INSERT INTO announcements (message, target_type, target_users, expires_at) VALUES ($1, $2, $3, $4)",
-            req.message.strip(), req.target_type, req.target_users, expires_at)
-    return {"ok": True}
-
-
-@app.post("/api/admin/announcements/list")
-async def admin_list_announcements(data: dict):
-    if not await check_admin(data): raise HTTPException(401, "Нет доступа")
-    async with db_pool.acquire() as conn:
-        rows = await conn.fetch(
-            "SELECT id, message, target_type, target_users, to_char(created_at, 'DD.MM HH24:MI') AS created, to_char(expires_at, 'DD.MM HH24:MI') AS expires FROM announcements ORDER BY id DESC")
-    return {"announcements": [dict(r) for r in rows]}
-
-
-@app.post("/api/admin/announcements/delete/{ann_id}")
-async def admin_delete_announcement(ann_id: int, data: dict):
-    if not await check_main_admin(data): raise HTTPException(403, "Только главный админ")
-    async with db_pool.acquire() as conn: await conn.execute("DELETE FROM announcements WHERE id = $1", ann_id)
-    return {"ok": True}
-
-
-@app.get("/api/announcements/active")
-async def get_active_announcement(token: str = ""):
-    user = await get_user_by_token(token) if token else None
-    user_id = user["id"] if user else None
-    if db_pool is None: return {"announcement": None}
-    async with db_pool.acquire() as conn:
-        row = await conn.fetchrow(
-            "SELECT id, message, target_type, target_users FROM announcements WHERE expires_at > NOW() ORDER BY id DESC LIMIT 1")
-        if not row: return {"announcement": None}
-        target_type = row["target_type"]
-        target_users = [int(x) for x in row["target_users"].split(",") if x.strip().isdigit()]
-        show = False
-        if target_type == "all":
-            show = True
-        elif user_id:
-            if target_type == "specific" and user_id in target_users:
-                show = True
-            elif target_type == "exclude" and user_id not in target_users:
-                show = True
-        elif target_type == "exclude" and not user_id:
-            show = True
-        if show: return {"announcement": {"id": row["id"], "message": row["message"]}}
-    return {"announcement": None}
-
-
-@app.get("/api/image")
-async def proxy_image(url: str, w: int = 1000):
-    if not url.startswith("https://gdz.ru/"): raise HTTPException(400, "Недопустимый URL")
-    w = max(400, min(w, 2000))
-
-    def fetch_and_compress():
-        r = cffi_requests.get(url, impersonate="chrome", timeout=8, headers={"Referer": "https://gdz.ru/"})
-        if r.status_code != 200: raise Exception(f"HTTP {r.status_code}")
-        try:
-            img = Image.open(BytesIO(r.content))
-            if img.width > w:
-                ratio = w / img.width
-                img = img.resize((w, int(img.height * ratio)), Image.LANCZOS)
-            if img.mode in ("RGBA", "P", "LA"):
-                bg = Image.new("RGB", img.size, (255, 255, 255))
-                if img.mode in ("RGBA", "LA"):
-                    bg.paste(img, mask=img.split()[-1])
-                else:
-                    bg.paste(img)
-                img = bg
-            buf = BytesIO()
-            img.save(buf, format="JPEG", quality=80, optimize=True)
-            return buf.getvalue(), "image/jpeg"
-        except Exception:
-            return r.content, r.headers.get("content-type", "image/jpeg")
-
-    try:
-        data, content_type = await asyncio.to_thread(fetch_and_compress)
-    except Exception:
-        return Response(content=PLACEHOLDER_JPEG, media_type="image/jpeg", headers={"Cache-Control": "no-cache"})
-    return Response(content=data, media_type=content_type or "image/jpeg",
-                    headers={"Cache-Control": "public, max-age=86400"})

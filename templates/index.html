@@ -61,7 +61,6 @@
         .theme-toggle-btn, .stealth-toggle-btn, .history-toggle-btn { background: rgba(150, 150, 150, 0.1); border: none; font-size: 15px; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: transform 0.2s; padding: 0; position: relative; }
         .theme-toggle-btn:hover, .stealth-toggle-btn:hover, .history-toggle-btn:hover { background: rgba(150, 150, 150, 0.2); transform: scale(1.05); }
 
-        /* КОМПАКТНЫЕ КНОПКИ ДЕЙСТВИЙ */
         .actions-row { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; margin-top: 8px; }
         .action-btn-icon { width: 36px; height: 36px; border-radius: 50%; font-size: 16px; cursor: pointer; border: none; display: inline-flex; align-items: center; justify-content: center; transition: all 0.2s; background: #edf2f7; color: #4a5568; }
         .theme-dark .action-btn-icon { background: rgba(45, 55, 72, 0.8); color: #e2e8f0; }
@@ -189,7 +188,6 @@
         .theme-dark .modal-content { background: #1e293b !important; color: #ffffff !important; border: 1px solid #334155 !important; }
         #status { display: none !important; }
 
-        /* УМЕНЬШЕННЫЕ ДОСТИЖЕНИЯ */
         .achievements-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; max-height: 60vh; overflow-y: auto; padding-right: 4px; }
         .ach-card { background: rgba(150, 150, 150, 0.05); border: 1px solid rgba(150, 150, 150, 0.2); border-radius: 10px; padding: 8px; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 4px; opacity: 0.5; filter: grayscale(100%); transition: all 0.3s; }
         .ach-card.unlocked { background: rgba(66, 153, 225, 0.1); border-color: #4299e1; opacity: 1; filter: none; }
@@ -205,7 +203,6 @@
         .ann-close { background: rgba(255,255,255,0.2); border: none; color: white; width: 28px; height: 28px; border-radius: 50%; cursor: pointer; font-weight: 900; display: flex; align-items: center; justify-content: center; transition: 0.2s; }
         .ann-close:hover { background: rgba(255,255,255,0.4); transform: scale(1.1); }
 
-        /* НОВЫЕ КНОПКИ НАСТРОЕК */
         .settings-btn-row { display: flex; gap: 8px; margin-top: 5px; }
         .settings-btn-row button { flex: 1; padding: 10px; border-radius: 8px; background: #edf2f7; border: 1px solid #cbd5e0; font-weight: 700; font-size: 13px; color: #4a5568; cursor: pointer; transition: 0.2s; display: flex; justify-content: center; align-items: center; gap: 6px; }
         .theme-dark .settings-btn-row button { background: rgba(45,55,72,0.6); border-color: #4a5568; color: #cbd5e0; }
@@ -293,7 +290,6 @@
         <footer class="footer"><span>GDZ Парсер · v{{ version }}</span></footer>
     </div>
 
-    <!-- МОДАЛКА ИСТОРИИ -->
     <div id="historyModal" class="modal hidden">
         <div class="modal-content" style="max-width: 600px;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
@@ -314,7 +310,6 @@
         </div>
     </div>
 
-    <!-- МОДАЛКА ДОСТИЖЕНИЙ -->
     <div id="achievementsModal" class="modal hidden">
         <div class="modal-content" style="max-width: 500px;">
             <h3>🏆 Ваши достижения</h3>
@@ -324,7 +319,6 @@
         </div>
     </div>
 
-    <!-- МОДАЛКА НАСТРОЕК -->
     <div id="settingsModal" class="modal hidden">
         <div class="modal-content">
             <h3>⚙️ Настройки аккаунта</h3>
@@ -336,7 +330,6 @@
                 <button type="button" onclick="openAchievements()" class="btn-secondary" style="width: 100%; margin-top: 5px; font-weight: 700;">Посмотреть мои ачивки</button>
             </div>
 
-            <!-- НОВЫЕ КНОПКИ СКРЫТИЯ -->
             <div class="settings-section">
                 <label class="form-label">🙈 Что скрывать в решениях?</label>
                 <p class="hint" style="margin-bottom: 8px; font-size:12px;">Выбери предметы, для которых не показывать ответы.</p>
@@ -344,6 +337,14 @@
                     <button type="button" onclick="openSubjectSelector('ai')">🤖 Настроить ИИ</button>
                     <button type="button" onclick="openSubjectSelector('images')">🖼 Настроить картинки</button>
                 </div>
+            </div>
+
+            <!-- НОВЫЙ БЛОК ДЛЯ TELEGRAM -->
+            <div class="settings-section" style="margin-top: 15px; background: rgba(66, 153, 225, 0.1); padding: 15px; border-radius: 12px; border: 1px solid #4299e1;">
+                <label class="form-label" style="color: #2b6cb0; font-weight: 800;">🤖 Telegram-бот</label>
+                <p class="hint" style="margin-bottom: 10px; font-size:12px;">Решай домашку прямо в Telegram (в личке или в группах)!</p>
+                <div id="tgLinkStatus" style="font-size: 14px; font-weight: 700; color: #276749; margin-bottom: 10px;">Статус: <span id="tgLinked">Не привязан</span></div>
+                <button type="button" id="tgLinkBtn" class="btn-primary" style="width: 100%; background: #0088cc; box-shadow: 0 4px 15px rgba(0, 136, 204, 0.4); border-radius: 8px; padding: 12px;">Привязать Telegram</button>
             </div>
 
             <div class="settings-section" id="passwordSection"><label class="form-label">Смена пароля</label><input type="password" id="setOldPwd" class="num-input" placeholder="Текущий пароль" style="margin-bottom:8px;"><input type="password" id="setNewPwd" class="num-input" placeholder="Новый пароль (мин. 6 символов)"></div>
@@ -356,7 +357,6 @@
         </div>
     </div>
 
-    <!-- НОВАЯ МОДАЛКА ВЫБОРА ПРЕДМЕТОВ -->
     <div id="subjectSelectorModal" class="modal hidden">
         <div class="modal-content">
             <h3 id="subjectSelectorTitle">Настройка</h3>
@@ -404,6 +404,9 @@
     </div>
     <div id="imageModal" class="modal hidden"><div class="image-modal-content"><button id="closeImageModal" class="image-modal-close">✕</button><img id="imageModalImg" src="" alt=""></div></div>
     <script>
+        // ВАЖНО: Впиши сюда username твоего бота (без @), например: gdz_ai_bot
+        const BOT_USERNAME = 'ТвойБот';
+
         let authToken = localStorage.getItem('gdz_token') || '';
         let authUser = null;
         let currentTheme = localStorage.getItem('gdz_theme') || 'light';
@@ -427,6 +430,7 @@
 
         function plural(n, one, few, many) { const m10 = n % 10, m100 = n % 100; if (m10 === 1 && m100 !== 11) return one; if (m10 >= 2 && m10 <= 4 && (m100 < 10 || m100 >= 20)) return few; return many; }
 
+        // ===== ОФЛАЙН-ИСТОРИЯ =====
         function getOfflinePackages() { try { return JSON.parse(localStorage.getItem(HISTORY_PKG_KEY) || '[]'); } catch (e) { return []; } }
         function saveOfflinePackage(pkg) {
             let pkgs = getOfflinePackages();
@@ -748,9 +752,45 @@
 
         function updateAvatarPreview() { const p = $('avatarPreview'); if (currentAvatar) { p.style.backgroundImage = 'url("' + currentAvatar + '")'; p.textContent = ''; } else { p.style.backgroundImage = ''; p.textContent = getInitial(authUser?.name, authUser?.email); } }
 
-        function openSettings() { document.getElementById('userDropdown')?.classList.remove('show'); settingsModal.classList.remove('hidden'); $('settingsStatus').textContent = ''; $('settingsStatus').className = 'fb-status'; $('setName').value = authUser?.name || ''; $('setOldPwd').value = ''; $('setNewPwd').value = ''; updateAvatarPreview(); }
+        function openSettings() {
+            document.getElementById('userDropdown')?.classList.remove('show');
+            settingsModal.classList.remove('hidden');
+            $('settingsStatus').textContent = ''; $('settingsStatus').className = 'fb-status';
+            $('setName').value = authUser?.name || ''; $('setOldPwd').value = ''; $('setNewPwd').value = '';
+            updateAvatarPreview();
+
+            // Статус Telegram
+            if (authUser && authUser.telegram_chat_id) {
+                $('tgLinked').textContent = '✅ Привязан';
+                $('tgLinkBtn').textContent = 'Привязать другой аккаунт';
+            } else {
+                $('tgLinked').textContent = 'Не привязан';
+                $('tgLinkBtn').textContent = 'Привязать Telegram';
+            }
+        }
         function cancelSettings() { settingsModal.classList.add('hidden'); }
         $('closeSettingsBtn').onclick = cancelSettings; settingsModal.onclick = (e) => { if (e.target === settingsModal) cancelSettings(); };
+
+        // ЛОГИКА ПРИВЯЗКИ TELEGRAM
+        $('tgLinkBtn').onclick = async () => {
+            const btn = $('tgLinkBtn');
+            btn.disabled = true; btn.textContent = '⏳ Генерация кода...';
+            try {
+                const r = await fetch('/api/telegram/link-code?token=' + encodeURIComponent(authToken));
+                if (!r.ok) throw new Error('Ошибка сервера');
+                const d = await r.json();
+
+                // Открываем бота в Telegram с автоматической передачей кода
+                const deepLink = `https://t.me/${BOT_USERNAME}?start=${d.code}`;
+                window.open(deepLink, '_blank');
+
+                alert(`Код: ${d.code}\n\nЕсли бот не открылся автоматически, отправь ему команду:\n/start ${d.code}`);
+            } catch (e) {
+                showToast('Ошибка: ' + e.message, 'error');
+            } finally {
+                btn.disabled = false; btn.textContent = 'Привязать Telegram';
+            }
+        };
 
         // НОВАЯ ЛОГИКА ДЛЯ СКРЫТИЯ ПРЕДМЕТОВ
         function openSubjectSelector(mode) {
