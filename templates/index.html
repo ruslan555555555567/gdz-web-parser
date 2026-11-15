@@ -324,12 +324,15 @@
             <div class="action-buttons-row">
                 <button id="btn" class="btn-modern-primary"><span id="btnText">🚀 Решить</span></button>
                 <button id="clearBtn" class="btn-modern-clear">🗑 Очистить</button>
+                <!-- ТА САМАЯ КНОПКА ДЛЯ АДМИНА -->
+                <button id="adminFillBtn" class="btn-modern-primary" style="display: none; background: #9f7aea; box-shadow: 0 4px 15px rgba(159, 122, 234, 0.4);">🧪 Тест: 11</button>
             </div>
         </section>
         <div id="result" class="result"></div>
         <footer class="footer"><span>GDZ Парсер · v{{ version }}</span></footer>
     </div>
 
+    <!-- Модальные окна -->
     <div id="historyModal" class="modal hidden">
         <div class="modal-content">
             <h3>📜 История поисков</h3>
@@ -500,7 +503,6 @@
                     if (err.name !== 'AbortError') showToast('Ошибка при отправке', 'error');
                 }
             } else {
-                // Резервный вариант для ПК
                 try {
                     await navigator.clipboard.writeText(`${title}\n\n${text}\n\n${url}`);
                     showToast('Ссылка и текст скопированы в буфер!', 'success');
@@ -534,7 +536,12 @@
         }
 
         function showAuth() { setAuthState(false); authScreen.classList.remove('hidden'); mainScreen.classList.add('hidden'); }
-        async function showMain() { setAuthState(true); authScreen.classList.add('hidden'); mainScreen.classList.remove('hidden'); updateGreeting(); renderTopbar(); await loadSubjects(); renderSubjects(); checkAnnouncements(); }
+        async function showMain() {
+            setAuthState(true); authScreen.classList.add('hidden'); mainScreen.classList.remove('hidden'); updateGreeting(); renderTopbar();
+            if (authUser && authUser.is_admin) { $('adminFillBtn').style.display = 'flex'; } else { $('adminFillBtn').style.display = 'none'; }
+            await loadSubjects(); renderSubjects(); checkAnnouncements();
+        }
+
         function updateGreeting() {
             const hour = new Date().getHours(); let greeting = 'Доброй ночи'; if (hour >= 7 && hour < 9) greeting = 'Доброе утро'; else if (hour >= 9 && hour < 18) greeting = 'Добрый день'; else if (hour >= 18 && hour < 23) greeting = 'Добрый вечер';
             const name = authUser.name || authUser.email.split('@')[0]; const greetEl = $('welcomeGreeting');
@@ -571,6 +578,12 @@
         function openSubjectSettings(subjectName) { currentSubjectId = subjectName; $('subjectSettingsTitle').textContent = `⚙️ Настройки: ${subjectName}`; const subj = SUBJECTS.find(s => s.name === subjectName); const currentPart = activeParts[subjectName] || '1'; const adminDefault = currentPart === '2' ? (subj.default_year_alt || subj.default_year) : subj.default_year; $('subjectSetYear').value = subjectYears[subjectName] || ''; const hintEl = $('subjectSettingsAdminHint'); if (adminDefault) { hintEl.innerHTML = `👑 Администратор установил год по умолчанию: <b>${adminDefault}</b>.`; $('subjectSetYear').placeholder = adminDefault; } else { hintEl.innerHTML = 'Администратор не устанавливал год по умолчанию.'; $('subjectSetYear').placeholder = 'Например: 2025'; } $('subjectSettingsStatus').textContent = ''; $('subjectSettingsStatus').className = 'fb-status'; subjectSettingsModal.classList.remove('hidden'); }
         $('closeSubjectSettingsBtn').onclick = () => subjectSettingsModal.classList.add('hidden'); subjectSettingsModal.onclick = (e) => { if (e.target === subjectSettingsModal) subjectSettingsModal.classList.add('hidden'); };
         $('saveSubjectSettingsBtn').onclick = async () => { if (!currentSubjectId) return; const yearVal = $('subjectSetYear').value.trim(); const st = $('subjectSettingsStatus'); st.textContent = '⏳ Сохраняем...'; st.className = 'fb-status loading'; if (yearVal) subjectYears[currentSubjectId] = yearVal; else delete subjectYears[currentSubjectId]; try { const r = await fetch('/api/auth/update', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ token: authToken, subject_years: JSON.stringify(subjectYears) }) }); const d = await r.json(); if (!r.ok) throw new Error(d.detail || 'Ошибка'); authUser = d.user; subjectYears = parseJson(authUser.subject_years); renderSubjects(); st.textContent = '✅ Сохранено!'; st.className = 'fb-status success'; setTimeout(() => subjectSettingsModal.classList.add('hidden'), 1000); } catch (e) { st.textContent = '❌ ' + e.message; st.className = 'fb-status error'; } };
+
+        // КНОПКА ТЕСТ 11
+        $('adminFillBtn').onclick = () => {
+            subjectsContainer.querySelectorAll('.text-input').forEach(ta => ta.value = '11');
+            allTextTasks.value = '11';
+        };
 
         const INVISIBLE_SUBJECTS = [{ name: 'Разговоры о важном', url: '', type: 'text', keywords: ['разговоры о важном'] }];
         function findSubjectInLine(line, subjectsList) { const lowerLine = line.toLowerCase(); for (let s of INVISIBLE_SUBJECTS) for (let kw of s.keywords) if (lowerLine.includes(kw)) return s; for (let s of subjectsList) if (lowerLine.includes(s.name.toLowerCase())) return s; for (let s of subjectsList) { const keywords = s.name.toLowerCase().replace(/[()]/g, '').split(' ').filter(w => w.length > 3 && w !== 'язык' && w !== 'класс'); for (let kw of keywords) if (lowerLine.includes(kw)) return s; } return null; }
@@ -615,7 +628,6 @@
                             if (r.number) { const numHeader = document.createElement('div'); numHeader.className = 'task-number-header'; numHeader.textContent = `Задание №${r.number}`; wrapper.appendChild(numHeader); }
                             const edHeader = document.createElement('div'); edHeader.className = 'edition-header'; edHeader.textContent = aiSolution.edition; wrapper.appendChild(edHeader);
 
-                            // Кнопки для ИИ
                             const btnRow = document.createElement('div');
                             btnRow.style.display = 'flex';
                             btnRow.style.gap = '8px';
@@ -624,10 +636,7 @@
                             copyBtn.onclick = (e) => { e.stopPropagation(); copyTextToClipboard(aiSolution.text, copyBtn); }; btnRow.appendChild(copyBtn);
 
                             const shareBtn = document.createElement('button'); shareBtn.className = 'copy-btn'; shareBtn.innerHTML = '📤 Поделиться'; shareBtn.style.marginBottom = '0';
-                            shareBtn.onclick = (e) => {
-                                e.stopPropagation();
-                                shareContent(`GDZ: ${subject} №${r.number || ''}`, aiSolution.text, window.location.href);
-                            };
+                            shareBtn.onclick = (e) => { e.stopPropagation(); shareContent(`GDZ: ${subject} №${r.number || ''}`, aiSolution.text, window.location.href); };
                             btnRow.appendChild(shareBtn);
 
                             wrapper.appendChild(btnRow);
@@ -658,10 +667,7 @@
                                 const shareBtn = document.createElement('button');
                                 shareBtn.innerHTML = '📤 Поделиться';
                                 shareBtn.style.cssText = 'padding: 8px 16px; display: flex; align-items: center; gap: 6px; background: #48bb78; color: #ffffff; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s; box-shadow: 0 2px 5px rgba(72, 187, 120, 0.3);';
-                                shareBtn.onclick = (e) => {
-                                    e.stopPropagation();
-                                    shareContent(`GDZ: ${subject} №${r.number || ''}`, 'Решение задания', window.location.href);
-                                };
+                                shareBtn.onclick = (e) => { e.stopPropagation(); shareContent(`GDZ: ${subject} №${r.number || ''}`, 'Решение задания', window.location.href); };
 
                                 controls.appendChild(refreshBtn); controls.appendChild(dlBtn); controls.appendChild(shareBtn); wrapper.appendChild(controls); sec.appendChild(wrapper);
                             } else {
@@ -676,10 +682,7 @@
                                     const shareBtn = document.createElement('button');
                                     shareBtn.innerHTML = '📤 Поделиться';
                                     shareBtn.style.cssText = 'padding: 8px 16px; display: flex; align-items: center; gap: 6px; background: #48bb78; color: #ffffff; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s; box-shadow: 0 2px 5px rgba(72, 187, 120, 0.3);';
-                                    shareBtn.onclick = (e) => {
-                                        e.stopPropagation();
-                                        shareContent(`GDZ: ${subject} №${r.number || ''}`, 'Решение задания', window.location.href);
-                                    };
+                                    shareBtn.onclick = (e) => { e.stopPropagation(); shareContent(`GDZ: ${subject} №${r.number || ''}`, 'Решение задания', window.location.href); };
 
                                     controls.appendChild(refreshBtn); controls.appendChild(dlBtn); controls.appendChild(shareBtn); imgWrap.appendChild(controls); wrapper.appendChild(imgWrap);
                                 });
