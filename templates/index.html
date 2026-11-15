@@ -179,7 +179,7 @@
         .ai-text-block h4 { margin: 15px 0 10px 0; font-size: 18px; color: #2b6cb0; border-bottom: 1px solid #bee3f8; padding-bottom: 4px; }
         .ai-text-block h5 { margin: 15px 0 5px 0; font-size: 16px; color: #2b6cb0; }
         .theme-dark .ai-text-block h4, .theme-dark .ai-text-block h5 { color: #90cdf4; border-bottom-color: #4a5568; }
-        .copy-btn { display: inline-flex; align-items: center; gap: 4px; margin-bottom: 10px; padding: 6px 12px; font-size: 13px; font-weight: 700; border-radius: 8px; border: 1px solid #bee3f8; background: rgba(66, 153, 225, 0.05); color: #2b6cb0; cursor: pointer; transition: all 0.2s; }
+        .copy-btn { display: inline-flex; align-items: center; gap: 4px; margin-bottom: 10px; padding: 6px 12px; font-size: 13px; font-weight: 700; border-radius: 8px; border: 1px solid #bee3f8; background: rgba(66, 153, 225, 0.05); color: #2b6cb0; cursor: pointer; transition: all 0.2s; margin-right: 8px; }
         .copy-btn:hover { background: rgba(66, 153, 225, 0.15); border-color: #90cdf4; }
         .theme-dark .copy-btn { background: rgba(66, 153, 225, 0.2); border-color: rgba(66, 153, 225, 0.3); color: #90cdf4; }
         .welcome-greeting { text-align: center; font-size: 24px; font-weight: 800; margin-bottom: 20px; margin-top: 10px; color: #2d3748; opacity: 0; transform: translateY(-20px); animation: slideDownFade 0.8s cubic-bezier(0.25, 0.8, 0.25, 1) forwards; }
@@ -330,7 +330,6 @@
         <footer class="footer"><span>GDZ Парсер · v{{ version }}</span></footer>
     </div>
 
-    <!-- Модальные окна... -->
     <div id="historyModal" class="modal hidden">
         <div class="modal-content">
             <h3>📜 История поисков</h3>
@@ -426,30 +425,21 @@
                 mainScreen.style.display = 'none';
                 authScreen.style.display = 'none';
                 document.title = "Круговорот воды в природе";
-                // Прячем иконку выхода из невидимки, если это не телефон
-                const stealthBtn = document.querySelector('.stealth-btn');
-                if (stealthBtn) stealthBtn.style.display = 'flex';
             } else {
                 stealthScreen.style.display = 'none';
                 mainScreen.style.display = 'flex';
-                authScreen.style.display = 'none'; // Если авторизован, он и так скрыт
+                authScreen.style.display = 'none';
                 document.title = "GDZ Парсер — 7 класс";
             }
         }
 
-        // Слушаем Esc
         document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape') {
-                toggleStealth();
-            }
+            if (e.key === 'Escape') toggleStealth();
         });
 
-        // Кнопка в топбаре
         document.addEventListener('DOMContentLoaded', () => {
             const stealthBtn = $('stealthBtn');
-            if (stealthBtn) {
-                stealthBtn.addEventListener('click', toggleStealth);
-            }
+            if (stealthBtn) stealthBtn.addEventListener('click', toggleStealth);
         });
 
         function showToast(message, type = 'info', duration = 3000) {
@@ -496,8 +486,28 @@
         function getInitial(name, email) { const n = (name || '').trim(); if (n) return n[0].toUpperCase(); if (email) return email[0].toUpperCase(); return '?'; }
         function setAuthState(hasAuth) { const root = document.documentElement; root.classList.remove('has-auth', 'no-auth'); root.classList.add(hasAuth ? 'has-auth' : 'no-auth'); }
         function parseJson(str) { try { return JSON.parse(str || '{}'); } catch (e) { return {}; } }
+
         async function copyTextToClipboard(text, btnElement) {
             try { await navigator.clipboard.writeText(text); const originalText = btnElement.innerHTML; btnElement.innerHTML = '✅ Скопировано'; btnElement.style.color = '#10b981'; btnElement.style.borderColor = '#10b981'; setTimeout(() => { btnElement.innerHTML = originalText; btnElement.style.color = ''; btnElement.style.borderColor = ''; }, 2000); } catch (err) { showToast('Не удалось скопировать текст', 'error'); }
+        }
+
+        async function shareContent(title, text, url) {
+            if (navigator.share) {
+                try {
+                    await navigator.share({ title: title, text: text, url: url });
+                    showToast('Успешно отправлено!', 'success');
+                } catch (err) {
+                    if (err.name !== 'AbortError') showToast('Ошибка при отправке', 'error');
+                }
+            } else {
+                // Резервный вариант для ПК
+                try {
+                    await navigator.clipboard.writeText(`${title}\n\n${text}\n\n${url}`);
+                    showToast('Ссылка и текст скопированы в буфер!', 'success');
+                } catch (err) {
+                    showToast('Не удалось скопировать', 'error');
+                }
+            }
         }
 
         document.addEventListener('DOMContentLoaded', () => {
@@ -604,7 +614,24 @@
                             hasRenderedSomething = true; const wrapper = document.createElement('div'); wrapper.style.cssText = 'display: flex; flex-direction: column; gap: 8px; margin-bottom: 25px;';
                             if (r.number) { const numHeader = document.createElement('div'); numHeader.className = 'task-number-header'; numHeader.textContent = `Задание №${r.number}`; wrapper.appendChild(numHeader); }
                             const edHeader = document.createElement('div'); edHeader.className = 'edition-header'; edHeader.textContent = aiSolution.edition; wrapper.appendChild(edHeader);
-                            const copyBtn = document.createElement('button'); copyBtn.className = 'copy-btn'; copyBtn.innerHTML = '📋 Скопировать текст'; copyBtn.onclick = (e) => { e.stopPropagation(); copyTextToClipboard(aiSolution.text, copyBtn); }; wrapper.appendChild(copyBtn);
+
+                            // Кнопки для ИИ
+                            const btnRow = document.createElement('div');
+                            btnRow.style.display = 'flex';
+                            btnRow.style.gap = '8px';
+
+                            const copyBtn = document.createElement('button'); copyBtn.className = 'copy-btn'; copyBtn.innerHTML = '📋 Скопировать текст'; copyBtn.style.marginBottom = '0';
+                            copyBtn.onclick = (e) => { e.stopPropagation(); copyTextToClipboard(aiSolution.text, copyBtn); }; btnRow.appendChild(copyBtn);
+
+                            const shareBtn = document.createElement('button'); shareBtn.className = 'copy-btn'; shareBtn.innerHTML = '📤 Поделиться'; shareBtn.style.marginBottom = '0';
+                            shareBtn.onclick = (e) => {
+                                e.stopPropagation();
+                                shareContent(`GDZ: ${subject} №${r.number || ''}`, aiSolution.text, window.location.href);
+                            };
+                            btnRow.appendChild(shareBtn);
+
+                            wrapper.appendChild(btnRow);
+
                             const textDiv = document.createElement('div'); textDiv.className = 'ai-text-block'; textDiv.innerHTML = renderMarkdown(aiSolution.text);
                             if (window.renderMathInElement) renderMathInElement(textDiv, { delimiters: [{left: '$$', right: '$$', display: true}, {left: '$', right: '$', display: false}, {left: '\\(', right: '\\)', display: false}, {left: '\\[', right: '\\]', display: true}], throwOnError: false });
                             wrapper.appendChild(textDiv);
@@ -627,7 +654,16 @@
                                 const controls = document.createElement('div'); controls.style.cssText = 'display: flex; gap: 10px; justify-content: flex-end; flex-wrap: wrap; margin-top: 10px;';
                                 const refreshBtn = document.createElement('button'); refreshBtn.innerHTML = '🔄 Обновить'; refreshBtn.style.cssText = 'padding: 8px 16px; display: flex; align-items: center; gap: 6px; background: rgba(150, 150, 150, 0.15); color: inherit; border: 1px solid rgba(150, 150, 150, 0.3); border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s;'; refreshBtn.onclick = (e) => { e.stopPropagation(); imgElements.forEach(item => { item.img.classList.remove('img-tall', 'img-retrying'); item.img.classList.add('img-loading'); item.img.src = ''; loadImage(item.img, item.url); }); };
                                 const dlBtn = document.createElement('button'); dlBtn.innerHTML = '⬇️ Скачать одной картинкой'; dlBtn.style.cssText = 'padding: 8px 16px; display: flex; align-items: center; gap: 6px; background: #4299e1; color: #ffffff; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s; box-shadow: 0 2px 5px rgba(66, 153, 225, 0.3);'; dlBtn.onclick = async (e) => { e.stopPropagation(); dlBtn.textContent = '⏳ Склеиваем...'; await downloadMergedImage(selectedSolution.images, `GDZ_${r.subject || 'Предмет'}_№${r.number || 1}_merged.jpg`); dlBtn.textContent = '⬇️ Скачать одной картинкой'; fetch('/api/track-download', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({token: authToken}) }).catch(()=>{}); };
-                                controls.appendChild(refreshBtn); controls.appendChild(dlBtn); wrapper.appendChild(controls); sec.appendChild(wrapper);
+
+                                const shareBtn = document.createElement('button');
+                                shareBtn.innerHTML = '📤 Поделиться';
+                                shareBtn.style.cssText = 'padding: 8px 16px; display: flex; align-items: center; gap: 6px; background: #48bb78; color: #ffffff; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s; box-shadow: 0 2px 5px rgba(72, 187, 120, 0.3);';
+                                shareBtn.onclick = (e) => {
+                                    e.stopPropagation();
+                                    shareContent(`GDZ: ${subject} №${r.number || ''}`, 'Решение задания', window.location.href);
+                                };
+
+                                controls.appendChild(refreshBtn); controls.appendChild(dlBtn); controls.appendChild(shareBtn); wrapper.appendChild(controls); sec.appendChild(wrapper);
                             } else {
                                 const imagesToRender = isMultiImageSubject ? selectedSolution.images : [selectedSolution.images[0]];
                                 imagesToRender.forEach((u, imgIndex) => {
@@ -636,7 +672,16 @@
                                     const controls = document.createElement('div'); controls.style.cssText = 'display: flex; gap: 10px; justify-content: flex-end; flex-wrap: wrap;';
                                     const refreshBtn = document.createElement('button'); refreshBtn.innerHTML = '🔄 Обновить'; refreshBtn.style.cssText = 'padding: 8px 16px; display: flex; align-items: center; gap: 6px; background: rgba(150, 150, 150, 0.15); color: inherit; border: 1px solid rgba(150, 150, 150, 0.3); border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s;'; refreshBtn.onclick = (e) => { e.stopPropagation(); img.classList.remove('img-tall', 'img-retrying'); img.classList.add('img-loading'); img.src = ''; loadImage(img, u); };
                                     const dlBtn = document.createElement('button'); dlBtn.innerHTML = '⬇️ Скачать'; dlBtn.style.cssText = 'padding: 8px 16px; display: flex; align-items: center; gap: 6px; background: #4299e1; color: #ffffff; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s; box-shadow: 0 2px 5px rgba(66, 153, 225, 0.3);'; dlBtn.onclick = (e) => { e.stopPropagation(); if (img.src && img.src.includes('/api/image')) { downloadSingleImage(img.src, `GDZ_${r.subject || 'Предмет'}_№${r.number || 1}_${imgIndex + 1}.jpg`); fetch('/api/track-download', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({token: authToken}) }).catch(()=>{}); } else alert('Картинка еще не загрузилась, подождите...'); };
-                                    controls.appendChild(refreshBtn); controls.appendChild(dlBtn); imgWrap.appendChild(controls); wrapper.appendChild(imgWrap);
+
+                                    const shareBtn = document.createElement('button');
+                                    shareBtn.innerHTML = '📤 Поделиться';
+                                    shareBtn.style.cssText = 'padding: 8px 16px; display: flex; align-items: center; gap: 6px; background: #48bb78; color: #ffffff; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s; box-shadow: 0 2px 5px rgba(72, 187, 120, 0.3);';
+                                    shareBtn.onclick = (e) => {
+                                        e.stopPropagation();
+                                        shareContent(`GDZ: ${subject} №${r.number || ''}`, 'Решение задания', window.location.href);
+                                    };
+
+                                    controls.appendChild(refreshBtn); controls.appendChild(dlBtn); controls.appendChild(shareBtn); imgWrap.appendChild(controls); wrapper.appendChild(imgWrap);
                                 });
                                 if (!aiSolution && r.raw_text) { const textDiv = document.createElement('div'); textDiv.className = 'task-raw-text'; textDiv.textContent = r.raw_text.replace(new RegExp(r.subject, 'gi'), '').replace(/^[:\-\s]+/, '').trim() || r.numbers || 'Без текста'; wrapper.appendChild(textDiv); }
                                 sec.appendChild(wrapper);
@@ -657,7 +702,21 @@
                             let lines = content.split('\n').map(l => l.trim()).filter(l => l.length > 2 || (l.length > 0 && !/^[а-яa-z]$/i.test(l))); content = lines.join('<br>');
                             let header = (r.number && !content.includes(r.number)) ? `<span style="font-weight:700; color:#e53e3e; margin-right: 8px;">№${r.number}</span>` : '';
                             const textBlock = document.createElement('div'); textBlock.className = 'task-text'; textBlock.innerHTML = `${header} ${content}`;
-                            const copyBtn = document.createElement('button'); copyBtn.className = 'copy-btn'; copyBtn.innerHTML = '📋 Скопировать текст'; copyBtn.style.marginTop = '8px'; copyBtn.onclick = () => copyTextToClipboard(r.raw_text, copyBtn); textBlock.appendChild(copyBtn);
+
+                            const btnRow = document.createElement('div');
+                            btnRow.style.display = 'flex';
+                            btnRow.style.gap = '8px';
+                            btnRow.style.marginTop = '8px';
+
+                            const copyBtn = document.createElement('button'); copyBtn.className = 'copy-btn'; copyBtn.innerHTML = '📋 Скопировать текст'; copyBtn.style.margin = '0';
+                            copyBtn.onclick = () => copyTextToClipboard(r.raw_text, copyBtn);
+                            btnRow.appendChild(copyBtn);
+
+                            const shareBtn = document.createElement('button'); shareBtn.className = 'copy-btn'; shareBtn.innerHTML = '📤 Поделиться'; shareBtn.style.margin = '0';
+                            shareBtn.onclick = () => shareContent(`GDZ: ${subject}`, r.raw_text, window.location.href);
+                            btnRow.appendChild(shareBtn);
+
+                            textBlock.appendChild(btnRow);
                             div.appendChild(textBlock);
                         });
                         sec.appendChild(div);
