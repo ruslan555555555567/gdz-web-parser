@@ -43,7 +43,6 @@
         .stealth-btn { position: fixed; bottom: 20px; right: 20px; background: rgba(0,0,0,0.05); border: 1px solid #ccc; border-radius: 50%; width: 40px; height: 40px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 20px; opacity: 0.3; transition: opacity 0.2s; }
         .stealth-btn:hover { opacity: 1; }
 
-        /* УМЕНЬШЕННАЯ ШАПКА */
         .topbar { position: sticky; top: 8px; z-index: 100; background: rgba(255, 255, 255, 0.85) !important; backdrop-filter: blur(16px) !important; -webkit-backdrop-filter: blur(16px) !important; border: 1px solid rgba(0, 0, 0, 0.05); border-radius: 14px; padding: 6px 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; gap: 8px; }
         .theme-dark .topbar { background: rgba(26, 32, 44, 0.85) !important; border-color: rgba(255,255,255,0.05); box-shadow: 0 4px 20px rgba(0,0,0,0.3); }
         .version { background: rgba(150, 150, 150, 0.15); padding: 3px 8px; border-radius: 8px; font-size: 11px; font-weight: 700; color: #4a5568; white-space: nowrap; }
@@ -59,11 +58,9 @@
         .btn-modern-clear:hover { background: #fff5f5; border-color: #feb2b2; transform: translateY(-2px); }
         .theme-dark .btn-modern-clear { background: rgba(74, 85, 104, 0.5); color: #fc8181; border-color: #4a5568; }
 
-        /* УМЕНЬШЕННЫЕ КНОПКИ ШАПКИ */
         .theme-toggle-btn, .stealth-toggle-btn, .history-toggle-btn { background: rgba(150, 150, 150, 0.1); border: none; font-size: 15px; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: transform 0.2s; padding: 0; position: relative; }
         .theme-toggle-btn:hover, .stealth-toggle-btn:hover, .history-toggle-btn:hover { background: rgba(150, 150, 150, 0.2); transform: scale(1.05); }
 
-        /* КРАСИВЫЕ КНОПКИ ДЕЙСТВИЙ (ОБНОВИТЬ, СКАЧАТЬ, ПОДЕЛИТЬСЯ) */
         .actions-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 12px; }
         .action-btn { padding: 8px 14px; border-radius: 10px; font-size: 13px; font-weight: 700; cursor: pointer; border: 1px solid transparent; display: inline-flex; align-items: center; gap: 6px; transition: all 0.2s; background: #edf2f7; color: #4a5568; }
         .theme-dark .action-btn { background: rgba(45, 55, 72, 0.6); color: #e2e8f0; border-color: rgba(255,255,255,0.05); }
@@ -84,7 +81,6 @@
         .theme-dark .action-btn-report { background: rgba(30,41,59,0.6); border-color: #475569; color: #94a3b8; }
         .theme-dark .action-btn-report:hover { background: rgba(239,68,68,0.15); border-color: #f87171; color: #fca5a5; }
 
-        /* ОСТАЛЬНЫЕ СТИЛИ */
         .toast-container { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); display: flex; flex-direction: column; gap: 10px; z-index: 10000; pointer-events: none; width: 90%; max-width: 400px; }
         .toast { background: #ffffff; color: #1a202c; padding: 14px 20px; border-radius: 14px; box-shadow: 0 10px 30px rgba(0,0,0,0.15); font-weight: 700; font-size: 15px; display: flex; align-items: center; gap: 10px; animation: toastIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; pointer-events: auto; border-left: 4px solid #4299e1; }
         .toast.error { border-left-color: #e53e3e; }
@@ -169,7 +165,6 @@
         @keyframes slideDownFade { to { opacity: 1; transform: translateY(0); } }
         .user-menu-container { position: relative; display: inline-block; }
 
-        /* УМЕНЬШЕННЫЙ ПРОФИЛЬ */
         .user-menu-btn { display: flex; align-items: center; gap: 6px; background: #edf2f7; padding: 4px 10px; border-radius: 20px; border: none; cursor: pointer; font-weight: 700; font-size: 13px; color: #4a5568; transition: all 0.2s; }
         .user-menu-btn:hover { background: #e2e8f0; }
         .theme-dark .user-menu-btn { background: rgba(74,85,104,0.6); color: #e2e8f0; }
@@ -287,7 +282,6 @@
         <footer class="footer"><span>GDZ Парсер · v{{ version }}</span></footer>
     </div>
 
-    <!-- ИСТОРИЯ (только офлайн) -->
     <div id="historyModal" class="modal hidden">
         <div class="modal-content" style="max-width: 600px;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
@@ -316,7 +310,6 @@
             <div class="settings-section"><label class="form-label">Аватарка</label><div class="avatar-block"><div class="avatar-preview" id="avatarPreview"><span id="avatarInitial">?</span></div><div class="avatar-actions"><label class="btn-small avatar-upload-btn">🖼 Из галереи<input type="file" id="avatarInput" accept="image/*" hidden></label><button type="button" id="avatarRemoveBtn" class="btn-small avatar-remove-btn">🗑 Убрать</button></div></div></div>
             <div class="settings-section"><label class="form-label">Имя <input type="text" id="setName" placeholder="Как тебя зовут"></label></div>
 
-            <!-- ДОСТИЖЕНИЯ В НАСТРОЙКАХ -->
             <div class="settings-section">
                 <label class="form-label">🏆 Достижения</label>
                 <button type="button" onclick="openAchievements()" class="btn-secondary" style="width: 100%; margin-top: 5px; font-weight: 700;">Посмотреть мои ачивки</button>
@@ -388,7 +381,6 @@
 
         function plural(n, one, few, many) { const m10 = n % 10, m100 = n % 100; if (m10 === 1 && m100 !== 11) return one; if (m10 >= 2 && m10 <= 4 && (m100 < 10 || m100 >= 20)) return few; return many; }
 
-        // ===== ОФЛАЙН-ИСТОРИЯ =====
         function getOfflinePackages() { try { return JSON.parse(localStorage.getItem(HISTORY_PKG_KEY) || '[]'); } catch (e) { return []; } }
         function saveOfflinePackage(pkg) {
             let pkgs = getOfflinePackages();
@@ -610,7 +602,7 @@
                             hasR = true;
                             const wrapper = document.createElement('div'); wrapper.style.cssText = 'display: flex; flex-direction: column; gap: 8px; margin-bottom: 25px;';
                             if (r.number) { const nh = document.createElement('div'); nh.className = 'task-number-header'; nh.textContent = `Задание №${r.number}`; wrapper.appendChild(nh); }
-                            const eh = document.createElement('div'); ed.className = 'edition-header'; eh.textContent = aiS.edition; wrapper.appendChild(eh);
+                            const eh = document.createElement('div'); eh.className = 'edition-header'; eh.textContent = aiS.edition; wrapper.appendChild(eh); // <--- ИСПРАВЛЕНО ЗДЕСЬ
                             const tb = document.createElement('div'); tb.style.display = 'flex'; tb.style.gap = '8px';
                             const cb = document.createElement('button'); cb.className = 'copy-btn'; cb.innerHTML = '📋 Скопировать текст'; cb.style.marginBottom = '0'; cb.onclick = (e) => { e.stopPropagation(); copyTextToClipboard(aiS.text, cb); }; tb.appendChild(cb);
                             const shb = document.createElement('button'); shb.className = 'copy-btn'; shb.innerHTML = '📤 Поделиться'; shb.style.marginBottom = '0'; shb.onclick = (e) => { e.stopPropagation(); const c = getTaskLabel(subject, r.number); const ct = cleanTextForSharing(aiS.text); const ft = `${c}\n\n${ct}`; if(navigator.share) { navigator.share({ title: 'GDZ', text: ft }).catch(()=>{}); } else { copyTextToClipboard(ft, shb); } }; tb.appendChild(shb);
