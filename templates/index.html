@@ -61,22 +61,17 @@
         .theme-toggle-btn, .stealth-toggle-btn, .history-toggle-btn { background: rgba(150, 150, 150, 0.1); border: none; font-size: 15px; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: transform 0.2s; padding: 0; position: relative; }
         .theme-toggle-btn:hover, .stealth-toggle-btn:hover, .history-toggle-btn:hover { background: rgba(150, 150, 150, 0.2); transform: scale(1.05); }
 
-        .actions-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 12px; }
-        .action-btn { padding: 8px 14px; border-radius: 10px; font-size: 13px; font-weight: 700; cursor: pointer; border: 1px solid transparent; display: inline-flex; align-items: center; gap: 6px; transition: all 0.2s; background: #edf2f7; color: #4a5568; }
-        .theme-dark .action-btn { background: rgba(45, 55, 72, 0.6); color: #e2e8f0; border-color: rgba(255,255,255,0.05); }
-        .action-btn:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        /* КОМПАКТНЫЕ КНОПКИ ДЕЙСТВИЙ */
+        .actions-row { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; margin-top: 8px; }
+        .action-btn-icon { width: 36px; height: 36px; border-radius: 50%; font-size: 16px; cursor: pointer; border: none; display: inline-flex; align-items: center; justify-content: center; transition: all 0.2s; background: #edf2f7; color: #4a5568; }
+        .theme-dark .action-btn-icon { background: rgba(45, 55, 72, 0.8); color: #e2e8f0; }
+        .action-btn-icon:hover { transform: translateY(-2px); box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        .action-btn-download { background: #4299e1; color: white; }
+        .action-btn-download:hover { background: #3182ce; }
+        .action-btn-share { background: #48bb78; color: white; }
+        .action-btn-share:hover { background: #38a169; }
 
-        .action-btn-refresh { border-color: #cbd5e0; }
-        .theme-dark .action-btn-refresh { border-color: #4a5568; }
-        .action-btn-refresh:hover { border-color: #a0aec0; background: #e2e8f0; }
-
-        .action-btn-download { background: #4299e1; color: white; border-color: #4299e1; box-shadow: 0 2px 5px rgba(66, 153, 225, 0.3); }
-        .action-btn-download:hover { background: #3182ce; box-shadow: 0 4px 12px rgba(66, 153, 225, 0.4); }
-
-        .action-btn-share { background: #48bb78; color: white; border-color: #48bb78; box-shadow: 0 2px 5px rgba(72, 187, 120, 0.3); }
-        .action-btn-share:hover { background: #38a169; box-shadow: 0 4px 12px rgba(72, 187, 120, 0.4); }
-
-        .action-btn-report { border-color: #e2e8f0; background: #f7fafc; color: #718096; margin-top: 0; }
+        .action-btn-report { padding: 6px 12px; border-radius: 8px; font-size: 12px; font-weight: 700; cursor: pointer; border: 1px solid #e2e8f0; background: #f7fafc; color: #718096; display: inline-flex; align-items: center; gap: 4px; transition: all 0.2s; margin-top: 4px; }
         .action-btn-report:hover { background: #fff5f5; border-color: #feb2b2; color: #e53e3e; }
         .theme-dark .action-btn-report { background: rgba(30,41,59,0.6); border-color: #475569; color: #94a3b8; }
         .theme-dark .action-btn-report:hover { background: rgba(239,68,68,0.15); border-color: #f87171; color: #fca5a5; }
@@ -193,19 +188,33 @@
         .modal-content { background: #ffffff !important; color: #1a202c !important; border-radius: 16px; padding: 24px; max-width: 450px; width: 100%; max-height: 90vh; overflow-y: auto; box-shadow: 0 10px 50px rgba(0,0,0,0.5) !important; }
         .theme-dark .modal-content { background: #1e293b !important; color: #ffffff !important; border: 1px solid #334155 !important; }
         #status { display: none !important; }
-        .achievements-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
-        .ach-card { background: rgba(150, 150, 150, 0.05); border: 1px solid rgba(150, 150, 150, 0.2); border-radius: 12px; padding: 12px; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 6px; opacity: 0.5; filter: grayscale(100%); transition: all 0.3s; }
+
+        /* УМЕНЬШЕННЫЕ ДОСТИЖЕНИЯ */
+        .achievements-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; max-height: 60vh; overflow-y: auto; padding-right: 4px; }
+        .ach-card { background: rgba(150, 150, 150, 0.05); border: 1px solid rgba(150, 150, 150, 0.2); border-radius: 10px; padding: 8px; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 4px; opacity: 0.5; filter: grayscale(100%); transition: all 0.3s; }
         .ach-card.unlocked { background: rgba(66, 153, 225, 0.1); border-color: #4299e1; opacity: 1; filter: none; }
         .theme-dark .ach-card { background: rgba(0,0,0,0.2); border-color: #334155; }
         .theme-dark .ach-card.unlocked { background: rgba(66, 153, 225, 0.15); border-color: #4299e1; }
-        .ach-icon { font-size: 32px; }
-        .ach-title { font-weight: 800; font-size: 14px; }
-        .ach-desc { font-size: 11px; color: #94a3b8; line-height: 1.2; }
+        .ach-icon { font-size: 24px; }
+        .ach-title { font-weight: 800; font-size: 12px; line-height: 1.1; }
+        .ach-desc { font-size: 10px; color: #94a3b8; line-height: 1.1; }
+
         .announcement-banner { background: linear-gradient(135deg, #4299e1, #3182ce); color: white; padding: 12px 16px; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 15px rgba(0,0,0,0.15); margin-bottom: 20px; animation: fadeInAnn 0.5s forwards cubic-bezier(0.25, 0.8, 0.25, 1); }
         .ann-content { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 15px; }
         .ann-icon { font-size: 20px; }
         .ann-close { background: rgba(255,255,255,0.2); border: none; color: white; width: 28px; height: 28px; border-radius: 50%; cursor: pointer; font-weight: 900; display: flex; align-items: center; justify-content: center; transition: 0.2s; }
         .ann-close:hover { background: rgba(255,255,255,0.4); transform: scale(1.1); }
+
+        /* НОВЫЕ КНОПКИ НАСТРОЕК */
+        .settings-btn-row { display: flex; gap: 8px; margin-top: 5px; }
+        .settings-btn-row button { flex: 1; padding: 10px; border-radius: 8px; background: #edf2f7; border: 1px solid #cbd5e0; font-weight: 700; font-size: 13px; color: #4a5568; cursor: pointer; transition: 0.2s; display: flex; justify-content: center; align-items: center; gap: 6px; }
+        .theme-dark .settings-btn-row button { background: rgba(45,55,72,0.6); border-color: #4a5568; color: #cbd5e0; }
+        .settings-btn-row button:hover { background: #e2e8f0; border-color: #a0aec0; }
+        .theme-dark .settings-btn-row button:hover { background: #334155; }
+
+        .selector-list { display: flex; flex-direction: column; gap: 8px; max-height: 50vh; overflow-y: auto; margin-top: 10px; padding-right: 5px; }
+        .selector-list label { display: flex; align-items: center; gap: 10px; padding: 8px; border-radius: 8px; background: rgba(150,150,150,0.05); cursor: pointer; font-size: 14px; font-weight: 600; }
+        .selector-list input[type="checkbox"] { width: 18px; height: 18px; accent-color: #4299e1; cursor: pointer; }
     </style>
     <link rel="stylesheet" href="/static/style.css?v=2">
     <link rel="stylesheet" href="/static/animations.css?v=2">
@@ -225,6 +234,7 @@
     <div id="toastContainer" class="toast-container"></div>
     <div class="floating-shapes"><div class="shape shape-1"></div><div class="shape shape-2"></div><div class="shape shape-3"></div><div class="shape shape-4"></div></div>
     <div class="particles" id="particles"></div>
+
     <div id="authScreen" class="auth-screen">
         <div class="auth-screen-box">
             <div class="auth-logo">📚</div>
@@ -243,6 +253,7 @@
             </form>
         </div>
     </div>
+
     <div id="mainScreen" class="container hidden">
         <div class="topbar">
             <div style="display: flex; align-items: center; gap: 6px;">
@@ -282,6 +293,7 @@
         <footer class="footer"><span>GDZ Парсер · v{{ version }}</span></footer>
     </div>
 
+    <!-- МОДАЛКА ИСТОРИИ -->
     <div id="historyModal" class="modal hidden">
         <div class="modal-content" style="max-width: 600px;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
@@ -302,8 +314,17 @@
         </div>
     </div>
 
-    <div id="achievementsModal" class="modal hidden"><div class="modal-content" style="max-width: 500px;"><h3>🏆 Ваши достижения</h3><p class="hint" style="margin-bottom: 15px;">Выполняйте задания, чтобы открывать новые бейджи!</p><div id="achievementsList" class="achievements-grid"></div><div class="modal-actions" style="margin-top: 20px;"><button type="button" onclick="document.getElementById('achievementsModal').classList.add('hidden')" class="btn-secondary">Закрыть</button></div></div></div>
+    <!-- МОДАЛКА ДОСТИЖЕНИЙ -->
+    <div id="achievementsModal" class="modal hidden">
+        <div class="modal-content" style="max-width: 500px;">
+            <h3>🏆 Ваши достижения</h3>
+            <p class="hint" style="margin-bottom: 15px; font-size: 13px;">Выполняйте задания, чтобы открывать новые бейджи!</p>
+            <div id="achievementsList" class="achievements-grid"></div>
+            <div class="modal-actions" style="margin-top: 20px;"><button type="button" onclick="document.getElementById('achievementsModal').classList.add('hidden')" class="btn-secondary">Закрыть</button></div>
+        </div>
+    </div>
 
+    <!-- МОДАЛКА НАСТРОЕК -->
     <div id="settingsModal" class="modal hidden">
         <div class="modal-content">
             <h3>⚙️ Настройки аккаунта</h3>
@@ -315,7 +336,16 @@
                 <button type="button" onclick="openAchievements()" class="btn-secondary" style="width: 100%; margin-top: 5px; font-weight: 700;">Посмотреть мои ачивки</button>
             </div>
 
-            <div class="settings-section" id="hideAiSection"><label class="form-label">🙈 Скрыть ИИ-решебник для предметов</label><p class="hint" style="margin-bottom: 8px;">Картинки останутся, но текстовый ответ от нейросети пропадет.</p><div id="hideAiList" style="display: flex; flex-direction: column; gap: 8px; max-height: 200px; overflow-y: auto; padding-right: 5px;"></div></div>
+            <!-- НОВЫЕ КНОПКИ СКРЫТИЯ -->
+            <div class="settings-section">
+                <label class="form-label">🙈 Что скрывать в решениях?</label>
+                <p class="hint" style="margin-bottom: 8px; font-size:12px;">Выбери предметы, для которых не показывать ответы.</p>
+                <div class="settings-btn-row">
+                    <button type="button" onclick="openSubjectSelector('ai')">🤖 Настроить ИИ</button>
+                    <button type="button" onclick="openSubjectSelector('images')">🖼 Настроить картинки</button>
+                </div>
+            </div>
+
             <div class="settings-section" id="passwordSection"><label class="form-label">Смена пароля</label><input type="password" id="setOldPwd" class="num-input" placeholder="Текущий пароль" style="margin-bottom:8px;"><input type="password" id="setNewPwd" class="num-input" placeholder="Новый пароль (мин. 6 символов)"></div>
             <div class="settings-section" id="logoutSection"><label class="form-label">Сессия</label><button type="button" id="logoutBtn" class="btn-logout">🚪 Выйти из аккаунта</button></div>
             <div id="settingsStatus" class="fb-status"></div>
@@ -325,6 +355,20 @@
             </div>
         </div>
     </div>
+
+    <!-- НОВАЯ МОДАЛКА ВЫБОРА ПРЕДМЕТОВ -->
+    <div id="subjectSelectorModal" class="modal hidden">
+        <div class="modal-content">
+            <h3 id="subjectSelectorTitle">Настройка</h3>
+            <p class="hint" style="margin-bottom: 10px;">Отметь галочками предметы, которые нужно скрыть.</p>
+            <div id="subjectSelectorList" class="selector-list"></div>
+            <div class="modal-actions">
+                <button type="button" onclick="closeSubjectSelector()" class="btn-secondary">Отмена</button>
+                <button type="button" onclick="saveSubjectSelector()" class="btn-primary">Сохранить</button>
+            </div>
+        </div>
+    </div>
+
     <div id="subjectSettingsModal" class="modal hidden"><div class="modal-content"><h3 id="subjectSettingsTitle">⚙️ Настройки предмета</h3><p class="hint" style="margin-bottom: 15px;" id="subjectSettingsAdminHint"></p><div class="settings-section"><label class="form-label">Ваш предпочитаемый год <input type="text" id="subjectSetYear" placeholder="Например: 2025"></label><p class="hint" style="margin-top: 5px;">Оставь пустым, чтобы использовать год, заданный администратором.</p></div><div id="subjectSettingsStatus" class="fb-status"></div><div class="modal-actions"><button type="button" id="closeSubjectSettingsBtn" class="btn-secondary">Отмена</button><button type="button" id="saveSubjectSettingsBtn" class="btn-primary" style="width:auto;">💾 Сохранить</button></div></div></div>
     <div id="supportModal" class="modal hidden">
         <div class="modal-content">
@@ -369,9 +413,11 @@
         let currentSubjectId = null;
         let subjectYears = {};
         let hideAiSubjects = {};
+        let hideImagesSubjects = {};
         let activeParts = {};
         let isStealthMode = false;
         let currentPackageId = null;
+        let selectorMode = 'ai'; // 'ai' или 'images'
         const HISTORY_PKG_KEY = 'gdz_history_packages';
         const HISTORY_PKG_MAX = 30;
         const $ = id => document.getElementById(id);
@@ -542,14 +588,17 @@
         function cleanTextForSharing(text) { if (!text) return ''; let c = text; c = c.replace(/\$\$/g, ''); c = c.replace(/\$/g, ''); c = c.replace(/\\begin\{cases\}/g, ''); c = c.replace(/\\end\{cases\}/g, ''); c = c.replace(/\\text\{(.*?)\}/g, '$1'); c = c.replace(/\\\\/g, '\n'); c = c.replace(/&/g, ''); c = c.replace(/\\ge/g, '≥'); c = c.replace(/\\le/g, '≤'); c = c.replace(/\\ne/g, '≠'); c = c.replace(/\\approx/g, '≈'); c = c.replace(/\\times/g, '×'); c = c.replace(/\\div/g, '÷'); c = c.replace(/\\pm/g, '±'); c = c.replace(/\\cdot/g, '·'); c = c.replace(/\\infty/g, '∞'); c = c.replace(/\\pi/g, 'π'); c = c.replace(/\\alpha/g, 'α'); c = c.replace(/\\beta/g, 'β'); c = c.replace(/\\gamma/g, 'γ'); c = c.replace(/\\rightarrow/g, '→'); c = c.replace(/\\Rightarrow/g, '⇒'); c = c.replace(/\\in/g, '∈'); c = c.replace(/\\notin/g, '∉'); c = c.replace(/\\cup/g, '∪'); c = c.replace(/\\cap/g, '∩'); c = c.replace(/\\emptyset/g, '∅'); c = c.replace(/\\sqrt\{(.*?)\}/g, '√($1)'); c = c.replace(/\\frac\{(.*?)\}\{(.*?)\}/g, '($1)/($2)'); c = c.replace(/\\/g, ''); c = c.replace(/\{/g, ''); c = c.replace(/\}/g, ''); c = c.replace(/ +/g, ' '); c = c.replace(/\n{3,}/g, '\n\n'); return c.trim(); }
         async function shareImageFile(imageUrls, filename, caption) { try { let fileToShare; if (imageUrls.length === 1) { const res = await fetch('/api/image?url=' + encodeURIComponent(imageUrls[0]) + '&w=1000'); const blob = await res.blob(); fileToShare = new File([blob], filename, { type: 'image/jpeg' }); } else { const canvas = document.createElement('canvas'); const images = []; let mw = 0, th = 0; for (let url of imageUrls) { const pu = '/api/image?url=' + encodeURIComponent(url) + '&w=2000'; const img = new Image(); img.crossOrigin = "Anonymous"; img.src = pu; await new Promise((res, rej) => { img.onload = res; img.onerror = rej; }); images.push(img); if (img.width > mw) mw = img.width; th += img.height; } canvas.width = mw; canvas.height = th; const ctx = canvas.getContext('2d'); let yo = 0; for (let img of images) { ctx.drawImage(img, 0, yo); yo += img.height; } const blob = await new Promise(r => canvas.toBlob(r, 'image/jpeg', 0.95)); fileToShare = new File([blob], filename, { type: 'image/jpeg' }); } if (navigator.canShare && navigator.canShare({ files: [fileToShare] })) { await navigator.share({ files: [fileToShare], title: caption || 'Решение', text: caption || 'Держи!' }); showToast('Успешно отправлено!', 'success'); } else { showToast('Браузер не поддерживает. Скачиваем...', 'error', 3000); downloadSingleImage(URL.createObjectURL(fileToShare), filename); } } catch (err) { if (err.name !== 'AbortError') { showToast('Ошибка', 'error'); console.error(err); } } }
         async function shareAllSolutions() { const allImgs = document.querySelectorAll('.solution-img'); if (allImgs.length === 0) { showToast('Нет картинок', 'error'); return; } const lt = showLoadingToast(`Скачиваю ${allImgs.length}...`); const files = []; for (let img of allImgs) { if (img.dataset.originalUrl) { try { const res = await fetch('/api/image?url=' + encodeURIComponent(img.dataset.originalUrl) + '&w=1000'); const blob = await res.blob(); files.push(new File([blob], `task_${files.length + 1}.jpg`, { type: 'image/jpeg' })); } catch (e) { console.error(e); } } } if (lt) lt.stop(); if (files.length === 0) { showToast('Не удалось', 'error'); return; } if (navigator.canShare && navigator.canShare({ files })) { try { await navigator.share({ files, title: 'GDZ', text: `Все решения (${files.length})` }); showToast('Отправлено!', 'success'); } catch (err) { if (err.name !== 'AbortError') showToast('Ошибка', 'error'); } } else { for (let i = 0; i < files.length; i++) { const a = document.createElement('a'); a.href = URL.createObjectURL(files[i]); a.download = files[i].name; document.body.appendChild(a); a.click(); a.remove(); await new Promise(r => setTimeout(r, 300)); } showToast('Скачано!', 'success'); } }
+
         let reportCtx = { subject: '', task_number: '', type: '', image: '' };
         window.openReportError = function(subject, taskNumber, type, imageUrl) { reportCtx = { subject: subject || '', task_number: taskNumber || '', type: type || '', image: imageUrl || '' }; const ctxEl = document.getElementById('reportErrorContext'); const parts = []; if (subject) parts.push('📚 ' + subject); if (taskNumber) parts.push('№ ' + taskNumber); if (type === 'ai') parts.push('🤖 ИИ-ответ'); else if (type === 'image') parts.push('🖼 Картинка'); ctxEl.textContent = parts.join(' · '); const pw = document.getElementById('reportErrorPreview'); const pi = document.getElementById('reportErrorPreviewImg'); if (imageUrl) { pi.src = imageUrl; pw.style.display = 'block'; } else { pi.src = ''; pw.style.display = 'none'; } document.getElementById('reportErrorText').value = ''; const st = document.getElementById('reportErrorStatus'); st.textContent = ''; st.className = 'fb-status'; document.getElementById('reportErrorModal').classList.remove('hidden'); };
-        function createReportButton(subject, taskNumber, type, imageUrl) { const b = document.createElement('button'); b.type = 'button'; b.className = 'action-btn action-btn-report'; b.innerHTML = '⚠️ Неверное решение'; b.onclick = (e) => { e.stopPropagation(); window.openReportError(subject, taskNumber, type, imageUrl); }; return b; }
+        function createReportButton(subject, taskNumber, type, imageUrl) { const b = document.createElement('button'); b.type = 'button'; b.className = 'action-btn-report'; b.innerHTML = '⚠️ Неверное решение'; b.onclick = (e) => { e.stopPropagation(); window.openReportError(subject, taskNumber, type, imageUrl); }; return b; }
         document.getElementById('reportErrorCancel').onclick = () => document.getElementById('reportErrorModal').classList.add('hidden');
         document.getElementById('reportErrorModal').onclick = (e) => { if (e.target.id === 'reportErrorModal') document.getElementById('reportErrorModal').classList.add('hidden'); };
         document.getElementById('reportErrorSend').onclick = async () => { const text = document.getElementById('reportErrorText').value.trim(); const st = document.getElementById('reportErrorStatus'); if (text.length < 3) { st.textContent = '⚠️ Напиши хоть пару слов'; st.className = 'fb-status error'; return; } st.textContent = '⏳ Отправка...'; st.className = 'fb-status loading'; try { const r = await fetch('/api/feedback', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ message: text, contact: '', image: reportCtx.image || '', subject: reportCtx.subject, task_number: reportCtx.task_number, context_type: reportCtx.type, token: authToken || '' }) }); if (r.ok) { st.textContent = '✅ Спасибо!'; st.className = 'fb-status success'; setTimeout(() => document.getElementById('reportErrorModal').classList.add('hidden'), 1200); } else { st.textContent = '❌ Ошибка'; st.className = 'fb-status error'; } } catch (e) { st.textContent = '❌ Сеть'; st.className = 'fb-status error'; } };
+
         document.addEventListener('DOMContentLoaded', () => { const t = $('themeToggleBtn'); if (t) { const c = localStorage.getItem('gdz_theme') || 'light'; t.textContent = (c === 'dark') ? '☀️' : '🌙'; t.addEventListener('click', async () => { const c = localStorage.getItem('gdz_theme') || 'light'; const n = (c === 'dark') ? 'light' : 'dark'; applyTheme(n); if (authToken) { try { await fetch('/api/auth/update', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ token: authToken, theme: n }) }); } catch (e) {} } }); } });
-        async function init() { if (authToken) { try { const device = getDeviceInfo(); const r = await fetch('/api/auth/me?token=' + encodeURIComponent(authToken) + '&device=' + encodeURIComponent(device) + '&t=' + Date.now()); if (r.ok) { const d = await r.json(); authUser = d.user; currentAvatar = authUser.avatar || null; subjectYears = parseJson(authUser.subject_years); hideAiSubjects = parseJson(authUser.hide_ai_subjects); applyTheme(authUser.theme || 'light'); setAuthState(true); await showMain(); return; } else if (r.status === 403) { const d = await r.json(); authToken = ''; localStorage.removeItem('gdz_token'); setAuthState(false); showAuth(); showToast(d.detail || 'Заблокирован', 'error'); return; } else { authToken = ''; localStorage.removeItem('gdz_token'); } } catch {} } setAuthState(false); showAuth(); }
+
+        async function init() { if (authToken) { try { const device = getDeviceInfo(); const r = await fetch('/api/auth/me?token=' + encodeURIComponent(authToken) + '&device=' + encodeURIComponent(device) + '&t=' + Date.now()); if (r.ok) { const d = await r.json(); authUser = d.user; currentAvatar = authUser.avatar || null; subjectYears = parseJson(authUser.subject_years); hideAiSubjects = parseJson(authUser.hide_ai_subjects); hideImagesSubjects = parseJson(authUser.hide_images_subjects); applyTheme(authUser.theme || 'light'); setAuthState(true); await showMain(); return; } else if (r.status === 403) { const d = await r.json(); authToken = ''; localStorage.removeItem('gdz_token'); setAuthState(false); showAuth(); showToast(d.detail || 'Заблокирован', 'error'); return; } else { authToken = ''; localStorage.removeItem('gdz_token'); } } catch {} } setAuthState(false); showAuth(); }
         function showAuth() { setAuthState(false); authScreen.classList.remove('hidden'); mainScreen.classList.add('hidden'); }
         async function showMain() { setAuthState(true); authScreen.classList.add('hidden'); mainScreen.classList.remove('hidden'); updateGreeting(); renderTopbar(); if (authUser && authUser.is_admin) { $('adminFillBtn').style.display = 'flex'; } else { $('adminFillBtn').style.display = 'none'; } await loadSubjects(); renderSubjects(); checkAnnouncements(); updateOnlineStatus(); }
         function updateGreeting() { const h = new Date().getHours(); let g = 'Доброй ночи'; if (h >= 7 && h < 9) g = 'Доброе утро'; else if (h >= 9 && h < 18) g = 'Добрый день'; else if (h >= 18 && h < 23) g = 'Добрый вечер'; const name = authUser.name || authUser.email.split('@')[0]; const el = $('welcomeGreeting'); if (el) { el.innerHTML = `${g}, <span>${escapeHtml(name)}</span>! 👋`; el.style.animation = 'none'; el.offsetHeight; el.style.animation = null; } }
@@ -564,7 +613,9 @@
         function findSubjectInLine(line, list) { const ll = line.toLowerCase(); for (let s of INVISIBLE_SUBJECTS) for (let kw of s.keywords) if (ll.includes(kw)) return s; for (let s of list) if (ll.includes(s.name.toLowerCase())) return s; for (let s of list) { const kws = s.name.toLowerCase().replace(/[()]/g, '').split(' ').filter(w => w.length > 3 && w !== 'язык' && w !== 'класс'); for (let kw of kws) if (ll.includes(kw)) return s; } return null; }
         function extractNumbers(str, subj) { let c = str; const pb = /английск|географ/i.test(subj) || (/информатика/i.test(subj) && !/тетрад/i.test(subj)); if (pb) { let pm = []; const pr = /(?:стр\.?|страниц[ыа]?|page)\s*(\d+)/gi; let m; while ((m = pr.exec(c)) !== null) pm.push(m[1]); if (pm.length > 0) return [...new Set(pm)].join(', '); let sn = c.match(/\b\d+\b/g); if (sn && sn.length > 0) return [...new Set(sn)].join(', '); } c = c.replace(/\b(19|20)\d{2}\s*(год|г\.)?\b/gi, '').replace(/\([^)]*\)/g, '').replace(/(?:https?:\/\/|www\.)\S+/gi, '').replace(/\b\d{1,2}[./]\d{1,2}([./]\d{2,4})?\b/g, '').replace(/\b\d{1,2}\s+(января|февраля|марта|апреля|мая|июня|июля|августа|сентября|октября|ноября|декабря)\b/gi, '').replace(/(?:п\.|пункт|параграф|пар\.)\s*\d+/gi, '').replace(/\b([5-9]|1[0-1])\s*(класс|кл)\b/gi, '').replace(/(?:страниц[ыа]?|стр\.?)\s*\d+(?:\s*,\s*\d+)*/gi, '').replace(/^\s*\d+[.):,\-]?\s+/g, ''); let matches = []; const sr = /(?:№|номер|номера|упражнение|задание|задача|упр\.?|вар\.?|вариант)\s*([\dA-Za-zА-Яа-я\s,и]+)/gi; let m; while ((m = sr.exec(c)) !== null) { const ns = m[1].match(/\d+[A-Za-zА-Яа-я]?/g); if (ns) matches.push(...ns); } if (matches.length === 0) { const t = c.trim(); if (/^[\d\s,]+$/.test(t)) { const g = t.match(/\b\d+\b/g); if (g) matches = g; } } if (matches.length === 0) return ""; return [...new Set(matches)].filter(n => n !== '').join(', '); }
         function parseDualTasks(subject, rawText) { const tl = rawText.toLowerCase(); const sn = subject.name.toLowerCase(); const isEng = sn.includes('англ'); if (!isEng) return [{ subject: subject.name, url: subject.url, type: subject.type, numbers: extractNumbers(rawText, subject.name), raw_text: rawText }]; const hW = /тетрад|печатн|р\.т\.|тпо/.test(tl); const hT = /учебник|учеб\./.test(tl); if (hW && hT) { const bM = subject.name.match(/^(.*?)(?:\s*\(|$)/); const bN = bM ? bM[1].trim() : subject.name; const tS = SUBJECTS.find(s => s.name.includes(bN) && !s.name.toLowerCase().includes('тетрад') && s.type === 'numbers'); const wS = SUBJECTS.find(s => s.name.includes(bN) && s.name.toLowerCase().includes('тетрад') && s.type === 'numbers'); if (tS && wS) { let tb = []; let r1 = /(?:стр\.?|страниц[ыа]?|page|номера|№)\s*([\d,\s\-]+)\s*(?:учебника|учеб\.)/gi; let r2 = /(?:учебника|учеб\.)\s*(?:стр\.?|страниц[ыа]?|page|номера|№)?\s*([\d,\s\-]+)/gi; let m; while ((m = r1.exec(rawText)) !== null) { let n = m[1].match(/\d+/g); if (n) tb.push(...n); } while ((m = r2.exec(rawText)) !== null) { let n = m[1].match(/\d+/g); if (n) tb.push(...n); } let wc = rawText.replace(/(?:со|на|в|по|из)?\s*(?:стр|страниц[ыа]?|page)?\s*[\d,\s\-]+\s*(?:учебника|учеб\.)/gi, ''); wc = wc.replace(/(?:учебника|учеб\.)\s*(?:стр|страниц[ыа]?|page)?\s*[\d,\s\-]+/gi, ''); let wb = []; let r3 = /(?:стр\.?|страниц[ыа]?|page)\s*(\d+)/gi; while ((m = r3.exec(wc)) !== null) wb.push(m[1]); if (wb.length === 0) { let r4 = /(?:№|номер|номера|упражнение|задание|задача|упр\.?)\s*([\d\s,и]+)/gi; while ((m = r4.exec(wc)) !== null) { let n = m[1].match(/\d+/g); if (n) wb.push(...n); } } let jobs = []; if (wb.length > 0) jobs.push({ subject: wS.name, url: wS.url, type: 'numbers', numbers: [...new Set(wb)].join(', '), raw_text: rawText }); if (tb.length > 0) jobs.push({ subject: tS.name, url: tS.url, type: 'numbers', numbers: [...new Set(tb)].join(', '), raw_text: rawText }); if (jobs.length > 0) return jobs; } } let fS = subject; let cT = rawText; if (hW) { const bM = subject.name.match(/^(.*?)(?:\s*\(|$)/); const bN = bM ? bM[1].trim() : subject.name; fS = SUBJECTS.find(s => s.name.includes(bN) && s.name.toLowerCase().includes('тетрад')) || subject; cT = cT.replace(/(?:со|на|в|по|из)?\s*(?:стр|страниц[ыа]?|page)?\s*[\d,\s\-]+\s*(?:учебника|учеб\.)/gi, '').replace(/(?:учебника|учеб\.)\s*(?:стр|страниц[ыа]?|page)?\s*[\d,\s\-]+/gi, ''); } else if (hT) { const bM = subject.name.match(/^(.*?)(?:\s*\(|$)/); const bN = bM ? bM[1].trim() : subject.name; fS = SUBJECTS.find(s => s.name.includes(bN) && !s.name.toLowerCase().includes('тетрад')) || subject; cT = cT.replace(/(?:со|на|в|по|из)?\s*(?:стр|страниц[ыа]?|page)?\s*[\d,\s\-]+\s*(?:тетради|тетрадь|р\.т\.)/gi, '').replace(/(?:тетради|тетрадь|р\.т\.)\s*(?:стр|страниц[ыа]?|page)?\s*[\d,\s\-]+/gi, ''); } return [{ subject: fS.name, url: fS.url, type: fS.type, numbers: extractNumbers(cT, fS.name), raw_text: rawText }]; }
+
         clearBtn.onclick = () => { subjectsContainer.querySelectorAll('.text-input').forEach(ta => ta.value = ''); allTextTasks.value = ''; result.innerHTML = ''; showToast('Поля очищены', 'info'); };
+
         btn.addEventListener('click', async () => {
             let jobs = [];
             subjectsContainer.querySelectorAll('.text-input').forEach(el => { const v = el.value.trim(); if (!v) return; const subj = SUBJECTS.find(s => s.id == el.id.replace('subj_', '')); if (subj) { const tj = parseDualTasks(subj, v); const ap = activeParts[subj.name] || '1'; tj.forEach(job => { if (ap === '2' && subj.url_alt) job.url = subj.url_alt; }); jobs.push(...tj); } });
@@ -591,6 +642,7 @@
                 if (imgR.length === 0 && textR.length === 0) { showToast('Решения не найдены', 'error'); btn.disabled = false; btnText.innerHTML = '🚀 Решить'; return; }
                 const byS = {}; imgR.forEach(r => { (byS[r.subject] = byS[r.subject] || []).push(r); });
                 if (imgR.length > 1) { const sd = document.createElement('div'); sd.style.cssText = 'margin-bottom: 20px; text-align: center;'; const sb = document.createElement('button'); sb.className = 'btn-modern-primary'; sb.style.cssText = 'background: linear-gradient(135deg, #48bb78, #38a169); width: 100%; font-size: 16px; padding: 15px;'; sb.innerHTML = `📤 Поделиться всеми (${imgR.length} шт.)`; sb.onclick = shareAllSolutions; sd.appendChild(sb); result.appendChild(sd); }
+
                 Object.entries(byS).forEach(([subject, items]) => {
                     const sec = document.createElement('section'); sec.className = 'subject-block'; sec.innerHTML = `<h2 class="color-blue">${escapeHtml(subject)}</h2>`;
                     items.forEach(r => {
@@ -602,7 +654,7 @@
                             hasR = true;
                             const wrapper = document.createElement('div'); wrapper.style.cssText = 'display: flex; flex-direction: column; gap: 8px; margin-bottom: 25px;';
                             if (r.number) { const nh = document.createElement('div'); nh.className = 'task-number-header'; nh.textContent = `Задание №${r.number}`; wrapper.appendChild(nh); }
-                            const eh = document.createElement('div'); eh.className = 'edition-header'; eh.textContent = aiS.edition; wrapper.appendChild(eh); // <--- ИСПРАВЛЕНО ЗДЕСЬ
+                            const eh = document.createElement('div'); eh.className = 'edition-header'; eh.textContent = aiS.edition; wrapper.appendChild(eh);
                             const tb = document.createElement('div'); tb.style.display = 'flex'; tb.style.gap = '8px';
                             const cb = document.createElement('button'); cb.className = 'copy-btn'; cb.innerHTML = '📋 Скопировать текст'; cb.style.marginBottom = '0'; cb.onclick = (e) => { e.stopPropagation(); copyTextToClipboard(aiS.text, cb); }; tb.appendChild(cb);
                             const shb = document.createElement('button'); shb.className = 'copy-btn'; shb.innerHTML = '📤 Поделиться'; shb.style.marginBottom = '0'; shb.onclick = (e) => { e.stopPropagation(); const c = getTaskLabel(subject, r.number); const ct = cleanTextForSharing(aiS.text); const ft = `${c}\n\n${ct}`; if(navigator.share) { navigator.share({ title: 'GDZ', text: ft }).catch(()=>{}); } else { copyTextToClipboard(ft, shb); } }; tb.appendChild(shb);
@@ -612,8 +664,9 @@
                             wrapper.appendChild(createReportButton(subject, String(r.number || ''), 'ai', ''));
                             sec.appendChild(wrapper);
                         }
+
                         let imgS = r.solutions.filter(sol => sol.images && sol.images.length > 0 && (!sol.edition || !sol.edition.includes('ИИ')));
-                        if (imgS.length > 0) {
+                        if (imgS.length > 0 && !hideImagesSubjects[subject]) {
                             hasR = true; let sel = imgS[0];
                             if (ty) { const tn = parseInt(ty); let ay = []; imgS.forEach(sol => { if (sol.edition) { const mm = sol.edition.match(/\b(20\d{2})\b/g); if (mm) mm.forEach(y => ay.push(parseInt(y))); } }); if (ay.length > 0) { let fy = [...new Set(ay)].filter(y => y >= tn).sort((a,b) => a - b); let sy = fy.length > 0 ? fy[0] : Math.max(...ay); let fb = imgS.find(sol => sol.edition && sol.edition.includes(sy.toString())); if (fb) sel = fb; } }
                             const wrapper = document.createElement('div'); wrapper.style.cssText = 'display: flex; flex-direction: column; gap: 8px; margin-bottom: 25px;';
@@ -621,12 +674,14 @@
                             if (sel.edition) { const eh = document.createElement('div'); eh.className = 'edition-header'; eh.textContent = sel.edition; wrapper.appendChild(eh); }
                             const isM = subject.toLowerCase().includes('англ') || subject.toLowerCase().includes('география (тетрадь)');
                             const imgUrlForReport = '/api/image?url=' + encodeURIComponent(sel.images[0]) + '&w=800';
-                            if (isM) { const ic = document.createElement('div'); ic.className = 'merged-container'; const iels = []; sel.images.forEach(u => { const im = document.createElement('img'); im.className = 'solution-img img-loading'; im.alt = 'Загрузка...'; im.dataset.originalUrl = u; loadImage(im, u); ic.appendChild(im); iels.push({ im, u }); }); wrapper.appendChild(ic);
+                            if (isM) {
+                                const ic = document.createElement('div'); ic.className = 'merged-container'; const iels = []; sel.images.forEach(u => { const im = document.createElement('img'); im.className = 'solution-img img-loading'; im.alt = 'Загрузка...'; im.dataset.originalUrl = u; loadImage(im, u); ic.appendChild(im); iels.push({ im, u }); }); wrapper.appendChild(ic);
                                 if (r.raw_text) { const td = document.createElement('div'); td.className = 'task-raw-text'; td.textContent = r.raw_text.replace(new RegExp(r.subject, 'gi'), '').replace(/^[:\-\s]+/, '').trim() || r.numbers || 'Без текста'; wrapper.appendChild(td); }
+
                                 const ctrl = document.createElement('div'); ctrl.className = 'actions-row';
-                                const rb = document.createElement('button'); rb.className = 'action-btn action-btn-refresh'; rb.innerHTML = '🔄 Обновить'; rb.onclick = (e) => { e.stopPropagation(); iels.forEach(it => { it.im.classList.remove('img-tall', 'img-retrying'); it.im.classList.add('img-loading'); it.im.src = ''; loadImage(it.im, it.u); }); }; ctrl.appendChild(rb);
-                                const db = document.createElement('button'); db.className = 'action-btn action-btn-download'; db.innerHTML = '⬇️ Скачать'; db.onclick = async (e) => { e.stopPropagation(); db.textContent = '⏳ Склеиваем...'; await downloadMergedImage(sel.images, `GDZ_${subject}_${r.number || 1}_merged.jpg`); db.textContent = '⬇️ Скачать'; fetch('/api/track-download', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({token: authToken}) }).catch(()=>{}); }; ctrl.appendChild(db);
-                                const sb = document.createElement('button'); sb.className = 'action-btn action-btn-share'; sb.innerHTML = '📤 Поделиться'; sb.onclick = (e) => { e.stopPropagation(); shareImageFile(sel.images, `GDZ_${subject}_${r.number || 1}.jpg`, getTaskLabel(subject, r.number)); }; ctrl.appendChild(sb);
+                                const rb = document.createElement('button'); rb.className = 'action-btn-icon'; rb.title = 'Обновить'; rb.innerHTML = '🔄'; rb.onclick = (e) => { e.stopPropagation(); iels.forEach(it => { it.im.classList.remove('img-tall', 'img-retrying'); it.im.classList.add('img-loading'); it.im.src = ''; loadImage(it.im, it.u); }); }; ctrl.appendChild(rb);
+                                const db = document.createElement('button'); db.className = 'action-btn-icon action-btn-download'; db.title = 'Скачать'; db.innerHTML = '📥'; db.onclick = async (e) => { e.stopPropagation(); db.innerHTML = '⏳'; await downloadMergedImage(sel.images, `GDZ_${subject}_${r.number || 1}_merged.jpg`); db.innerHTML = '📥'; fetch('/api/track-download', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({token: authToken}) }).catch(()=>{}); }; ctrl.appendChild(db);
+                                const sb = document.createElement('button'); sb.className = 'action-btn-icon action-btn-share'; sb.title = 'Поделиться'; sb.innerHTML = '📤'; sb.onclick = (e) => { e.stopPropagation(); shareImageFile(sel.images, `GDZ_${subject}_${r.number || 1}.jpg`, getTaskLabel(subject, r.number)); }; ctrl.appendChild(sb);
                                 wrapper.appendChild(ctrl);
                             } else {
                                 const isMulti = subject.toLowerCase().includes('контурн');
@@ -634,10 +689,11 @@
                                 toR.forEach((u, idx) => {
                                     const iw = document.createElement('div'); iw.style.cssText = 'display: flex; flex-direction: column; gap: 8px; margin-bottom: 15px;';
                                     const im = document.createElement('img'); im.className = 'solution-img img-loading'; im.style.marginTop = '0'; im.alt = 'Загрузка...'; im.dataset.originalUrl = u; loadImage(im, u); iw.appendChild(im);
+
                                     const ctrl = document.createElement('div'); ctrl.className = 'actions-row';
-                                    const rb = document.createElement('button'); rb.className = 'action-btn action-btn-refresh'; rb.innerHTML = '🔄 Обновить'; rb.onclick = (e) => { e.stopPropagation(); im.classList.remove('img-tall', 'img-retrying'); im.classList.add('img-loading'); im.src = ''; loadImage(im, u); }; ctrl.appendChild(rb);
-                                    const db = document.createElement('button'); db.className = 'action-btn action-btn-download'; db.innerHTML = '⬇️ Скачать'; db.onclick = (e) => { e.stopPropagation(); if (im.src && im.src.includes('/api/image')) { downloadSingleImage(im.src, `GDZ_${subject}_${r.number || 1}_${idx + 1}.jpg`); fetch('/api/track-download', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({token: authToken}) }).catch(()=>{}); } else alert('Подожди загрузки'); }; ctrl.appendChild(db);
-                                    const sb = document.createElement('button'); sb.className = 'action-btn action-btn-share'; sb.innerHTML = '📤 Поделиться'; sb.onclick = (e) => { e.stopPropagation(); shareImageFile([u], `GDZ_${subject}_${r.number || 1}_${idx + 1}.jpg`, getTaskLabel(subject, r.number)); }; ctrl.appendChild(sb);
+                                    const rb = document.createElement('button'); rb.className = 'action-btn-icon'; rb.title = 'Обновить'; rb.innerHTML = '🔄'; rb.onclick = (e) => { e.stopPropagation(); im.classList.remove('img-tall', 'img-retrying'); im.classList.add('img-loading'); im.src = ''; loadImage(im, u); }; ctrl.appendChild(rb);
+                                    const db = document.createElement('button'); db.className = 'action-btn-icon action-btn-download'; db.title = 'Скачать'; db.innerHTML = '📥'; db.onclick = (e) => { e.stopPropagation(); if (im.src && im.src.includes('/api/image')) { downloadSingleImage(im.src, `GDZ_${subject}_${r.number || 1}_${idx + 1}.jpg`); fetch('/api/track-download', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({token: authToken}) }).catch(()=>{}); } else alert('Подожди загрузки'); }; ctrl.appendChild(db);
+                                    const sb = document.createElement('button'); sb.className = 'action-btn-icon action-btn-share'; sb.title = 'Поделиться'; sb.innerHTML = '📤'; sb.onclick = (e) => { e.stopPropagation(); shareImageFile([u], `GDZ_${subject}_${r.number || 1}_${idx + 1}.jpg`, getTaskLabel(subject, r.number)); }; ctrl.appendChild(sb);
                                     iw.appendChild(ctrl); wrapper.appendChild(iw);
                                 });
                                 if (!aiS && r.raw_text) { const td = document.createElement('div'); td.className = 'task-raw-text'; td.textContent = r.raw_text.replace(new RegExp(r.subject, 'gi'), '').replace(/^[:\-\s]+/, '').trim() || r.numbers || 'Без текста'; wrapper.appendChild(td); }
@@ -645,10 +701,11 @@
                             wrapper.appendChild(createReportButton(subject, String(r.number || ''), 'image', imgUrlForReport));
                             sec.appendChild(wrapper);
                         }
-                        if (!hasR) sec.innerHTML += `<div class="img-error" style="margin-bottom: 15px;">⚠️ Решение для №${r.number || ''} не найдено. Проверьте ссылку в админке.</div>`;
+                        if (!hasR) sec.innerHTML += `<div class="img-error" style="margin-bottom: 15px;">⚠️ Решение для №${r.number || ''} скрыто или не найдено.</div>`;
                     });
                     result.appendChild(sec);
                 });
+
                 if (textR.length > 0) {
                     const sec = document.createElement('section'); sec.className = 'subject-block';
                     const tbs = {}; textR.forEach(r => { tbs[r.subject] = tbs[r.subject] || []; tbs[r.subject].push(r); });
@@ -670,32 +727,114 @@
                 }
             } catch (err) { if (lt) lt.stop(); showToast(err.message, 'error'); } finally { btn.disabled = false; btnText.innerHTML = '🚀 Решить'; }
         });
+
         function renderMarkdown(text) { if (!text) return ''; let h = text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); const lines = h.split('\n'); let r = ''; let inU = false, inO = false, inM = false, mb = []; const cl = () => { if (inU) { r += '</ul>'; inU = false; } if (inO) { r += '</ol>'; inO = false; } }; for (let line of lines) { let t = line.trim(); if (t.startsWith('$$')) { if (t.length > 2 && t.endsWith('$$')) { cl(); r += `<div style="text-align:center; margin: 10px 0;">${t}</div>`; continue; } inM = !inM; if (inM) mb = ['$$']; else { mb.push('$$'); cl(); r += `<div style="text-align:center; margin: 10px 0;">${mb.join('\n')}</div>`; mb = []; } continue; } if (inM) { mb.push(line); continue; } if (!t) { cl(); continue; } line = line.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>').replace(/(?<!\*)\*([^*]+)\*(?!\*)/g, '<i>$1</i>'); if (line.startsWith('* ')) { if (inO) { r += '</ol>'; inO = false; } if (!inU) { r += '<ul>'; inU = true; } r += `<li>${line.substring(2)}</li>`; } else if (/^\d+\.\s/.test(line)) { if (inU) { r += '</ul>'; inU = false; } if (!inO) { r += '<ol>'; inO = true; } r += `<li>${line.replace(/^\d+\.\s/, '')}</li>`; } else if (line.startsWith('#### ')) { cl(); r += `<h5>${line.substring(5)}</h5>`; } else if (line.startsWith('### ')) { cl(); r += `<h4>${line.substring(4)}</h4>`; } else { cl(); r += `<p>${line}</p>`; } } cl(); return r; }
+
         function escapeHtml(t) { const d = document.createElement('div'); d.textContent = t || ''; return d.innerHTML; }
+
         function renderTopbar() { topbarRight.innerHTML = ''; const name = authUser.name || authUser.email.split('@')[0]; const init = getInitial(authUser.name, authUser.email); const as = currentAvatar ? `background-image: url('${currentAvatar}')` : ''; topbarRight.innerHTML = `<div class="user-menu-container" id="userMenuContainer"><button class="user-menu-btn" id="userMenuBtn"><div class="user-avatar-mini" style="${as}">${currentAvatar ? '' : init}</div><span>${escapeHtml(name)}</span><span style="font-size:10px; opacity:0.6;">▼</span></button><div class="dropdown-menu" id="userDropdown"><div class="dropdown-header" id="dropdownGreeting"></div><button class="dropdown-item" onclick="openSettings()">⚙️ Настройки</button><button class="dropdown-item" onclick="document.getElementById('userDropdown').classList.remove('show'); supportModal.classList.remove('hidden')">❓ Поддержка</button>${authUser.is_admin ? '<button class="dropdown-item" onclick="document.getElementById(\'userDropdown\').classList.remove(\'show\'); window.location.href=\'/admin\'">👑 Админка</button>' : ''}<div class="dropdown-divider"></div><button class="dropdown-item logout" onclick="logout()">🚪 Выйти</button></div></div>`; const h = new Date().getHours(); let g = 'Доброй ночи'; if (h >= 7 && h < 9) g = 'Доброе утро'; else if (h >= 9 && h < 18) g = 'Добрый день'; else if (h >= 18 && h < 23) g = 'Добрый вечер'; $('dropdownGreeting').innerText = `${g}, ${name}!`; $('userMenuBtn').onclick = (e) => { e.stopPropagation(); $('userDropdown').classList.toggle('show'); }; document.addEventListener('click', (e) => { if (!e.target.closest('#userMenuContainer')) $('userDropdown').classList.remove('show'); }); }
+
         async function openAchievements() { document.getElementById('settingsModal')?.classList.add('hidden'); const m = document.getElementById('achievementsModal'); const l = document.getElementById('achievementsList'); m.classList.remove('hidden'); l.innerHTML = '<p class="empty" style="grid-column: 1 / -1;">Загрузка...</p>'; try { const r = await fetch('/api/achievements?token=' + encodeURIComponent(authToken)); const d = await r.json(); l.innerHTML = ''; d.achievements.forEach(a => { const div = document.createElement('div'); div.className = 'ach-card' + (a.unlocked ? ' unlocked' : ''); div.innerHTML = `<div class="ach-icon">${a.icon}</div><div class="ach-title">${a.title}</div><div class="ach-desc">${a.desc}</div>`; l.appendChild(div); }); } catch (e) { l.innerHTML = '<p class="empty" style="grid-column: 1 / -1;">Ошибка</p>'; } }
+
         async function checkAnnouncements() { try { const r = await fetch('/api/announcements/active?token=' + encodeURIComponent(authToken)); const d = await r.json(); if (d.announcement) { const h = localStorage.getItem('hidden_ann_' + d.announcement.id); if (!h) { document.getElementById('annText').textContent = d.announcement.message; const b = document.getElementById('globalAnnouncement'); b.style.display = 'flex'; b.dataset.id = d.announcement.id; } } } catch(e) {} }
         function closeAnnouncement() { const b = document.getElementById('globalAnnouncement'); const id = b.dataset.id; if (id) localStorage.setItem('hidden_ann_' + id, 'true'); b.style.display = 'none'; }
+
         let authMode = 'login'; function switchTab(mode) { authMode = mode; document.querySelectorAll('.auth-tab').forEach(t => t.classList.toggle('active', t.dataset.tab === mode)); $('nameField').style.display = mode === 'register' ? 'block' : 'none'; $('authSubmit').textContent = mode === 'login' ? 'Войти' : 'Создать аккаунт'; }
         document.querySelectorAll('.auth-tab').forEach(t => t.onclick = () => switchTab(t.dataset.tab));
-        $('authForm').onsubmit = async (e) => { e.preventDefault(); const em = $('authEmail').value.trim(); const pw = $('authPwd').value; const nm = $('authName').value.trim(); const st = $('authStatus'); const dv = getDeviceInfo(); st.textContent = '⏳ Подождите...'; st.className = 'fb-status loading'; const url = authMode === 'login' ? '/api/auth/login' : '/api/auth/register'; const body = authMode === 'login' ? {email: em, password: pw, device: dv} : {email: em, password: pw, name: nm, device: dv}; try { const r = await fetch(url, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body) }); const d = await r.json(); if (!r.ok) { if (r.status === 403) st.innerHTML = '🚫 ' + (d.detail || 'Доступ заблокирован'); else st.textContent = '❌ ' + (d.detail || 'Ошибка'); st.className = 'fb-status error'; return; } authToken = d.token; authUser = d.user; currentAvatar = d.user.avatar || null; subjectYears = parseJson(authUser.subject_years); hideAiSubjects = parseJson(authUser.hide_ai_subjects); localStorage.setItem('gdz_token', authToken); applyTheme(authUser.theme || 'light'); await showMain(); } catch (err) { st.textContent = '❌ ' + err.message; st.className = 'fb-status error'; } };
-        async function logout() { if (!confirm('Выйти из аккаунта?')) return; try { await fetch('/api/auth/logout', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({token: authToken}) }); } catch {} authToken = ''; authUser = null; currentAvatar = null; subjectYears = {}; hideAiSubjects = {}; activeParts = {}; localStorage.removeItem('gdz_token'); applyTheme('light'); topbarRight.innerHTML = ''; showAuth(); }
+
+        $('authForm').onsubmit = async (e) => { e.preventDefault(); const em = $('authEmail').value.trim(); const pw = $('authPwd').value; const nm = $('authName').value.trim(); const st = $('authStatus'); const dv = getDeviceInfo(); st.textContent = '⏳ Подождите...'; st.className = 'fb-status loading'; const url = authMode === 'login' ? '/api/auth/login' : '/api/auth/register'; const body = authMode === 'login' ? {email: em, password: pw, device: dv} : {email: em, password: pw, name: nm, device: dv}; try { const r = await fetch(url, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body) }); const d = await r.json(); if (!r.ok) { if (r.status === 403) st.innerHTML = '🚫 ' + (d.detail || 'Доступ заблокирован'); else st.textContent = '❌ ' + (d.detail || 'Ошибка'); st.className = 'fb-status error'; return; } authToken = d.token; authUser = d.user; currentAvatar = d.user.avatar || null; subjectYears = parseJson(authUser.subject_years); hideAiSubjects = parseJson(authUser.hide_ai_subjects); hideImagesSubjects = parseJson(authUser.hide_images_subjects); localStorage.setItem('gdz_token', authToken); applyTheme(authUser.theme || 'light'); await showMain(); } catch (err) { st.textContent = '❌ ' + err.message; st.className = 'fb-status error'; } };
+
+        async function logout() { if (!confirm('Выйти из аккаунта?')) return; try { await fetch('/api/auth/logout', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({token: authToken}) }); } catch {} authToken = ''; authUser = null; currentAvatar = null; subjectYears = {}; hideAiSubjects = {}; hideImagesSubjects = {}; activeParts = {}; localStorage.removeItem('gdz_token'); applyTheme('light'); topbarRight.innerHTML = ''; showAuth(); }
+
         function updateAvatarPreview() { const p = $('avatarPreview'); if (currentAvatar) { p.style.backgroundImage = 'url("' + currentAvatar + '")'; p.textContent = ''; } else { p.style.backgroundImage = ''; p.textContent = getInitial(authUser?.name, authUser?.email); } }
-        function openSettings() { document.getElementById('userDropdown')?.classList.remove('show'); settingsModal.classList.remove('hidden'); $('settingsStatus').textContent = ''; $('settingsStatus').className = 'fb-status'; $('setName').value = authUser?.name || ''; $('setOldPwd').value = ''; $('setNewPwd').value = ''; updateAvatarPreview(); const hl = $('hideAiList'); hl.innerHTML = ''; SUBJECTS.forEach(s => { hl.innerHTML += `<label style="display: flex; align-items: center; gap: 8px; cursor: pointer; padding: 4px 0;"><input type="checkbox" value="${s.name}" ${hideAiSubjects[s.name] ? 'checked' : ''} style="width: 18px; height: 18px; accent-color: #4299e1;"><span>${s.name}</span></label>`; }); }
+
+        function openSettings() { document.getElementById('userDropdown')?.classList.remove('show'); settingsModal.classList.remove('hidden'); $('settingsStatus').textContent = ''; $('settingsStatus').className = 'fb-status'; $('setName').value = authUser?.name || ''; $('setOldPwd').value = ''; $('setNewPwd').value = ''; updateAvatarPreview(); }
         function cancelSettings() { settingsModal.classList.add('hidden'); }
         $('closeSettingsBtn').onclick = cancelSettings; settingsModal.onclick = (e) => { if (e.target === settingsModal) cancelSettings(); };
+
+        // НОВАЯ ЛОГИКА ДЛЯ СКРЫТИЯ ПРЕДМЕТОВ
+        function openSubjectSelector(mode) {
+            selectorMode = mode;
+            const title = document.getElementById('subjectSelectorTitle');
+            const list = document.getElementById('subjectSelectorList');
+            const currentData = mode === 'ai' ? hideAiSubjects : hideImagesSubjects;
+
+            title.textContent = mode === 'ai' ? '🤖 Скрыть ИИ-решебник' : '🖼 Скрыть картинки';
+            list.innerHTML = '';
+
+            SUBJECTS.forEach(s => {
+                const lbl = document.createElement('label');
+                const cb = document.createElement('input');
+                cb.type = 'checkbox';
+                cb.value = s.name;
+                cb.checked = !!currentData[s.name];
+                lbl.appendChild(cb);
+                const span = document.createElement('span');
+                span.textContent = s.name;
+                lbl.appendChild(span);
+                list.appendChild(lbl);
+            });
+
+            document.getElementById('subjectSelectorModal').classList.remove('hidden');
+        }
+
+        function closeSubjectSelector() {
+            document.getElementById('subjectSelectorModal').classList.add('hidden');
+        }
+
+        function saveSubjectSelector() {
+            const checkboxes = document.querySelectorAll('#subjectSelectorList input[type="checkbox"]');
+            const newData = {};
+            checkboxes.forEach(cb => {
+                if (cb.checked) newData[cb.value] = true;
+            });
+
+            if (selectorMode === 'ai') hideAiSubjects = newData;
+            else hideImagesSubjects = newData;
+
+            closeSubjectSelector();
+            showToast('Настройки скрытия обновлены (не забудьте нажать "Применить" в профиле)', 'info', 4000);
+        }
+
         $('avatarInput').onchange = async (e) => { const f = e.target.files[0]; if (!f) return; try { const b = await shrinkImage(f, 300, 0.85); currentAvatar = b; updateAvatarPreview(); await fetch('/api/auth/avatar', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({token: authToken, avatar: b}) }); renderTopbar(); } catch (err) { showToast('Ошибка: ' + err.message, 'error'); } e.target.value = ''; };
         $('avatarRemoveBtn').onclick = async () => { if (!confirm('Убрать аватарку?')) return; currentAvatar = null; updateAvatarPreview(); try { await fetch('/api/auth/avatar', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({token: authToken, avatar: ''}) }); renderTopbar(); } catch {} };
-        $('saveSettingsBtn').onclick = async () => { const st = $('settingsStatus'); const nn = $('setName').value.trim(); const op = $('setOldPwd').value; const np = $('setNewPwd').value; st.textContent = '⏳ Применяем...'; st.className = 'fb-status loading'; const hc = document.querySelectorAll('#hideAiList input[type="checkbox"]'); let nh = {}; hc.forEach(cb => { if (cb.checked) nh[cb.value] = true; }); const p = { token: authToken, name: nn, hide_ai_subjects: JSON.stringify(nh) }; try { const r1 = await fetch('/api/auth/update', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(p) }); const d1 = await r1.json(); if (!r1.ok) throw new Error(d1.detail || 'Ошибка'); authUser = d1.user; hideAiSubjects = parseJson(authUser.hide_ai_subjects); updateGreeting(); renderTopbar(); if (op && np) { const r2 = await fetch('/api/auth/change-password', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({token: authToken, old_password: op, new_password: np}) }); const d2 = await r2.json(); if (!r2.ok) { st.textContent = '⚠️ Профиль применён, пароль: ' + (d2.detail || 'Ошибка'); st.className = 'fb-status error'; return; } st.textContent = '✅ Профиль и пароль применены'; } else st.textContent = '✅ Настройки применены'; st.className = 'fb-status success'; setTimeout(() => settingsModal.classList.add('hidden'), 1500); } catch (e) { st.textContent = '❌ ' + e.message; st.className = 'fb-status error'; } };
+
+        $('saveSettingsBtn').onclick = async () => {
+            const st = $('settingsStatus'); const nn = $('setName').value.trim(); const op = $('setOldPwd').value; const np = $('setNewPwd').value;
+            st.textContent = '⏳ Применяем...'; st.className = 'fb-status loading';
+
+            const p = { token: authToken, name: nn, hide_ai_subjects: JSON.stringify(hideAiSubjects), hide_images_subjects: JSON.stringify(hideImagesSubjects) };
+
+            try {
+                const r1 = await fetch('/api/auth/update', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(p) });
+                const d1 = await r1.json();
+                if (!r1.ok) throw new Error(d1.detail || 'Ошибка');
+                authUser = d1.user;
+                updateGreeting(); renderTopbar();
+
+                if (op && np) {
+                    const r2 = await fetch('/api/auth/change-password', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({token: authToken, old_password: op, new_password: np}) });
+                    const d2 = await r2.json();
+                    if (!r2.ok) { st.textContent = '⚠️ Профиль применён, пароль: ' + (d2.detail || 'Ошибка'); st.className = 'fb-status error'; return; }
+                    st.textContent = '✅ Профиль и пароль применены';
+                } else st.textContent = '✅ Настройки применены';
+                st.className = 'fb-status success';
+                setTimeout(() => settingsModal.classList.add('hidden'), 1500);
+            } catch (e) { st.textContent = '❌ ' + e.message; st.className = 'fb-status error'; }
+        };
+
         $('logoutBtn').onclick = () => { settingsModal.classList.add('hidden'); logout(); };
         $('deleteAccountBtn').onclick = async () => { if (!confirm('Удалить аккаунт?') || !confirm('Точно?')) return; const st = $('settingsStatus'); st.textContent = '⏳ Удаляем...'; st.className = 'fb-status loading'; try { const r = await fetch('/api/auth/delete', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({token: authToken}) }); if (!r.ok) throw new Error('Ошибка'); authToken = ''; authUser = null; currentAvatar = null; localStorage.removeItem('gdz_token'); localStorage.removeItem('gdz_theme'); applyTheme('light'); settingsModal.classList.add('hidden'); showAuth(); } catch (e) { st.textContent = '❌ ' + e.message; st.className = 'fb-status error'; } };
+
         $('closeSupport').onclick = () => supportModal.classList.add('hidden'); supportModal.onclick = (e) => { if (e.target === supportModal) supportModal.classList.add('hidden'); };
         $('fbImage').onchange = async (e) => { const f = e.target.files[0]; if (!f) { fbImageBase64 = ""; $('fbImageName').textContent = 'Файл не выбран'; return; } try { fbImageBase64 = await shrinkImage(f, 800, 0.8); $('fbImageName').textContent = f.name; } catch (err) { alert("Ошибка: " + err.message); fbImageBase64 = ""; $('fbImageName').textContent = 'Файл не выбран'; e.target.value = ''; } };
         $('feedbackForm').onsubmit = async (e) => { e.preventDefault(); const m = $('fbMessage').value.trim(); if (!m) return; const st = $('fbStatus'); st.textContent = '⏳ Отправляем...'; st.className = 'fb-status loading'; try { const r = await fetch('/api/feedback', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({message: m, contact: $('fbContact').value.trim(), image: fbImageBase64, token: authToken || ''}) }); if (!r.ok) throw new Error('Ошибка'); st.textContent = '✅ Отправлено!'; st.className = 'fb-status success'; $('fbMessage').value = ''; $('fbContact').value = ''; $('fbImage').value = ''; $('fbImageName').textContent = 'Файл не выбран'; fbImageBase64 = ""; setTimeout(() => supportModal.classList.add('hidden'), 2000); } catch (err) { st.textContent = '❌ ' + err.message; st.className = 'fb-status error'; } };
+
         function openImageModal(src) { imageModalImg.src = src; imageModal.classList.remove('hidden'); document.body.style.overflow = 'hidden'; }
         function closeModal() { imageModal.classList.add('hidden'); imageModalImg.src = ''; document.body.style.overflow = ''; }
         $('closeImageModal').onclick = closeModal; imageModal.onclick = (e) => { if (e.target === imageModal) closeModal(); };
         document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !isStealthMode) closeModal(); });
+
         let activeLoads = 0; const MAX_PARALLEL = 3, pendingQueue = [];
         const PLACEHOLDER_RETRIES = 4, RETRY_DELAYS = [500, 1000, 2000, 3000];
         const MIN_REAL_WIDTH = 200, MIN_REAL_HEIGHT = 150;

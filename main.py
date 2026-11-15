@@ -16,7 +16,7 @@ import asyncio
 import asyncpg
 from parser import parse_tasks
 
-VERSION = "168.0.0"
+VERSION = "169.0.0"
 ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "")
 ADMIN_EMAIL = os.getenv("ADMIN_EMAIL", "admin@gdz.ru").lower().strip()
 DATABASE_URL = os.getenv("DATABASE_URL")
@@ -101,6 +101,8 @@ async def init_db():
             await conn.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS year TEXT DEFAULT ''")
             await conn.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS subject_years TEXT DEFAULT '{}'")
             await conn.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS hide_ai_subjects TEXT DEFAULT '{}'")
+            await conn.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS hide_images_subjects TEXT DEFAULT '{}'")
+
             await conn.execute(
                 "CREATE TABLE IF NOT EXISTS blocked_devices (device TEXT PRIMARY KEY, blocked_at TIMESTAMP DEFAULT NOW())")
             await conn.execute(
@@ -112,6 +114,7 @@ async def init_db():
             await conn.execute("ALTER TABLE subjects ADD COLUMN IF NOT EXISTS default_year TEXT DEFAULT ''")
             await conn.execute("ALTER TABLE subjects ADD COLUMN IF NOT EXISTS default_year_alt TEXT DEFAULT ''")
             await conn.execute("ALTER TABLE subjects ADD COLUMN IF NOT EXISTS url_alt TEXT DEFAULT ''")
+
             await conn.execute(
                 "CREATE TABLE IF NOT EXISTS user_subjects (user_id INTEGER REFERENCES users(id) ON DELETE CASCADE, subject_id INTEGER REFERENCES subjects(id) ON DELETE CASCADE, PRIMARY KEY (user_id, subject_id))")
             await conn.execute(
@@ -182,7 +185,7 @@ async def get_user_by_token(token: str):
     if not db_pool or not token: return None
     async with db_pool.acquire() as conn:
         row = await conn.fetchrow(
-            "SELECT u.id, u.email, u.name, u.is_admin, u.theme, u.bg_url, u.avatar, u.admin_bg_url, u.admin_btn_color, u.admin_theme, u.btn_style, u.subjects_configured, u.year, u.subject_years, u.hide_ai_subjects FROM sessions s JOIN users u ON u.id = s.user_id WHERE s.token = $1",
+            "SELECT u.id, u.email, u.name, u.is_admin, u.theme, u.bg_url, u.avatar, u.admin_bg_url, u.admin_btn_color, u.admin_theme, u.btn_style, u.subjects_configured, u.year, u.subject_years, u.hide_ai_subjects, u.hide_images_subjects FROM sessions s JOIN users u ON u.id = s.user_id WHERE s.token = $1",
             token)
         if row: await conn.execute("UPDATE users SET last_seen = NOW() WHERE id = $1", row["id"])
     return dict(row) if row else None
@@ -248,12 +251,12 @@ class ParseRequest(BaseModel): jobs: List[Job]; token: str = ""
 
 
 class FeedbackRequest(BaseModel):
-    message: str
-    contact: str = ""
-    image: str = ""
-    subject: str = ""
-    task_number: str = ""
-    context_type: str = ""
+    message: str;
+    contact: str = "";
+    image: str = "";
+    subject: str = "";
+    task_number: str = "";
+    context_type: str = "";
     token: str = ""
 
 
@@ -269,8 +272,19 @@ class TokenRequest(BaseModel): token: str
 class HistorySaveRequest(BaseModel): token: str; subject: str; numbers: str
 
 
-class UpdateProfileRequest(
-    BaseModel): token: str; name: str = ""; theme: str = ""; bg_url: str = ""; admin_bg_url: str = ""; admin_btn_color: str = ""; admin_theme: str = ""; btn_style: str = ""; year: str = ""; subject_years: str = None; hide_ai_subjects: str = None
+class UpdateProfileRequest(BaseModel):
+    token: str;
+    name: str = "";
+    theme: str = "";
+    bg_url: str = "";
+    admin_bg_url: str = "";
+    admin_btn_color: str = "";
+    admin_theme: str = "";
+    btn_style: str = "";
+    year: str = "";
+    subject_years: str = None;
+    hide_ai_subjects: str = None;
+    hide_images_subjects: str = None
 
 
 class ChangePasswordRequest(BaseModel): token: str; old_password: str; new_password: str
@@ -295,9 +309,7 @@ class AnnouncementSend(
     BaseModel): token: str; message: str; target_type: str; target_users: str = ""; duration_days: int = 3
 
 
-class SavePackageRequest(BaseModel):
-    token: str
-    items: list = []
+class SavePackageRequest(BaseModel): token: str; items: list = []
 
 
 @app.on_event("startup")
@@ -449,10 +461,8 @@ async def admin_update_subject(data: dict):
     if not subj_id: raise HTTPException(400, "Нужен id")
     fields, params, idx = [], [], 1
     for key in ("name", "url", "url_alt", "type", "group_name", "note", "default_year", "default_year_alt"):
-        if key in data and data[key] is not None:
-            fields.append(f"{key} = ${idx}");
-            params.append(str(data[key]).strip());
-            idx += 1
+        if key in data and data[key] is not None: fields.append(f"{key} = ${idx}"); params.append(
+            str(data[key]).strip()); idx += 1
     for key in ("sort_order", "max_number"):
         if key in data and data[key] is not None:
             try:
@@ -520,7 +530,7 @@ async def register(req: RegisterRequest, request: Request):
         if existing: raise HTTPException(400, "Email уже зарегистрирован")
         is_admin = (email == ADMIN_EMAIL)
         user_id = await conn.fetchval(
-            "INSERT INTO users (email, password_hash, name, is_admin, device, theme, is_verified, year, subject_years, hide_ai_subjects) VALUES ($1, $2, $3, $4, $5, 'light', TRUE, '', '{}', '{}') RETURNING id",
+            "INSERT INTO users (email, password_hash, name, is_admin, device, theme, is_verified, year, subject_years, hide_ai_subjects, hide_images_subjects) VALUES ($1, $2, $3, $4, $5, 'light', TRUE, '', '{}', '{}', '{}') RETURNING id",
             email, hash_password(req.password), req.name.strip(), is_admin, req.device.strip())
         token = secrets.token_urlsafe(32)
         await conn.execute("INSERT INTO sessions (token, user_id) VALUES ($1, $2)", token, user_id)
@@ -528,7 +538,7 @@ async def register(req: RegisterRequest, request: Request):
             "user": {"id": user_id, "email": email, "name": req.name.strip(), "is_admin": is_admin, "theme": "light",
                      "bg_url": None, "avatar": None, "admin_bg_url": None, "admin_btn_color": "#4299e1",
                      "admin_theme": "auto", "btn_style": "light", "year": "", "subject_years": "{}",
-                     "hide_ai_subjects": "{}"}}
+                     "hide_ai_subjects": "{}", "hide_images_subjects": "{}"}}
 
 
 @app.post("/api/auth/login")
@@ -540,7 +550,7 @@ async def login(req: LoginRequest, request: Request):
     email = req.email.lower().strip()
     async with db_pool.acquire() as conn:
         row = await conn.fetchrow(
-            "SELECT id, email, password_hash, name, is_admin, theme, bg_url, avatar, admin_bg_url, admin_btn_color, admin_theme, btn_style, year, subject_years, hide_ai_subjects FROM users WHERE email = $1",
+            "SELECT id, email, password_hash, name, is_admin, theme, bg_url, avatar, admin_bg_url, admin_btn_color, admin_theme, btn_style, year, subject_years, hide_ai_subjects, hide_images_subjects FROM users WHERE email = $1",
             email)
         if not row or not verify_password(req.password, row["password_hash"]):
             ip = request.client.host if request.client else ""
@@ -561,7 +571,8 @@ async def login(req: LoginRequest, request: Request):
                      "admin_bg_url": row["admin_bg_url"], "admin_btn_color": row["admin_btn_color"] or "#4299e1",
                      "admin_theme": row["admin_theme"] or "auto", "btn_style": row["btn_style"] or "light",
                      "year": row["year"] or "", "subject_years": row["subject_years"] or "{}",
-                     "hide_ai_subjects": row["hide_ai_subjects"] or "{}"}}
+                     "hide_ai_subjects": row["hide_ai_subjects"] or "{}",
+                     "hide_images_subjects": row["hide_images_subjects"] or "{}"}}
 
 
 @app.post("/api/auth/logout")
@@ -597,6 +608,8 @@ async def update_profile(req: UpdateProfileRequest):
         req.subject_years); idx += 1
     if req.hide_ai_subjects is not None: updates.append(f"hide_ai_subjects = ${idx}"); params.append(
         req.hide_ai_subjects); idx += 1
+    if req.hide_images_subjects is not None: updates.append(f"hide_images_subjects = ${idx}"); params.append(
+        req.hide_images_subjects); idx += 1
     if req.theme in ('light', 'dark', 'custom'):
         updates.append(f"theme = ${idx}");
         params.append(req.theme);
@@ -628,7 +641,7 @@ async def update_profile(req: UpdateProfileRequest):
     async with db_pool.acquire() as conn:
         await conn.execute(f"UPDATE users SET {', '.join(updates)} WHERE id = ${idx}", *params)
         row = await conn.fetchrow(
-            "SELECT id, email, name, is_admin, theme, bg_url, avatar, admin_bg_url, admin_btn_color, admin_theme, btn_style, year, subject_years, hide_ai_subjects FROM users WHERE id = $1",
+            "SELECT id, email, name, is_admin, theme, bg_url, avatar, admin_bg_url, admin_btn_color, admin_theme, btn_style, year, subject_years, hide_ai_subjects, hide_images_subjects FROM users WHERE id = $1",
             user["id"])
     return {"ok": True, "user": dict(row)}
 
@@ -714,9 +727,8 @@ async def save_history_package(req: SavePackageRequest):
     if not req.items: return {"ok": False}
     items_json = _json.dumps(req.items, ensure_ascii=False)
     async with db_pool.acquire() as conn:
-        new_id = await conn.fetchval(
-            "INSERT INTO history_packages (user_id, items) VALUES ($1, $2) RETURNING id",
-            user["id"], items_json)
+        new_id = await conn.fetchval("INSERT INTO history_packages (user_id, items) VALUES ($1, $2) RETURNING id",
+                                     user["id"], items_json)
         await conn.execute(
             "DELETE FROM history_packages WHERE user_id = $1 AND id NOT IN (SELECT id FROM history_packages WHERE user_id = $1 ORDER BY id DESC LIMIT 30)",
             user["id"])
@@ -734,8 +746,10 @@ async def list_history_packages(token: str = ""):
             user["id"])
     packages = []
     for r in rows:
-        try: items = _json.loads(r["items"])
-        except Exception: items = []
+        try:
+            items = _json.loads(r["items"])
+        except Exception:
+            items = []
         sc = {}
         for it in items:
             s = it.get("subject", "?")
@@ -754,8 +768,10 @@ async def get_history_package(pkg_id: int, token: str = ""):
             "SELECT id, to_char(ts, 'DD.MM.YYYY HH24:MI') AS ts_str, items FROM history_packages WHERE id = $1 AND user_id = $2",
             pkg_id, user["id"])
     if not row: raise HTTPException(404, "Не найдено")
-    try: items = _json.loads(row["items"])
-    except Exception: items = []
+    try:
+        items = _json.loads(row["items"])
+    except Exception:
+        items = []
     return {"id": row["id"], "ts": row["ts_str"], "items": items}
 
 
@@ -764,8 +780,8 @@ async def delete_history_package(pkg_id: int, req: TokenRequest):
     user = await get_user_by_token(req.token)
     if not user: raise HTTPException(401, "Не авторизован")
     if db_pool is not None:
-        async with db_pool.acquire() as conn:
-            await conn.execute("DELETE FROM history_packages WHERE id = $1 AND user_id = $2", pkg_id, user["id"])
+        async with db_pool.acquire() as conn: await conn.execute(
+            "DELETE FROM history_packages WHERE id = $1 AND user_id = $2", pkg_id, user["id"])
     return {"ok": True}
 
 
@@ -796,8 +812,7 @@ async def feedback(req: FeedbackRequest, request: Request):
         except Exception as e:
             print(f"[main] Ошибка feedback: {e}")
     details = req.message.strip()[:200]
-    if req.subject or req.task_number:
-        details = f"[{req.subject} №{req.task_number}] {details}"
+    if req.subject or req.task_number: details = f"[{req.subject} №{req.task_number}] {details}"
     await log_action(user_id, "feedback", details, ip)
     return {"ok": True}
 
@@ -891,7 +906,7 @@ async def admin_clear(data: dict):
 @app.post("/api/admin/export-db")
 async def admin_export_db(data: dict):
     token = data.get("token");
-    password = data.get("password");
+    password = data.get("password")
     allowed = False
     if password and password == ADMIN_PASSWORD:
         allowed = True
@@ -900,7 +915,6 @@ async def admin_export_db(data: dict):
         if user and user.get("email") == ADMIN_EMAIL: allowed = True
     if not allowed: raise HTTPException(401, "Экспорт доступен только главному админу.")
     if db_pool is None: raise HTTPException(500, "БД недоступна")
-
     sql_dump = "-- GDZ Parser DB Backup\n-- Дата: " + datetime.now().isoformat() + "\n\n"
     sql_dump += """
 -- СОЗДАНИЕ ТАБЛИЦ
@@ -919,7 +933,7 @@ ALTER TABLE users ADD COLUMN IF NOT EXISTS subjects_configured BOOLEAN DEFAULT F
 ALTER TABLE users ADD COLUMN IF NOT EXISTS year TEXT DEFAULT '';
 ALTER TABLE users ADD COLUMN IF NOT EXISTS subject_years TEXT DEFAULT '{}';
 ALTER TABLE users ADD COLUMN IF NOT EXISTS hide_ai_subjects TEXT DEFAULT '{}';
-
+ALTER TABLE users ADD COLUMN IF NOT EXISTS hide_images_subjects TEXT DEFAULT '{}';
 CREATE TABLE IF NOT EXISTS blocked_devices (device TEXT PRIMARY KEY, blocked_at TIMESTAMP DEFAULT NOW());
 CREATE TABLE IF NOT EXISTS subjects (id SERIAL PRIMARY KEY, name TEXT UNIQUE NOT NULL, url TEXT DEFAULT '', type TEXT DEFAULT 'numbers', group_name TEXT DEFAULT '', sort_order INTEGER DEFAULT 0, created_at TIMESTAMP DEFAULT NOW());
 ALTER TABLE subjects ADD COLUMN IF NOT EXISTS max_number INTEGER DEFAULT 0;
@@ -928,7 +942,6 @@ ALTER TABLE subjects ADD COLUMN IF NOT EXISTS user_id INTEGER REFERENCES users(i
 ALTER TABLE subjects ADD COLUMN IF NOT EXISTS default_year TEXT DEFAULT '';
 ALTER TABLE subjects ADD COLUMN IF NOT EXISTS default_year_alt TEXT DEFAULT '';
 ALTER TABLE subjects ADD COLUMN IF NOT EXISTS url_alt TEXT DEFAULT '';
-
 CREATE TABLE IF NOT EXISTS user_subjects (user_id INTEGER REFERENCES users(id) ON DELETE CASCADE, subject_id INTEGER REFERENCES subjects(id) ON DELETE CASCADE, PRIMARY KEY (user_id, subject_id));
 CREATE TABLE IF NOT EXISTS user_schedule (user_id INTEGER REFERENCES users(id) ON DELETE CASCADE, day_of_week INTEGER NOT NULL, subject_id INTEGER REFERENCES subjects(id) ON DELETE CASCADE, PRIMARY KEY (user_id, day_of_week, subject_id));
 CREATE TABLE IF NOT EXISTS sessions (token TEXT PRIMARY KEY, user_id INTEGER REFERENCES users(id) ON DELETE CASCADE, created_at TIMESTAMP DEFAULT NOW());
@@ -945,7 +958,6 @@ CREATE TABLE IF NOT EXISTS user_achievements (user_id INTEGER REFERENCES users(i
 CREATE TABLE IF NOT EXISTS announcements (id SERIAL PRIMARY KEY, message TEXT NOT NULL, target_type TEXT DEFAULT 'all', target_users TEXT DEFAULT '', created_at TIMESTAMP DEFAULT NOW(), expires_at TIMESTAMP);
 CREATE TABLE IF NOT EXISTS history_packages (id SERIAL PRIMARY KEY, user_id INTEGER REFERENCES users(id) ON DELETE CASCADE, ts TIMESTAMP DEFAULT NOW(), items TEXT NOT NULL);
 """
-
     async with db_pool.acquire() as conn:
         tables = ['users', 'blocked_devices', 'subjects', 'user_subjects', 'user_schedule', 'sessions', 'history',
                   'feedback', 'templates', 'settings', 'logs', 'user_achievements', 'announcements', 'history_packages']
@@ -968,7 +980,6 @@ CREATE TABLE IF NOT EXISTS history_packages (id SERIAL PRIMARY KEY, user_id INTE
                             vals.append(f"'{v.isoformat()}'")
                         else:
                             vals.append("'" + str(v).replace('\x00', '').replace('\\', '\\\\').replace("'", "''") + "'")
-
                     if table == 'settings':
                         sql_dump += f"INSERT INTO {table} ({cols}) VALUES ({', '.join(vals)}) ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value;\n"
                     elif table == 'subjects':
@@ -979,7 +990,6 @@ CREATE TABLE IF NOT EXISTS history_packages (id SERIAL PRIMARY KEY, user_id INTE
                         sql_dump += f"INSERT INTO {table} ({cols}) VALUES ({', '.join(vals)}) ON CONFLICT DO NOTHING;\n"
             except Exception as e:
                 sql_dump += f"-- Ошибка при чтении {table}: {e}\n"
-
         sql_dump += "\n-- Обновляем счетчики SERIAL\nSELECT setval('users_id_seq', COALESCE((SELECT MAX(id) FROM users), 0) + 1, false);\nSELECT setval('subjects_id_seq', COALESCE((SELECT MAX(id) FROM subjects), 0) + 1, false);\nSELECT setval('history_id_seq', COALESCE((SELECT MAX(id) FROM history), 0) + 1, false);\nSELECT setval('feedback_id_seq', COALESCE((SELECT MAX(id) FROM feedback), 0) + 1, false);\nSELECT setval('logs_id_seq', COALESCE((SELECT MAX(id) FROM logs), 0) + 1, false);\nSELECT setval('announcements_id_seq', COALESCE((SELECT MAX(id) FROM announcements), 0) + 1, false);\nSELECT setval('history_packages_id_seq', COALESCE((SELECT MAX(id) FROM history_packages), 0) + 1, false);\n"
     return Response(content=sql_dump.encode('utf-8'), media_type="application/sql",
                     headers={"Content-Disposition": "attachment; filename=gdz_backup.sql"})
@@ -1254,7 +1264,6 @@ async def get_achievements(token: str = ""):
         pioneer = await conn.fetchval(
             "SELECT COUNT(*) FROM logs WHERE user_id = $1 AND action = 'login' AND EXTRACT(DAY FROM created_at) = 1",
             uid) > 0
-
         ach_list = [
             {"id": "lark", "icon": "🌅", "title": "Жаворонок", "desc": "Поиск до 7 утра",
              "unlocked": parses_morning > 0},
@@ -1329,8 +1338,7 @@ async def admin_list_announcements(data: dict):
 @app.post("/api/admin/announcements/delete/{ann_id}")
 async def admin_delete_announcement(ann_id: int, data: dict):
     if not await check_main_admin(data): raise HTTPException(403, "Только главный админ")
-    async with db_pool.acquire() as conn:
-        await conn.execute("DELETE FROM announcements WHERE id = $1", ann_id)
+    async with db_pool.acquire() as conn: await conn.execute("DELETE FROM announcements WHERE id = $1", ann_id)
     return {"ok": True}
 
 
@@ -1355,8 +1363,7 @@ async def get_active_announcement(token: str = ""):
                 show = True
         elif target_type == "exclude" and not user_id:
             show = True
-        if show:
-            return {"announcement": {"id": row["id"], "message": row["message"]}}
+        if show: return {"announcement": {"id": row["id"], "message": row["message"]}}
     return {"announcement": None}
 
 
