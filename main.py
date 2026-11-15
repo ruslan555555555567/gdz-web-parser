@@ -16,7 +16,7 @@ import asyncpg
 
 from parser import parse_tasks
 
-VERSION = "146.0.0"
+VERSION = "147.0.0"
 ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "")
 ADMIN_EMAIL = os.getenv("ADMIN_EMAIL", "admin@gdz.ru").lower().strip()
 DATABASE_URL = os.getenv("DATABASE_URL")
@@ -819,6 +819,7 @@ async def admin_export_db(data: dict):
     if db_pool is None: raise HTTPException(500, "БД недоступна")
 
     sql_dump = "-- GDZ Parser DB Backup\n-- Дата: " + datetime.now().isoformat() + "\n\n"
+    sql_dump += "BEGIN;\n\n"
 
     # 1. СОЗДАНИЕ ТАБЛИЦ (если их нет)
     sql_dump += """
@@ -855,7 +856,7 @@ CREATE TABLE IF NOT EXISTS logs (id SERIAL PRIMARY KEY, user_id INTEGER, action 
 CREATE TABLE IF NOT EXISTS templates (name TEXT PRIMARY KEY, content TEXT NOT NULL, updated_at TIMESTAMP DEFAULT NOW());
 CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT, updated_at TIMESTAMP DEFAULT NOW());
 
--- Отключаем проверку внешних ключей на время вставки, чтобы не было конфликтов порядка
+-- Отключаем проверку внешних ключей на время вставки
 SET session_replication_role = 'replica';
 
 """
@@ -883,8 +884,9 @@ SET session_replication_role = 'replica';
                         elif isinstance(v, datetime):
                             vals.append(f"'{v.isoformat()}'")
                         else:
-                            # Экранируем одинарные кавычки для SQL
-                            vals.append("'" + str(v).replace("'", "''") + "'")
+                            # Экранируем обратные слэши и одинарные кавычки
+                            safe_str = str(v).replace('\\', '\\\\').replace("'", "''")
+                            vals.append(f"'{safe_str}'")
 
                     if table == 'settings':
                         sql_dump += f"INSERT INTO {table} ({cols}) VALUES ({', '.join(vals)}) ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value;\n"
@@ -898,7 +900,20 @@ SET session_replication_role = 'replica';
                 sql_dump += f"-- Ошибка при чтении {table}: {e}\n"
             sql_dump += "\n"
 
-        sql_dump += "\nSET session_replication_role = 'origin';\n"
+        # 3. ОБНОВЛЕНИЕ СЧЕТЧИКОВ (SERIAL)
+        sql_dump += """
+-- Обновляем счетчики SERIAL, чтобы новые записи шли с правильного ID
+SELECT setval('users_id_seq', COALESCE((SELECT MAX(id) FROM users), 0) + 1, false);
+SELECT setval('subjects_id_seq', COALESCE((SELECT MAX(id) FROM subjects), 0) + 1, false);
+SELECT setval('history_id_seq', COALESCE((SELECT MAX(id) FROM history), 0) + 1, false);
+SELECT setval('feedback_id_seq', COALESCE((SELECT MAX(id) FROM feedback), 0) + 1, false);
+SELECT setval('logs_id_seq', COALESCE((SELECT MAX(id) FROM logs), 0) + 1, false);
+
+-- Возвращаем проверку внешних ключей обратно
+SET session_replication_role = 'origin';
+
+COMMIT;
+"""
 
     return Response(content=sql_dump.encode('utf-8'), media_type="application/sql",
                     headers={"Content-Disposition": "attachment; filename=gdz_backup.sql"})
