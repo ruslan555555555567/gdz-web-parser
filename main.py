@@ -16,7 +16,7 @@ import asyncpg
 
 from parser import parse_tasks
 
-VERSION = "147.0.0"
+VERSION = "148.0.0"
 ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "")
 ADMIN_EMAIL = os.getenv("ADMIN_EMAIL", "admin@gdz.ru").lower().strip()
 DATABASE_URL = os.getenv("DATABASE_URL")
@@ -819,55 +819,53 @@ async def admin_export_db(data: dict):
     if db_pool is None: raise HTTPException(500, "БД недоступна")
 
     sql_dump = "-- GDZ Parser DB Backup\n-- Дата: " + datetime.now().isoformat() + "\n\n"
-    sql_dump += "BEGIN;\n\n"
 
-    # 1. СОЗДАНИЕ ТАБЛИЦ (если их нет)
+    # 1. СОЗДАНИЕ И ОБНОВЛЕНИЕ СТРУКТУРЫ ТАБЛИЦ
     sql_dump += """
--- СОЗДАНИЕ ТАБЛИЦ
-CREATE TABLE IF NOT EXISTS users (
-    id SERIAL PRIMARY KEY, email TEXT UNIQUE NOT NULL, password_hash TEXT NOT NULL, 
-    name TEXT, is_admin BOOLEAN DEFAULT FALSE, created_at TIMESTAMP DEFAULT NOW(),
-    device TEXT, last_seen TIMESTAMP DEFAULT NOW(), theme TEXT DEFAULT 'light',
-    bg_url TEXT, avatar TEXT, admin_bg_url TEXT, admin_btn_color TEXT DEFAULT '#4299e1',
-    admin_theme TEXT DEFAULT 'auto', btn_style TEXT DEFAULT 'light', 
-    is_verified BOOLEAN DEFAULT TRUE, subjects_configured BOOLEAN DEFAULT FALSE,
-    year TEXT DEFAULT '', subject_years TEXT DEFAULT '{}', hide_ai_subjects TEXT DEFAULT '{}'
-);
+-- СОЗДАНИЕ И ОБНОВЛЕНИЕ СТРУКТУРЫ ТАБЛИЦ
+CREATE TABLE IF NOT EXISTS users (id SERIAL PRIMARY KEY, email TEXT UNIQUE NOT NULL, password_hash TEXT NOT NULL, name TEXT, is_admin BOOLEAN DEFAULT FALSE, created_at TIMESTAMP DEFAULT NOW());
+ALTER TABLE users ADD COLUMN IF NOT EXISTS device TEXT;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS last_seen TIMESTAMP DEFAULT NOW();
+ALTER TABLE users ADD COLUMN IF NOT EXISTS theme TEXT DEFAULT 'light';
+ALTER TABLE users ADD COLUMN IF NOT EXISTS bg_url TEXT;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar TEXT;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS admin_bg_url TEXT;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS admin_btn_color TEXT DEFAULT '#4299e1';
+ALTER TABLE users ADD COLUMN IF NOT EXISTS admin_theme TEXT DEFAULT 'auto';
+ALTER TABLE users ADD COLUMN IF NOT EXISTS btn_style TEXT DEFAULT 'light';
+ALTER TABLE users ADD COLUMN IF NOT EXISTS is_verified BOOLEAN DEFAULT TRUE;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS subjects_configured BOOLEAN DEFAULT FALSE;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS year TEXT DEFAULT '';
+ALTER TABLE users ADD COLUMN IF NOT EXISTS subject_years TEXT DEFAULT '{}';
+ALTER TABLE users ADD COLUMN IF NOT EXISTS hide_ai_subjects TEXT DEFAULT '{}';
+
 CREATE TABLE IF NOT EXISTS blocked_devices (device TEXT PRIMARY KEY, blocked_at TIMESTAMP DEFAULT NOW());
-CREATE TABLE IF NOT EXISTS subjects (
-    id SERIAL PRIMARY KEY, name TEXT UNIQUE NOT NULL, url TEXT DEFAULT '', 
-    type TEXT DEFAULT 'numbers', group_name TEXT DEFAULT '', sort_order INTEGER DEFAULT 0, 
-    created_at TIMESTAMP DEFAULT NOW(), max_number INTEGER DEFAULT 0, note TEXT DEFAULT '', 
-    user_id INTEGER REFERENCES users(id) ON DELETE CASCADE, default_year TEXT DEFAULT '', 
-    default_year_alt TEXT DEFAULT '', url_alt TEXT DEFAULT ''
-);
-CREATE TABLE IF NOT EXISTS user_subjects (
-    user_id INTEGER REFERENCES users(id) ON DELETE CASCADE, 
-    subject_id INTEGER REFERENCES subjects(id) ON DELETE CASCADE, PRIMARY KEY (user_id, subject_id)
-);
-CREATE TABLE IF NOT EXISTS user_schedule (
-    user_id INTEGER REFERENCES users(id) ON DELETE CASCADE, day_of_week INTEGER NOT NULL, 
-    subject_id INTEGER REFERENCES subjects(id) ON DELETE CASCADE, PRIMARY KEY (user_id, day_of_week, subject_id)
-);
+CREATE TABLE IF NOT EXISTS subjects (id SERIAL PRIMARY KEY, name TEXT UNIQUE NOT NULL, url TEXT DEFAULT '', type TEXT DEFAULT 'numbers', group_name TEXT DEFAULT '', sort_order INTEGER DEFAULT 0, created_at TIMESTAMP DEFAULT NOW());
+ALTER TABLE subjects ADD COLUMN IF NOT EXISTS max_number INTEGER DEFAULT 0;
+ALTER TABLE subjects ADD COLUMN IF NOT EXISTS note TEXT DEFAULT '';
+ALTER TABLE subjects ADD COLUMN IF NOT EXISTS user_id INTEGER REFERENCES users(id) ON DELETE CASCADE;
+ALTER TABLE subjects ADD COLUMN IF NOT EXISTS default_year TEXT DEFAULT '';
+ALTER TABLE subjects ADD COLUMN IF NOT EXISTS default_year_alt TEXT DEFAULT '';
+ALTER TABLE subjects ADD COLUMN IF NOT EXISTS url_alt TEXT DEFAULT '';
+
+CREATE TABLE IF NOT EXISTS user_subjects (user_id INTEGER REFERENCES users(id) ON DELETE CASCADE, subject_id INTEGER REFERENCES subjects(id) ON DELETE CASCADE, PRIMARY KEY (user_id, subject_id));
+CREATE TABLE IF NOT EXISTS user_schedule (user_id INTEGER REFERENCES users(id) ON DELETE CASCADE, day_of_week INTEGER NOT NULL, subject_id INTEGER REFERENCES subjects(id) ON DELETE CASCADE, PRIMARY KEY (user_id, day_of_week, subject_id));
 CREATE TABLE IF NOT EXISTS sessions (token TEXT PRIMARY KEY, user_id INTEGER REFERENCES users(id) ON DELETE CASCADE, created_at TIMESTAMP DEFAULT NOW());
 CREATE TABLE IF NOT EXISTS history (id SERIAL PRIMARY KEY, user_id INTEGER REFERENCES users(id) ON DELETE CASCADE, subject TEXT, numbers TEXT, created_at TIMESTAMP DEFAULT NOW());
-CREATE TABLE IF NOT EXISTS feedback (id SERIAL PRIMARY KEY, date TEXT, message TEXT, contact TEXT, version TEXT, image TEXT);
+CREATE TABLE IF NOT EXISTS feedback (id SERIAL PRIMARY KEY, date TEXT, message TEXT, contact TEXT, version TEXT);
+ALTER TABLE feedback ADD COLUMN IF NOT EXISTS image TEXT;
 CREATE TABLE IF NOT EXISTS logs (id SERIAL PRIMARY KEY, user_id INTEGER, action TEXT, details TEXT, ip TEXT, created_at TIMESTAMP DEFAULT NOW());
 CREATE TABLE IF NOT EXISTS templates (name TEXT PRIMARY KEY, content TEXT NOT NULL, updated_at TIMESTAMP DEFAULT NOW());
 CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT, updated_at TIMESTAMP DEFAULT NOW());
-
--- Отключаем проверку внешних ключей на время вставки
-SET session_replication_role = 'replica';
-
 """
 
-    # 2. ВСТАВКА ДАННЫХ
+    # 2. ВСТАВКА ДАННЫХ (Порядок таблиц важен для внешних ключей)
     async with db_pool.acquire() as conn:
-        tables = ['users', 'subjects', 'user_subjects', 'user_schedule', 'sessions', 'history', 'feedback',
-                  'blocked_devices', 'templates', 'settings', 'logs']
+        tables = ['users', 'blocked_devices', 'subjects', 'user_subjects', 'user_schedule', 'sessions', 'history',
+                  'feedback', 'templates', 'settings', 'logs']
 
         for table in tables:
-            sql_dump += f"-- Данные таблицы {table}\n"
+            sql_dump += f"\n-- Данные таблицы {table}\n"
             try:
                 rows = await conn.fetch(f"SELECT * FROM {table}")
                 for row in rows:
@@ -884,8 +882,8 @@ SET session_replication_role = 'replica';
                         elif isinstance(v, datetime):
                             vals.append(f"'{v.isoformat()}'")
                         else:
-                            # Экранируем обратные слэши и одинарные кавычки
-                            safe_str = str(v).replace('\\', '\\\\').replace("'", "''")
+                            # Глубокая очистка строки: убираем нулевые байты, экранируем слэши и кавычки
+                            safe_str = str(v).replace('\x00', '').replace('\\', '\\\\').replace("'", "''")
                             vals.append(f"'{safe_str}'")
 
                     if table == 'settings':
@@ -898,21 +896,15 @@ SET session_replication_role = 'replica';
                         sql_dump += f"INSERT INTO {table} ({cols}) VALUES ({', '.join(vals)}) ON CONFLICT DO NOTHING;\n"
             except Exception as e:
                 sql_dump += f"-- Ошибка при чтении {table}: {e}\n"
-            sql_dump += "\n"
 
-        # 3. ОБНОВЛЕНИЕ СЧЕТЧИКОВ (SERIAL)
+        # 3. ОБНОВЛЕНИЕ СЧЕТЧИКОВ SERIAL
         sql_dump += """
--- Обновляем счетчики SERIAL, чтобы новые записи шли с правильного ID
+\n-- Обновляем счетчики SERIAL, чтобы новые записи шли с правильного ID
 SELECT setval('users_id_seq', COALESCE((SELECT MAX(id) FROM users), 0) + 1, false);
 SELECT setval('subjects_id_seq', COALESCE((SELECT MAX(id) FROM subjects), 0) + 1, false);
 SELECT setval('history_id_seq', COALESCE((SELECT MAX(id) FROM history), 0) + 1, false);
 SELECT setval('feedback_id_seq', COALESCE((SELECT MAX(id) FROM feedback), 0) + 1, false);
 SELECT setval('logs_id_seq', COALESCE((SELECT MAX(id) FROM logs), 0) + 1, false);
-
--- Возвращаем проверку внешних ключей обратно
-SET session_replication_role = 'origin';
-
-COMMIT;
 """
 
     return Response(content=sql_dump.encode('utf-8'), media_type="application/sql",
