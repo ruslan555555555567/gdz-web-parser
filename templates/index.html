@@ -51,34 +51,17 @@
             display: none;
             position: fixed; inset: 0;
             background: #ffffff; color: #202122;
-            z-index: 999999; /* Перекрывает вообще всё */
+            z-index: 999999;
             overflow-y: auto;
             font-family: 'Times New Roman', Times, serif !important;
         }
-        .stealth-content {
-            max-width: 800px; margin: 0 auto; padding: 40px 20px;
-        }
-        .stealth-title {
-            font-size: 32px; font-weight: normal; border-bottom: 1px solid #a2a9b1;
-            padding-bottom: 10px; margin-bottom: 20px; font-family: 'Linux Libertine', 'Georgia', 'Times', serif !important;
-        }
-        .stealth-text {
-            font-size: 16px; line-height: 1.6; margin-bottom: 15px;
-        }
+        .stealth-content { max-width: 800px; margin: 0 auto; padding: 40px 20px; }
+        .stealth-title { font-size: 32px; font-weight: normal; border-bottom: 1px solid #a2a9b1; padding-bottom: 10px; margin-bottom: 20px; font-family: 'Linux Libertine', 'Georgia', 'Times', serif !important; }
+        .stealth-text { font-size: 16px; line-height: 1.6; margin-bottom: 15px; }
         .stealth-text a { color: #3366cc; text-decoration: none; }
-        .stealth-img {
-            max-width: 100%; height: auto; border: 1px solid #c8ccd1;
-            background: #f8f9fa; padding: 5px; margin: 15px 0; display: block;
-        }
-        .stealth-caption {
-            font-size: 13px; color: #54595d; text-align: center; margin-top: -10px; margin-bottom: 20px;
-        }
-        .stealth-btn {
-            position: fixed; bottom: 20px; right: 20px;
-            background: rgba(0,0,0,0.05); border: 1px solid #ccc; border-radius: 50%;
-            width: 40px; height: 40px; cursor: pointer; display: flex; align-items: center; justify-content: center;
-            font-size: 20px; opacity: 0.3; transition: opacity 0.2s;
-        }
+        .stealth-img { max-width: 100%; height: auto; border: 1px solid #c8ccd1; background: #f8f9fa; padding: 5px; margin: 15px 0; display: block; }
+        .stealth-caption { font-size: 13px; color: #54595d; text-align: center; margin-top: -10px; margin-bottom: 20px; }
+        .stealth-btn { position: fixed; bottom: 20px; right: 20px; background: rgba(0,0,0,0.05); border: 1px solid #ccc; border-radius: 50%; width: 40px; height: 40px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 20px; opacity: 0.3; transition: opacity 0.2s; }
         .stealth-btn:hover { opacity: 1; }
 
         /* --- ОСНОВНЫЕ СТИЛИ --- */
@@ -174,14 +157,30 @@
         .theme-dark .task-number-header { color: #90cdf4 !important; background: rgba(66, 153, 225, 0.15); border-color: rgba(66, 153, 225, 0.3); }
         .edition-header { font-size: 14px; font-weight: 700; color: #4a5568; margin: 15px 0 8px 0; padding-left: 10px; border-left: 3px solid #4299e1; }
         .theme-dark .edition-header { color: #a0aec0; border-left-color: #63b3ed; }
-        .ai-text-block { background: rgba(66, 153, 225, 0.05); border: 1px solid #bee3f8; border-left: 4px solid #4299e1; border-radius: 12px; padding: 16px; font-size: 15px; line-height: 1.6; color: #1a202c; margin-bottom: 12px; overflow-x: auto; }
+
+        /* Старый простой стиль ИИ-решебника */
+        .ai-text-block {
+            background: rgba(66, 153, 225, 0.05);
+            border: 1px solid #bee3f8;
+            border-left: 4px solid #4299e1;
+            border-radius: 12px;
+            padding: 16px;
+            font-size: 15px;
+            line-height: 1.6;
+            color: #1a202c;
+            margin-bottom: 12px;
+            overflow-x: auto;
+        }
         .theme-dark .ai-text-block { background: rgba(66, 153, 225, 0.1); border-color: #2b6cb0; border-left-color: #63b3ed; color: #e2e8f0; }
         .ai-text-block h4 { margin: 15px 0 10px 0; font-size: 18px; color: #2b6cb0; border-bottom: 1px solid #bee3f8; padding-bottom: 4px; }
         .ai-text-block h5 { margin: 15px 0 5px 0; font-size: 16px; color: #2b6cb0; }
         .theme-dark .ai-text-block h4, .theme-dark .ai-text-block h5 { color: #90cdf4; border-bottom-color: #4a5568; }
-        .copy-btn { display: inline-flex; align-items: center; gap: 4px; margin-bottom: 10px; padding: 6px 12px; font-size: 13px; font-weight: 700; border-radius: 8px; border: 1px solid #bee3f8; background: rgba(66, 153, 225, 0.05); color: #2b6cb0; cursor: pointer; transition: all 0.2s; margin-right: 8px; }
-        .copy-btn:hover { background: rgba(66, 153, 225, 0.15); border-color: #90cdf4; }
-        .theme-dark .copy-btn { background: rgba(66, 153, 225, 0.2); border-color: rgba(66, 153, 225, 0.3); color: #90cdf4; }
+
+        .copy-btn { display: inline-flex; align-items: center; gap: 4px; margin-bottom: 10px; padding: 8px 14px; font-size: 13px; font-weight: 700; border-radius: 10px; border: 1px solid #bee3f8; background: rgba(66, 153, 225, 0.1); color: #2b6cb0; cursor: pointer; transition: all 0.2s; margin-right: 8px; }
+        .copy-btn:hover { background: rgba(66, 153, 225, 0.2); border-color: #90cdf4; transform: translateY(-1px); }
+        .theme-dark .copy-btn { background: rgba(66, 153, 225, 0.2); border-color: rgba(66, 153, 225, 0.4); color: #90cdf4; }
+        .theme-dark .copy-btn:hover { background: rgba(66, 153, 225, 0.3); }
+
         .welcome-greeting { text-align: center; font-size: 24px; font-weight: 800; margin-bottom: 20px; margin-top: 10px; color: #2d3748; opacity: 0; transform: translateY(-20px); animation: slideDownFade 0.8s cubic-bezier(0.25, 0.8, 0.25, 1) forwards; }
         .theme-dark .welcome-greeting { color: #e2e8f0; }
         .welcome-greeting span { color: #4299e1; }
@@ -324,7 +323,6 @@
             <div class="action-buttons-row">
                 <button id="btn" class="btn-modern-primary"><span id="btnText">🚀 Решить</span></button>
                 <button id="clearBtn" class="btn-modern-clear">🗑 Очистить</button>
-                <!-- ТА САМАЯ КНОПКА ДЛЯ АДМИНА -->
                 <button id="adminFillBtn" class="btn-modern-primary" style="display: none; background: #9f7aea; box-shadow: 0 4px 15px rgba(159, 122, 234, 0.4);">🧪 Тест: 11</button>
             </div>
         </section>
@@ -494,20 +492,56 @@
             try { await navigator.clipboard.writeText(text); const originalText = btnElement.innerHTML; btnElement.innerHTML = '✅ Скопировано'; btnElement.style.color = '#10b981'; btnElement.style.borderColor = '#10b981'; setTimeout(() => { btnElement.innerHTML = originalText; btnElement.style.color = ''; btnElement.style.borderColor = ''; }, 2000); } catch (err) { showToast('Не удалось скопировать текст', 'error'); }
         }
 
-        async function shareContent(title, text, url) {
-            if (navigator.share) {
-                try {
-                    await navigator.share({ title: title, text: text, url: url });
-                    showToast('Успешно отправлено!', 'success');
-                } catch (err) {
-                    if (err.name !== 'AbortError') showToast('Ошибка при отправке', 'error');
+        // Функция для создания File из картинки для отправки
+        async function shareImageFile(imageUrls, filename) {
+            try {
+                let fileToShare;
+                if (imageUrls.length === 1) {
+                    const res = await fetch('/api/image?url=' + encodeURIComponent(imageUrls[0]) + '&w=1000');
+                    const blob = await res.blob();
+                    fileToShare = new File([blob], filename, { type: 'image/jpeg' });
+                } else {
+                    // Для склеенных (Английский/География)
+                    const canvas = document.createElement('canvas');
+                    const images = [];
+                    let maxWidth = 0; let totalHeight = 0;
+
+                    for (let url of imageUrls) {
+                        const proxyUrl = '/api/image?url=' + encodeURIComponent(url) + '&w=2000';
+                        const img = new Image();
+                        img.crossOrigin = "Anonymous";
+                        img.src = proxyUrl;
+                        await new Promise((resolve, reject) => { img.onload = resolve; img.onerror = reject; });
+                        images.push(img);
+                        if (img.width > maxWidth) maxWidth = img.width;
+                        totalHeight += img.height;
+                    }
+
+                    canvas.width = maxWidth;
+                    canvas.height = totalHeight;
+                    const ctx = canvas.getContext('2d');
+                    let yOffset = 0;
+                    for (let img of images) { ctx.drawImage(img, 0, yOffset); yOffset += img.height; }
+
+                    const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.95));
+                    fileToShare = new File([blob], filename, { type: 'image/jpeg' });
                 }
-            } else {
-                try {
-                    await navigator.clipboard.writeText(`${title}\n\n${text}\n\n${url}`);
-                    showToast('Ссылка и текст скопированы в буфер!', 'success');
-                } catch (err) {
-                    showToast('Не удалось скопировать', 'error');
+
+                if (navigator.canShare && navigator.canShare({ files: [fileToShare] })) {
+                    await navigator.share({
+                        files: [fileToShare],
+                        title: 'Решение задания',
+                        text: 'Держи решение!'
+                    });
+                    showToast('Успешно отправлено!', 'success');
+                } else {
+                    showToast('Браузер не поддерживает отправку файлов. Скачиваем картинку...', 'error', 3000);
+                    downloadSingleImage(URL.createObjectURL(fileToShare), filename);
+                }
+            } catch (err) {
+                if (err.name !== 'AbortError') {
+                    showToast('Ошибка при отправке картинки', 'error');
+                    console.error(err);
                 }
             }
         }
@@ -579,7 +613,6 @@
         $('closeSubjectSettingsBtn').onclick = () => subjectSettingsModal.classList.add('hidden'); subjectSettingsModal.onclick = (e) => { if (e.target === subjectSettingsModal) subjectSettingsModal.classList.add('hidden'); };
         $('saveSubjectSettingsBtn').onclick = async () => { if (!currentSubjectId) return; const yearVal = $('subjectSetYear').value.trim(); const st = $('subjectSettingsStatus'); st.textContent = '⏳ Сохраняем...'; st.className = 'fb-status loading'; if (yearVal) subjectYears[currentSubjectId] = yearVal; else delete subjectYears[currentSubjectId]; try { const r = await fetch('/api/auth/update', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ token: authToken, subject_years: JSON.stringify(subjectYears) }) }); const d = await r.json(); if (!r.ok) throw new Error(d.detail || 'Ошибка'); authUser = d.user; subjectYears = parseJson(authUser.subject_years); renderSubjects(); st.textContent = '✅ Сохранено!'; st.className = 'fb-status success'; setTimeout(() => subjectSettingsModal.classList.add('hidden'), 1000); } catch (e) { st.textContent = '❌ ' + e.message; st.className = 'fb-status error'; } };
 
-        // КНОПКА ТЕСТ 11
         $('adminFillBtn').onclick = () => {
             subjectsContainer.querySelectorAll('.text-input').forEach(ta => ta.value = '11');
             allTextTasks.value = '11';
@@ -622,9 +655,12 @@
                         if (!r.found || !r.solutions || r.solutions.length === 0) { sec.innerHTML += `<div class="img-error">⚠️ Решение для №${r.number || ''} не найдено на gdz.ru</div>`; return; }
                         const subjectObj = SUBJECTS.find(s => s.name === subject); const currentPart = activeParts[subject] || '1'; const adminDefaultYear = currentPart === '2' ? (subjectObj.default_year_alt || subjectObj.default_year) : subjectObj.default_year; const targetYear = subjectYears[subject] || adminDefaultYear;
                         let hasRenderedSomething = false;
+
+                        // --- ПРОСТОЙ ИИ РЕШЕБНИК (как было) ---
                         let aiSolution = r.solutions.find(sol => sol.edition && sol.edition.includes('ИИ') && sol.text && sol.text.trim().length > 0);
                         if (aiSolution && !hideAiSubjects[subject]) {
-                            hasRenderedSomething = true; const wrapper = document.createElement('div'); wrapper.style.cssText = 'display: flex; flex-direction: column; gap: 8px; margin-bottom: 25px;';
+                            hasRenderedSomething = true;
+                            const wrapper = document.createElement('div'); wrapper.style.cssText = 'display: flex; flex-direction: column; gap: 8px; margin-bottom: 25px;';
                             if (r.number) { const numHeader = document.createElement('div'); numHeader.className = 'task-number-header'; numHeader.textContent = `Задание №${r.number}`; wrapper.appendChild(numHeader); }
                             const edHeader = document.createElement('div'); edHeader.className = 'edition-header'; edHeader.textContent = aiSolution.edition; wrapper.appendChild(edHeader);
 
@@ -633,10 +669,15 @@
                             btnRow.style.gap = '8px';
 
                             const copyBtn = document.createElement('button'); copyBtn.className = 'copy-btn'; copyBtn.innerHTML = '📋 Скопировать текст'; copyBtn.style.marginBottom = '0';
-                            copyBtn.onclick = (e) => { e.stopPropagation(); copyTextToClipboard(aiSolution.text, copyBtn); }; btnRow.appendChild(copyBtn);
+                            copyBtn.onclick = (e) => { e.stopPropagation(); copyTextToClipboard(aiSolution.text, copyBtn); };
+                            btnRow.appendChild(copyBtn);
 
                             const shareBtn = document.createElement('button'); shareBtn.className = 'copy-btn'; shareBtn.innerHTML = '📤 Поделиться'; shareBtn.style.marginBottom = '0';
-                            shareBtn.onclick = (e) => { e.stopPropagation(); shareContent(`GDZ: ${subject} №${r.number || ''}`, aiSolution.text, window.location.href); };
+                            shareBtn.onclick = (e) => {
+                                e.stopPropagation();
+                                if(navigator.share) { navigator.share({ title: 'GDZ Решение', text: aiSolution.text }).catch(()=>{}); }
+                                else { copyTextToClipboard(aiSolution.text, shareBtn); }
+                            };
                             btnRow.appendChild(shareBtn);
 
                             wrapper.appendChild(btnRow);
@@ -647,6 +688,7 @@
                             if (r.raw_text) { const taskTextDiv = document.createElement('div'); taskTextDiv.className = 'task-raw-text'; let displayText = r.raw_text.replace(new RegExp(r.subject, 'gi'), '').replace(/^[:\-\s]+/, '').trim() || r.numbers || 'Без текста'; taskTextDiv.textContent = displayText; wrapper.appendChild(taskTextDiv); }
                             sec.appendChild(wrapper);
                         }
+
                         let imageSolutions = r.solutions.filter(sol => sol.images && sol.images.length > 0 && (!sol.edition || !sol.edition.includes('ИИ')));
                         if (imageSolutions.length > 0) {
                             hasRenderedSomething = true; let selectedSolution = imageSolutions[0];
@@ -655,6 +697,7 @@
                             if (!aiSolution && r.number) { const numHeader = document.createElement('div'); numHeader.className = 'task-number-header'; numHeader.textContent = `Задание №${r.number}`; wrapper.appendChild(numHeader); }
                             if (selectedSolution.edition) { const edHeader = document.createElement('div'); edHeader.className = 'edition-header'; edHeader.textContent = selectedSolution.edition; wrapper.appendChild(edHeader); }
                             const isMergedSubject = subject.toLowerCase().includes('англ') || subject.toLowerCase().includes('география (тетрадь)'); const isMultiImageSubject = subject.toLowerCase().includes('контурн');
+
                             if (isMergedSubject) {
                                 const imgContainer = document.createElement('div'); imgContainer.className = 'merged-container'; const imgElements = [];
                                 selectedSolution.images.forEach((u) => { const img = document.createElement('img'); img.className = 'solution-img img-loading'; img.alt = 'Загрузка...'; loadImage(img, u); imgContainer.appendChild(img); imgElements.push({ img, url: u }); });
@@ -662,12 +705,15 @@
                                 if (r.raw_text) { const textDiv = document.createElement('div'); textDiv.className = 'task-raw-text'; textDiv.textContent = r.raw_text.replace(new RegExp(r.subject, 'gi'), '').replace(/^[:\-\s]+/, '').trim() || r.numbers || 'Без текста'; wrapper.appendChild(textDiv); }
                                 const controls = document.createElement('div'); controls.style.cssText = 'display: flex; gap: 10px; justify-content: flex-end; flex-wrap: wrap; margin-top: 10px;';
                                 const refreshBtn = document.createElement('button'); refreshBtn.innerHTML = '🔄 Обновить'; refreshBtn.style.cssText = 'padding: 8px 16px; display: flex; align-items: center; gap: 6px; background: rgba(150, 150, 150, 0.15); color: inherit; border: 1px solid rgba(150, 150, 150, 0.3); border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s;'; refreshBtn.onclick = (e) => { e.stopPropagation(); imgElements.forEach(item => { item.img.classList.remove('img-tall', 'img-retrying'); item.img.classList.add('img-loading'); item.img.src = ''; loadImage(item.img, item.url); }); };
-                                const dlBtn = document.createElement('button'); dlBtn.innerHTML = '⬇️ Скачать одной картинкой'; dlBtn.style.cssText = 'padding: 8px 16px; display: flex; align-items: center; gap: 6px; background: #4299e1; color: #ffffff; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s; box-shadow: 0 2px 5px rgba(66, 153, 225, 0.3);'; dlBtn.onclick = async (e) => { e.stopPropagation(); dlBtn.textContent = '⏳ Склеиваем...'; await downloadMergedImage(selectedSolution.images, `GDZ_${r.subject || 'Предмет'}_№${r.number || 1}_merged.jpg`); dlBtn.textContent = '⬇️ Скачать одной картинкой'; fetch('/api/track-download', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({token: authToken}) }).catch(()=>{}); };
+                                const dlBtn = document.createElement('button'); dlBtn.innerHTML = '⬇️ Скачать'; dlBtn.style.cssText = 'padding: 8px 16px; display: flex; align-items: center; gap: 6px; background: #4299e1; color: #ffffff; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s; box-shadow: 0 2px 5px rgba(66, 153, 225, 0.3);'; dlBtn.onclick = async (e) => { e.stopPropagation(); dlBtn.textContent = '⏳ Склеиваем...'; await downloadMergedImage(selectedSolution.images, `GDZ_${r.subject || 'Предмет'}_№${r.number || 1}_merged.jpg`); dlBtn.textContent = '⬇️ Скачать'; fetch('/api/track-download', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({token: authToken}) }).catch(()=>{}); };
 
                                 const shareBtn = document.createElement('button');
                                 shareBtn.innerHTML = '📤 Поделиться';
                                 shareBtn.style.cssText = 'padding: 8px 16px; display: flex; align-items: center; gap: 6px; background: #48bb78; color: #ffffff; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s; box-shadow: 0 2px 5px rgba(72, 187, 120, 0.3);';
-                                shareBtn.onclick = (e) => { e.stopPropagation(); shareContent(`GDZ: ${subject} №${r.number || ''}`, 'Решение задания', window.location.href); };
+                                shareBtn.onclick = (e) => {
+                                    e.stopPropagation();
+                                    shareImageFile(selectedSolution.images, `GDZ_${r.subject || 'Предмет'}_№${r.number || 1}.jpg`);
+                                };
 
                                 controls.appendChild(refreshBtn); controls.appendChild(dlBtn); controls.appendChild(shareBtn); wrapper.appendChild(controls); sec.appendChild(wrapper);
                             } else {
@@ -682,7 +728,10 @@
                                     const shareBtn = document.createElement('button');
                                     shareBtn.innerHTML = '📤 Поделиться';
                                     shareBtn.style.cssText = 'padding: 8px 16px; display: flex; align-items: center; gap: 6px; background: #48bb78; color: #ffffff; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s; box-shadow: 0 2px 5px rgba(72, 187, 120, 0.3);';
-                                    shareBtn.onclick = (e) => { e.stopPropagation(); shareContent(`GDZ: ${subject} №${r.number || ''}`, 'Решение задания', window.location.href); };
+                                    shareBtn.onclick = (e) => {
+                                        e.stopPropagation();
+                                        shareImageFile([u], `GDZ_${r.subject || 'Предмет'}_№${r.number || 1}_${imgIndex + 1}.jpg`);
+                                    };
 
                                     controls.appendChild(refreshBtn); controls.appendChild(dlBtn); controls.appendChild(shareBtn); imgWrap.appendChild(controls); wrapper.appendChild(imgWrap);
                                 });
@@ -716,7 +765,10 @@
                             btnRow.appendChild(copyBtn);
 
                             const shareBtn = document.createElement('button'); shareBtn.className = 'copy-btn'; shareBtn.innerHTML = '📤 Поделиться'; shareBtn.style.margin = '0';
-                            shareBtn.onclick = () => shareContent(`GDZ: ${subject}`, r.raw_text, window.location.href);
+                            shareBtn.onclick = () => {
+                                if(navigator.share) { navigator.share({ title: 'GDZ Решение', text: r.raw_text }).catch(()=>{}); }
+                                else { copyTextToClipboard(r.raw_text, shareBtn); }
+                            };
                             btnRow.appendChild(shareBtn);
 
                             textBlock.appendChild(btnRow);
