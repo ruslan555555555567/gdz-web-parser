@@ -16,7 +16,7 @@ import asyncpg
 
 from parser import parse_tasks
 
-VERSION = "145.0.0"
+VERSION = "146.0.0"
 ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "")
 ADMIN_EMAIL = os.getenv("ADMIN_EMAIL", "admin@gdz.ru").lower().strip()
 DATABASE_URL = os.getenv("DATABASE_URL")
@@ -807,7 +807,7 @@ async def admin_clear(data: dict):
 
 @app.post("/api/admin/export-db")
 async def admin_export_db(data: dict):
-    token = data.get("token");
+    token = data.get("token")
     password = data.get("password")
     allowed = False
     if password and password == ADMIN_PASSWORD:
@@ -817,17 +817,61 @@ async def admin_export_db(data: dict):
         if user and user.get("email") == ADMIN_EMAIL: allowed = True
     if not allowed: raise HTTPException(401, "Экспорт доступен только главному админу.")
     if db_pool is None: raise HTTPException(500, "БД недоступна")
-    sql_dump = f"-- GDZ Parser DB Backup\n-- Дата: {datetime.now().isoformat()}\n\n"
+
+    sql_dump = "-- GDZ Parser DB Backup\n-- Дата: " + datetime.now().isoformat() + "\n\n"
+
+    # 1. СОЗДАНИЕ ТАБЛИЦ (если их нет)
+    sql_dump += """
+-- СОЗДАНИЕ ТАБЛИЦ
+CREATE TABLE IF NOT EXISTS users (
+    id SERIAL PRIMARY KEY, email TEXT UNIQUE NOT NULL, password_hash TEXT NOT NULL, 
+    name TEXT, is_admin BOOLEAN DEFAULT FALSE, created_at TIMESTAMP DEFAULT NOW(),
+    device TEXT, last_seen TIMESTAMP DEFAULT NOW(), theme TEXT DEFAULT 'light',
+    bg_url TEXT, avatar TEXT, admin_bg_url TEXT, admin_btn_color TEXT DEFAULT '#4299e1',
+    admin_theme TEXT DEFAULT 'auto', btn_style TEXT DEFAULT 'light', 
+    is_verified BOOLEAN DEFAULT TRUE, subjects_configured BOOLEAN DEFAULT FALSE,
+    year TEXT DEFAULT '', subject_years TEXT DEFAULT '{}', hide_ai_subjects TEXT DEFAULT '{}'
+);
+CREATE TABLE IF NOT EXISTS blocked_devices (device TEXT PRIMARY KEY, blocked_at TIMESTAMP DEFAULT NOW());
+CREATE TABLE IF NOT EXISTS subjects (
+    id SERIAL PRIMARY KEY, name TEXT UNIQUE NOT NULL, url TEXT DEFAULT '', 
+    type TEXT DEFAULT 'numbers', group_name TEXT DEFAULT '', sort_order INTEGER DEFAULT 0, 
+    created_at TIMESTAMP DEFAULT NOW(), max_number INTEGER DEFAULT 0, note TEXT DEFAULT '', 
+    user_id INTEGER REFERENCES users(id) ON DELETE CASCADE, default_year TEXT DEFAULT '', 
+    default_year_alt TEXT DEFAULT '', url_alt TEXT DEFAULT ''
+);
+CREATE TABLE IF NOT EXISTS user_subjects (
+    user_id INTEGER REFERENCES users(id) ON DELETE CASCADE, 
+    subject_id INTEGER REFERENCES subjects(id) ON DELETE CASCADE, PRIMARY KEY (user_id, subject_id)
+);
+CREATE TABLE IF NOT EXISTS user_schedule (
+    user_id INTEGER REFERENCES users(id) ON DELETE CASCADE, day_of_week INTEGER NOT NULL, 
+    subject_id INTEGER REFERENCES subjects(id) ON DELETE CASCADE, PRIMARY KEY (user_id, day_of_week, subject_id)
+);
+CREATE TABLE IF NOT EXISTS sessions (token TEXT PRIMARY KEY, user_id INTEGER REFERENCES users(id) ON DELETE CASCADE, created_at TIMESTAMP DEFAULT NOW());
+CREATE TABLE IF NOT EXISTS history (id SERIAL PRIMARY KEY, user_id INTEGER REFERENCES users(id) ON DELETE CASCADE, subject TEXT, numbers TEXT, created_at TIMESTAMP DEFAULT NOW());
+CREATE TABLE IF NOT EXISTS feedback (id SERIAL PRIMARY KEY, date TEXT, message TEXT, contact TEXT, version TEXT, image TEXT);
+CREATE TABLE IF NOT EXISTS logs (id SERIAL PRIMARY KEY, user_id INTEGER, action TEXT, details TEXT, ip TEXT, created_at TIMESTAMP DEFAULT NOW());
+CREATE TABLE IF NOT EXISTS templates (name TEXT PRIMARY KEY, content TEXT NOT NULL, updated_at TIMESTAMP DEFAULT NOW());
+CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT, updated_at TIMESTAMP DEFAULT NOW());
+
+-- Отключаем проверку внешних ключей на время вставки, чтобы не было конфликтов порядка
+SET session_replication_role = 'replica';
+
+"""
+
+    # 2. ВСТАВКА ДАННЫХ
     async with db_pool.acquire() as conn:
-        tables = ['users', 'sessions', 'subjects', 'user_subjects', 'user_schedule', 'settings', 'templates', 'history',
-                  'feedback', 'blocked_devices', 'logs']
+        tables = ['users', 'subjects', 'user_subjects', 'user_schedule', 'sessions', 'history', 'feedback',
+                  'blocked_devices', 'templates', 'settings', 'logs']
+
         for table in tables:
             sql_dump += f"-- Данные таблицы {table}\n"
             try:
                 rows = await conn.fetch(f"SELECT * FROM {table}")
                 for row in rows:
-                    row_dict = dict(row);
-                    cols = ", ".join(row_dict.keys());
+                    row_dict = dict(row)
+                    cols = ", ".join(row_dict.keys())
                     vals = []
                     for v in row_dict.values():
                         if v is None:
@@ -839,11 +883,23 @@ async def admin_export_db(data: dict):
                         elif isinstance(v, datetime):
                             vals.append(f"'{v.isoformat()}'")
                         else:
-                            vals.append(f"'{str(v).replace(chr(39), chr(39) * 2)}'")
-                    sql_dump += f"INSERT INTO {table} ({cols}) VALUES ({', '.join(vals)});\n"
+                            # Экранируем одинарные кавычки для SQL
+                            vals.append("'" + str(v).replace("'", "''") + "'")
+
+                    if table == 'settings':
+                        sql_dump += f"INSERT INTO {table} ({cols}) VALUES ({', '.join(vals)}) ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value;\n"
+                    elif table == 'subjects':
+                        sql_dump += f"INSERT INTO {table} ({cols}) VALUES ({', '.join(vals)}) ON CONFLICT (name) DO UPDATE SET url = EXCLUDED.url, url_alt = EXCLUDED.url_alt, max_number = EXCLUDED.max_number;\n"
+                    elif table == 'users':
+                        sql_dump += f"INSERT INTO {table} ({cols}) VALUES ({', '.join(vals)}) ON CONFLICT (email) DO UPDATE SET password_hash = EXCLUDED.password_hash, name = EXCLUDED.name, is_admin = EXCLUDED.is_admin;\n"
+                    else:
+                        sql_dump += f"INSERT INTO {table} ({cols}) VALUES ({', '.join(vals)}) ON CONFLICT DO NOTHING;\n"
             except Exception as e:
-                sql_dump += f"-- Ошибка {table}: {e}\n"
+                sql_dump += f"-- Ошибка при чтении {table}: {e}\n"
             sql_dump += "\n"
+
+        sql_dump += "\nSET session_replication_role = 'origin';\n"
+
     return Response(content=sql_dump.encode('utf-8'), media_type="application/sql",
                     headers={"Content-Disposition": "attachment; filename=gdz_backup.sql"})
 
