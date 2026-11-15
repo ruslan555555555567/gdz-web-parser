@@ -122,36 +122,28 @@
         .offline-banner { display: none; background: linear-gradient(135deg, #e53e3e, #c53030); color: white; padding: 10px 16px; border-radius: 12px; margin-bottom: 16px; font-weight: 700; font-size: 14px; box-shadow: 0 4px 15px rgba(229,62,62,0.3); align-items: center; gap: 10px; }
         .offline-banner.show { display: flex; animation: fadeInAnn 0.4s ease-out; }
         .offline-banner-icon { font-size: 20px; }
-        /* ИСТОРИЯ — вкладки и пачки */
         .history-tabs { display: flex; gap: 6px; background: #f7fafc; padding: 4px; border-radius: 10px; margin-bottom: 15px; }
         .theme-dark .history-tabs { background: rgba(15,23,42,0.5); }
         .history-tab { flex: 1; padding: 10px 12px; border: none; background: transparent; border-radius: 8px; font-weight: 700; font-size: 13px; color: #718096; cursor: pointer; transition: all 0.2s; font-family: inherit; }
         .history-tab.active { background: white; color: #2d3748; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
         .theme-dark .history-tab { color: #94a3b8; }
         .theme-dark .history-tab.active { background: #1e293b; color: #f7fafc; }
-        .pkg-row { background: #f7fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 14px; margin-bottom: 8px; cursor: pointer; transition: all 0.2s; display: flex; justify-content: space-between; align-items: center; gap: 10px; }
-        .pkg-row:hover { background: #edf2f7; border-color: #4299e1; transform: translateX(2px); }
+        .pkg-row { background: #f7fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 12px 14px; margin-bottom: 8px; transition: all 0.2s; display: flex; align-items: center; gap: 10px; }
+        .pkg-row:hover { background: #edf2f7; border-color: #cbd5e0; }
+        .theme-dark .pkg-row { background: rgba(15,23,42,0.5); border-color: #334155; }
+        .theme-dark .pkg-row:hover { background: rgba(30,41,59,0.8); border-color: #475569; }
+        .pkg-row-body { flex: 1; cursor: pointer; min-width: 0; }
         .pkg-row-date { font-size: 11px; color: #94a3b8; margin-bottom: 2px; }
         .pkg-row-title { font-weight: 800; font-size: 15px; color: #2d3748; margin-bottom: 2px; }
         .pkg-row-subj { font-size: 12px; color: #718096; }
-        .pkg-row-arrow { font-size: 20px; color: #4299e1; font-weight: 800; }
-        .theme-dark .pkg-row { background: rgba(15,23,42,0.5); border-color: #334155; }
-        .theme-dark .pkg-row:hover { background: rgba(30,41,59,0.8); border-color: #4299e1; }
+        .pkg-row-arrow { font-size: 18px; color: #4299e1; font-weight: 800; padding: 0 4px; }
+        .pkg-del-btn { background: rgba(229,62,62,0.1); border: 1px solid #fc8181; color: #e53e3e; font-size: 16px; padding: 6px 10px; border-radius: 8px; cursor: pointer; transition: all 0.2s; flex-shrink: 0; }
+        .pkg-del-btn:hover { background: rgba(229,62,62,0.25); transform: scale(1.05); }
         .theme-dark .pkg-row-title { color: #f7fafc; }
         .theme-dark .pkg-row-subj { color: #94a3b8; }
         .offline-empty { text-align: center; padding: 30px 20px; color: #94a3b8; font-size: 14px; }
         .pkg-item-card { margin-bottom: 20px; padding-bottom: 20px; border-bottom: 1px solid #e2e8f0; }
         .theme-dark .pkg-item-card { border-bottom-color: #334155; }
-        .history-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; background: #f7fafc; border: 1px solid #e2e8f0; border-radius: 8px; margin-bottom: 6px; cursor: pointer; transition: all 0.2s; }
-        .history-row:hover { background: #edf2f7; border-color: #cbd5e0; }
-        .history-info { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; }
-        .history-info strong { font-size: 14px; color: #2d3748; font-weight: 800; }
-        .history-info span { font-size: 12px; color: #718096; word-break: break-word; }
-        .history-date { font-size: 11px; color: #94a3b8; white-space: nowrap; margin-left: 10px; }
-        .theme-dark .history-info strong { color: #f7fafc; }
-        .theme-dark .history-info span { color: #94a3b8; }
-        .theme-dark .history-row { background: rgba(15,23,42,0.5); border-color: #334155; }
-        .theme-dark .history-row:hover { background: rgba(30,41,59,0.8); }
         @keyframes fadeInAnn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
         .welcome-greeting { text-align: center; font-size: 24px; font-weight: 800; margin-bottom: 20px; margin-top: 10px; color: #2d3748; opacity: 0; transform: translateY(-20px); animation: slideDownFade 0.8s cubic-bezier(0.25, 0.8, 0.25, 1) forwards; }
         .theme-dark .welcome-greeting { color: #e2e8f0; }
@@ -273,7 +265,6 @@
         <div id="result" class="result"></div>
         <footer class="footer"><span>GDZ Парсер · v{{ version }}</span></footer>
     </div>
-    <!-- ИСТОРИЯ (объединённая: офлайн + онлайн) -->
     <div id="historyModal" class="modal hidden">
         <div class="modal-content" style="max-width: 600px;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
@@ -282,23 +273,23 @@
             </div>
             <div id="historyTabs" class="history-tabs">
                 <button class="history-tab active" data-htab="offline">📡 Офлайн <span id="historyPkgCount" style="font-size:11px; opacity:0.7;"></span></button>
-                <button class="history-tab" data-htab="online">☁️ Онлайн</button>
+                <button class="history-tab" data-htab="online">☁️ Онлайн <span id="historyOnlineCount" style="font-size:11px; opacity:0.7;"></span></button>
             </div>
             <div id="historyListView">
                 <div id="offlineTabContent">
-                    <p class="hint" style="font-size: 12px; margin-bottom: 12px;">📦 Каждая запись — это весь один запуск «Решить» (все задачи вместе). Храним последние 30 пачек.</p>
+                    <p class="hint" style="font-size: 12px; margin-bottom: 12px;">📦 Каждая запись — весь один запуск «Решить». Храним последние 30 пачек.</p>
                     <div id="offlinePackageList"></div>
                 </div>
                 <div id="onlineTabContent" style="display:none;">
-                    <p class="hint" style="font-size: 12px; margin-bottom: 12px;">☁️ Последние поиски с сервера (что искал, когда). Решения не хранятся.</p>
-                    <div id="onlineHistoryList"></div>
+                    <p class="hint" style="font-size: 12px; margin-bottom: 12px;">☁️ Твои пачки с сервера. Хранятся 30 штук.</p>
+                    <div id="onlinePackageList"></div>
                 </div>
             </div>
             <div id="historyPkgView" style="display:none;">
                 <div id="historyPkgContent"></div>
             </div>
             <div class="modal-actions" style="margin-top: 20px; justify-content: space-between;">
-                <button type="button" id="clearOfflineBtn" class="btn-danger" style="font-size:13px; padding:8px 14px;">🗑 Очистить офлайн</button>
+                <button type="button" id="clearAllBtn" class="btn-danger" style="font-size:13px; padding:8px 14px;">🗑 Очистить</button>
                 <button type="button" id="closeHistoryBtn" class="btn-primary" style="width:auto;">Закрыть</button>
             </div>
         </div>
@@ -367,6 +358,8 @@
         let isStealthMode = false;
         let currentHistoryTab = 'offline';
         let currentPackageId = null;
+        let currentPackageSource = 'offline';
+        let onlinePackagesCache = [];
         const HISTORY_PKG_KEY = 'gdz_history_packages';
         const HISTORY_PKG_MAX = 30;
         const $ = id => document.getElementById(id);
@@ -374,10 +367,25 @@
         const btn = $('btn'), result = $('result'), clearBtn = $('clearBtn');
         const settingsModal = $('settingsModal'), subjectSettingsModal = $('subjectSettingsModal'), supportModal = $('supportModal'), imageModal = $('imageModal'), imageModalImg = $('imageModalImg'), topbarRight = $('topbarRight'), subjectsContainer = $('subjectsContainer'), allTextTasks = $('allTextTasks'), textHint = $('textHint');
 
-        // ===== ИСТОРИЯ (пачки) =====
         function plural(n, one, few, many) { const m10 = n % 10, m100 = n % 100; if (m10 === 1 && m100 !== 11) return one; if (m10 >= 2 && m10 <= 4 && (m100 < 10 || m100 >= 20)) return few; return many; }
-        function getHistoryPackages() { try { return JSON.parse(localStorage.getItem(HISTORY_PKG_KEY) || '[]'); } catch (e) { return []; } }
-        function saveHistoryPackage(results) {
+
+        // ===== ОФЛАЙН-ПАЧКИ (localStorage) =====
+        function getOfflinePackages() { try { return JSON.parse(localStorage.getItem(HISTORY_PKG_KEY) || '[]'); } catch (e) { return []; } }
+        function saveOfflinePackage(pkg) {
+            let pkgs = getOfflinePackages();
+            pkgs.unshift(pkg);
+            if (pkgs.length > HISTORY_PKG_MAX) pkgs = pkgs.slice(0, HISTORY_PKG_MAX);
+            try { localStorage.setItem(HISTORY_PKG_KEY, JSON.stringify(pkgs)); }
+            catch (e) {
+                pkgs = pkgs.slice(0, 10);
+                try { localStorage.setItem(HISTORY_PKG_KEY, JSON.stringify(pkgs)); } catch (e2) { console.error(e2); }
+            }
+            updateHistoryBadge();
+        }
+        function updateHistoryBadge() { const b = $('historyCountBadge'); if (!b) return; const pkgs = getOfflinePackages(); if (pkgs.length === 0) b.style.display = 'none'; else { b.style.display = 'inline-block'; b.textContent = pkgs.length; } }
+
+        // Собираем items из results для одной пачки
+        function buildPackageItems(results) {
             const items = [];
             results.forEach(r => {
                 if (!r.found || !r.solutions || !r.solutions.length) return;
@@ -394,23 +402,29 @@
                     rawText: r.raw_text || ''
                 });
             });
+            return items;
+        }
+
+        // Сохраняем пачку в localStorage + на сервер
+        async function savePackageBoth(results) {
+            const items = buildPackageItems(results);
             if (items.length === 0) return;
-            let pkgs = getHistoryPackages();
-            const pkg = {
-                id: Date.now() + '_' + Math.random().toString(36).slice(2, 8),
-                ts: Date.now(),
-                items: items
-            };
-            pkgs.unshift(pkg);
-            if (pkgs.length > HISTORY_PKG_MAX) pkgs = pkgs.slice(0, HISTORY_PKG_MAX);
-            try { localStorage.setItem(HISTORY_PKG_KEY, JSON.stringify(pkgs)); updateHistoryBadge(); }
-            catch (e) {
-                console.warn('storage full, trimming', e);
-                pkgs = pkgs.slice(0, 10);
-                try { localStorage.setItem(HISTORY_PKG_KEY, JSON.stringify(pkgs)); updateHistoryBadge(); } catch (e2) { console.error('cannot save', e2); }
+            const ts = Date.now();
+            // локально
+            saveOfflinePackage({ id: 'local_' + ts, ts: ts, items: items });
+            // на сервер (если залогинен)
+            if (authToken) {
+                try {
+                    await fetch('/api/history/save-package', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({ token: authToken, items: items })
+                    });
+                } catch (e) { console.warn('save-package fail', e); }
             }
         }
-        function updateHistoryBadge() { const b = $('historyCountBadge'); if (!b) return; const pkgs = getHistoryPackages(); if (pkgs.length === 0) b.style.display = 'none'; else { b.style.display = 'inline-block'; b.textContent = pkgs.length; } }
+
+        // ===== UI ИСТОРИИ =====
         function openHistoryModal(tab = 'offline') {
             $('historyModal').classList.remove('hidden');
             $('historyListView').style.display = 'block';
@@ -426,40 +440,78 @@
             $('offlineTabContent').style.display = tab === 'offline' ? 'block' : 'none';
             $('onlineTabContent').style.display = tab === 'online' ? 'block' : 'none';
             if (tab === 'offline') renderOfflinePackages();
-            else loadOnlineHistoryList();
+            else loadOnlinePackages();
+        }
+        function buildPkgRow(pkg, source) {
+            const row = document.createElement('div'); row.className = 'pkg-row';
+            const dt = new Date(pkg.ts_raw || pkg.ts || Date.now());
+            const dateStr = (typeof pkg.ts === 'string' && !pkg.ts_raw) ? pkg.ts : (dt.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit' }) + ' ' + dt.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }));
+            let subjStr = '';
+            if (pkg.summary) {
+                subjStr = Object.entries(pkg.summary).map(([s, n]) => n > 1 ? `${s} ×${n}` : s).join(' · ');
+            } else if (pkg.items) {
+                const sc = {}; pkg.items.forEach(it => { sc[it.subject] = (sc[it.subject] || 0) + 1; });
+                subjStr = Object.entries(sc).map(([s, n]) => n > 1 ? `${s} ×${n}` : s).join(' · ');
+            }
+            const cnt = pkg.count || (pkg.items ? pkg.items.length : 0);
+            const body = document.createElement('div'); body.className = 'pkg-row-body';
+            body.innerHTML = `<div class="pkg-row-date">📅 ${escapeHtml(dateStr)}</div><div class="pkg-row-title">${cnt} ${plural(cnt, 'задание', 'задания', 'заданий')}</div><div class="pkg-row-subj">${escapeHtml(subjStr)}</div>`;
+            body.onclick = () => openPackage(pkg.id, source);
+            row.appendChild(body);
+            const arrow = document.createElement('div'); arrow.className = 'pkg-row-arrow'; arrow.textContent = '→'; row.appendChild(arrow);
+            const del = document.createElement('button'); del.className = 'pkg-del-btn'; del.innerHTML = '🗑'; del.title = 'Удалить пачку';
+            del.onclick = (e) => { e.stopPropagation(); deletePackage(pkg.id, source); };
+            row.appendChild(del);
+            return row;
         }
         function renderOfflinePackages() {
-            const pkgs = getHistoryPackages();
+            const pkgs = getOfflinePackages();
             $('historyPkgCount').textContent = pkgs.length ? `(${pkgs.length})` : '';
             const list = $('offlinePackageList');
             if (pkgs.length === 0) { list.innerHTML = '<div class="offline-empty">📭 Пока нет сохранённых пачек.<br>Реши любые задачи онлайн — пачка появится здесь.</div>'; return; }
             list.innerHTML = '';
-            pkgs.forEach(pkg => {
-                const row = document.createElement('div'); row.className = 'pkg-row';
-                const dt = new Date(pkg.ts);
-                const dateStr = dt.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit' }) + ' ' + dt.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
-                const sc = {};
-                pkg.items.forEach(it => { sc[it.subject] = (sc[it.subject] || 0) + 1; });
-                const subjStr = Object.entries(sc).map(([s, n]) => n > 1 ? `${s} ×${n}` : s).join(' · ');
-                row.innerHTML = `<div><div class="pkg-row-date">📅 ${dateStr}</div><div class="pkg-row-title">${pkg.items.length} ${plural(pkg.items.length, 'задание', 'задания', 'заданий')}</div><div class="pkg-row-subj">${escapeHtml(subjStr)}</div></div><div class="pkg-row-arrow">→</div>`;
-                row.onclick = () => openPackage(pkg.id);
-                list.appendChild(row);
-            });
+            pkgs.forEach(pkg => list.appendChild(buildPkgRow(pkg, 'offline')));
         }
-        function openPackage(pkgId) {
-            const pkg = getHistoryPackages().find(p => p.id === pkgId);
-            if (!pkg) return;
+        async function loadOnlinePackages() {
+            const list = $('onlinePackageList');
+            if (!authToken) { list.innerHTML = '<p class="empty">Войди в аккаунт, чтобы видеть серверную историю</p>'; $('historyOnlineCount').textContent = ''; return; }
+            list.innerHTML = '<p class="empty">Загрузка...</p>';
+            try {
+                const r = await fetch('/api/history/packages?token=' + encodeURIComponent(authToken));
+                const d = await r.json();
+                if (!r.ok) throw new Error(d.detail || 'Ошибка');
+                onlinePackagesCache = d.packages || [];
+                $('historyOnlineCount').textContent = onlinePackagesCache.length ? `(${onlinePackagesCache.length})` : '';
+                if (onlinePackagesCache.length === 0) { list.innerHTML = '<div class="offline-empty">☁️ На сервере пока нет пачек.<br>Реши задачи — они появятся здесь.</div>'; return; }
+                list.innerHTML = '';
+                onlinePackagesCache.forEach(pkg => list.appendChild(buildPkgRow(pkg, 'online')));
+            } catch (e) { list.innerHTML = '<p class="empty">Ошибка: ' + e.message + '</p>'; }
+        }
+        async function openPackage(pkgId, source) {
             currentPackageId = pkgId;
+            currentPackageSource = source;
+            let pkg = null;
+            if (source === 'offline') { pkg = getOfflinePackages().find(p => p.id === pkgId); }
+            else {
+                try {
+                    const r = await fetch('/api/history/package/' + pkgId + '?token=' + encodeURIComponent(authToken));
+                    const d = await r.json();
+                    if (!r.ok) throw new Error(d.detail || 'Ошибка');
+                    pkg = { id: d.id, ts: d.ts, items: d.items };
+                } catch (e) { showToast('Не удалось загрузить: ' + e.message, 'error'); return; }
+            }
+            if (!pkg) return;
             $('historyListView').style.display = 'none';
             $('historyTabs').style.display = 'none';
             $('historyPkgView').style.display = 'block';
             $('historyBackBtn').style.display = 'inline-block';
             const content = $('historyPkgContent'); content.innerHTML = '';
-            const dt = new Date(pkg.ts);
-            const dateStr = dt.toLocaleDateString('ru-RU') + ' ' + dt.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+            let dateStr = '';
+            if (typeof pkg.ts === 'string') dateStr = pkg.ts;
+            else if (pkg.ts) { const dt = new Date(pkg.ts); dateStr = dt.toLocaleDateString('ru-RU') + ' ' + dt.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }); }
             const head = document.createElement('div');
             head.style.cssText = 'padding: 10px 14px; background: rgba(66,153,225,0.1); border-radius: 8px; margin-bottom: 15px; font-weight: 700; font-size: 14px; color: #2b6cb0;';
-            head.textContent = `📅 ${dateStr} · ${pkg.items.length} ${plural(pkg.items.length, 'задание', 'задания', 'заданий')}`;
+            head.textContent = `📅 ${dateStr} · ${pkg.items.length} ${plural(pkg.items.length, 'задание', 'задания', 'заданий')} · ${source === 'offline' ? '📡 офлайн' : '☁️ с сервера'}`;
             content.appendChild(head);
             pkg.items.forEach(item => {
                 const card = document.createElement('div'); card.className = 'pkg-item-card';
@@ -492,37 +544,57 @@
             $('historyBackBtn').style.display = 'none';
             $('historyTabs').style.display = 'flex';
             currentPackageId = null;
+            currentPackageSource = 'offline';
+            if (currentHistoryTab === 'offline') renderOfflinePackages();
+            else loadOnlinePackages();
         }
-        async function loadOnlineHistoryList() {
-            const list = $('onlineHistoryList');
-            if (!authToken) { list.innerHTML = '<p class="empty">Войди в аккаунт, чтобы видеть историю</p>'; return; }
-            list.innerHTML = '<p class="empty">Загрузка...</p>';
-            try {
-                const r = await fetch('/api/history/list?token=' + encodeURIComponent(authToken));
-                const d = await r.json();
-                if (!r.ok) throw new Error(d.detail || 'Ошибка');
-                if (!d.items.length) { list.innerHTML = '<p class="empty">История пуста</p>'; return; }
-                list.innerHTML = '';
-                d.items.forEach(it => {
-                    const row = document.createElement('div'); row.className = 'history-row';
-                    row.innerHTML = `<div class="history-info"><strong>${escapeHtml(it.subject)}</strong><span>${escapeHtml(it.numbers)}</span></div><span class="history-date">${escapeHtml(it.created)}</span>`;
-                    row.onclick = () => { allTextTasks.value = `${it.subject}: ${it.numbers}`; $('historyModal').classList.add('hidden'); };
-                    list.appendChild(row);
-                });
-            } catch (e) { list.innerHTML = '<p class="empty">Ошибка: ' + e.message + '</p>'; }
+        async function deletePackage(pkgId, source) {
+            if (!confirm('Удалить эту пачку решений?')) return;
+            if (source === 'offline') {
+                let pkgs = getOfflinePackages();
+                pkgs = pkgs.filter(p => p.id !== pkgId);
+                try { localStorage.setItem(HISTORY_PKG_KEY, JSON.stringify(pkgs)); } catch (e) {}
+                updateHistoryBadge();
+                renderOfflinePackages();
+            } else {
+                try {
+                    const r = await fetch('/api/history/delete-package/' + pkgId, {
+                        method: 'POST', headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({ token: authToken })
+                    });
+                    if (!r.ok) throw new Error('Ошибка удаления');
+                    loadOnlinePackages();
+                } catch (e) { showToast('Ошибка: ' + e.message, 'error'); }
+            }
         }
         document.getElementById('historyBtn').onclick = () => openHistoryModal('offline');
         document.getElementById('closeHistoryBtn').onclick = () => $('historyModal').classList.add('hidden');
         document.getElementById('historyBackBtn').onclick = backToHistoryList;
         document.getElementById('historyModal').onclick = (e) => { if (e.target.id === 'historyModal') $('historyModal').classList.add('hidden'); };
-        document.getElementById('clearOfflineBtn').onclick = () => {
-            if (!confirm('Удалить все сохранённые пачки решений?')) return;
-            localStorage.removeItem(HISTORY_PKG_KEY);
-            updateHistoryBadge();
-            if (currentHistoryTab === 'offline') renderOfflinePackages();
-            if (currentPackageId) backToHistoryList();
-        };
         document.querySelectorAll('.history-tab').forEach(t => t.onclick = () => switchHistoryTab(t.dataset.htab));
+
+        // Кнопка "Очистить" — работает для текущей вкладки
+        document.getElementById('clearAllBtn').onclick = async () => {
+            if (currentHistoryTab === 'offline') {
+                if (!confirm('Удалить ВСЕ офлайн-пачки с этого устройства?')) return;
+                localStorage.removeItem(HISTORY_PKG_KEY);
+                updateHistoryBadge();
+                renderOfflinePackages();
+                showToast('Офлайн-история очищена', 'success');
+            } else {
+                if (!authToken) { showToast('Войди в аккаунт', 'error'); return; }
+                if (!confirm('Удалить ВСЕ пачки с сервера? Это действие нельзя отменить.')) return;
+                try {
+                    const r = await fetch('/api/history/clear-all', {
+                        method: 'POST', headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({ token: authToken })
+                    });
+                    if (!r.ok) throw new Error('Ошибка');
+                    loadOnlinePackages();
+                    showToast('Серверная история очищена', 'success');
+                } catch (e) { showToast('Ошибка: ' + e.message, 'error'); }
+            }
+        };
 
         function updateOnlineStatus() { const b = $('offlineBanner'); if (!b) return; if (navigator.onLine) b.classList.remove('show'); else b.classList.add('show'); }
         window.addEventListener('online', updateOnlineStatus);
@@ -584,8 +656,8 @@
                 if (data.total === 0) { showToast('Ничего не найдено', 'error'); btn.disabled = false; btnText.innerHTML = '🚀 Решить'; return; }
                 showToast(`Обработано ${data.total} заданий`, 'success');
                 if (authToken) { for (const j of jobs) { if (!j.numbers) continue; fetch('/api/history/save', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({token: authToken, subject: j.subject, numbers: j.numbers}) }).catch(() => {}); } }
-                // СОХРАНЯЕМ ВСЮ ПАЧКУ ЦЕЛИКОМ (все результаты за один запуск)
-                saveHistoryPackage(data.results);
+                // СОХРАНЯЕМ ПАЧКУ локально + на сервер
+                savePackageBoth(data.results);
                 let imgR = []; let textR = []; let seenT = new Set();
                 data.results.forEach(r => { let isT = r.is_text || r.number === null; if (r.subject === "Текстовые задания") isT = true; if (isT) { const k = r.subject + '|||' + (r.raw_text || '').trim(); if (!seenT.has(k)) { seenT.add(k); textR.push(r); } } else imgR.push(r); });
                 if (imgR.length === 0 && textR.length === 0) { showToast('Решения не найдены', 'error'); btn.disabled = false; btnText.innerHTML = '🚀 Решить'; return; }

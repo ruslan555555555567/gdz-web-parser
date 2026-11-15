@@ -1,6 +1,7 @@
 import os
 import hashlib
 import secrets
+import json as _json
 from datetime import datetime, timedelta
 from io import BytesIO
 from typing import List
@@ -15,7 +16,7 @@ import asyncio
 import asyncpg
 from parser import parse_tasks
 
-VERSION = "166.0.0"
+VERSION = "167.0.0"
 ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "")
 ADMIN_EMAIL = os.getenv("ADMIN_EMAIL", "admin@gdz.ru").lower().strip()
 DATABASE_URL = os.getenv("DATABASE_URL")
@@ -136,6 +137,8 @@ async def init_db():
             await conn.execute(
                 "CREATE TABLE IF NOT EXISTS announcements (id SERIAL PRIMARY KEY, message TEXT NOT NULL, target_type TEXT DEFAULT 'all', target_users TEXT DEFAULT '', created_at TIMESTAMP DEFAULT NOW(), expires_at TIMESTAMP)")
             await conn.execute("ALTER TABLE announcements ADD COLUMN IF NOT EXISTS expires_at TIMESTAMP")
+            await conn.execute(
+                "CREATE TABLE IF NOT EXISTS history_packages (id SERIAL PRIMARY KEY, user_id INTEGER REFERENCES users(id) ON DELETE CASCADE, ts TIMESTAMP DEFAULT NOW(), items TEXT NOT NULL)")
 
             count = await conn.fetchval("SELECT COUNT(*) FROM subjects WHERE user_id IS NULL")
             if count == 0:
@@ -290,6 +293,11 @@ class ScheduleSaveRequest(BaseModel): token: str; schedule: dict
 
 class AnnouncementSend(
     BaseModel): token: str; message: str; target_type: str; target_users: str = ""; duration_days: int = 3
+
+
+class SavePackageRequest(BaseModel):
+    token: str
+    items: list = []
 
 
 @app.on_event("startup")
@@ -699,6 +707,79 @@ async def history_clear(req: TokenRequest):
     return {"ok": True}
 
 
+@app.post("/api/history/save-package")
+async def save_history_package(req: SavePackageRequest):
+    user = await get_user_by_token(req.token)
+    if not user or db_pool is None: raise HTTPException(401, "Не авторизован")
+    if not req.items: return {"ok": False}
+    items_json = _json.dumps(req.items, ensure_ascii=False)
+    async with db_pool.acquire() as conn:
+        new_id = await conn.fetchval(
+            "INSERT INTO history_packages (user_id, items) VALUES ($1, $2) RETURNING id",
+            user["id"], items_json)
+        await conn.execute(
+            "DELETE FROM history_packages WHERE user_id = $1 AND id NOT IN (SELECT id FROM history_packages WHERE user_id = $1 ORDER BY id DESC LIMIT 30)",
+            user["id"])
+    return {"ok": True, "id": new_id}
+
+
+@app.get("/api/history/packages")
+async def list_history_packages(token: str = ""):
+    user = await get_user_by_token(token)
+    if not user: raise HTTPException(401, "Не авторизован")
+    if db_pool is None: return {"packages": []}
+    async with db_pool.acquire() as conn:
+        rows = await conn.fetch(
+            "SELECT id, to_char(ts, 'DD.MM.YYYY HH24:MI') AS ts_str, items FROM history_packages WHERE user_id = $1 ORDER BY id DESC",
+            user["id"])
+    packages = []
+    for r in rows:
+        try: items = _json.loads(r["items"])
+        except Exception: items = []
+        sc = {}
+        for it in items:
+            s = it.get("subject", "?")
+            sc[s] = sc.get(s, 0) + 1
+        packages.append({"id": r["id"], "ts": r["ts_str"], "count": len(items), "summary": sc})
+    return {"packages": packages}
+
+
+@app.get("/api/history/package/{pkg_id}")
+async def get_history_package(pkg_id: int, token: str = ""):
+    user = await get_user_by_token(token)
+    if not user: raise HTTPException(401, "Не авторизован")
+    if db_pool is None: raise HTTPException(500, "БД недоступна")
+    async with db_pool.acquire() as conn:
+        row = await conn.fetchrow(
+            "SELECT id, to_char(ts, 'DD.MM.YYYY HH24:MI') AS ts_str, items FROM history_packages WHERE id = $1 AND user_id = $2",
+            pkg_id, user["id"])
+    if not row: raise HTTPException(404, "Не найдено")
+    try: items = _json.loads(row["items"])
+    except Exception: items = []
+    return {"id": row["id"], "ts": row["ts_str"], "items": items}
+
+
+@app.post("/api/history/delete-package/{pkg_id}")
+async def delete_history_package(pkg_id: int, req: TokenRequest):
+    user = await get_user_by_token(req.token)
+    if not user: raise HTTPException(401, "Не авторизован")
+    if db_pool is not None:
+        async with db_pool.acquire() as conn:
+            await conn.execute("DELETE FROM history_packages WHERE id = $1 AND user_id = $2", pkg_id, user["id"])
+    return {"ok": True}
+
+
+@app.post("/api/history/clear-all")
+async def clear_all_history(req: TokenRequest):
+    user = await get_user_by_token(req.token)
+    if not user: raise HTTPException(401, "Не авторизован")
+    if db_pool is not None:
+        async with db_pool.acquire() as conn:
+            await conn.execute("DELETE FROM history_packages WHERE user_id = $1", user["id"])
+            await conn.execute("DELETE FROM history WHERE user_id = $1", user["id"])
+    return {"ok": True}
+
+
 @app.post("/api/feedback")
 async def feedback(req: FeedbackRequest, request: Request):
     if not req.message.strip(): raise HTTPException(400, "Сообщение пустое")
@@ -862,11 +943,12 @@ CREATE TABLE IF NOT EXISTS templates (name TEXT PRIMARY KEY, content TEXT NOT NU
 CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT, updated_at TIMESTAMP DEFAULT NOW());
 CREATE TABLE IF NOT EXISTS user_achievements (user_id INTEGER REFERENCES users(id) ON DELETE CASCADE, achievement_id TEXT NOT NULL, unlocked_at TIMESTAMP DEFAULT NOW(), PRIMARY KEY (user_id, achievement_id));
 CREATE TABLE IF NOT EXISTS announcements (id SERIAL PRIMARY KEY, message TEXT NOT NULL, target_type TEXT DEFAULT 'all', target_users TEXT DEFAULT '', created_at TIMESTAMP DEFAULT NOW(), expires_at TIMESTAMP);
+CREATE TABLE IF NOT EXISTS history_packages (id SERIAL PRIMARY KEY, user_id INTEGER REFERENCES users(id) ON DELETE CASCADE, ts TIMESTAMP DEFAULT NOW(), items TEXT NOT NULL);
 """
 
     async with db_pool.acquire() as conn:
         tables = ['users', 'blocked_devices', 'subjects', 'user_subjects', 'user_schedule', 'sessions', 'history',
-                  'feedback', 'templates', 'settings', 'logs', 'user_achievements', 'announcements']
+                  'feedback', 'templates', 'settings', 'logs', 'user_achievements', 'announcements', 'history_packages']
         for table in tables:
             sql_dump += f"\n-- Данные таблицы {table}\n"
             try:
@@ -898,7 +980,7 @@ CREATE TABLE IF NOT EXISTS announcements (id SERIAL PRIMARY KEY, message TEXT NO
             except Exception as e:
                 sql_dump += f"-- Ошибка при чтении {table}: {e}\n"
 
-        sql_dump += "\n-- Обновляем счетчики SERIAL\nSELECT setval('users_id_seq', COALESCE((SELECT MAX(id) FROM users), 0) + 1, false);\nSELECT setval('subjects_id_seq', COALESCE((SELECT MAX(id) FROM subjects), 0) + 1, false);\nSELECT setval('history_id_seq', COALESCE((SELECT MAX(id) FROM history), 0) + 1, false);\nSELECT setval('feedback_id_seq', COALESCE((SELECT MAX(id) FROM feedback), 0) + 1, false);\nSELECT setval('logs_id_seq', COALESCE((SELECT MAX(id) FROM logs), 0) + 1, false);\nSELECT setval('announcements_id_seq', COALESCE((SELECT MAX(id) FROM announcements), 0) + 1, false);\n"
+        sql_dump += "\n-- Обновляем счетчики SERIAL\nSELECT setval('users_id_seq', COALESCE((SELECT MAX(id) FROM users), 0) + 1, false);\nSELECT setval('subjects_id_seq', COALESCE((SELECT MAX(id) FROM subjects), 0) + 1, false);\nSELECT setval('history_id_seq', COALESCE((SELECT MAX(id) FROM history), 0) + 1, false);\nSELECT setval('feedback_id_seq', COALESCE((SELECT MAX(id) FROM feedback), 0) + 1, false);\nSELECT setval('logs_id_seq', COALESCE((SELECT MAX(id) FROM logs), 0) + 1, false);\nSELECT setval('announcements_id_seq', COALESCE((SELECT MAX(id) FROM announcements), 0) + 1, false);\nSELECT setval('history_packages_id_seq', COALESCE((SELECT MAX(id) FROM history_packages), 0) + 1, false);\n"
     return Response(content=sql_dump.encode('utf-8'), media_type="application/sql",
                     headers={"Content-Disposition": "attachment; filename=gdz_backup.sql"})
 
