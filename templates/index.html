@@ -402,11 +402,14 @@
         </div>
     </div>
 
-    <!-- МОДАЛКА «СООБЩИТЬ ОБ ОШИБКЕ» -->
     <div id="reportErrorModal" class="modal hidden">
         <div class="modal-content">
             <h3>⚠️ Сообщить об ошибке</h3>
             <p id="reportErrorContext" class="hint" style="margin-bottom: 15px; font-weight: 600;"></p>
+            <div id="reportErrorPreview" style="display:none; margin-bottom:12px; text-align:center;">
+                <img id="reportErrorPreviewImg" style="max-width:100%; max-height:220px; border-radius:8px; border:1px solid #e2e8f0;" src="" alt="">
+                <p class="hint" style="font-size:11px; margin-top:4px;">Это та картинка, на которую жалуешься</p>
+            </div>
             <label class="form-label">Что не так с решением? <span class="required">*</span>
                 <textarea id="reportErrorText" rows="3" placeholder="Например: неверный ответ, опечатка в № 5, не та картинка..."></textarea>
             </label>
@@ -595,11 +598,11 @@
             }
         }
 
-        // ===== КНОПКА «НЕВЕРНОЕ РЕШЕНИЕ» (только картинки и ИИ) =====
-        let reportCtx = { subject: '', task_number: '', type: '' };
+        // ===== КНОПКА «НЕВЕРНОЕ РЕШЕНИЕ» =====
+        let reportCtx = { subject: '', task_number: '', type: '', image: '' };
 
-        window.openReportError = function(subject, taskNumber, type) {
-            reportCtx = { subject: subject || '', task_number: taskNumber || '', type: type || '' };
+        window.openReportError = function(subject, taskNumber, type, imageUrl) {
+            reportCtx = { subject: subject || '', task_number: taskNumber || '', type: type || '', image: imageUrl || '' };
             const ctxEl = document.getElementById('reportErrorContext');
             const parts = [];
             if (subject) parts.push('📚 ' + subject);
@@ -607,18 +610,22 @@
             if (type === 'ai') parts.push('🤖 ИИ-ответ');
             else if (type === 'image') parts.push('🖼 Картинка');
             ctxEl.textContent = parts.join(' · ');
+            const previewWrap = document.getElementById('reportErrorPreview');
+            const previewImg = document.getElementById('reportErrorPreviewImg');
+            if (imageUrl) { previewImg.src = imageUrl; previewWrap.style.display = 'block'; }
+            else { previewImg.src = ''; previewWrap.style.display = 'none'; }
             document.getElementById('reportErrorText').value = '';
             const st = document.getElementById('reportErrorStatus');
             st.textContent = ''; st.className = 'fb-status';
             document.getElementById('reportErrorModal').classList.remove('hidden');
         };
 
-        function createReportButton(subject, taskNumber, type) {
+        function createReportButton(subject, taskNumber, type, imageUrl) {
             const b = document.createElement('button');
             b.type = 'button';
             b.className = 'report-error-btn';
             b.innerHTML = '⚠️ Неверное решение';
-            b.onclick = (e) => { e.stopPropagation(); window.openReportError(subject, taskNumber, type); };
+            b.onclick = (e) => { e.stopPropagation(); window.openReportError(subject, taskNumber, type, imageUrl); };
             return b;
         }
 
@@ -638,14 +645,13 @@
                 const r = await fetch('/api/feedback', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ message: text, contact: '', image: '', subject: reportCtx.subject, task_number: reportCtx.task_number, context_type: reportCtx.type, token: authToken || '' })
+                    body: JSON.stringify({ message: text, contact: '', image: reportCtx.image || '', subject: reportCtx.subject, task_number: reportCtx.task_number, context_type: reportCtx.type, token: authToken || '' })
                 });
                 if (r.ok) { st.textContent = '✅ Спасибо! Отправлено.'; st.className = 'fb-status success'; setTimeout(() => document.getElementById('reportErrorModal').classList.add('hidden'), 1200); }
                 else { st.textContent = '❌ Ошибка отправки. Попробуй позже.'; st.className = 'fb-status error'; }
             } catch (e) { st.textContent = '❌ Сеть недоступна'; st.className = 'fb-status error'; }
         };
 
-        // Авто-добавление кнопки под каждым результатом (ТОЛЬКО картинки и ИИ, БЕЗ текстовых)
         (function initReportButtons() {
             const resultEl = document.getElementById('result');
             if (!resultEl) return;
@@ -662,7 +668,14 @@
                         const numHeader = child.querySelector('.task-number-header');
                         const number = numHeader ? numHeader.textContent.replace(/[^\d]/g, '') : '';
                         const type = hasAI ? 'ai' : 'image';
-                        child.appendChild(createReportButton(subject, number, type));
+                        let imageUrl = '';
+                        if (hasImage) {
+                            const imgEl = child.querySelector('.solution-img');
+                            if (imgEl && imgEl.dataset.originalUrl) {
+                                imageUrl = '/api/image?url=' + encodeURIComponent(imgEl.dataset.originalUrl) + '&w=800';
+                            }
+                        }
+                        child.appendChild(createReportButton(subject, number, type, imageUrl));
                     });
                 });
             });
