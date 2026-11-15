@@ -46,6 +46,42 @@
         html.no-auth #authScreen { display: flex !important; }
         html.no-auth #mainScreen { display: none !important; }
 
+        /* --- ЭКРАН НЕВИДИМКИ --- */
+        #stealthScreen {
+            display: none;
+            position: fixed; inset: 0;
+            background: #ffffff; color: #202122;
+            z-index: 999999; /* Перекрывает вообще всё */
+            overflow-y: auto;
+            font-family: 'Times New Roman', Times, serif !important;
+        }
+        .stealth-content {
+            max-width: 800px; margin: 0 auto; padding: 40px 20px;
+        }
+        .stealth-title {
+            font-size: 32px; font-weight: normal; border-bottom: 1px solid #a2a9b1;
+            padding-bottom: 10px; margin-bottom: 20px; font-family: 'Linux Libertine', 'Georgia', 'Times', serif !important;
+        }
+        .stealth-text {
+            font-size: 16px; line-height: 1.6; margin-bottom: 15px;
+        }
+        .stealth-text a { color: #3366cc; text-decoration: none; }
+        .stealth-img {
+            max-width: 100%; height: auto; border: 1px solid #c8ccd1;
+            background: #f8f9fa; padding: 5px; margin: 15px 0; display: block;
+        }
+        .stealth-caption {
+            font-size: 13px; color: #54595d; text-align: center; margin-top: -10px; margin-bottom: 20px;
+        }
+        .stealth-btn {
+            position: fixed; bottom: 20px; right: 20px;
+            background: rgba(0,0,0,0.05); border: 1px solid #ccc; border-radius: 50%;
+            width: 40px; height: 40px; cursor: pointer; display: flex; align-items: center; justify-content: center;
+            font-size: 20px; opacity: 0.3; transition: opacity 0.2s;
+        }
+        .stealth-btn:hover { opacity: 1; }
+
+        /* --- ОСНОВНЫЕ СТИЛИ --- */
         .topbar {
             position: sticky; top: 10px; z-index: 100; background: rgba(255, 255, 255, 0.85) !important;
             backdrop-filter: blur(16px) !important; -webkit-backdrop-filter: blur(16px) !important;
@@ -74,11 +110,11 @@
         .btn-modern-clear:hover { background: #fff5f5; border-color: #feb2b2; transform: translateY(-2px); }
         .theme-dark .btn-modern-clear { background: rgba(74, 85, 104, 0.5); color: #fc8181; border-color: #4a5568; }
 
-        .theme-toggle-btn {
+        .theme-toggle-btn, .stealth-toggle-btn {
             background: rgba(150, 150, 150, 0.1); border: none; font-size: 18px; width: 36px; height: 36px;
             border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: transform 0.2s; padding: 0;
         }
-        .theme-toggle-btn:hover { background: rgba(150, 150, 150, 0.2); transform: scale(1.05); }
+        .theme-toggle-btn:hover, .stealth-toggle-btn:hover { background: rgba(150, 150, 150, 0.2); transform: scale(1.05); }
 
         .toast-container { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); display: flex; flex-direction: column; gap: 10px; z-index: 10000; pointer-events: none; width: 90%; max-width: 400px; }
         .toast {
@@ -188,7 +224,6 @@
         .ach-title { font-weight: 800; font-size: 14px; }
         .ach-desc { font-size: 11px; color: #94a3b8; line-height: 1.2; }
 
-        /* ─── БАННЕР ОБЪЯВЛЕНИЙ (ТЕПЕРЬ ЧАСТЬ САЙТА) ─── */
         .announcement-banner {
             background: linear-gradient(135deg, #4299e1, #3182ce);
             color: white; padding: 12px 16px; border-radius: 12px;
@@ -207,6 +242,28 @@
     <link rel="stylesheet" href="/static/animations.css?v=2">
 </head>
 <body>
+    <!-- ЭКРАН НЕВИДИМКИ -->
+    <div id="stealthScreen">
+        <div class="stealth-content">
+            <h1 class="stealth-title">Круговорот воды в природе</h1>
+            <div class="stealth-text">
+                <b>Круговорот воды в природе</b> (влагооборот) — процесс циклического перемещения воды в земной биосфере. Состоит из испарения воды, переноса паров воздушными течениями, их конденсации, выпадения осадков и переноса воды в реках и других водоёмах.
+            </div>
+            <img class="stealth-img" src="https://upload.wikimedia.org/wikipedia/commons/thumb/8/8c/Water_cycle_ru.png/800px-Water_cycle_ru.png" alt="Круговорот воды">
+            <div class="stealth-caption">Схема круговорота воды в природе</div>
+            <div class="stealth-text">
+                Вода испаряется с поверхности водоёмов и суши под действием солнечной энергии, поднимается в атмосферу, охлаждается и конденсируется в облака. Затем она возвращается на землю в виде осадков: дождя, снега или града.
+            </div>
+            <div class="stealth-text">
+                Часть выпавших осадков стекает по поверхности в реки и озёра, часть просачивается в почву и пополняет подземные воды. Этот процесс непрерывен и играет ключевую роль в поддержании жизни на Земле.
+            </div>
+            <div class="stealth-text">
+                <i>Материал из Википедии — свободной энциклопедии.</i>
+            </div>
+        </div>
+        <button class="stealth-btn" onclick="toggleStealth()" title="Выйти из режима невидимки">👁</button>
+    </div>
+
     <div id="toastContainer" class="toast-container"></div>
 
     <div class="floating-shapes">
@@ -237,12 +294,13 @@
         <div class="topbar">
             <div style="display: flex; align-items: center; gap: 10px;">
                 <span class="version">v{{ version }}</span>
+                <button id="stealthBtn" class="stealth-toggle-btn" title="Режим невидимки">🥷</button>
                 <button id="themeToggleBtn" class="theme-toggle-btn" title="Сменить тему">🌙</button>
             </div>
             <div class="topbar-right" id="topbarRight"></div>
         </div>
 
-        <!-- БАННЕР ОБЪЯВЛЕНИЙ ТЕПЕРЬ ЗДЕСЬ, ПОД ТОПБАРОМ -->
+        <!-- БАННЕР ОБЪЯВЛЕНИЙ -->
         <div id="globalAnnouncement" class="announcement-banner" style="display:none;">
             <div class="ann-content">
                 <span class="ann-icon">📢</span>
@@ -272,6 +330,7 @@
         <footer class="footer"><span>GDZ Парсер · v{{ version }}</span></footer>
     </div>
 
+    <!-- Модальные окна... -->
     <div id="historyModal" class="modal hidden">
         <div class="modal-content">
             <h3>📜 История поисков</h3>
@@ -348,11 +407,50 @@
         let subjectYears = {};
         let hideAiSubjects = {};
         let activeParts = {};
+        let isStealthMode = false;
 
         const $ = id => document.getElementById(id);
         const authScreen = $('authScreen'), mainScreen = $('mainScreen');
         const btn = $('btn'), result = $('result'), clearBtn = $('clearBtn');
         const historyModal = $('historyModal'), settingsModal = $('settingsModal'), subjectSettingsModal = $('subjectSettingsModal'), supportModal = $('supportModal'), imageModal = $('imageModal'), imageModalImg = $('imageModalImg'), topbarRight = $('topbarRight'), subjectsContainer = $('subjectsContainer'), allTextTasks = $('allTextTasks'), textHint = $('textHint');
+
+        // --- РЕЖИМ НЕВИДИМКИ ---
+        function toggleStealth() {
+            isStealthMode = !isStealthMode;
+            const stealthScreen = $('stealthScreen');
+            const mainScreen = $('mainScreen');
+            const authScreen = $('authScreen');
+
+            if (isStealthMode) {
+                stealthScreen.style.display = 'block';
+                mainScreen.style.display = 'none';
+                authScreen.style.display = 'none';
+                document.title = "Круговорот воды в природе";
+                // Прячем иконку выхода из невидимки, если это не телефон
+                const stealthBtn = document.querySelector('.stealth-btn');
+                if (stealthBtn) stealthBtn.style.display = 'flex';
+            } else {
+                stealthScreen.style.display = 'none';
+                mainScreen.style.display = 'flex';
+                authScreen.style.display = 'none'; // Если авторизован, он и так скрыт
+                document.title = "GDZ Парсер — 7 класс";
+            }
+        }
+
+        // Слушаем Esc
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                toggleStealth();
+            }
+        });
+
+        // Кнопка в топбаре
+        document.addEventListener('DOMContentLoaded', () => {
+            const stealthBtn = $('stealthBtn');
+            if (stealthBtn) {
+                stealthBtn.addEventListener('click', toggleStealth);
+            }
+        });
 
         function showToast(message, type = 'info', duration = 3000) {
             const container = $('toastContainer');
@@ -666,7 +764,7 @@
 
         function openImageModal(src) { imageModalImg.src = src; imageModal.classList.remove('hidden'); document.body.style.overflow = 'hidden'; }
         function closeModal() { imageModal.classList.add('hidden'); imageModalImg.src = ''; document.body.style.overflow = ''; }
-        $('closeImageModal').onclick = closeModal; imageModal.onclick = (e) => { if (e.target === imageModal) closeModal(); }; document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeModal(); });
+        $('closeImageModal').onclick = closeModal; imageModal.onclick = (e) => { if (e.target === imageModal) closeModal(); }; document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !isStealthMode) closeModal(); });
 
         let activeLoads = 0; const MAX_PARALLEL = 3, pendingQueue = [];
         const PLACEHOLDER_RETRIES = 4, RETRY_DELAYS = [500, 1000, 2000, 3000];
