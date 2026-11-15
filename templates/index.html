@@ -492,8 +492,16 @@
             try { await navigator.clipboard.writeText(text); const originalText = btnElement.innerHTML; btnElement.innerHTML = '✅ Скопировано'; btnElement.style.color = '#10b981'; btnElement.style.borderColor = '#10b981'; setTimeout(() => { btnElement.innerHTML = originalText; btnElement.style.color = ''; btnElement.style.borderColor = ''; }, 2000); } catch (err) { showToast('Не удалось скопировать текст', 'error'); }
         }
 
+        // Вспомогательная функция для красивой подписи
+        function getTaskLabel(subject, number) {
+            if (!number) return subject;
+            const isPageBased = /английск|географ/i.test(subject) || (/информатика/i.test(subject) && !/тетрад/i.test(subject));
+            if (isPageBased) return `${subject} · Стр. ${number}`;
+            return `${subject} · №${number}`;
+        }
+
         // Функция для создания File из картинки для отправки
-        async function shareImageFile(imageUrls, filename) {
+        async function shareImageFile(imageUrls, filename, caption) {
             try {
                 let fileToShare;
                 if (imageUrls.length === 1) {
@@ -530,8 +538,8 @@
                 if (navigator.canShare && navigator.canShare({ files: [fileToShare] })) {
                     await navigator.share({
                         files: [fileToShare],
-                        title: 'Решение задания',
-                        text: 'Держи решение!'
+                        title: caption || 'Решение задания',
+                        text: caption || 'Держи решение!'
                     });
                     showToast('Успешно отправлено!', 'success');
                 } else {
@@ -675,8 +683,9 @@
                             const shareBtn = document.createElement('button'); shareBtn.className = 'copy-btn'; shareBtn.innerHTML = '📤 Поделиться'; shareBtn.style.marginBottom = '0';
                             shareBtn.onclick = (e) => {
                                 e.stopPropagation();
-                                if(navigator.share) { navigator.share({ title: 'GDZ Решение', text: aiSolution.text }).catch(()=>{}); }
-                                else { copyTextToClipboard(aiSolution.text, shareBtn); }
+                                const caption = getTaskLabel(subject, r.number);
+                                if(navigator.share) { navigator.share({ title: 'GDZ Решение', text: caption + '\n\n' + aiSolution.text }).catch(()=>{}); }
+                                else { copyTextToClipboard(caption + '\n\n' + aiSolution.text, shareBtn); }
                             };
                             btnRow.appendChild(shareBtn);
 
@@ -698,6 +707,8 @@
                             if (selectedSolution.edition) { const edHeader = document.createElement('div'); edHeader.className = 'edition-header'; edHeader.textContent = selectedSolution.edition; wrapper.appendChild(edHeader); }
                             const isMergedSubject = subject.toLowerCase().includes('англ') || subject.toLowerCase().includes('география (тетрадь)'); const isMultiImageSubject = subject.toLowerCase().includes('контурн');
 
+                            const captionText = getTaskLabel(subject, r.number);
+
                             if (isMergedSubject) {
                                 const imgContainer = document.createElement('div'); imgContainer.className = 'merged-container'; const imgElements = [];
                                 selectedSolution.images.forEach((u) => { const img = document.createElement('img'); img.className = 'solution-img img-loading'; img.alt = 'Загрузка...'; loadImage(img, u); imgContainer.appendChild(img); imgElements.push({ img, url: u }); });
@@ -705,14 +716,14 @@
                                 if (r.raw_text) { const textDiv = document.createElement('div'); textDiv.className = 'task-raw-text'; textDiv.textContent = r.raw_text.replace(new RegExp(r.subject, 'gi'), '').replace(/^[:\-\s]+/, '').trim() || r.numbers || 'Без текста'; wrapper.appendChild(textDiv); }
                                 const controls = document.createElement('div'); controls.style.cssText = 'display: flex; gap: 10px; justify-content: flex-end; flex-wrap: wrap; margin-top: 10px;';
                                 const refreshBtn = document.createElement('button'); refreshBtn.innerHTML = '🔄 Обновить'; refreshBtn.style.cssText = 'padding: 8px 16px; display: flex; align-items: center; gap: 6px; background: rgba(150, 150, 150, 0.15); color: inherit; border: 1px solid rgba(150, 150, 150, 0.3); border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s;'; refreshBtn.onclick = (e) => { e.stopPropagation(); imgElements.forEach(item => { item.img.classList.remove('img-tall', 'img-retrying'); item.img.classList.add('img-loading'); item.img.src = ''; loadImage(item.img, item.url); }); };
-                                const dlBtn = document.createElement('button'); dlBtn.innerHTML = '⬇️ Скачать'; dlBtn.style.cssText = 'padding: 8px 16px; display: flex; align-items: center; gap: 6px; background: #4299e1; color: #ffffff; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s; box-shadow: 0 2px 5px rgba(66, 153, 225, 0.3);'; dlBtn.onclick = async (e) => { e.stopPropagation(); dlBtn.textContent = '⏳ Склеиваем...'; await downloadMergedImage(selectedSolution.images, `GDZ_${r.subject || 'Предмет'}_№${r.number || 1}_merged.jpg`); dlBtn.textContent = '⬇️ Скачать'; fetch('/api/track-download', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({token: authToken}) }).catch(()=>{}); };
+                                const dlBtn = document.createElement('button'); dlBtn.innerHTML = '⬇️ Скачать'; dlBtn.style.cssText = 'padding: 8px 16px; display: flex; align-items: center; gap: 6px; background: #4299e1; color: #ffffff; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s; box-shadow: 0 2px 5px rgba(66, 153, 225, 0.3);'; dlBtn.onclick = async (e) => { e.stopPropagation(); dlBtn.textContent = '⏳ Склеиваем...'; await downloadMergedImage(selectedSolution.images, `GDZ_${subject}_${r.number || 1}_merged.jpg`); dlBtn.textContent = '⬇️ Скачать'; fetch('/api/track-download', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({token: authToken}) }).catch(()=>{}); };
 
                                 const shareBtn = document.createElement('button');
                                 shareBtn.innerHTML = '📤 Поделиться';
                                 shareBtn.style.cssText = 'padding: 8px 16px; display: flex; align-items: center; gap: 6px; background: #48bb78; color: #ffffff; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s; box-shadow: 0 2px 5px rgba(72, 187, 120, 0.3);';
                                 shareBtn.onclick = (e) => {
                                     e.stopPropagation();
-                                    shareImageFile(selectedSolution.images, `GDZ_${r.subject || 'Предмет'}_№${r.number || 1}.jpg`);
+                                    shareImageFile(selectedSolution.images, `GDZ_${subject}_${r.number || 1}.jpg`, captionText);
                                 };
 
                                 controls.appendChild(refreshBtn); controls.appendChild(dlBtn); controls.appendChild(shareBtn); wrapper.appendChild(controls); sec.appendChild(wrapper);
@@ -723,14 +734,14 @@
                                     const img = document.createElement('img'); img.className = 'solution-img img-loading'; img.style.marginTop = '0'; img.alt = 'Загрузка...'; loadImage(img, u); imgWrap.appendChild(img);
                                     const controls = document.createElement('div'); controls.style.cssText = 'display: flex; gap: 10px; justify-content: flex-end; flex-wrap: wrap;';
                                     const refreshBtn = document.createElement('button'); refreshBtn.innerHTML = '🔄 Обновить'; refreshBtn.style.cssText = 'padding: 8px 16px; display: flex; align-items: center; gap: 6px; background: rgba(150, 150, 150, 0.15); color: inherit; border: 1px solid rgba(150, 150, 150, 0.3); border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s;'; refreshBtn.onclick = (e) => { e.stopPropagation(); img.classList.remove('img-tall', 'img-retrying'); img.classList.add('img-loading'); img.src = ''; loadImage(img, u); };
-                                    const dlBtn = document.createElement('button'); dlBtn.innerHTML = '⬇️ Скачать'; dlBtn.style.cssText = 'padding: 8px 16px; display: flex; align-items: center; gap: 6px; background: #4299e1; color: #ffffff; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s; box-shadow: 0 2px 5px rgba(66, 153, 225, 0.3);'; dlBtn.onclick = (e) => { e.stopPropagation(); if (img.src && img.src.includes('/api/image')) { downloadSingleImage(img.src, `GDZ_${r.subject || 'Предмет'}_№${r.number || 1}_${imgIndex + 1}.jpg`); fetch('/api/track-download', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({token: authToken}) }).catch(()=>{}); } else alert('Картинка еще не загрузилась, подождите...'); };
+                                    const dlBtn = document.createElement('button'); dlBtn.innerHTML = '⬇️ Скачать'; dlBtn.style.cssText = 'padding: 8px 16px; display: flex; align-items: center; gap: 6px; background: #4299e1; color: #ffffff; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s; box-shadow: 0 2px 5px rgba(66, 153, 225, 0.3);'; dlBtn.onclick = (e) => { e.stopPropagation(); if (img.src && img.src.includes('/api/image')) { downloadSingleImage(img.src, `GDZ_${subject}_${r.number || 1}_${imgIndex + 1}.jpg`); fetch('/api/track-download', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({token: authToken}) }).catch(()=>{}); } else alert('Картинка еще не загрузилась, подождите...'); };
 
                                     const shareBtn = document.createElement('button');
                                     shareBtn.innerHTML = '📤 Поделиться';
                                     shareBtn.style.cssText = 'padding: 8px 16px; display: flex; align-items: center; gap: 6px; background: #48bb78; color: #ffffff; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s; box-shadow: 0 2px 5px rgba(72, 187, 120, 0.3);';
                                     shareBtn.onclick = (e) => {
                                         e.stopPropagation();
-                                        shareImageFile([u], `GDZ_${r.subject || 'Предмет'}_№${r.number || 1}_${imgIndex + 1}.jpg`);
+                                        shareImageFile([u], `GDZ_${subject}_${r.number || 1}_${imgIndex + 1}.jpg`, captionText);
                                     };
 
                                     controls.appendChild(refreshBtn); controls.appendChild(dlBtn); controls.appendChild(shareBtn); imgWrap.appendChild(controls); wrapper.appendChild(imgWrap);
@@ -766,8 +777,9 @@
 
                             const shareBtn = document.createElement('button'); shareBtn.className = 'copy-btn'; shareBtn.innerHTML = '📤 Поделиться'; shareBtn.style.margin = '0';
                             shareBtn.onclick = () => {
-                                if(navigator.share) { navigator.share({ title: 'GDZ Решение', text: r.raw_text }).catch(()=>{}); }
-                                else { copyTextToClipboard(r.raw_text, shareBtn); }
+                                const caption = getTaskLabel(subject, r.number);
+                                if(navigator.share) { navigator.share({ title: 'GDZ Решение', text: caption + '\n\n' + r.raw_text }).catch(()=>{}); }
+                                else { copyTextToClipboard(caption + '\n\n' + r.raw_text, shareBtn); }
                             };
                             btnRow.appendChild(shareBtn);
 
