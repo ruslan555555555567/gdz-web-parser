@@ -57,9 +57,9 @@
         .btn-modern-clear { background: #edf2f7; color: #e53e3e; border: 2px solid #fed7d7; border-radius: 14px; padding: 15px 20px; font-size: 15px; font-weight: 700; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 6px; white-space: nowrap; }
         .btn-modern-clear:hover { background: #fff5f5; border-color: #feb2b2; transform: translateY(-2px); }
         .theme-dark .btn-modern-clear { background: rgba(74, 85, 104, 0.5); color: #fc8181; border-color: #4a5568; }
-        .theme-toggle-btn, .stealth-toggle-btn, .exam-toggle-btn { background: rgba(150, 150, 150, 0.1); border: none; font-size: 18px; width: 36px; height: 36px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: transform 0.2s; padding: 0; }
-        .theme-toggle-btn:hover, .stealth-toggle-btn:hover, .exam-toggle-btn:hover { background: rgba(150, 150, 150, 0.2); transform: scale(1.05); }
-        .exam-toggle-btn.active { background: rgba(237, 137, 54, 0.3); box-shadow: 0 0 0 2px #ed8936; }
+        .theme-toggle-btn, .stealth-toggle-btn, .offline-toggle-btn { background: rgba(150, 150, 150, 0.1); border: none; font-size: 18px; width: 36px; height: 36px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: transform 0.2s; padding: 0; position: relative; }
+        .theme-toggle-btn:hover, .stealth-toggle-btn:hover, .offline-toggle-btn:hover { background: rgba(150, 150, 150, 0.2); transform: scale(1.05); }
+        .offline-count-badge { position: absolute; top: -2px; right: -4px; background: #ed8936; color: white; font-size: 10px; font-weight: 800; padding: 2px 5px; border-radius: 10px; min-width: 16px; text-align: center; line-height: 12px; }
         .toast-container { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); display: flex; flex-direction: column; gap: 10px; z-index: 10000; pointer-events: none; width: 90%; max-width: 400px; }
         .toast { background: #ffffff; color: #1a202c; padding: 14px 20px; border-radius: 14px; box-shadow: 0 10px 30px rgba(0,0,0,0.15); font-weight: 700; font-size: 15px; display: flex; align-items: center; gap: 10px; animation: toastIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; pointer-events: auto; border-left: 4px solid #4299e1; }
         .toast.error { border-left-color: #e53e3e; }
@@ -86,7 +86,7 @@
         .theme-dark .icon-btn, .theme-dark .support-btn { background: rgba(30,41,59,0.6); border-color: rgba(71,85,105,0.6); color: #e2e8f0; }
         .theme-dark .footer { color: #64748b; }
         .theme-dark .subject-block h2 { color: #63b3ed; }
-        .theme-dark .history-row, .theme-dark .message-card, .theme-dark .user-card { background: rgba(15,23,42,0.5); color: #e2e8f0; }
+        .theme-dark .history-row, .theme-dark .message-card, .theme-dark .user-card, .theme-dark .offline-row { background: rgba(15,23,42,0.5); color: #e2e8f0; }
         .theme-dark .btn-secondary { background: rgba(71,85,105,0.6); color: #e2e8f0; }
         .theme-dark .auth-tabs, .theme-dark .admin-tabs { background: rgba(15,23,42,0.5); }
         .theme-dark .auth-tab, .theme-dark .admin-tab { color: #94a3b8; }
@@ -123,18 +123,26 @@
         .report-error-btn:hover { background: #fff5f5; border-color: #feb2b2; color: #e53e3e; }
         .theme-dark .report-error-btn { background: rgba(30,41,59,0.6); border-color: #475569; color: #94a3b8; }
         .theme-dark .report-error-btn:hover { background: rgba(239,68,68,0.15); border-color: #f87171; color: #fca5a5; }
-        /* РЕЖИМ ЭКЗАМЕНА */
-        .exam-condition-box { background: linear-gradient(135deg, rgba(237, 137, 54, 0.08), rgba(237, 137, 54, 0.03)); border: 2px solid #ed8936; border-radius: 12px; padding: 16px; margin-bottom: 15px; }
-        .theme-dark .exam-condition-box { background: rgba(237, 137, 54, 0.1); border-color: #dd6b20; }
-        .exam-condition-label { font-size: 13px; font-weight: 800; color: #c05621; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
-        .theme-dark .exam-condition-label { color: #fbd38d; }
-        .exam-condition-text { font-size: 16px; line-height: 1.6; color: #1a202c; white-space: pre-wrap; }
-        .theme-dark .exam-condition-text { color: #e2e8f0; }
-        .exam-show-btn { display: inline-flex; align-items: center; gap: 8px; padding: 12px 20px; font-size: 15px; font-weight: 800; border-radius: 12px; border: none; background: linear-gradient(135deg, #48bb78, #38a169); color: white; cursor: pointer; box-shadow: 0 4px 12px rgba(72, 187, 120, 0.4); transition: all 0.2s; margin-top: 8px; }
-        .exam-show-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 18px rgba(72, 187, 120, 0.6); }
-        .exam-hidden-wrap { display: none; }
-        .exam-hidden-wrap.revealed { display: block; animation: fadeInExam 0.4s ease-out; }
-        @keyframes fadeInExam { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+        /* ОФЛАЙН-БАННЕР */
+        .offline-banner { display: none; background: linear-gradient(135deg, #e53e3e, #c53030); color: white; padding: 10px 16px; border-radius: 12px; margin-bottom: 16px; font-weight: 700; font-size: 14px; box-shadow: 0 4px 15px rgba(229,62,62,0.3); align-items: center; gap: 10px; }
+        .offline-banner.show { display: flex; animation: fadeInAnn 0.4s ease-out; }
+        .offline-banner-icon { font-size: 20px; }
+        /* СПИСОК ПОСЛЕДНИХ РЕШЕНИЙ */
+        .offline-row { background: #f7fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 12px 14px; margin-bottom: 8px; cursor: pointer; transition: all 0.2s; display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+        .offline-row:hover { background: #edf2f7; border-color: #cbd5e0; transform: translateX(2px); }
+        .offline-row-info { flex: 1; min-width: 0; }
+        .offline-row-subject { font-weight: 800; font-size: 15px; color: #2d3748; margin-bottom: 2px; }
+        .theme-dark .offline-row-subject { color: #f7fafc; }
+        .offline-row-numbers { font-size: 13px; color: #718096; }
+        .theme-dark .offline-row-numbers { color: #94a3b8; }
+        .offline-row-date { font-size: 11px; color: #94a3b8; white-space: nowrap; }
+        .theme-dark .offline-row-date { color: #64748b; }
+        .offline-empty { text-align: center; padding: 30px 20px; color: #94a3b8; font-size: 14px; }
+        .offline-viewer { margin-top: 16px; padding: 16px; background: #f7fafc; border-radius: 12px; border: 1px solid #e2e8f0; }
+        .theme-dark .offline-viewer { background: rgba(15,23,42,0.5); border-color: #334155; }
+        .offline-viewer img { max-width: 100%; border-radius: 8px; margin-top: 8px; }
+        .offline-cached-note { font-size: 12px; font-weight: 700; color: #ed8936; margin-bottom: 8px; padding: 4px 8px; background: rgba(237,137,54,0.1); border-radius: 6px; display: inline-block; }
+        @keyframes fadeInAnn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
         .welcome-greeting { text-align: center; font-size: 24px; font-weight: 800; margin-bottom: 20px; margin-top: 10px; color: #2d3748; opacity: 0; transform: translateY(-20px); animation: slideDownFade 0.8s cubic-bezier(0.25, 0.8, 0.25, 1) forwards; }
         .theme-dark .welcome-greeting { color: #e2e8f0; }
         .welcome-greeting span { color: #4299e1; }
@@ -176,7 +184,6 @@
         .ach-title { font-weight: 800; font-size: 14px; }
         .ach-desc { font-size: 11px; color: #94a3b8; line-height: 1.2; }
         .announcement-banner { background: linear-gradient(135deg, #4299e1, #3182ce); color: white; padding: 12px 16px; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 15px rgba(0,0,0,0.15); margin-bottom: 20px; animation: fadeInAnn 0.5s forwards cubic-bezier(0.25, 0.8, 0.25, 1); }
-        @keyframes fadeInAnn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
         .ann-content { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 15px; }
         .ann-icon { font-size: 20px; }
         .ann-close { background: rgba(255,255,255,0.2); border: none; color: white; width: 28px; height: 28px; border-radius: 50%; cursor: pointer; font-weight: 900; display: flex; align-items: center; justify-content: center; transition: 0.2s; }
@@ -223,10 +230,14 @@
             <div style="display: flex; align-items: center; gap: 10px;">
                 <span class="version">v{{ version }}</span>
                 <button id="stealthBtn" class="stealth-toggle-btn" title="Режим невидимки">🥷</button>
+                <button id="offlineBtn" class="offline-toggle-btn" title="Последние решения (офлайн)">📜<span id="offlineCountBadge" class="offline-count-badge" style="display:none;">0</span></button>
                 <button id="themeToggleBtn" class="theme-toggle-btn" title="Сменить тему">🌙</button>
-                <button id="examToggleBtn" class="exam-toggle-btn" title="Режим экзамена">🎓</button>
             </div>
             <div class="topbar-right" id="topbarRight"></div>
+        </div>
+        <div id="offlineBanner" class="offline-banner">
+            <span class="offline-banner-icon">📡</span>
+            <span>Вы офлайн. Доступны только сохранённые решения — нажми 📜 в шапке.</span>
         </div>
         <div id="globalAnnouncement" class="announcement-banner" style="display:none;">
             <div class="ann-content"><span class="ann-icon">📢</span><span id="annText"></span></div>
@@ -253,6 +264,7 @@
         <footer class="footer"><span>GDZ Парсер · v{{ version }}</span></footer>
     </div>
     <div id="historyModal" class="modal hidden"><div class="modal-content"><h3>📜 История поисков</h3><div id="historyList"></div><div class="modal-actions"><button id="clearHistoryBtn" class="btn-secondary">🗑 Очистить</button><button id="closeHistoryBtn" class="btn-primary">Закрыть</button></div></div></div>
+    <div id="offlineModal" class="modal hidden"><div class="modal-content" style="max-width: 500px;"><h3>📜 Последние решения (офлайн)</h3><p class="hint" style="margin-bottom: 15px;">10 последних решений сохраняются в памяти телефона. Работают даже без интернета.</p><div id="offlineList"></div><div id="offlineViewer" class="offline-viewer" style="display:none;"></div><div class="modal-actions" style="margin-top: 20px; justify-content:space-between;"><button type="button" id="clearOfflineBtn" class="btn-danger">🗑 Очистить всё</button><button type="button" onclick="document.getElementById('offlineModal').classList.add('hidden')" class="btn-secondary">Закрыть</button></div></div></div>
     <div id="achievementsModal" class="modal hidden"><div class="modal-content" style="max-width: 500px;"><h3>🏆 Ваши достижения</h3><p class="hint" style="margin-bottom: 15px;">Выполняйте задания, чтобы открывать новые бейджи!</p><div id="achievementsList" class="achievements-grid"></div><div class="modal-actions" style="margin-top: 20px;"><button type="button" onclick="document.getElementById('achievementsModal').classList.add('hidden')" class="btn-secondary">Закрыть</button></div></div></div>
     <div id="settingsModal" class="modal hidden">
         <div class="modal-content">
@@ -297,7 +309,7 @@
                 <img id="reportErrorPreviewImg" style="max-width:100%; max-height:220px; border-radius:8px; border:1px solid #e2e8f0;" src="" alt="">
                 <p class="hint" style="font-size:11px; margin-top:4px;">Это та картинка, на которую жалуешься</p>
             </div>
-            <label class="form-label">Что не так с решением? <span class="required">*</span><textarea id="reportErrorText" rows="3" placeholder="Например: неверный ответ, опечатка в № 5, не та картинка..."></textarea></label>
+            <label class="form-label">Что не так с решением? <span class="required">*</span><textarea id="reportErrorText" rows="3" placeholder="Например: неверный ответ, опечатка в № 5..."></textarea></label>
             <div id="reportErrorStatus" class="fb-status"></div>
             <div class="modal-actions"><button type="button" id="reportErrorCancel" class="btn-secondary">Отмена</button><button type="button" id="reportErrorSend" class="btn-primary" style="width:auto;">📨 Отправить</button></div>
         </div>
@@ -315,14 +327,108 @@
         let hideAiSubjects = {};
         let activeParts = {};
         let isStealthMode = false;
-        let examMode = localStorage.getItem('gdz_exam_mode') === '1';
+        const OFFLINE_KEY = 'gdz_offline_results';
+        const OFFLINE_MAX = 10;
         const $ = id => document.getElementById(id);
         const authScreen = $('authScreen'), mainScreen = $('mainScreen');
         const btn = $('btn'), result = $('result'), clearBtn = $('clearBtn');
         const historyModal = $('historyModal'), settingsModal = $('settingsModal'), subjectSettingsModal = $('subjectSettingsModal'), supportModal = $('supportModal'), imageModal = $('imageModal'), imageModalImg = $('imageModalImg'), topbarRight = $('topbarRight'), subjectsContainer = $('subjectsContainer'), allTextTasks = $('allTextTasks'), textHint = $('textHint');
-        function updateExamBtn() { const eb = $('examToggleBtn'); if (!eb) return; eb.classList.toggle('active', examMode); eb.title = examMode ? 'Режим экзамена ВКЛ' : 'Режим экзамена'; }
-        function toggleExamMode() { examMode = !examMode; localStorage.setItem('gdz_exam_mode', examMode ? '1' : '0'); updateExamBtn(); showToast(examMode ? '🎓 Режим экзамена включён' : '👁 Ответы снова видны', 'info'); }
-        document.addEventListener('DOMContentLoaded', () => { const eb = $('examToggleBtn'); if (eb) { eb.addEventListener('click', toggleExamMode); updateExamBtn(); } });
+
+        // ===== ОФЛАЙН: Сохранение и чтение =====
+        function getOfflineResults() { try { return JSON.parse(localStorage.getItem(OFFLINE_KEY) || '[]'); } catch (e) { return []; } }
+        function saveOfflineResult(record) {
+            try {
+                let arr = getOfflineResults();
+                arr = arr.filter(x => !(x.subject === record.subject && x.number === record.number));
+                arr.unshift(record);
+                if (arr.length > OFFLINE_MAX) arr = arr.slice(0, OFFLINE_MAX);
+                localStorage.setItem(OFFLINE_KEY, JSON.stringify(arr));
+                updateOfflineBadge();
+            } catch (e) { console.warn('offline save fail', e); }
+        }
+        function updateOfflineBadge() {
+            const arr = getOfflineResults();
+            const b = $('offlineCountBadge');
+            if (!b) return;
+            if (arr.length === 0) { b.style.display = 'none'; }
+            else { b.style.display = 'inline-block'; b.textContent = arr.length; }
+        }
+        function updateOnlineStatus() {
+            const banner = $('offlineBanner');
+            if (!banner) return;
+            if (navigator.onLine) { banner.classList.remove('show'); }
+            else { banner.classList.add('show'); }
+        }
+        window.addEventListener('online', updateOnlineStatus);
+        window.addEventListener('offline', updateOnlineStatus);
+        document.addEventListener('DOMContentLoaded', updateOnlineStatus);
+
+        function openOfflineModal() {
+            const modal = $('offlineModal');
+            const list = $('offlineList');
+            const viewer = $('offlineViewer');
+            viewer.style.display = 'none';
+            viewer.innerHTML = '';
+            const arr = getOfflineResults();
+            list.innerHTML = '';
+            if (arr.length === 0) {
+                list.innerHTML = '<div class="offline-empty">📭 Пока нет сохранённых решений.<br>Реши любую задачу онлайн — и она появится здесь.</div>';
+            } else {
+                arr.forEach((item, idx) => {
+                    const row = document.createElement('div');
+                    row.className = 'offline-row';
+                    const dt = new Date(item.ts);
+                    const dateStr = dt.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit' }) + ' ' + dt.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+                    row.innerHTML = `<div class="offline-row-info"><div class="offline-row-subject">${escapeHtml(item.subject)}</div><div class="offline-row-numbers">${item.number ? '№ ' + escapeHtml(String(item.number)) : 'Текстовое задание'}</div></div><div class="offline-row-date">${dateStr}</div>`;
+                    row.onclick = () => showOfflineRecord(item);
+                    list.appendChild(row);
+                });
+            }
+            modal.classList.remove('hidden');
+        }
+        function showOfflineRecord(item) {
+            const viewer = $('offlineViewer');
+            viewer.style.display = 'block';
+            viewer.innerHTML = '';
+            const note = document.createElement('div'); note.className = 'offline-cached-note'; note.textContent = '📡 Из кэша' + (navigator.onLine ? '' : ' · офлайн'); viewer.appendChild(note);
+            const title = document.createElement('div'); title.className = 'task-number-header'; title.textContent = `${item.subject}${item.number ? ' · № ' + item.number : ''}`; viewer.appendChild(title);
+            if (item.edition) { const ed = document.createElement('div'); ed.className = 'edition-header'; ed.textContent = item.edition; viewer.appendChild(ed); }
+            if (item.aiText) {
+                const tb = document.createElement('div'); tb.className = 'ai-text-block'; tb.innerHTML = renderMarkdown(item.aiText);
+                if (window.renderMathInElement) renderMathInElement(tb, { delimiters: [{left: '$$', right: '$$', display: true}, {left: '$', right: '$', display: false}, {left: '\\(', right: '\\)', display: false}, {left: '\\[', right: '\\]', display: true}], throwOnError: false });
+                viewer.appendChild(tb);
+            }
+            if (item.rawText && !/^\s*\d+\s*$/.test(item.rawText)) {
+                const rtt = document.createElement('div'); rtt.className = 'task-raw-text'; rtt.textContent = item.rawText; viewer.appendChild(rtt);
+            }
+            if (item.images && item.images.length > 0) {
+                item.images.forEach((u, idx) => {
+                    const img = document.createElement('img');
+                    img.src = '/api/image?url=' + encodeURIComponent(u) + '&w=1000';
+                    img.alt = 'Решение ' + (idx + 1);
+                    img.style.cssText = 'width:100%; cursor:zoom-in;';
+                    img.onclick = () => openImageModal(img.src);
+                    img.onerror = () => {
+                        const warn = document.createElement('div');
+                        warn.className = 'hint';
+                        warn.style.cssText = 'padding:8px; background:rgba(237,137,54,0.1); border-radius:6px; font-size:12px; margin-top:6px;';
+                        warn.textContent = '⚠️ Картинка не сохранилась в кэше. Открой её один раз онлайн — потом будет доступна офлайн.';
+                        img.parentElement.appendChild(warn);
+                    };
+                    viewer.appendChild(img);
+                });
+            }
+            viewer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+        document.getElementById('clearOfflineBtn').onclick = () => {
+            if (!confirm('Удалить все сохранённые решения?')) return;
+            localStorage.removeItem(OFFLINE_KEY);
+            updateOfflineBadge();
+            openOfflineModal();
+        };
+        document.getElementById('offlineBtn').onclick = openOfflineModal;
+        document.getElementById('offlineModal').onclick = (e) => { if (e.target.id === 'offlineModal') document.getElementById('offlineModal').classList.add('hidden'); };
+
         function toggleStealth() { isStealthMode = !isStealthMode; const ss = $('stealthScreen'); if (isStealthMode) { ss.style.display = 'block'; mainScreen.style.display = 'none'; authScreen.style.display = 'none'; document.title = "Круговорот воды в природе"; } else { ss.style.display = 'none'; mainScreen.style.display = 'flex'; authScreen.style.display = 'none'; document.title = "GDZ Парсер — 7 класс"; } }
         document.addEventListener('keydown', (e) => { if (e.key === 'Escape') toggleStealth(); });
         document.addEventListener('DOMContentLoaded', () => { const b = $('stealthBtn'); if (b) b.addEventListener('click', toggleStealth); });
@@ -335,7 +441,7 @@
         function getInitial(name, email) { const n = (name || '').trim(); if (n) return n[0].toUpperCase(); if (email) return email[0].toUpperCase(); return '?'; }
         function setAuthState(hasAuth) { const root = document.documentElement; root.classList.remove('has-auth', 'no-auth'); root.classList.add(hasAuth ? 'has-auth' : 'no-auth'); }
         function parseJson(str) { try { return JSON.parse(str || '{}'); } catch (e) { return {}; } }
-        async function copyTextToClipboard(text, btnElement) { try { await navigator.clipboard.writeText(text); const orig = btnElement.innerHTML; btnElement.innerHTML = '✅ Скопировано'; btnElement.style.color = '#10b981'; btnElement.style.borderColor = '#10b981'; setTimeout(() => { btnElement.innerHTML = orig; btnElement.style.color = ''; btnElement.style.borderColor = ''; }, 2000); } catch (err) { showToast('Не удалось скопировать текст', 'error'); } }
+        async function copyTextToClipboard(text, btnElement) { try { await navigator.clipboard.writeText(text); const orig = btnElement.innerHTML; btnElement.innerHTML = '✅ Скопировано'; btnElement.style.color = '#10b981'; btnElement.style.borderColor = '#10b981'; setTimeout(() => { btnElement.innerHTML = orig; btnElement.style.color = ''; btnElement.style.borderColor = ''; }, 2000); } catch (err) { showToast('Не удалось скопировать', 'error'); } }
         function getTaskLabel(subject, number) { if (!number) return subject; const isPageBased = /английск|географ/i.test(subject) || (/информатика/i.test(subject) && !/тетрад/i.test(subject)); if (isPageBased) return `${subject} · Стр. ${number}`; return `${subject} · №${number}`; }
         function cleanTextForSharing(text) { if (!text) return ''; let c = text; c = c.replace(/\$\$/g, ''); c = c.replace(/\$/g, ''); c = c.replace(/\\begin\{cases\}/g, ''); c = c.replace(/\\end\{cases\}/g, ''); c = c.replace(/\\text\{(.*?)\}/g, '$1'); c = c.replace(/\\\\/g, '\n'); c = c.replace(/&/g, ''); c = c.replace(/\\ge/g, '≥'); c = c.replace(/\\le/g, '≤'); c = c.replace(/\\ne/g, '≠'); c = c.replace(/\\approx/g, '≈'); c = c.replace(/\\times/g, '×'); c = c.replace(/\\div/g, '÷'); c = c.replace(/\\pm/g, '±'); c = c.replace(/\\cdot/g, '·'); c = c.replace(/\\infty/g, '∞'); c = c.replace(/\\pi/g, 'π'); c = c.replace(/\\alpha/g, 'α'); c = c.replace(/\\beta/g, 'β'); c = c.replace(/\\gamma/g, 'γ'); c = c.replace(/\\rightarrow/g, '→'); c = c.replace(/\\Rightarrow/g, '⇒'); c = c.replace(/\\in/g, '∈'); c = c.replace(/\\notin/g, '∉'); c = c.replace(/\\cup/g, '∪'); c = c.replace(/\\cap/g, '∩'); c = c.replace(/\\emptyset/g, '∅'); c = c.replace(/\\sqrt\{(.*?)\}/g, '√($1)'); c = c.replace(/\\frac\{(.*?)\}\{(.*?)\}/g, '($1)/($2)'); c = c.replace(/\\/g, ''); c = c.replace(/\{/g, ''); c = c.replace(/\}/g, ''); c = c.replace(/ +/g, ' '); c = c.replace(/\n{3,}/g, '\n\n'); return c.trim(); }
         async function shareImageFile(imageUrls, filename, caption) { try { let fileToShare; if (imageUrls.length === 1) { const res = await fetch('/api/image?url=' + encodeURIComponent(imageUrls[0]) + '&w=1000'); const blob = await res.blob(); fileToShare = new File([blob], filename, { type: 'image/jpeg' }); } else { const canvas = document.createElement('canvas'); const images = []; let mw = 0, th = 0; for (let url of imageUrls) { const pu = '/api/image?url=' + encodeURIComponent(url) + '&w=2000'; const img = new Image(); img.crossOrigin = "Anonymous"; img.src = pu; await new Promise((res, rej) => { img.onload = res; img.onerror = rej; }); images.push(img); if (img.width > mw) mw = img.width; th += img.height; } canvas.width = mw; canvas.height = th; const ctx = canvas.getContext('2d'); let yo = 0; for (let img of images) { ctx.drawImage(img, 0, yo); yo += img.height; } const blob = await new Promise(r => canvas.toBlob(r, 'image/jpeg', 0.95)); fileToShare = new File([blob], filename, { type: 'image/jpeg' }); } if (navigator.canShare && navigator.canShare({ files: [fileToShare] })) { await navigator.share({ files: [fileToShare], title: caption || 'Решение', text: caption || 'Держи!' }); showToast('Успешно отправлено!', 'success'); } else { showToast('Браузер не поддерживает. Скачиваем...', 'error', 3000); downloadSingleImage(URL.createObjectURL(fileToShare), filename); } } catch (err) { if (err.name !== 'AbortError') { showToast('Ошибка', 'error'); console.error(err); } } }
@@ -347,9 +453,9 @@
         document.getElementById('reportErrorModal').onclick = (e) => { if (e.target.id === 'reportErrorModal') document.getElementById('reportErrorModal').classList.add('hidden'); };
         document.getElementById('reportErrorSend').onclick = async () => { const text = document.getElementById('reportErrorText').value.trim(); const st = document.getElementById('reportErrorStatus'); if (text.length < 3) { st.textContent = '⚠️ Напиши хоть пару слов'; st.className = 'fb-status error'; return; } st.textContent = '⏳ Отправка...'; st.className = 'fb-status loading'; try { const r = await fetch('/api/feedback', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ message: text, contact: '', image: reportCtx.image || '', subject: reportCtx.subject, task_number: reportCtx.task_number, context_type: reportCtx.type, token: authToken || '' }) }); if (r.ok) { st.textContent = '✅ Спасибо!'; st.className = 'fb-status success'; setTimeout(() => document.getElementById('reportErrorModal').classList.add('hidden'), 1200); } else { st.textContent = '❌ Ошибка'; st.className = 'fb-status error'; } } catch (e) { st.textContent = '❌ Сеть'; st.className = 'fb-status error'; } };
         document.addEventListener('DOMContentLoaded', () => { const t = $('themeToggleBtn'); if (t) { const c = localStorage.getItem('gdz_theme') || 'light'; t.textContent = (c === 'dark') ? '☀️' : '🌙'; t.addEventListener('click', async () => { const c = localStorage.getItem('gdz_theme') || 'light'; const n = (c === 'dark') ? 'light' : 'dark'; applyTheme(n); if (authToken) { try { await fetch('/api/auth/update', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ token: authToken, theme: n }) }); } catch (e) {} } }); } });
-        async function init() { if (authToken) { try { const device = getDeviceInfo(); const r = await fetch('/api/auth/me?token=' + encodeURIComponent(authToken) + '&device=' + encodeURIComponent(device) + '&t=' + Date.now()); if (r.ok) { const d = await r.json(); authUser = d.user; currentAvatar = authUser.avatar || null; subjectYears = parseJson(authUser.subject_years); hideAiSubjects = parseJson(authUser.hide_ai_subjects); applyTheme(authUser.theme || 'light'); setAuthState(true); await showMain(); return; } else if (r.status === 403) { const d = await r.json(); authToken = ''; localStorage.removeItem('gdz_token'); setAuthState(false); showAuth(); showToast(d.detail || 'Заблокирован', 'error'); return; } else { authToken = ''; localStorage.removeItem('gdz_token'); } } catch {} } setAuthState(false); showAuth(); }
+        async function init() { updateOfflineBadge(); if (authToken) { try { const device = getDeviceInfo(); const r = await fetch('/api/auth/me?token=' + encodeURIComponent(authToken) + '&device=' + encodeURIComponent(device) + '&t=' + Date.now()); if (r.ok) { const d = await r.json(); authUser = d.user; currentAvatar = authUser.avatar || null; subjectYears = parseJson(authUser.subject_years); hideAiSubjects = parseJson(authUser.hide_ai_subjects); applyTheme(authUser.theme || 'light'); setAuthState(true); await showMain(); return; } else if (r.status === 403) { const d = await r.json(); authToken = ''; localStorage.removeItem('gdz_token'); setAuthState(false); showAuth(); showToast(d.detail || 'Заблокирован', 'error'); return; } else { authToken = ''; localStorage.removeItem('gdz_token'); } } catch {} } setAuthState(false); showAuth(); }
         function showAuth() { setAuthState(false); authScreen.classList.remove('hidden'); mainScreen.classList.add('hidden'); }
-        async function showMain() { setAuthState(true); authScreen.classList.add('hidden'); mainScreen.classList.remove('hidden'); updateGreeting(); renderTopbar(); if (authUser && authUser.is_admin) { $('adminFillBtn').style.display = 'flex'; } else { $('adminFillBtn').style.display = 'none'; } await loadSubjects(); renderSubjects(); checkAnnouncements(); updateExamBtn(); }
+        async function showMain() { setAuthState(true); authScreen.classList.add('hidden'); mainScreen.classList.remove('hidden'); updateGreeting(); renderTopbar(); if (authUser && authUser.is_admin) { $('adminFillBtn').style.display = 'flex'; } else { $('adminFillBtn').style.display = 'none'; } await loadSubjects(); renderSubjects(); checkAnnouncements(); updateOfflineBadge(); updateOnlineStatus(); }
         function updateGreeting() { const h = new Date().getHours(); let g = 'Доброй ночи'; if (h >= 7 && h < 9) g = 'Доброе утро'; else if (h >= 9 && h < 18) g = 'Добрый день'; else if (h >= 18 && h < 23) g = 'Добрый вечер'; const name = authUser.name || authUser.email.split('@')[0]; const el = $('welcomeGreeting'); if (el) { el.innerHTML = `${g}, <span>${escapeHtml(name)}</span>! 👋`; el.style.animation = 'none'; el.offsetHeight; el.style.animation = null; } }
         async function loadSubjects() { try { const r = await fetch('/api/subjects?token=' + encodeURIComponent(authToken) + '&t=' + Date.now()); const d = await r.json(); SUBJECTS = d.subjects || []; } catch (e) { subjectsContainer.innerHTML = '<p class="empty">Не удалось загрузить</p>'; } }
         function renderSubjects() { subjectsContainer.innerHTML = ''; const ns = SUBJECTS.filter(s => s.type === 'numbers'); if (ns.length === 0) { subjectsContainer.innerHTML = `<p class="empty" style="padding: 20px; background: rgba(237, 137, 54, 0.1); border-radius: 8px; border: 1px solid #ed8936;">Нет предметов с картинками.</p>`; } else { const groups = {}; ns.forEach(s => { const g = s.group_name || 'Прочее'; if (!groups[g]) groups[g] = []; groups[g].push(s); }); Object.entries(groups).forEach(([gN, items]) => { const gD = document.createElement('div'); gD.className = 'subject-group'; const t = document.createElement('h3'); t.className = 'group-title'; t.textContent = gN; gD.appendChild(t); items.forEach(s => { const row = document.createElement('div'); row.className = 'input-row'; const hR = document.createElement('div'); hR.className = 'subject-header-row'; const lbl = document.createElement('label'); lbl.className = 'input-label'; lbl.style.display = 'flex'; lbl.style.flexDirection = 'column'; lbl.style.alignItems = 'flex-start'; lbl.style.gap = '2px'; const cp = activeParts[s.name] || '1'; const aY = subjectYears[s.name] || (cp === '2' ? (s.default_year_alt || s.default_year) : s.default_year); const yB = `<span class="year-badge" style="color:#10b981; font-size:13px;">${aY ? `(${escapeHtml(aY)})` : ''}</span>`; const nB = s.note ? `<span style="font-size: 12px; color: #94a3b8; font-weight: normal; line-height: 1.2;">📝 ${escapeHtml(s.note)}</span>` : ''; let pB = ''; if (s.url_alt) { pB = `<button type="button" class="part-toggle-btn" onclick="togglePart('${s.name.replace(/'/g, "\\'")}', this)" data-part="${cp}">Часть ${cp}</button>`; } lbl.innerHTML = `<div>${escapeHtml(s.name)} ${yB} ${pB}</div>${nB}`; hR.appendChild(lbl); const gB = document.createElement('button'); gB.className = 'gear-btn'; gB.innerHTML = '⚙️'; gB.onclick = () => openSubjectSettings(s.name); hR.appendChild(gB); row.appendChild(hR); const ta = document.createElement('textarea'); ta.className = 'text-input'; ta.id = 'subj_' + s.id; ta.rows = 2; ta.dataset.subject = s.name; ta.dataset.type = s.type || 'numbers'; ta.dataset.url = s.url || ''; ta.dataset.urlAlt = s.url_alt || ''; ta.placeholder = '447, 449, 451 — или текст задания'; row.appendChild(ta); gD.appendChild(row); }); subjectsContainer.appendChild(gD); }); } textHint.innerHTML = `Вставь сюда весь текст (История, Музыка и т.д.). Умный парсер сам разберет.`; }
@@ -363,30 +469,6 @@
         function extractNumbers(str, subj) { let c = str; const pb = /английск|географ/i.test(subj) || (/информатика/i.test(subj) && !/тетрад/i.test(subj)); if (pb) { let pm = []; const pr = /(?:стр\.?|страниц[ыа]?|page)\s*(\d+)/gi; let m; while ((m = pr.exec(c)) !== null) pm.push(m[1]); if (pm.length > 0) return [...new Set(pm)].join(', '); let sn = c.match(/\b\d+\b/g); if (sn && sn.length > 0) return [...new Set(sn)].join(', '); } c = c.replace(/\b(19|20)\d{2}\s*(год|г\.)?\b/gi, '').replace(/\([^)]*\)/g, '').replace(/(?:https?:\/\/|www\.)\S+/gi, '').replace(/\b\d{1,2}[./]\d{1,2}([./]\d{2,4})?\b/g, '').replace(/\b\d{1,2}\s+(января|февраля|марта|апреля|мая|июня|июля|августа|сентября|октября|ноября|декабря)\b/gi, '').replace(/(?:п\.|пункт|параграф|пар\.)\s*\d+/gi, '').replace(/\b([5-9]|1[0-1])\s*(класс|кл)\b/gi, '').replace(/(?:страниц[ыа]?|стр\.?)\s*\d+(?:\s*,\s*\d+)*/gi, '').replace(/^\s*\d+[.):,\-]?\s+/g, ''); let matches = []; const sr = /(?:№|номер|номера|упражнение|задание|задача|упр\.?|вар\.?|вариант)\s*([\dA-Za-zА-Яа-я\s,и]+)/gi; let m; while ((m = sr.exec(c)) !== null) { const ns = m[1].match(/\d+[A-Za-zА-Яа-я]?/g); if (ns) matches.push(...ns); } if (matches.length === 0) { const t = c.trim(); if (/^[\d\s,]+$/.test(t)) { const g = t.match(/\b\d+\b/g); if (g) matches = g; } } if (matches.length === 0) return ""; return [...new Set(matches)].filter(n => n !== '').join(', '); }
         function parseDualTasks(subject, rawText) { const tl = rawText.toLowerCase(); const sn = subject.name.toLowerCase(); const isEng = sn.includes('англ'); if (!isEng) return [{ subject: subject.name, url: subject.url, type: subject.type, numbers: extractNumbers(rawText, subject.name), raw_text: rawText }]; const hW = /тетрад|печатн|р\.т\.|тпо/.test(tl); const hT = /учебник|учеб\./.test(tl); if (hW && hT) { const bM = subject.name.match(/^(.*?)(?:\s*\(|$)/); const bN = bM ? bM[1].trim() : subject.name; const tS = SUBJECTS.find(s => s.name.includes(bN) && !s.name.toLowerCase().includes('тетрад') && s.type === 'numbers'); const wS = SUBJECTS.find(s => s.name.includes(bN) && s.name.toLowerCase().includes('тетрад') && s.type === 'numbers'); if (tS && wS) { let tb = []; let r1 = /(?:стр\.?|страниц[ыа]?|page|номера|№)\s*([\d,\s\-]+)\s*(?:учебника|учеб\.)/gi; let r2 = /(?:учебника|учеб\.)\s*(?:стр\.?|страниц[ыа]?|page|номера|№)?\s*([\d,\s\-]+)/gi; let m; while ((m = r1.exec(rawText)) !== null) { let n = m[1].match(/\d+/g); if (n) tb.push(...n); } while ((m = r2.exec(rawText)) !== null) { let n = m[1].match(/\d+/g); if (n) tb.push(...n); } let wc = rawText.replace(/(?:со|на|в|по|из)?\s*(?:стр|страниц[ыа]?|page)?\s*[\d,\s\-]+\s*(?:учебника|учеб\.)/gi, ''); wc = wc.replace(/(?:учебника|учеб\.)\s*(?:стр|страниц[ыа]?|page)?\s*[\d,\s\-]+/gi, ''); let wb = []; let r3 = /(?:стр\.?|страниц[ыа]?|page)\s*(\d+)/gi; while ((m = r3.exec(wc)) !== null) wb.push(m[1]); if (wb.length === 0) { let r4 = /(?:№|номер|номера|упражнение|задание|задача|упр\.?)\s*([\d\s,и]+)/gi; while ((m = r4.exec(wc)) !== null) { let n = m[1].match(/\d+/g); if (n) wb.push(...n); } } let jobs = []; if (wb.length > 0) jobs.push({ subject: wS.name, url: wS.url, type: 'numbers', numbers: [...new Set(wb)].join(', '), raw_text: rawText }); if (tb.length > 0) jobs.push({ subject: tS.name, url: tS.url, type: 'numbers', numbers: [...new Set(tb)].join(', '), raw_text: rawText }); if (jobs.length > 0) return jobs; } } let fS = subject; let cT = rawText; if (hW) { const bM = subject.name.match(/^(.*?)(?:\s*\(|$)/); const bN = bM ? bM[1].trim() : subject.name; fS = SUBJECTS.find(s => s.name.includes(bN) && s.name.toLowerCase().includes('тетрад')) || subject; cT = cT.replace(/(?:со|на|в|по|из)?\s*(?:стр|страниц[ыа]?|page)?\s*[\d,\s\-]+\s*(?:учебника|учеб\.)/gi, '').replace(/(?:учебника|учеб\.)\s*(?:стр|страниц[ыа]?|page)?\s*[\d,\s\-]+/gi, ''); } else if (hT) { const bM = subject.name.match(/^(.*?)(?:\s*\(|$)/); const bN = bM ? bM[1].trim() : subject.name; fS = SUBJECTS.find(s => s.name.includes(bN) && !s.name.toLowerCase().includes('тетрад')) || subject; cT = cT.replace(/(?:со|на|в|по|из)?\s*(?:стр|страниц[ыа]?|page)?\s*[\d,\s\-]+\s*(?:тетради|тетрадь|р\.т\.)/gi, '').replace(/(?:тетради|тетрадь|р\.т\.)\s*(?:стр|страниц[ыа]?|page)?\s*[\d,\s\-]+/gi, ''); } return [{ subject: fS.name, url: fS.url, type: fS.type, numbers: extractNumbers(cT, fS.name), raw_text: rawText }]; }
         clearBtn.onclick = () => { subjectsContainer.querySelectorAll('.text-input').forEach(ta => ta.value = ''); allTextTasks.value = ''; result.innerHTML = ''; showToast('Поля очищены', 'info'); };
-        function makeExamBlock(conditionText, rawText) {
-            const cond = (conditionText || '').trim();
-            const fallback = (rawText || '').trim();
-            const showText = cond || (fallback && !/^\s*\d+\s*$/.test(fallback) ? fallback : '');
-            const box = document.createElement('div');
-            box.className = 'exam-condition-box';
-            const label = document.createElement('div');
-            label.className = 'exam-condition-label';
-            label.textContent = '🎓 Условие задачи';
-            box.appendChild(label);
-            const txt = document.createElement('div');
-            txt.className = 'exam-condition-text';
-            txt.textContent = showText || 'Условие не найдено. Проверь номер или попробуй вставить текст задачи.';
-            box.appendChild(txt);
-            return box;
-        }
-        function makeExamShowBtn(wrapper, extraNote) {
-            const b = document.createElement('button');
-            b.type = 'button';
-            b.className = 'exam-show-btn';
-            b.innerHTML = '👁 Показать ответ';
-            b.onclick = (e) => { e.stopPropagation(); wrapper.classList.add('revealed'); b.style.display = 'none'; if (extraNote) extraNote.style.display = 'none'; };
-            return b;
-        }
         btn.addEventListener('click', async () => {
             let jobs = [];
             subjectsContainer.querySelectorAll('.text-input').forEach(el => { const v = el.value.trim(); if (!v) return; const subj = SUBJECTS.find(s => s.id == el.id.replace('subj_', '')); if (subj) { const tj = parseDualTasks(subj, v); const ap = activeParts[subj.name] || '1'; tj.forEach(job => { if (ap === '2' && subj.url_alt) job.url = subj.url_alt; }); jobs.push(...tj); } });
@@ -405,8 +487,28 @@
                 let imgR = []; let textR = []; let seenT = new Set();
                 data.results.forEach(r => { let isT = r.is_text || r.number === null; if (r.subject === "Текстовые задания") isT = true; if (isT) { const k = r.subject + '|||' + (r.raw_text || '').trim(); if (!seenT.has(k)) { seenT.add(k); textR.push(r); } } else imgR.push(r); });
                 if (imgR.length === 0 && textR.length === 0) { showToast('Решения не найдены', 'error'); btn.disabled = false; btnText.innerHTML = '🚀 Решить'; return; }
+
+                // ===== СОХРАНЕНИЕ В ОФЛАЙН =====
+                data.results.forEach(r => {
+                    if (!r.found || !r.solutions || !r.solutions.length) return;
+                    const aiS = r.solutions.find(sol => sol.edition && sol.edition.includes('ИИ') && sol.text && sol.text.trim().length > 0);
+                    const imgS = r.solutions.filter(sol => sol.images && sol.images.length > 0 && (!sol.edition || !sol.edition.includes('ИИ')));
+                    const allImages = [];
+                    imgS.forEach(s => { if (s.images) allImages.push(...s.images); });
+                    const rec = {
+                        subject: r.subject,
+                        number: r.number,
+                        aiText: aiS ? aiS.text : '',
+                        images: allImages,
+                        rawText: r.raw_text || '',
+                        edition: (imgS[0] && imgS[0].edition) || (aiS && aiS.edition) || '',
+                        ts: Date.now()
+                    };
+                    if (rec.aiText || rec.images.length > 0) saveOfflineResult(rec);
+                });
+
                 const byS = {}; imgR.forEach(r => { (byS[r.subject] = byS[r.subject] || []).push(r); });
-                if (imgR.length > 1 && !examMode) { const sd = document.createElement('div'); sd.style.cssText = 'margin-bottom: 20px; text-align: center;'; const sb = document.createElement('button'); sb.className = 'btn-modern-primary'; sb.style.cssText = 'background: linear-gradient(135deg, #48bb78, #38a169); width: 100%; font-size: 16px; padding: 15px;'; sb.innerHTML = `📤 Поделиться всеми (${imgR.length} шт.)`; sb.onclick = shareAllSolutions; sd.appendChild(sb); result.appendChild(sd); }
+                if (imgR.length > 1) { const sd = document.createElement('div'); sd.style.cssText = 'margin-bottom: 20px; text-align: center;'; const sb = document.createElement('button'); sb.className = 'btn-modern-primary'; sb.style.cssText = 'background: linear-gradient(135deg, #48bb78, #38a169); width: 100%; font-size: 16px; padding: 15px;'; sb.innerHTML = `📤 Поделиться всеми (${imgR.length} шт.)`; sb.onclick = shareAllSolutions; sd.appendChild(sb); result.appendChild(sd); }
                 Object.entries(byS).forEach(([subject, items]) => {
                     const sec = document.createElement('section'); sec.className = 'subject-block'; sec.innerHTML = `<h2 class="color-blue">${escapeHtml(subject)}</h2>`;
                     items.forEach(r => {
@@ -414,66 +516,6 @@
                         const so = SUBJECTS.find(s => s.name === subject); const cp = activeParts[subject] || '1'; const ady = cp === '2' ? (so.default_year_alt || so.default_year) : so.default_year; const ty = subjectYears[subject] || ady;
                         let hasR = false;
                         let aiS = r.solutions.find(sol => sol.edition && sol.edition.includes('ИИ') && sol.text && sol.text.trim().length > 0);
-                        let imgS = r.solutions.filter(sol => sol.images && sol.images.length > 0 && (!sol.edition || !sol.edition.includes('ИИ')));
-
-                        // ===== РЕЖИМ ЭКЗАМЕНА =====
-                        if (examMode && (aiS || imgS.length > 0)) {
-                            hasR = true;
-                            const wrapper = document.createElement('div'); wrapper.style.cssText = 'display: flex; flex-direction: column; gap: 8px; margin-bottom: 25px;';
-                            if (r.number) { const nh = document.createElement('div'); nh.className = 'task-number-header'; nh.textContent = `Задание №${r.number}`; wrapper.appendChild(nh); }
-                            wrapper.appendChild(makeExamBlock(r.condition, r.raw_text));
-                            const hiddenWrap = document.createElement('div'); hiddenWrap.className = 'exam-hidden-wrap';
-                            const note = document.createElement('div'); note.className = 'hint'; note.style.cssText = 'font-size:13px; text-align:center; padding:8px;'; note.textContent = '👇 Решение скрыто. Попробуй сначала решить сам!'; wrapper.appendChild(note);
-                            const showBtn = makeExamShowBtn(hiddenWrap, note);
-                            wrapper.appendChild(showBtn);
-
-                            // ИИ внутри hidden
-                            if (aiS && !hideAiSubjects[subject]) {
-                                const aiWrap = document.createElement('div'); aiWrap.style.cssText = 'display: flex; flex-direction: column; gap: 8px; margin-bottom: 15px;';
-                                const eh = document.createElement('div'); eh.className = 'edition-header'; eh.textContent = aiS.edition; aiWrap.appendChild(eh);
-                                const tb = document.createElement('div'); tb.style.cssText = 'display:flex; gap:8px;';
-                                const cb = document.createElement('button'); cb.className = 'copy-btn'; cb.innerHTML = '📋 Скопировать'; cb.style.marginBottom = '0'; cb.onclick = (e) => { e.stopPropagation(); copyTextToClipboard(aiS.text, cb); }; tb.appendChild(cb);
-                                const shb = document.createElement('button'); shb.className = 'copy-btn'; shb.innerHTML = '📤 Поделиться'; shb.style.marginBottom = '0'; shb.onclick = (e) => { e.stopPropagation(); const c = getTaskLabel(subject, r.number); const ct = cleanTextForSharing(aiS.text); const ft = `${c}\n\n${ct}`; if(navigator.share) { navigator.share({ title: 'GDZ', text: ft }).catch(()=>{}); } else { copyTextToClipboard(ft, shb); } }; tb.appendChild(shb);
-                                aiWrap.appendChild(tb);
-                                const td = document.createElement('div'); td.className = 'ai-text-block'; td.innerHTML = renderMarkdown(aiS.text); if (window.renderMathInElement) renderMathInElement(td, { delimiters: [{left: '$$', right: '$$', display: true}, {left: '$', right: '$', display: false}, {left: '\\(', right: '\\)', display: false}, {left: '\\[', right: '\\]', display: true}], throwOnError: false }); aiWrap.appendChild(td);
-                                hiddenWrap.appendChild(aiWrap);
-                            }
-                            // Картинки внутри hidden
-                            if (imgS.length > 0) {
-                                let sel = imgS[0];
-                                if (ty) { const tn = parseInt(ty); let ay = []; imgS.forEach(sol => { if (sol.edition) { const mm = sol.edition.match(/\b(20\d{2})\b/g); if (mm) mm.forEach(y => ay.push(parseInt(y))); } }); if (ay.length > 0) { let fy = [...new Set(ay)].filter(y => y >= tn).sort((a,b) => a - b); let sy = fy.length > 0 ? fy[0] : Math.max(...ay); let fb = imgS.find(sol => sol.edition && sol.edition.includes(sy.toString())); if (fb) sel = fb; } }
-                                const eh = document.createElement('div'); eh.className = 'edition-header'; eh.textContent = sel.edition || 'Решение'; hiddenWrap.appendChild(eh);
-                                const isM = subject.toLowerCase().includes('англ') || subject.toLowerCase().includes('география (тетрадь)');
-                                const imgUrlForReport = '/api/image?url=' + encodeURIComponent(sel.images[0]) + '&w=800';
-                                if (isM) { const ic = document.createElement('div'); ic.className = 'merged-container'; const iels = []; sel.images.forEach(u => { const im = document.createElement('img'); im.className = 'solution-img img-loading'; im.alt = 'Загрузка...'; im.dataset.originalUrl = u; loadImage(im, u); ic.appendChild(im); iels.push({ im, u }); }); hiddenWrap.appendChild(ic);
-                                    const ctrl = document.createElement('div'); ctrl.style.cssText = 'display: flex; gap: 10px; justify-content: flex-end; flex-wrap: wrap; margin-top: 10px;';
-                                    const rb = document.createElement('button'); rb.innerHTML = '🔄 Обновить'; rb.style.cssText = 'padding: 8px 16px; background: rgba(150,150,150,0.15); color: inherit; border: 1px solid rgba(150,150,150,0.3); border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer;'; rb.onclick = (e) => { e.stopPropagation(); iels.forEach(it => { it.im.classList.remove('img-tall', 'img-retrying'); it.im.classList.add('img-loading'); it.im.src = ''; loadImage(it.im, it.u); }); }; ctrl.appendChild(rb);
-                                    const db = document.createElement('button'); db.innerHTML = '⬇️ Скачать'; db.style.cssText = 'padding: 8px 16px; background: #4299e1; color: #fff; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer;'; db.onclick = async (e) => { e.stopPropagation(); db.textContent = '⏳ Склеиваем...'; await downloadMergedImage(sel.images, `GDZ_${subject}_${r.number || 1}_merged.jpg`); db.textContent = '⬇️ Скачать'; fetch('/api/track-download', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({token: authToken}) }).catch(()=>{}); }; ctrl.appendChild(db);
-                                    const sb = document.createElement('button'); sb.innerHTML = '📤 Поделиться'; sb.style.cssText = 'padding: 8px 16px; background: #48bb78; color: #fff; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer;'; sb.onclick = (e) => { e.stopPropagation(); shareImageFile(sel.images, `GDZ_${subject}_${r.number || 1}.jpg`, getTaskLabel(subject, r.number)); }; ctrl.appendChild(sb);
-                                    hiddenWrap.appendChild(ctrl);
-                                } else {
-                                    const isMulti = subject.toLowerCase().includes('контурн');
-                                    const toR = isMulti ? sel.images : [sel.images[0]];
-                                    toR.forEach((u, idx) => {
-                                        const iw = document.createElement('div'); iw.style.cssText = 'display: flex; flex-direction: column; gap: 8px; margin-bottom: 15px;';
-                                        const im = document.createElement('img'); im.className = 'solution-img img-loading'; im.style.marginTop = '0'; im.alt = 'Загрузка...'; im.dataset.originalUrl = u; loadImage(im, u); iw.appendChild(im);
-                                        const ctrl = document.createElement('div'); ctrl.style.cssText = 'display: flex; gap: 10px; justify-content: flex-end; flex-wrap: wrap;';
-                                        const rb = document.createElement('button'); rb.innerHTML = '🔄 Обновить'; rb.style.cssText = 'padding: 8px 16px; background: rgba(150,150,150,0.15); color: inherit; border: 1px solid rgba(150,150,150,0.3); border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer;'; rb.onclick = (e) => { e.stopPropagation(); im.classList.remove('img-tall', 'img-retrying'); im.classList.add('img-loading'); im.src = ''; loadImage(im, u); }; ctrl.appendChild(rb);
-                                        const db = document.createElement('button'); db.innerHTML = '⬇️ Скачать'; db.style.cssText = 'padding: 8px 16px; background: #4299e1; color: #fff; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer;'; db.onclick = (e) => { e.stopPropagation(); if (im.src && im.src.includes('/api/image')) { downloadSingleImage(im.src, `GDZ_${subject}_${r.number || 1}_${idx + 1}.jpg`); fetch('/api/track-download', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({token: authToken}) }).catch(()=>{}); } else alert('Подожди загрузки'); }; ctrl.appendChild(db);
-                                        const sb = document.createElement('button'); sb.innerHTML = '📤 Поделиться'; sb.style.cssText = 'padding: 8px 16px; background: #48bb78; color: #fff; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer;'; sb.onclick = (e) => { e.stopPropagation(); shareImageFile([u], `GDZ_${subject}_${r.number || 1}_${idx + 1}.jpg`, getTaskLabel(subject, r.number)); }; ctrl.appendChild(sb);
-                                        iw.appendChild(ctrl); hiddenWrap.appendChild(iw);
-                                    });
-                                }
-                                const reportBtn = createReportButton(subject, String(r.number || ''), 'image', imgUrlForReport);
-                                hiddenWrap.appendChild(reportBtn);
-                            } else if (aiS) {
-                                hiddenWrap.appendChild(createReportButton(subject, String(r.number || ''), 'ai', ''));
-                            }
-                            wrapper.appendChild(hiddenWrap);
-                            sec.appendChild(wrapper);
-                            return;
-                        }
-                        // ===== ОБЫЧНЫЙ РЕЖИМ =====
                         if (aiS && !hideAiSubjects[subject]) {
                             hasR = true;
                             const wrapper = document.createElement('div'); wrapper.style.cssText = 'display: flex; flex-direction: column; gap: 8px; margin-bottom: 25px;';
@@ -488,6 +530,7 @@
                             wrapper.appendChild(createReportButton(subject, String(r.number || ''), 'ai', ''));
                             sec.appendChild(wrapper);
                         }
+                        let imgS = r.solutions.filter(sol => sol.images && sol.images.length > 0 && (!sol.edition || !sol.edition.includes('ИИ')));
                         if (imgS.length > 0) {
                             hasR = true; let sel = imgS[0];
                             if (ty) { const tn = parseInt(ty); let ay = []; imgS.forEach(sol => { if (sol.edition) { const mm = sol.edition.match(/\b(20\d{2})\b/g); if (mm) mm.forEach(y => ay.push(parseInt(y))); } }); if (ay.length > 0) { let fy = [...new Set(ay)].filter(y => y >= tn).sort((a,b) => a - b); let sy = fy.length > 0 ? fy[0] : Math.max(...ay); let fb = imgS.find(sol => sol.edition && sol.edition.includes(sy.toString())); if (fb) sel = fb; } }

@@ -28,35 +28,17 @@ def extract_numbers(text: str) -> list[str]:
     return result
 
 
-def _get_page_data(url: str) -> dict:
-    """
-    Возвращает dict: {"solutions": [...], "condition": "текст условия"}
-    solutions — список решений (ИИ + картинки)
-    condition — текст условия задачи с gdz.ru (нужно для режима Экзамен)
-    """
+def _get_solutions(url: str) -> list[dict]:
     try:
         r = requests.get(url, headers=HEADERS, impersonate="chrome", timeout=20)
-        if r.status_code != 200:
-            return {"solutions": [], "condition": ""}
+        if r.status_code != 200: return []
         html = r.text
     except Exception:
-        return {"solutions": [], "condition": ""}
+        return []
 
     soup = BeautifulSoup(html, "lxml")
     solutions = []
 
-    # 1. Условие задачи (для режима Экзамен)
-    condition = ""
-    cond_tag = soup.find("p", class_="task__condition")
-    if cond_tag:
-        # Заменяем <br> на \n, чтобы сохранить переносы строк
-        for br in cond_tag.find_all("br"):
-            br.replace_with("\n")
-        condition = cond_tag.get_text().strip()
-        # Убираем номер задачи в начале ("41. " → "")
-        condition = re.sub(r'^\s*\d+\.\s*', '', condition).strip()
-
-    # 2. ИИ-решебник
     ai_card = soup.find("div", class_="ai-card")
     if ai_card:
         ai_content = ai_card.find("div", class_="ai-card__content")
@@ -66,10 +48,10 @@ def _get_page_data(url: str) -> dict:
                 "text": ai_content.get_text(separator="\n").strip()
             })
 
-    # 3. Картинки решений (внутри figure с классом task-container)
     for fig in soup.find_all("figure", class_="task-container"):
         caption = fig.find("figcaption", class_="task-crumbs")
         raw_title = caption.get_text(" ", strip=True) if caption else "Решение"
+
         edition_title = re.sub(r'/\s*(задание|страница)\s*/\s*\d+', '', raw_title, flags=re.IGNORECASE).strip()
 
         images = []
@@ -86,7 +68,7 @@ def _get_page_data(url: str) -> dict:
                 "images": images
             })
 
-    return {"solutions": solutions, "condition": condition}
+    return solutions
 
 
 async def parse_tasks(jobs: list[dict]) -> list[dict]:
@@ -98,20 +80,19 @@ async def parse_tasks(jobs: list[dict]) -> list[dict]:
         s_type = job.get("type", "numbers")
 
         if s_type == "text" or not base:
-            results.append({
-                "subject": subject, "number": None, "url": None, "solutions": [],
-                "found": False, "raw_text": raw_text, "condition": "", "is_text": True
-            })
+            results.append(
+                {"subject": subject, "number": None, "url": None, "solutions": [], "found": False, "raw_text": raw_text,
+                 "is_text": True})
             continue
 
         if not base.endswith("/"): base += "/"
+
         numbers = extract_numbers(job.get("numbers", ""))
 
         if not numbers:
-            results.append({
-                "subject": subject, "number": None, "url": None, "solutions": [],
-                "found": False, "raw_text": raw_text, "condition": "", "is_text": True
-            })
+            results.append(
+                {"subject": subject, "number": None, "url": None, "solutions": [], "found": False, "raw_text": raw_text,
+                 "is_text": True})
             continue
 
         for num in numbers:
@@ -136,17 +117,12 @@ async def parse_tasks(jobs: list[dict]) -> list[dict]:
                 urljoin(base, f"zadanie-{num}/"),
             ]
 
-            solutions, used, condition = [], candidates[0], ""
+            solutions, used = [], candidates[0]
             for url in candidates:
-                data = await asyncio.to_thread(_get_page_data, url)
-                # Если нашли хотя бы условие — запоминаем URL
-                if data["solutions"] or data["condition"]:
-                    solutions = data["solutions"]
-                    condition = data["condition"]
+                solutions = await asyncio.to_thread(_get_solutions, url)
+                if solutions:
                     used = url
-                    # Если нашли и решения — выходим, дальше искать смысла нет
-                    if data["solutions"]:
-                        break
+                    break
 
             results.append({
                 "subject": subject,
@@ -155,7 +131,6 @@ async def parse_tasks(jobs: list[dict]) -> list[dict]:
                 "solutions": solutions,
                 "found": len(solutions) > 0,
                 "raw_text": raw_text,
-                "condition": condition,
                 "is_text": False
             })
 
