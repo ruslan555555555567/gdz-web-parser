@@ -4,29 +4,22 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>GDZ Парсер — 7 класс</title>
-
     <link rel="manifest" href="/manifest.json">
     <meta name="theme-color" content="#4299e1">
     <link rel="apple-touch-icon" href="/static/icon-192.png">
-
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
     <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js"></script>
-
     <script>
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/sw.js?v=' + Date.now())
-                    .then(reg => console.log('✅ PWA: Service Worker зарегистрирован'))
-                    .catch(err => console.log('❌ PWA: Ошибка SW', err));
+                navigator.serviceWorker.register('/sw.js?v=' + Date.now()).catch(err => console.log('SW err', err));
             });
         }
     </script>
-
     <script>
         (function() {
             try {
@@ -45,77 +38,40 @@
         html.has-auth #mainScreen { display: flex !important; flex-direction: column; }
         html.no-auth #authScreen { display: flex !important; }
         html.no-auth #mainScreen { display: none !important; }
-
-        #stealthScreen {
-            display: none;
-            position: fixed; inset: 0;
-            background: #ffffff; color: #202122;
-            z-index: 999999;
-            overflow-y: auto;
-            font-family: 'Times New Roman', Times, serif !important;
-        }
+        #stealthScreen { display: none; position: fixed; inset: 0; background: #ffffff; color: #202122; z-index: 999999; overflow-y: auto; font-family: 'Times New Roman', Times, serif !important; }
         .stealth-content { max-width: 800px; margin: 0 auto; padding: 40px 20px; }
         .stealth-title { font-size: 32px; font-weight: normal; border-bottom: 1px solid #a2a9b1; padding-bottom: 10px; margin-bottom: 20px; font-family: 'Linux Libertine', 'Georgia', 'Times', serif !important; }
         .stealth-text { font-size: 16px; line-height: 1.6; margin-bottom: 15px; }
-        .stealth-text a { color: #3366cc; text-decoration: none; }
         .stealth-img { max-width: 100%; height: auto; border: 1px solid #c8ccd1; background: #f8f9fa; padding: 5px; margin: 15px 0; display: block; }
         .stealth-caption { font-size: 13px; color: #54595d; text-align: center; margin-top: -10px; margin-bottom: 20px; }
         .stealth-btn { position: fixed; bottom: 20px; right: 20px; background: rgba(0,0,0,0.05); border: 1px solid #ccc; border-radius: 50%; width: 40px; height: 40px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 20px; opacity: 0.3; transition: opacity 0.2s; }
         .stealth-btn:hover { opacity: 1; }
-
-        .topbar {
-            position: sticky; top: 10px; z-index: 100; background: rgba(255, 255, 255, 0.85) !important;
-            backdrop-filter: blur(16px) !important; -webkit-backdrop-filter: blur(16px) !important;
-            border: 1px solid rgba(0, 0, 0, 0.05); border-radius: 16px; padding: 8px 16px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.05); margin-bottom: 24px;
-        }
+        .topbar { position: sticky; top: 10px; z-index: 100; background: rgba(255, 255, 255, 0.85) !important; backdrop-filter: blur(16px) !important; -webkit-backdrop-filter: blur(16px) !important; border: 1px solid rgba(0, 0, 0, 0.05); border-radius: 16px; padding: 8px 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); margin-bottom: 24px; }
         .theme-dark .topbar { background: rgba(26, 32, 44, 0.85) !important; border-color: rgba(255,255,255,0.05); box-shadow: 0 4px 20px rgba(0,0,0,0.3); }
-
         .action-buttons-row { display: flex; gap: 12px; margin-top: 24px; align-items: stretch; flex-wrap: wrap; }
-        .btn-modern-primary {
-            flex: 1; background: linear-gradient(135deg, #4299e1, #3182ce); color: white; border: none; border-radius: 14px;
-            padding: 15px 24px; font-size: 16px; font-weight: 800; cursor: pointer; box-shadow: 0 4px 15px rgba(66, 153, 225, 0.4);
-            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); display: flex; align-items: center; justify-content: center; gap: 10px;
-        }
+        .btn-modern-primary { flex: 1; background: linear-gradient(135deg, #4299e1, #3182ce); color: white; border: none; border-radius: 14px; padding: 15px 24px; font-size: 16px; font-weight: 800; cursor: pointer; box-shadow: 0 4px 15px rgba(66, 153, 225, 0.4); transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); display: flex; align-items: center; justify-content: center; gap: 10px; }
         .btn-modern-primary:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(66, 153, 225, 0.6); }
         .btn-modern-primary:disabled { background: #a0aec0; box-shadow: none; cursor: not-allowed; transform: none; }
-
         .btn-spinner { display: inline-block; width: 20px; height: 20px; border: 3px solid rgba(255, 255, 255, 0.3); border-radius: 50%; border-top-color: #ffffff; animation: spin 0.8s linear infinite; }
         @keyframes spin { to { transform: rotate(360deg); } }
-
-        .btn-modern-clear {
-            background: #edf2f7; color: #e53e3e; border: 2px solid #fed7d7; border-radius: 14px;
-            padding: 15px 20px; font-size: 15px; font-weight: 700; cursor: pointer; transition: all 0.2s;
-            display: flex; align-items: center; justify-content: center; gap: 6px; white-space: nowrap;
-        }
+        .btn-modern-clear { background: #edf2f7; color: #e53e3e; border: 2px solid #fed7d7; border-radius: 14px; padding: 15px 20px; font-size: 15px; font-weight: 700; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 6px; white-space: nowrap; }
         .btn-modern-clear:hover { background: #fff5f5; border-color: #feb2b2; transform: translateY(-2px); }
         .theme-dark .btn-modern-clear { background: rgba(74, 85, 104, 0.5); color: #fc8181; border-color: #4a5568; }
-
-        .theme-toggle-btn, .stealth-toggle-btn {
-            background: rgba(150, 150, 150, 0.1); border: none; font-size: 18px; width: 36px; height: 36px;
-            border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: transform 0.2s; padding: 0;
-        }
-        .theme-toggle-btn:hover, .stealth-toggle-btn:hover { background: rgba(150, 150, 150, 0.2); transform: scale(1.05); }
-
+        .theme-toggle-btn, .stealth-toggle-btn, .exam-toggle-btn { background: rgba(150, 150, 150, 0.1); border: none; font-size: 18px; width: 36px; height: 36px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: transform 0.2s; padding: 0; }
+        .theme-toggle-btn:hover, .stealth-toggle-btn:hover, .exam-toggle-btn:hover { background: rgba(150, 150, 150, 0.2); transform: scale(1.05); }
+        .exam-toggle-btn.active { background: rgba(237, 137, 54, 0.3); box-shadow: 0 0 0 2px #ed8936; }
         .toast-container { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); display: flex; flex-direction: column; gap: 10px; z-index: 10000; pointer-events: none; width: 90%; max-width: 400px; }
-        .toast {
-            background: #ffffff; color: #1a202c; padding: 14px 20px; border-radius: 14px; box-shadow: 0 10px 30px rgba(0,0,0,0.15);
-            font-weight: 700; font-size: 15px; display: flex; align-items: center; gap: 10px;
-            animation: toastIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; pointer-events: auto; border-left: 4px solid #4299e1;
-        }
+        .toast { background: #ffffff; color: #1a202c; padding: 14px 20px; border-radius: 14px; box-shadow: 0 10px 30px rgba(0,0,0,0.15); font-weight: 700; font-size: 15px; display: flex; align-items: center; gap: 10px; animation: toastIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; pointer-events: auto; border-left: 4px solid #4299e1; }
         .toast.error { border-left-color: #e53e3e; }
         .toast.success { border-left-color: #48bb78; }
         .toast.loading { border-left-color: #ed8936; }
         .theme-dark .toast { background: #1e293b; color: #ffffff; box-shadow: 0 10px 30px rgba(0,0,0,0.6); border: 1px solid rgba(255,255,255,0.1); border-left-width: 4px; }
-
         @keyframes toastIn { from { opacity: 0; transform: translateY(20px) scale(0.9); } to { opacity: 1; transform: translateY(0) scale(1); } }
         @keyframes toastOut { from { opacity: 1; transform: translateY(0) scale(1); } to { opacity: 0; transform: translateY(20px) scale(0.9); } }
-
         .toast-spinner { display: inline-block; width: 18px; height: 18px; border: 3px solid rgba(66, 153, 225, 0.2); border-top-color: #4299e1; border-radius: 50%; animation: spin 0.8s linear infinite; flex-shrink: 0; }
         .theme-dark .toast-spinner { border-color: rgba(144, 205, 244, 0.2); border-top-color: #90cdf4; }
         .toast-timer { margin-left: auto; font-family: monospace; font-weight: 800; font-size: 15px; color: #ed8936; background: rgba(237, 137, 54, 0.15); padding: 3px 10px; border-radius: 8px; }
         .theme-dark .toast-timer { color: #fbd38d; background: rgba(237, 137, 54, 0.2); }
-
         .theme-dark body, body.theme-dark { background: #0f172a; color: #e2e8f0; }
         .theme-dark .card, .theme-dark .subject-block, .theme-dark .modal-content, .theme-dark .image-modal-content { background: rgba(30, 41, 59, 0.85); color: #e2e8f0; border: 1px solid rgba(255,255,255,0.05); box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
         .theme-dark h1, .theme-dark h2, .theme-dark h3 { color: #f7fafc; }
@@ -145,7 +101,6 @@
         .theme-dark .auth-screen-subtitle { color: #94a3b8; }
         .theme-dark .subject-group { border-color: rgba(71,85,105,0.5); }
         .theme-dark .task-text { background: rgba(15,23,42,0.5); color: #e2e8f0; }
-
         .subject-header-row { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px; }
         .gear-btn { background: transparent; border: none; font-size: 18px; cursor: pointer; padding: 0 5px; opacity: 0.6; transition: opacity 0.2s; }
         .gear-btn:hover { opacity: 1; transform: rotate(45deg); }
@@ -155,43 +110,31 @@
         .theme-dark .task-number-header { color: #90cdf4 !important; background: rgba(66, 153, 225, 0.15); border-color: rgba(66, 153, 225, 0.3); }
         .edition-header { font-size: 14px; font-weight: 700; color: #4a5568; margin: 15px 0 8px 0; padding-left: 10px; border-left: 3px solid #4299e1; }
         .theme-dark .edition-header { color: #a0aec0; border-left-color: #63b3ed; }
-
-        .ai-text-block {
-            background: rgba(66, 153, 225, 0.05);
-            border: 1px solid #bee3f8;
-            border-left: 4px solid #4299e1;
-            border-radius: 12px;
-            padding: 16px;
-            font-size: 15px;
-            line-height: 1.6;
-            color: #1a202c;
-            margin-bottom: 12px;
-            overflow-x: auto;
-        }
+        .ai-text-block { background: rgba(66, 153, 225, 0.05); border: 1px solid #bee3f8; border-left: 4px solid #4299e1; border-radius: 12px; padding: 16px; font-size: 15px; line-height: 1.6; color: #1a202c; margin-bottom: 12px; overflow-x: auto; }
         .theme-dark .ai-text-block { background: rgba(66, 153, 225, 0.1); border-color: #2b6cb0; border-left-color: #63b3ed; color: #e2e8f0; }
         .ai-text-block h4 { margin: 15px 0 10px 0; font-size: 18px; color: #2b6cb0; border-bottom: 1px solid #bee3f8; padding-bottom: 4px; }
         .ai-text-block h5 { margin: 15px 0 5px 0; font-size: 16px; color: #2b6cb0; }
         .theme-dark .ai-text-block h4, .theme-dark .ai-text-block h5 { color: #90cdf4; border-bottom-color: #4a5568; }
-
         .copy-btn { display: inline-flex; align-items: center; gap: 4px; margin-bottom: 10px; padding: 8px 14px; font-size: 13px; font-weight: 700; border-radius: 10px; border: 1px solid #bee3f8; background: rgba(66, 153, 225, 0.1); color: #2b6cb0; cursor: pointer; transition: all 0.2s; margin-right: 8px; }
         .copy-btn:hover { background: rgba(66, 153, 225, 0.2); border-color: #90cdf4; transform: translateY(-1px); }
         .theme-dark .copy-btn { background: rgba(66, 153, 225, 0.2); border-color: rgba(66, 153, 225, 0.4); color: #90cdf4; }
         .theme-dark .copy-btn:hover { background: rgba(66, 153, 225, 0.3); }
-
-        /* КНОПКА «НЕВЕРНОЕ РЕШЕНИЕ» */
-        .report-error-btn {
-            display: inline-flex; align-items: center; gap: 4px;
-            margin-top: 8px; padding: 6px 12px;
-            font-size: 12px; font-weight: 700;
-            border-radius: 8px; border: 1px solid #e2e8f0;
-            background: #f7fafc; color: #718096;
-            cursor: pointer; transition: all 0.2s;
-            align-self: flex-start;
-        }
+        .report-error-btn { display: inline-flex; align-items: center; gap: 4px; margin-top: 8px; padding: 6px 12px; font-size: 12px; font-weight: 700; border-radius: 8px; border: 1px solid #e2e8f0; background: #f7fafc; color: #718096; cursor: pointer; transition: all 0.2s; align-self: flex-start; }
         .report-error-btn:hover { background: #fff5f5; border-color: #feb2b2; color: #e53e3e; }
         .theme-dark .report-error-btn { background: rgba(30,41,59,0.6); border-color: #475569; color: #94a3b8; }
         .theme-dark .report-error-btn:hover { background: rgba(239,68,68,0.15); border-color: #f87171; color: #fca5a5; }
-
+        /* РЕЖИМ ЭКЗАМЕНА */
+        .exam-condition-box { background: linear-gradient(135deg, rgba(237, 137, 54, 0.08), rgba(237, 137, 54, 0.03)); border: 2px solid #ed8936; border-radius: 12px; padding: 16px; margin-bottom: 15px; }
+        .theme-dark .exam-condition-box { background: rgba(237, 137, 54, 0.1); border-color: #dd6b20; }
+        .exam-condition-label { font-size: 13px; font-weight: 800; color: #c05621; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
+        .theme-dark .exam-condition-label { color: #fbd38d; }
+        .exam-condition-text { font-size: 16px; line-height: 1.6; color: #1a202c; white-space: pre-wrap; }
+        .theme-dark .exam-condition-text { color: #e2e8f0; }
+        .exam-show-btn { display: inline-flex; align-items: center; gap: 8px; padding: 12px 20px; font-size: 15px; font-weight: 800; border-radius: 12px; border: none; background: linear-gradient(135deg, #48bb78, #38a169); color: white; cursor: pointer; box-shadow: 0 4px 12px rgba(72, 187, 120, 0.4); transition: all 0.2s; margin-top: 8px; }
+        .exam-show-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 18px rgba(72, 187, 120, 0.6); }
+        .exam-hidden-wrap { display: none; }
+        .exam-hidden-wrap.revealed { display: block; animation: fadeInExam 0.4s ease-out; }
+        @keyframes fadeInExam { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
         .welcome-greeting { text-align: center; font-size: 24px; font-weight: 800; margin-bottom: 20px; margin-top: 10px; color: #2d3748; opacity: 0; transform: translateY(-20px); animation: slideDownFade 0.8s cubic-bezier(0.25, 0.8, 0.25, 1) forwards; }
         .theme-dark .welcome-greeting { color: #e2e8f0; }
         .welcome-greeting span { color: #4299e1; }
@@ -224,7 +167,6 @@
         .modal-content { background: #ffffff !important; color: #1a202c !important; border-radius: 16px; padding: 24px; max-width: 450px; width: 100%; max-height: 90vh; overflow-y: auto; box-shadow: 0 10px 50px rgba(0,0,0,0.5) !important; }
         .theme-dark .modal-content { background: #1e293b !important; color: #ffffff !important; border: 1px solid #334155 !important; }
         #status { display: none !important; }
-
         .achievements-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
         .ach-card { background: rgba(150, 150, 150, 0.05); border: 1px solid rgba(150, 150, 150, 0.2); border-radius: 12px; padding: 12px; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 6px; opacity: 0.5; filter: grayscale(100%); transition: all 0.3s; }
         .ach-card.unlocked { background: rgba(66, 153, 225, 0.1); border-color: #4299e1; opacity: 1; filter: none; }
@@ -233,15 +175,7 @@
         .ach-icon { font-size: 32px; }
         .ach-title { font-weight: 800; font-size: 14px; }
         .ach-desc { font-size: 11px; color: #94a3b8; line-height: 1.2; }
-
-        .announcement-banner {
-            background: linear-gradient(135deg, #4299e1, #3182ce);
-            color: white; padding: 12px 16px; border-radius: 12px;
-            display: flex; justify-content: space-between; align-items: center;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.15);
-            margin-bottom: 20px;
-            animation: fadeInAnn 0.5s forwards cubic-bezier(0.25, 0.8, 0.25, 1);
-        }
+        .announcement-banner { background: linear-gradient(135deg, #4299e1, #3182ce); color: white; padding: 12px 16px; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 15px rgba(0,0,0,0.15); margin-bottom: 20px; animation: fadeInAnn 0.5s forwards cubic-bezier(0.25, 0.8, 0.25, 1); }
         @keyframes fadeInAnn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
         .ann-content { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 15px; }
         .ann-icon { font-size: 20px; }
@@ -255,31 +189,17 @@
     <div id="stealthScreen">
         <div class="stealth-content">
             <h1 class="stealth-title">Круговорот воды в природе</h1>
-            <div class="stealth-text">
-                <b>Круговорот воды в природе</b> (влагооборот) — процесс циклического перемещения воды в земной биосфере. Состоит из испарения воды, переноса паров воздушными течениями, их конденсации, выпадения осадков и переноса воды в реках и других водоёмах.
-            </div>
+            <div class="stealth-text"><b>Круговорот воды в природе</b> (влагооборот) — процесс циклического перемещения воды в земной биосфере.</div>
             <img class="stealth-img" src="https://upload.wikimedia.org/wikipedia/commons/thumb/8/8c/Water_cycle_ru.png/800px-Water_cycle_ru.png" alt="Круговорот воды">
             <div class="stealth-caption">Схема круговорота воды в природе</div>
-            <div class="stealth-text">
-                Вода испаряется с поверхности водоёмов и суши под действием солнечной энергии, поднимается в атмосферу, охлаждается и конденсируется в облака. Затем она возвращается на землю в виде осадков: дождя, снега или града.
-            </div>
-            <div class="stealth-text">
-                Часть выпавших осадков стекает по поверхности в реки и озёра, часть просачивается в почву и пополняет подземные воды. Этот процесс непрерывен и играет ключевую роль в поддержании жизни на Земле.
-            </div>
-            <div class="stealth-text">
-                <i>Материал из Википедии — свободной энциклопедии.</i>
-            </div>
+            <div class="stealth-text">Вода испаряется с поверхности водоёмов и суши под действием солнечной энергии, поднимается в атмосферу, охлаждается и конденсируется в облака.</div>
+            <div class="stealth-text"><i>Материал из Википедии — свободной энциклопедии.</i></div>
         </div>
-        <button class="stealth-btn" onclick="toggleStealth()" title="Выйти из режима невидимки">👁</button>
+        <button class="stealth-btn" onclick="toggleStealth()" title="Выйти">👁</button>
     </div>
-
     <div id="toastContainer" class="toast-container"></div>
-
-    <div class="floating-shapes">
-        <div class="shape shape-1"></div><div class="shape shape-2"></div><div class="shape shape-3"></div><div class="shape shape-4"></div>
-    </div>
+    <div class="floating-shapes"><div class="shape shape-1"></div><div class="shape shape-2"></div><div class="shape shape-3"></div><div class="shape shape-4"></div></div>
     <div class="particles" id="particles"></div>
-
     <div id="authScreen" class="auth-screen">
         <div class="auth-screen-box">
             <div class="auth-logo">📚</div>
@@ -298,29 +218,23 @@
             </form>
         </div>
     </div>
-
     <div id="mainScreen" class="container hidden">
         <div class="topbar">
             <div style="display: flex; align-items: center; gap: 10px;">
                 <span class="version">v{{ version }}</span>
                 <button id="stealthBtn" class="stealth-toggle-btn" title="Режим невидимки">🥷</button>
                 <button id="themeToggleBtn" class="theme-toggle-btn" title="Сменить тему">🌙</button>
+                <button id="examToggleBtn" class="exam-toggle-btn" title="Режим экзамена">🎓</button>
             </div>
             <div class="topbar-right" id="topbarRight"></div>
         </div>
-
         <div id="globalAnnouncement" class="announcement-banner" style="display:none;">
-            <div class="ann-content">
-                <span class="ann-icon">📢</span>
-                <span id="annText"></span>
-            </div>
+            <div class="ann-content"><span class="ann-icon">📢</span><span id="annText"></span></div>
             <button onclick="closeAnnouncement()" class="ann-close">✕</button>
         </div>
-
         <div class="welcome-greeting" id="welcomeGreeting"></div>
         <h1>📚 GDZ Парсер</h1>
         <p class="subtitle">7 класс · Введи номера или текст задания</p>
-
         <section class="card">
             <h2>📝 Домашка</h2>
             <div id="subjectsContainer"><p class="empty">Загрузка предметов...</p></div>
@@ -338,24 +252,8 @@
         <div id="result" class="result"></div>
         <footer class="footer"><span>GDZ Парсер · v{{ version }}</span></footer>
     </div>
-
-    <div id="historyModal" class="modal hidden">
-        <div class="modal-content">
-            <h3>📜 История поисков</h3>
-            <div id="historyList"></div>
-            <div class="modal-actions"><button id="clearHistoryBtn" class="btn-secondary">🗑 Очистить</button><button id="closeHistoryBtn" class="btn-primary">Закрыть</button></div>
-        </div>
-    </div>
-
-    <div id="achievementsModal" class="modal hidden">
-        <div class="modal-content" style="max-width: 500px;">
-            <h3>🏆 Ваши достижения</h3>
-            <p class="hint" style="margin-bottom: 15px;">Выполняйте задания, чтобы открывать новые бейджи!</p>
-            <div id="achievementsList" class="achievements-grid"></div>
-            <div class="modal-actions" style="margin-top: 20px;"><button type="button" onclick="document.getElementById('achievementsModal').classList.add('hidden')" class="btn-secondary">Закрыть</button></div>
-        </div>
-    </div>
-
+    <div id="historyModal" class="modal hidden"><div class="modal-content"><h3>📜 История поисков</h3><div id="historyList"></div><div class="modal-actions"><button id="clearHistoryBtn" class="btn-secondary">🗑 Очистить</button><button id="closeHistoryBtn" class="btn-primary">Закрыть</button></div></div></div>
+    <div id="achievementsModal" class="modal hidden"><div class="modal-content" style="max-width: 500px;"><h3>🏆 Ваши достижения</h3><p class="hint" style="margin-bottom: 15px;">Выполняйте задания, чтобы открывать новые бейджи!</p><div id="achievementsList" class="achievements-grid"></div><div class="modal-actions" style="margin-top: 20px;"><button type="button" onclick="document.getElementById('achievementsModal').classList.add('hidden')" class="btn-secondary">Закрыть</button></div></div></div>
     <div id="settingsModal" class="modal hidden">
         <div class="modal-content">
             <h3>⚙️ Настройки аккаунта</h3>
@@ -371,17 +269,7 @@
             </div>
         </div>
     </div>
-
-    <div id="subjectSettingsModal" class="modal hidden">
-        <div class="modal-content">
-            <h3 id="subjectSettingsTitle">⚙️ Настройки предмета</h3>
-            <p class="hint" style="margin-bottom: 15px;" id="subjectSettingsAdminHint"></p>
-            <div class="settings-section"><label class="form-label">Ваш предпочитаемый год <input type="text" id="subjectSetYear" placeholder="Например: 2025"></label><p class="hint" style="margin-top: 5px;">Оставь пустым, чтобы использовать год, заданный администратором.</p></div>
-            <div id="subjectSettingsStatus" class="fb-status"></div>
-            <div class="modal-actions"><button type="button" id="closeSubjectSettingsBtn" class="btn-secondary">Отмена</button><button type="button" id="saveSubjectSettingsBtn" class="btn-primary" style="width:auto;">💾 Сохранить</button></div>
-        </div>
-    </div>
-
+    <div id="subjectSettingsModal" class="modal hidden"><div class="modal-content"><h3 id="subjectSettingsTitle">⚙️ Настройки предмета</h3><p class="hint" style="margin-bottom: 15px;" id="subjectSettingsAdminHint"></p><div class="settings-section"><label class="form-label">Ваш предпочитаемый год <input type="text" id="subjectSetYear" placeholder="Например: 2025"></label><p class="hint" style="margin-top: 5px;">Оставь пустым, чтобы использовать год, заданный администратором.</p></div><div id="subjectSettingsStatus" class="fb-status"></div><div class="modal-actions"><button type="button" id="closeSubjectSettingsBtn" class="btn-secondary">Отмена</button><button type="button" id="saveSubjectSettingsBtn" class="btn-primary" style="width:auto;">💾 Сохранить</button></div></div></div>
     <div id="supportModal" class="modal hidden">
         <div class="modal-content">
             <h3>💬 Техподдержка</h3>
@@ -401,7 +289,6 @@
             </form>
         </div>
     </div>
-
     <div id="reportErrorModal" class="modal hidden">
         <div class="modal-content">
             <h3>⚠️ Сообщить об ошибке</h3>
@@ -410,19 +297,12 @@
                 <img id="reportErrorPreviewImg" style="max-width:100%; max-height:220px; border-radius:8px; border:1px solid #e2e8f0;" src="" alt="">
                 <p class="hint" style="font-size:11px; margin-top:4px;">Это та картинка, на которую жалуешься</p>
             </div>
-            <label class="form-label">Что не так с решением? <span class="required">*</span>
-                <textarea id="reportErrorText" rows="3" placeholder="Например: неверный ответ, опечатка в № 5, не та картинка..."></textarea>
-            </label>
+            <label class="form-label">Что не так с решением? <span class="required">*</span><textarea id="reportErrorText" rows="3" placeholder="Например: неверный ответ, опечатка в № 5, не та картинка..."></textarea></label>
             <div id="reportErrorStatus" class="fb-status"></div>
-            <div class="modal-actions">
-                <button type="button" id="reportErrorCancel" class="btn-secondary">Отмена</button>
-                <button type="button" id="reportErrorSend" class="btn-primary" style="width:auto;">📨 Отправить</button>
-            </div>
+            <div class="modal-actions"><button type="button" id="reportErrorCancel" class="btn-secondary">Отмена</button><button type="button" id="reportErrorSend" class="btn-primary" style="width:auto;">📨 Отправить</button></div>
         </div>
     </div>
-
     <div id="imageModal" class="modal hidden"><div class="image-modal-content"><button id="closeImageModal" class="image-modal-close">✕</button><img id="imageModalImg" src="" alt=""></div></div>
-
     <script>
         let authToken = localStorage.getItem('gdz_token') || '';
         let authUser = null;
@@ -435,602 +315,276 @@
         let hideAiSubjects = {};
         let activeParts = {};
         let isStealthMode = false;
-
+        let examMode = localStorage.getItem('gdz_exam_mode') === '1';
         const $ = id => document.getElementById(id);
         const authScreen = $('authScreen'), mainScreen = $('mainScreen');
         const btn = $('btn'), result = $('result'), clearBtn = $('clearBtn');
         const historyModal = $('historyModal'), settingsModal = $('settingsModal'), subjectSettingsModal = $('subjectSettingsModal'), supportModal = $('supportModal'), imageModal = $('imageModal'), imageModalImg = $('imageModalImg'), topbarRight = $('topbarRight'), subjectsContainer = $('subjectsContainer'), allTextTasks = $('allTextTasks'), textHint = $('textHint');
-
-        function toggleStealth() {
-            isStealthMode = !isStealthMode;
-            const stealthScreen = $('stealthScreen');
-            const mainScreen = $('mainScreen');
-            const authScreen = $('authScreen');
-            if (isStealthMode) {
-                stealthScreen.style.display = 'block';
-                mainScreen.style.display = 'none';
-                authScreen.style.display = 'none';
-                document.title = "Круговорот воды в природе";
-            } else {
-                stealthScreen.style.display = 'none';
-                mainScreen.style.display = 'flex';
-                authScreen.style.display = 'none';
-                document.title = "GDZ Парсер — 7 класс";
-            }
-        }
+        function updateExamBtn() { const eb = $('examToggleBtn'); if (!eb) return; eb.classList.toggle('active', examMode); eb.title = examMode ? 'Режим экзамена ВКЛ' : 'Режим экзамена'; }
+        function toggleExamMode() { examMode = !examMode; localStorage.setItem('gdz_exam_mode', examMode ? '1' : '0'); updateExamBtn(); showToast(examMode ? '🎓 Режим экзамена включён' : '👁 Ответы снова видны', 'info'); }
+        document.addEventListener('DOMContentLoaded', () => { const eb = $('examToggleBtn'); if (eb) { eb.addEventListener('click', toggleExamMode); updateExamBtn(); } });
+        function toggleStealth() { isStealthMode = !isStealthMode; const ss = $('stealthScreen'); if (isStealthMode) { ss.style.display = 'block'; mainScreen.style.display = 'none'; authScreen.style.display = 'none'; document.title = "Круговорот воды в природе"; } else { ss.style.display = 'none'; mainScreen.style.display = 'flex'; authScreen.style.display = 'none'; document.title = "GDZ Парсер — 7 класс"; } }
         document.addEventListener('keydown', (e) => { if (e.key === 'Escape') toggleStealth(); });
         document.addEventListener('DOMContentLoaded', () => { const b = $('stealthBtn'); if (b) b.addEventListener('click', toggleStealth); });
-
-        function showToast(message, type = 'info', duration = 3000) {
-            const container = $('toastContainer'); if (!container) return;
-            const toast = document.createElement('div'); toast.className = 'toast ' + type;
-            let icon = 'ℹ️'; if (type === 'success') icon = '✅'; if (type === 'error') icon = '❌'; if (type === 'loading') toast.innerHTML = '';
-            else toast.innerHTML = `<span>${icon}</span> <span>${message}</span>`;
-            container.appendChild(toast);
-            if (type !== 'loading') setTimeout(() => { toast.style.animation = 'toastOut 0.3s forwards'; setTimeout(() => toast.remove(), 300); }, duration);
-            return toast;
-        }
-
-        function showLoadingToast(message) {
-            const container = $('toastContainer'); if (!container) return null;
-            const toast = document.createElement('div'); toast.className = 'toast loading';
-            toast.innerHTML = `<span class="toast-spinner"></span><span>${message}</span><span class="toast-timer" id="toastTimer">00:00</span>`;
-            container.appendChild(toast);
-            let seconds = 0;
-            const timerInterval = setInterval(() => {
-                seconds++; const m = String(Math.floor(seconds / 60)).padStart(2, '0'); const s = String(seconds % 60).padStart(2, '0');
-                const timerEl = document.getElementById('toastTimer'); if (timerEl) timerEl.textContent = `${m}:${s}`;
-            }, 1000);
-            return { element: toast, stop: () => { clearInterval(timerInterval); toast.style.animation = 'toastOut 0.3s forwards'; setTimeout(() => toast.remove(), 300); } };
-        }
-
-        function getDeviceInfo() {
-            const ua = navigator.userAgent; let device = '💻 Компьютер';
-            if (/mobile/i.test(ua)) device = '📱 Телефон'; else if (/tablet|ipad/i.test(ua)) device = '📱 Планшет';
-            let browser = 'Unknown'; if (/chrome/i.test(ua) && !/edg/i.test(ua)) browser = 'Chrome'; else if (/edg/i.test(ua)) browser = 'Edge'; else if (/firefox/i.test(ua)) browser = 'Firefox'; else if (/safari/i.test(ua)) browser = 'Safari'; else if (/yabrowser/i.test(ua)) browser = 'Yandex';
-            let os = 'Unknown'; if (/windows/i.test(ua)) os = 'Windows'; else if (/mac/i.test(ua)) os = 'macOS'; else if (/android/i.test(ua)) os = 'Android'; else if (/iphone|ipad|ios/i.test(ua)) os = 'iOS'; else if (/linux/i.test(ua)) os = 'Linux';
-            return `${device} · ${os} · ${browser} · ${window.screen.width}×${window.screen.height} · ${navigator.language || 'unknown'}`;
-        }
-
-        function fileToBase64(file, maxSizeMb = 5) { return new Promise((resolve, reject) => { if (file.size > maxSizeMb * 1024 * 1024) { reject(new Error(`Файл больше ${maxSizeMb} МБ`)); return; } const reader = new FileReader(); reader.onload = () => resolve(reader.result); reader.onerror = () => reject(new Error('Ошибка чтения файла')); reader.readAsDataURL(file); }); }
+        function showToast(message, type = 'info', duration = 3000) { const c = $('toastContainer'); if (!c) return; const t = document.createElement('div'); t.className = 'toast ' + type; let i = 'ℹ️'; if (type === 'success') i = '✅'; if (type === 'error') i = '❌'; if (type === 'loading') t.innerHTML = ''; else t.innerHTML = `<span>${i}</span> <span>${message}</span>`; c.appendChild(t); if (type !== 'loading') setTimeout(() => { t.style.animation = 'toastOut 0.3s forwards'; setTimeout(() => t.remove(), 300); }, duration); return t; }
+        function showLoadingToast(message) { const c = $('toastContainer'); if (!c) return null; const t = document.createElement('div'); t.className = 'toast loading'; t.innerHTML = `<span class="toast-spinner"></span><span>${message}</span><span class="toast-timer" id="toastTimer">00:00</span>`; c.appendChild(t); let s = 0; const iv = setInterval(() => { s++; const m = String(Math.floor(s / 60)).padStart(2, '0'); const ss = String(s % 60).padStart(2, '0'); const te = document.getElementById('toastTimer'); if (te) te.textContent = `${m}:${ss}`; }, 1000); return { element: t, stop: () => { clearInterval(iv); t.style.animation = 'toastOut 0.3s forwards'; setTimeout(() => t.remove(), 300); } }; }
+        function getDeviceInfo() { const ua = navigator.userAgent; let d = '💻 Компьютер'; if (/mobile/i.test(ua)) d = '📱 Телефон'; else if (/tablet|ipad/i.test(ua)) d = '📱 Планшет'; let b = 'Unknown'; if (/chrome/i.test(ua) && !/edg/i.test(ua)) b = 'Chrome'; else if (/edg/i.test(ua)) b = 'Edge'; else if (/firefox/i.test(ua)) b = 'Firefox'; else if (/safari/i.test(ua)) b = 'Safari'; else if (/yabrowser/i.test(ua)) b = 'Yandex'; let o = 'Unknown'; if (/windows/i.test(ua)) o = 'Windows'; else if (/mac/i.test(ua)) o = 'macOS'; else if (/android/i.test(ua)) o = 'Android'; else if (/iphone|ipad|ios/i.test(ua)) o = 'iOS'; else if (/linux/i.test(ua)) o = 'Linux'; return `${d} · ${o} · ${b} · ${window.screen.width}×${window.screen.height} · ${navigator.language || 'unknown'}`; }
+        function fileToBase64(file, maxSizeMb = 5) { return new Promise((resolve, reject) => { if (file.size > maxSizeMb * 1024 * 1024) { reject(new Error(`Файл больше ${maxSizeMb} МБ`)); return; } const r = new FileReader(); r.onload = () => resolve(r.result); r.onerror = () => reject(new Error('Ошибка чтения файла')); r.readAsDataURL(file); }); }
         async function shrinkImage(file, maxW = 400, quality = 0.85) { const dataUrl = await fileToBase64(file, 20); return new Promise((resolve, reject) => { const img = new Image(); img.onload = () => { const canvas = document.createElement('canvas'); let w = img.width, h = img.height; if (w > maxW) { h = Math.round(h * (maxW / w)); w = maxW; } canvas.width = w; canvas.height = h; canvas.getContext('2d').drawImage(img, 0, 0, w, h); resolve(canvas.toDataURL('image/jpeg', quality)); }; img.onerror = () => reject(new Error('Не удалось загрузить картинку')); img.src = dataUrl; }); }
-
-        function applyTheme(theme) {
-            currentTheme = theme; const root = document.documentElement; root.classList.remove('theme-dark');
-            if (theme === 'dark') { root.classList.add('theme-dark'); localStorage.setItem('gdz_theme', 'dark'); } else localStorage.setItem('gdz_theme', 'light');
-            const toggleBtn = $('themeToggleBtn'); if (toggleBtn) toggleBtn.textContent = (theme === 'dark') ? '☀️' : '🌙';
-        }
-
+        function applyTheme(theme) { currentTheme = theme; const root = document.documentElement; root.classList.remove('theme-dark'); if (theme === 'dark') { root.classList.add('theme-dark'); localStorage.setItem('gdz_theme', 'dark'); } else localStorage.setItem('gdz_theme', 'light'); const t = $('themeToggleBtn'); if (t) t.textContent = (theme === 'dark') ? '☀️' : '🌙'; }
         function getInitial(name, email) { const n = (name || '').trim(); if (n) return n[0].toUpperCase(); if (email) return email[0].toUpperCase(); return '?'; }
         function setAuthState(hasAuth) { const root = document.documentElement; root.classList.remove('has-auth', 'no-auth'); root.classList.add(hasAuth ? 'has-auth' : 'no-auth'); }
         function parseJson(str) { try { return JSON.parse(str || '{}'); } catch (e) { return {}; } }
-
-        async function copyTextToClipboard(text, btnElement) {
-            try { await navigator.clipboard.writeText(text); const originalText = btnElement.innerHTML; btnElement.innerHTML = '✅ Скопировано'; btnElement.style.color = '#10b981'; btnElement.style.borderColor = '#10b981'; setTimeout(() => { btnElement.innerHTML = originalText; btnElement.style.color = ''; btnElement.style.borderColor = ''; }, 2000); } catch (err) { showToast('Не удалось скопировать текст', 'error'); }
-        }
-
-        function getTaskLabel(subject, number) {
-            if (!number) return subject;
-            const isPageBased = /английск|географ/i.test(subject) || (/информатика/i.test(subject) && !/тетрад/i.test(subject));
-            if (isPageBased) return `${subject} · Стр. ${number}`;
-            return `${subject} · №${number}`;
-        }
-
-        function cleanTextForSharing(text) {
-            if (!text) return '';
-            let clean = text;
-            clean = clean.replace(/\$\$/g, ''); clean = clean.replace(/\$/g, '');
-            clean = clean.replace(/\\begin\{cases\}/g, ''); clean = clean.replace(/\\end\{cases\}/g, '');
-            clean = clean.replace(/\\text\{(.*?)\}/g, '$1'); clean = clean.replace(/\\\\/g, '\n'); clean = clean.replace(/&/g, '');
-            clean = clean.replace(/\\ge/g, '≥'); clean = clean.replace(/\\le/g, '≤'); clean = clean.replace(/\\ne/g, '≠');
-            clean = clean.replace(/\\approx/g, '≈'); clean = clean.replace(/\\times/g, '×'); clean = clean.replace(/\\div/g, '÷');
-            clean = clean.replace(/\\pm/g, '±'); clean = clean.replace(/\\cdot/g, '·'); clean = clean.replace(/\\infty/g, '∞');
-            clean = clean.replace(/\\pi/g, 'π'); clean = clean.replace(/\\alpha/g, 'α'); clean = clean.replace(/\\beta/g, 'β');
-            clean = clean.replace(/\\gamma/g, 'γ'); clean = clean.replace(/\\rightarrow/g, '→'); clean = clean.replace(/\\Rightarrow/g, '⇒');
-            clean = clean.replace(/\\in/g, '∈'); clean = clean.replace(/\\notin/g, '∉'); clean = clean.replace(/\\cup/g, '∪');
-            clean = clean.replace(/\\cap/g, '∩'); clean = clean.replace(/\\emptyset/g, '∅');
-            clean = clean.replace(/\\sqrt\{(.*?)\}/g, '√($1)'); clean = clean.replace(/\\frac\{(.*?)\}\{(.*?)\}/g, '($1)/($2)');
-            clean = clean.replace(/\\/g, ''); clean = clean.replace(/\{/g, ''); clean = clean.replace(/\}/g, '');
-            clean = clean.replace(/ +/g, ' '); clean = clean.replace(/\n{3,}/g, '\n\n');
-            return clean.trim();
-        }
-
-        async function shareImageFile(imageUrls, filename, caption) {
-            try {
-                let fileToShare;
-                if (imageUrls.length === 1) {
-                    const res = await fetch('/api/image?url=' + encodeURIComponent(imageUrls[0]) + '&w=1000');
-                    const blob = await res.blob();
-                    fileToShare = new File([blob], filename, { type: 'image/jpeg' });
-                } else {
-                    const canvas = document.createElement('canvas');
-                    const images = []; let maxWidth = 0; let totalHeight = 0;
-                    for (let url of imageUrls) {
-                        const proxyUrl = '/api/image?url=' + encodeURIComponent(url) + '&w=2000';
-                        const img = new Image(); img.crossOrigin = "Anonymous"; img.src = proxyUrl;
-                        await new Promise((resolve, reject) => { img.onload = resolve; img.onerror = reject; });
-                        images.push(img); if (img.width > maxWidth) maxWidth = img.width; totalHeight += img.height;
-                    }
-                    canvas.width = maxWidth; canvas.height = totalHeight;
-                    const ctx = canvas.getContext('2d'); let yOffset = 0;
-                    for (let img of images) { ctx.drawImage(img, 0, yOffset); yOffset += img.height; }
-                    const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.95));
-                    fileToShare = new File([blob], filename, { type: 'image/jpeg' });
-                }
-                if (navigator.canShare && navigator.canShare({ files: [fileToShare] })) {
-                    await navigator.share({ files: [fileToShare], title: caption || 'Решение задания', text: caption || 'Держи решение!' });
-                    showToast('Успешно отправлено!', 'success');
-                } else {
-                    showToast('Браузер не поддерживает отправку файлов. Скачиваем картинку...', 'error', 3000);
-                    downloadSingleImage(URL.createObjectURL(fileToShare), filename);
-                }
-            } catch (err) { if (err.name !== 'AbortError') { showToast('Ошибка при отправке картинки', 'error'); console.error(err); } }
-        }
-
-        async function shareAllSolutions() {
-            const allImgs = document.querySelectorAll('.solution-img');
-            if (allImgs.length === 0) { showToast('Нет картинок для отправки', 'error'); return; }
-            const loadToast = showLoadingToast(`Скачиваю ${allImgs.length} картинок...`);
-            const files = [];
-            for (let img of allImgs) {
-                if (img.dataset.originalUrl) {
-                    try {
-                        const res = await fetch('/api/image?url=' + encodeURIComponent(img.dataset.originalUrl) + '&w=1000');
-                        const blob = await res.blob();
-                        const file = new File([blob], `task_${files.length + 1}.jpg`, { type: 'image/jpeg' });
-                        files.push(file);
-                    } catch (e) { console.error('Ошибка загрузки', e); }
-                }
-            }
-            if (loadToast) loadToast.stop();
-            if (files.length === 0) { showToast('Не удалось загрузить картинки', 'error'); return; }
-            if (navigator.canShare && navigator.canShare({ files: files })) {
-                try { await navigator.share({ files: files, title: 'GDZ Решения', text: `Все решения (${files.length} шт.)` }); showToast('Успешно отправлено!', 'success'); }
-                catch (err) { if (err.name !== 'AbortError') showToast('Ошибка при отправке', 'error'); }
-            } else {
-                showToast('Телефон не поддерживает пачку файлов. Скачиваем...', 'info');
-                for (let i = 0; i < files.length; i++) {
-                    const a = document.createElement('a'); a.href = URL.createObjectURL(files[i]); a.download = files[i].name;
-                    document.body.appendChild(a); a.click(); a.remove();
-                    await new Promise(r => setTimeout(r, 300));
-                }
-                showToast('Все картинки скачаны!', 'success');
-            }
-        }
-
-        // ===== КНОПКА «НЕВЕРНОЕ РЕШЕНИЕ» =====
+        async function copyTextToClipboard(text, btnElement) { try { await navigator.clipboard.writeText(text); const orig = btnElement.innerHTML; btnElement.innerHTML = '✅ Скопировано'; btnElement.style.color = '#10b981'; btnElement.style.borderColor = '#10b981'; setTimeout(() => { btnElement.innerHTML = orig; btnElement.style.color = ''; btnElement.style.borderColor = ''; }, 2000); } catch (err) { showToast('Не удалось скопировать текст', 'error'); } }
+        function getTaskLabel(subject, number) { if (!number) return subject; const isPageBased = /английск|географ/i.test(subject) || (/информатика/i.test(subject) && !/тетрад/i.test(subject)); if (isPageBased) return `${subject} · Стр. ${number}`; return `${subject} · №${number}`; }
+        function cleanTextForSharing(text) { if (!text) return ''; let c = text; c = c.replace(/\$\$/g, ''); c = c.replace(/\$/g, ''); c = c.replace(/\\begin\{cases\}/g, ''); c = c.replace(/\\end\{cases\}/g, ''); c = c.replace(/\\text\{(.*?)\}/g, '$1'); c = c.replace(/\\\\/g, '\n'); c = c.replace(/&/g, ''); c = c.replace(/\\ge/g, '≥'); c = c.replace(/\\le/g, '≤'); c = c.replace(/\\ne/g, '≠'); c = c.replace(/\\approx/g, '≈'); c = c.replace(/\\times/g, '×'); c = c.replace(/\\div/g, '÷'); c = c.replace(/\\pm/g, '±'); c = c.replace(/\\cdot/g, '·'); c = c.replace(/\\infty/g, '∞'); c = c.replace(/\\pi/g, 'π'); c = c.replace(/\\alpha/g, 'α'); c = c.replace(/\\beta/g, 'β'); c = c.replace(/\\gamma/g, 'γ'); c = c.replace(/\\rightarrow/g, '→'); c = c.replace(/\\Rightarrow/g, '⇒'); c = c.replace(/\\in/g, '∈'); c = c.replace(/\\notin/g, '∉'); c = c.replace(/\\cup/g, '∪'); c = c.replace(/\\cap/g, '∩'); c = c.replace(/\\emptyset/g, '∅'); c = c.replace(/\\sqrt\{(.*?)\}/g, '√($1)'); c = c.replace(/\\frac\{(.*?)\}\{(.*?)\}/g, '($1)/($2)'); c = c.replace(/\\/g, ''); c = c.replace(/\{/g, ''); c = c.replace(/\}/g, ''); c = c.replace(/ +/g, ' '); c = c.replace(/\n{3,}/g, '\n\n'); return c.trim(); }
+        async function shareImageFile(imageUrls, filename, caption) { try { let fileToShare; if (imageUrls.length === 1) { const res = await fetch('/api/image?url=' + encodeURIComponent(imageUrls[0]) + '&w=1000'); const blob = await res.blob(); fileToShare = new File([blob], filename, { type: 'image/jpeg' }); } else { const canvas = document.createElement('canvas'); const images = []; let mw = 0, th = 0; for (let url of imageUrls) { const pu = '/api/image?url=' + encodeURIComponent(url) + '&w=2000'; const img = new Image(); img.crossOrigin = "Anonymous"; img.src = pu; await new Promise((res, rej) => { img.onload = res; img.onerror = rej; }); images.push(img); if (img.width > mw) mw = img.width; th += img.height; } canvas.width = mw; canvas.height = th; const ctx = canvas.getContext('2d'); let yo = 0; for (let img of images) { ctx.drawImage(img, 0, yo); yo += img.height; } const blob = await new Promise(r => canvas.toBlob(r, 'image/jpeg', 0.95)); fileToShare = new File([blob], filename, { type: 'image/jpeg' }); } if (navigator.canShare && navigator.canShare({ files: [fileToShare] })) { await navigator.share({ files: [fileToShare], title: caption || 'Решение', text: caption || 'Держи!' }); showToast('Успешно отправлено!', 'success'); } else { showToast('Браузер не поддерживает. Скачиваем...', 'error', 3000); downloadSingleImage(URL.createObjectURL(fileToShare), filename); } } catch (err) { if (err.name !== 'AbortError') { showToast('Ошибка', 'error'); console.error(err); } } }
+        async function shareAllSolutions() { const allImgs = document.querySelectorAll('.solution-img'); if (allImgs.length === 0) { showToast('Нет картинок', 'error'); return; } const lt = showLoadingToast(`Скачиваю ${allImgs.length}...`); const files = []; for (let img of allImgs) { if (img.dataset.originalUrl) { try { const res = await fetch('/api/image?url=' + encodeURIComponent(img.dataset.originalUrl) + '&w=1000'); const blob = await res.blob(); files.push(new File([blob], `task_${files.length + 1}.jpg`, { type: 'image/jpeg' })); } catch (e) { console.error(e); } } } if (lt) lt.stop(); if (files.length === 0) { showToast('Не удалось', 'error'); return; } if (navigator.canShare && navigator.canShare({ files })) { try { await navigator.share({ files, title: 'GDZ', text: `Все решения (${files.length})` }); showToast('Отправлено!', 'success'); } catch (err) { if (err.name !== 'AbortError') showToast('Ошибка', 'error'); } } else { for (let i = 0; i < files.length; i++) { const a = document.createElement('a'); a.href = URL.createObjectURL(files[i]); a.download = files[i].name; document.body.appendChild(a); a.click(); a.remove(); await new Promise(r => setTimeout(r, 300)); } showToast('Скачано!', 'success'); } }
         let reportCtx = { subject: '', task_number: '', type: '', image: '' };
-
-        window.openReportError = function(subject, taskNumber, type, imageUrl) {
-            reportCtx = { subject: subject || '', task_number: taskNumber || '', type: type || '', image: imageUrl || '' };
-            const ctxEl = document.getElementById('reportErrorContext');
-            const parts = [];
-            if (subject) parts.push('📚 ' + subject);
-            if (taskNumber) parts.push('№ ' + taskNumber);
-            if (type === 'ai') parts.push('🤖 ИИ-ответ');
-            else if (type === 'image') parts.push('🖼 Картинка');
-            ctxEl.textContent = parts.join(' · ');
-            const previewWrap = document.getElementById('reportErrorPreview');
-            const previewImg = document.getElementById('reportErrorPreviewImg');
-            if (imageUrl) { previewImg.src = imageUrl; previewWrap.style.display = 'block'; }
-            else { previewImg.src = ''; previewWrap.style.display = 'none'; }
-            document.getElementById('reportErrorText').value = '';
-            const st = document.getElementById('reportErrorStatus');
-            st.textContent = ''; st.className = 'fb-status';
-            document.getElementById('reportErrorModal').classList.remove('hidden');
-        };
-
-        function createReportButton(subject, taskNumber, type, imageUrl) {
+        window.openReportError = function(subject, taskNumber, type, imageUrl) { reportCtx = { subject: subject || '', task_number: taskNumber || '', type: type || '', image: imageUrl || '' }; const ctxEl = document.getElementById('reportErrorContext'); const parts = []; if (subject) parts.push('📚 ' + subject); if (taskNumber) parts.push('№ ' + taskNumber); if (type === 'ai') parts.push('🤖 ИИ-ответ'); else if (type === 'image') parts.push('🖼 Картинка'); ctxEl.textContent = parts.join(' · '); const pw = document.getElementById('reportErrorPreview'); const pi = document.getElementById('reportErrorPreviewImg'); if (imageUrl) { pi.src = imageUrl; pw.style.display = 'block'; } else { pi.src = ''; pw.style.display = 'none'; } document.getElementById('reportErrorText').value = ''; const st = document.getElementById('reportErrorStatus'); st.textContent = ''; st.className = 'fb-status'; document.getElementById('reportErrorModal').classList.remove('hidden'); };
+        function createReportButton(subject, taskNumber, type, imageUrl) { const b = document.createElement('button'); b.type = 'button'; b.className = 'report-error-btn'; b.innerHTML = '⚠️ Неверное решение'; b.onclick = (e) => { e.stopPropagation(); window.openReportError(subject, taskNumber, type, imageUrl); }; return b; }
+        document.getElementById('reportErrorCancel').onclick = () => document.getElementById('reportErrorModal').classList.add('hidden');
+        document.getElementById('reportErrorModal').onclick = (e) => { if (e.target.id === 'reportErrorModal') document.getElementById('reportErrorModal').classList.add('hidden'); };
+        document.getElementById('reportErrorSend').onclick = async () => { const text = document.getElementById('reportErrorText').value.trim(); const st = document.getElementById('reportErrorStatus'); if (text.length < 3) { st.textContent = '⚠️ Напиши хоть пару слов'; st.className = 'fb-status error'; return; } st.textContent = '⏳ Отправка...'; st.className = 'fb-status loading'; try { const r = await fetch('/api/feedback', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ message: text, contact: '', image: reportCtx.image || '', subject: reportCtx.subject, task_number: reportCtx.task_number, context_type: reportCtx.type, token: authToken || '' }) }); if (r.ok) { st.textContent = '✅ Спасибо!'; st.className = 'fb-status success'; setTimeout(() => document.getElementById('reportErrorModal').classList.add('hidden'), 1200); } else { st.textContent = '❌ Ошибка'; st.className = 'fb-status error'; } } catch (e) { st.textContent = '❌ Сеть'; st.className = 'fb-status error'; } };
+        document.addEventListener('DOMContentLoaded', () => { const t = $('themeToggleBtn'); if (t) { const c = localStorage.getItem('gdz_theme') || 'light'; t.textContent = (c === 'dark') ? '☀️' : '🌙'; t.addEventListener('click', async () => { const c = localStorage.getItem('gdz_theme') || 'light'; const n = (c === 'dark') ? 'light' : 'dark'; applyTheme(n); if (authToken) { try { await fetch('/api/auth/update', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ token: authToken, theme: n }) }); } catch (e) {} } }); } });
+        async function init() { if (authToken) { try { const device = getDeviceInfo(); const r = await fetch('/api/auth/me?token=' + encodeURIComponent(authToken) + '&device=' + encodeURIComponent(device) + '&t=' + Date.now()); if (r.ok) { const d = await r.json(); authUser = d.user; currentAvatar = authUser.avatar || null; subjectYears = parseJson(authUser.subject_years); hideAiSubjects = parseJson(authUser.hide_ai_subjects); applyTheme(authUser.theme || 'light'); setAuthState(true); await showMain(); return; } else if (r.status === 403) { const d = await r.json(); authToken = ''; localStorage.removeItem('gdz_token'); setAuthState(false); showAuth(); showToast(d.detail || 'Заблокирован', 'error'); return; } else { authToken = ''; localStorage.removeItem('gdz_token'); } } catch {} } setAuthState(false); showAuth(); }
+        function showAuth() { setAuthState(false); authScreen.classList.remove('hidden'); mainScreen.classList.add('hidden'); }
+        async function showMain() { setAuthState(true); authScreen.classList.add('hidden'); mainScreen.classList.remove('hidden'); updateGreeting(); renderTopbar(); if (authUser && authUser.is_admin) { $('adminFillBtn').style.display = 'flex'; } else { $('adminFillBtn').style.display = 'none'; } await loadSubjects(); renderSubjects(); checkAnnouncements(); updateExamBtn(); }
+        function updateGreeting() { const h = new Date().getHours(); let g = 'Доброй ночи'; if (h >= 7 && h < 9) g = 'Доброе утро'; else if (h >= 9 && h < 18) g = 'Добрый день'; else if (h >= 18 && h < 23) g = 'Добрый вечер'; const name = authUser.name || authUser.email.split('@')[0]; const el = $('welcomeGreeting'); if (el) { el.innerHTML = `${g}, <span>${escapeHtml(name)}</span>! 👋`; el.style.animation = 'none'; el.offsetHeight; el.style.animation = null; } }
+        async function loadSubjects() { try { const r = await fetch('/api/subjects?token=' + encodeURIComponent(authToken) + '&t=' + Date.now()); const d = await r.json(); SUBJECTS = d.subjects || []; } catch (e) { subjectsContainer.innerHTML = '<p class="empty">Не удалось загрузить</p>'; } }
+        function renderSubjects() { subjectsContainer.innerHTML = ''; const ns = SUBJECTS.filter(s => s.type === 'numbers'); if (ns.length === 0) { subjectsContainer.innerHTML = `<p class="empty" style="padding: 20px; background: rgba(237, 137, 54, 0.1); border-radius: 8px; border: 1px solid #ed8936;">Нет предметов с картинками.</p>`; } else { const groups = {}; ns.forEach(s => { const g = s.group_name || 'Прочее'; if (!groups[g]) groups[g] = []; groups[g].push(s); }); Object.entries(groups).forEach(([gN, items]) => { const gD = document.createElement('div'); gD.className = 'subject-group'; const t = document.createElement('h3'); t.className = 'group-title'; t.textContent = gN; gD.appendChild(t); items.forEach(s => { const row = document.createElement('div'); row.className = 'input-row'; const hR = document.createElement('div'); hR.className = 'subject-header-row'; const lbl = document.createElement('label'); lbl.className = 'input-label'; lbl.style.display = 'flex'; lbl.style.flexDirection = 'column'; lbl.style.alignItems = 'flex-start'; lbl.style.gap = '2px'; const cp = activeParts[s.name] || '1'; const aY = subjectYears[s.name] || (cp === '2' ? (s.default_year_alt || s.default_year) : s.default_year); const yB = `<span class="year-badge" style="color:#10b981; font-size:13px;">${aY ? `(${escapeHtml(aY)})` : ''}</span>`; const nB = s.note ? `<span style="font-size: 12px; color: #94a3b8; font-weight: normal; line-height: 1.2;">📝 ${escapeHtml(s.note)}</span>` : ''; let pB = ''; if (s.url_alt) { pB = `<button type="button" class="part-toggle-btn" onclick="togglePart('${s.name.replace(/'/g, "\\'")}', this)" data-part="${cp}">Часть ${cp}</button>`; } lbl.innerHTML = `<div>${escapeHtml(s.name)} ${yB} ${pB}</div>${nB}`; hR.appendChild(lbl); const gB = document.createElement('button'); gB.className = 'gear-btn'; gB.innerHTML = '⚙️'; gB.onclick = () => openSubjectSettings(s.name); hR.appendChild(gB); row.appendChild(hR); const ta = document.createElement('textarea'); ta.className = 'text-input'; ta.id = 'subj_' + s.id; ta.rows = 2; ta.dataset.subject = s.name; ta.dataset.type = s.type || 'numbers'; ta.dataset.url = s.url || ''; ta.dataset.urlAlt = s.url_alt || ''; ta.placeholder = '447, 449, 451 — или текст задания'; row.appendChild(ta); gD.appendChild(row); }); subjectsContainer.appendChild(gD); }); } textHint.innerHTML = `Вставь сюда весь текст (История, Музыка и т.д.). Умный парсер сам разберет.`; }
+        window.togglePart = (subjName, btn) => { const c = activeParts[subjName] || '1'; const n = c === '1' ? '2' : '1'; activeParts[subjName] = n; btn.textContent = 'Часть ' + n; btn.dataset.part = n; const s = SUBJECTS.find(x => x.name === subjName); if (s) { const aY = subjectYears[subjName] || (n === '2' ? (s.default_year_alt || s.default_year) : s.default_year); const yS = btn.parentElement.querySelector('.year-badge'); if (yS) yS.textContent = aY ? `(${aY})` : ''; } };
+        function openSubjectSettings(subjectName) { currentSubjectId = subjectName; $('subjectSettingsTitle').textContent = `⚙️ Настройки: ${subjectName}`; const s = SUBJECTS.find(x => x.name === subjectName); const cp = activeParts[subjectName] || '1'; const ad = cp === '2' ? (s.default_year_alt || s.default_year) : s.default_year; $('subjectSetYear').value = subjectYears[subjectName] || ''; const hE = $('subjectSettingsAdminHint'); if (ad) { hE.innerHTML = `👑 Администратор установил год: <b>${ad}</b>.`; $('subjectSetYear').placeholder = ad; } else { hE.innerHTML = 'Администратор не устанавливал год.'; $('subjectSetYear').placeholder = 'Например: 2025'; } $('subjectSettingsStatus').textContent = ''; $('subjectSettingsStatus').className = 'fb-status'; subjectSettingsModal.classList.remove('hidden'); }
+        $('closeSubjectSettingsBtn').onclick = () => subjectSettingsModal.classList.add('hidden'); subjectSettingsModal.onclick = (e) => { if (e.target === subjectSettingsModal) subjectSettingsModal.classList.add('hidden'); };
+        $('saveSubjectSettingsBtn').onclick = async () => { if (!currentSubjectId) return; const yV = $('subjectSetYear').value.trim(); const st = $('subjectSettingsStatus'); st.textContent = '⏳ Сохраняем...'; st.className = 'fb-status loading'; if (yV) subjectYears[currentSubjectId] = yV; else delete subjectYears[currentSubjectId]; try { const r = await fetch('/api/auth/update', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ token: authToken, subject_years: JSON.stringify(subjectYears) }) }); const d = await r.json(); if (!r.ok) throw new Error(d.detail || 'Ошибка'); authUser = d.user; subjectYears = parseJson(authUser.subject_years); renderSubjects(); st.textContent = '✅ Сохранено!'; st.className = 'fb-status success'; setTimeout(() => subjectSettingsModal.classList.add('hidden'), 1000); } catch (e) { st.textContent = '❌ ' + e.message; st.className = 'fb-status error'; } };
+        $('adminFillBtn').onclick = () => { subjectsContainer.querySelectorAll('.text-input').forEach(ta => ta.value = '11'); allTextTasks.value = '11'; };
+        const INVISIBLE_SUBJECTS = [{ name: 'Разговоры о важном', url: '', type: 'text', keywords: ['разговоры о важном'] }];
+        function findSubjectInLine(line, list) { const ll = line.toLowerCase(); for (let s of INVISIBLE_SUBJECTS) for (let kw of s.keywords) if (ll.includes(kw)) return s; for (let s of list) if (ll.includes(s.name.toLowerCase())) return s; for (let s of list) { const kws = s.name.toLowerCase().replace(/[()]/g, '').split(' ').filter(w => w.length > 3 && w !== 'язык' && w !== 'класс'); for (let kw of kws) if (ll.includes(kw)) return s; } return null; }
+        function extractNumbers(str, subj) { let c = str; const pb = /английск|географ/i.test(subj) || (/информатика/i.test(subj) && !/тетрад/i.test(subj)); if (pb) { let pm = []; const pr = /(?:стр\.?|страниц[ыа]?|page)\s*(\d+)/gi; let m; while ((m = pr.exec(c)) !== null) pm.push(m[1]); if (pm.length > 0) return [...new Set(pm)].join(', '); let sn = c.match(/\b\d+\b/g); if (sn && sn.length > 0) return [...new Set(sn)].join(', '); } c = c.replace(/\b(19|20)\d{2}\s*(год|г\.)?\b/gi, '').replace(/\([^)]*\)/g, '').replace(/(?:https?:\/\/|www\.)\S+/gi, '').replace(/\b\d{1,2}[./]\d{1,2}([./]\d{2,4})?\b/g, '').replace(/\b\d{1,2}\s+(января|февраля|марта|апреля|мая|июня|июля|августа|сентября|октября|ноября|декабря)\b/gi, '').replace(/(?:п\.|пункт|параграф|пар\.)\s*\d+/gi, '').replace(/\b([5-9]|1[0-1])\s*(класс|кл)\b/gi, '').replace(/(?:страниц[ыа]?|стр\.?)\s*\d+(?:\s*,\s*\d+)*/gi, '').replace(/^\s*\d+[.):,\-]?\s+/g, ''); let matches = []; const sr = /(?:№|номер|номера|упражнение|задание|задача|упр\.?|вар\.?|вариант)\s*([\dA-Za-zА-Яа-я\s,и]+)/gi; let m; while ((m = sr.exec(c)) !== null) { const ns = m[1].match(/\d+[A-Za-zА-Яа-я]?/g); if (ns) matches.push(...ns); } if (matches.length === 0) { const t = c.trim(); if (/^[\d\s,]+$/.test(t)) { const g = t.match(/\b\d+\b/g); if (g) matches = g; } } if (matches.length === 0) return ""; return [...new Set(matches)].filter(n => n !== '').join(', '); }
+        function parseDualTasks(subject, rawText) { const tl = rawText.toLowerCase(); const sn = subject.name.toLowerCase(); const isEng = sn.includes('англ'); if (!isEng) return [{ subject: subject.name, url: subject.url, type: subject.type, numbers: extractNumbers(rawText, subject.name), raw_text: rawText }]; const hW = /тетрад|печатн|р\.т\.|тпо/.test(tl); const hT = /учебник|учеб\./.test(tl); if (hW && hT) { const bM = subject.name.match(/^(.*?)(?:\s*\(|$)/); const bN = bM ? bM[1].trim() : subject.name; const tS = SUBJECTS.find(s => s.name.includes(bN) && !s.name.toLowerCase().includes('тетрад') && s.type === 'numbers'); const wS = SUBJECTS.find(s => s.name.includes(bN) && s.name.toLowerCase().includes('тетрад') && s.type === 'numbers'); if (tS && wS) { let tb = []; let r1 = /(?:стр\.?|страниц[ыа]?|page|номера|№)\s*([\d,\s\-]+)\s*(?:учебника|учеб\.)/gi; let r2 = /(?:учебника|учеб\.)\s*(?:стр\.?|страниц[ыа]?|page|номера|№)?\s*([\d,\s\-]+)/gi; let m; while ((m = r1.exec(rawText)) !== null) { let n = m[1].match(/\d+/g); if (n) tb.push(...n); } while ((m = r2.exec(rawText)) !== null) { let n = m[1].match(/\d+/g); if (n) tb.push(...n); } let wc = rawText.replace(/(?:со|на|в|по|из)?\s*(?:стр|страниц[ыа]?|page)?\s*[\d,\s\-]+\s*(?:учебника|учеб\.)/gi, ''); wc = wc.replace(/(?:учебника|учеб\.)\s*(?:стр|страниц[ыа]?|page)?\s*[\d,\s\-]+/gi, ''); let wb = []; let r3 = /(?:стр\.?|страниц[ыа]?|page)\s*(\d+)/gi; while ((m = r3.exec(wc)) !== null) wb.push(m[1]); if (wb.length === 0) { let r4 = /(?:№|номер|номера|упражнение|задание|задача|упр\.?)\s*([\d\s,и]+)/gi; while ((m = r4.exec(wc)) !== null) { let n = m[1].match(/\d+/g); if (n) wb.push(...n); } } let jobs = []; if (wb.length > 0) jobs.push({ subject: wS.name, url: wS.url, type: 'numbers', numbers: [...new Set(wb)].join(', '), raw_text: rawText }); if (tb.length > 0) jobs.push({ subject: tS.name, url: tS.url, type: 'numbers', numbers: [...new Set(tb)].join(', '), raw_text: rawText }); if (jobs.length > 0) return jobs; } } let fS = subject; let cT = rawText; if (hW) { const bM = subject.name.match(/^(.*?)(?:\s*\(|$)/); const bN = bM ? bM[1].trim() : subject.name; fS = SUBJECTS.find(s => s.name.includes(bN) && s.name.toLowerCase().includes('тетрад')) || subject; cT = cT.replace(/(?:со|на|в|по|из)?\s*(?:стр|страниц[ыа]?|page)?\s*[\d,\s\-]+\s*(?:учебника|учеб\.)/gi, '').replace(/(?:учебника|учеб\.)\s*(?:стр|страниц[ыа]?|page)?\s*[\d,\s\-]+/gi, ''); } else if (hT) { const bM = subject.name.match(/^(.*?)(?:\s*\(|$)/); const bN = bM ? bM[1].trim() : subject.name; fS = SUBJECTS.find(s => s.name.includes(bN) && !s.name.toLowerCase().includes('тетрад')) || subject; cT = cT.replace(/(?:со|на|в|по|из)?\s*(?:стр|страниц[ыа]?|page)?\s*[\d,\s\-]+\s*(?:тетради|тетрадь|р\.т\.)/gi, '').replace(/(?:тетради|тетрадь|р\.т\.)\s*(?:стр|страниц[ыа]?|page)?\s*[\d,\s\-]+/gi, ''); } return [{ subject: fS.name, url: fS.url, type: fS.type, numbers: extractNumbers(cT, fS.name), raw_text: rawText }]; }
+        clearBtn.onclick = () => { subjectsContainer.querySelectorAll('.text-input').forEach(ta => ta.value = ''); allTextTasks.value = ''; result.innerHTML = ''; showToast('Поля очищены', 'info'); };
+        function makeExamBlock(conditionText, rawText) {
+            const cond = (conditionText || '').trim();
+            const fallback = (rawText || '').trim();
+            const showText = cond || (fallback && !/^\s*\d+\s*$/.test(fallback) ? fallback : '');
+            const box = document.createElement('div');
+            box.className = 'exam-condition-box';
+            const label = document.createElement('div');
+            label.className = 'exam-condition-label';
+            label.textContent = '🎓 Условие задачи';
+            box.appendChild(label);
+            const txt = document.createElement('div');
+            txt.className = 'exam-condition-text';
+            txt.textContent = showText || 'Условие не найдено. Проверь номер или попробуй вставить текст задачи.';
+            box.appendChild(txt);
+            return box;
+        }
+        function makeExamShowBtn(wrapper, extraNote) {
             const b = document.createElement('button');
             b.type = 'button';
-            b.className = 'report-error-btn';
-            b.innerHTML = '⚠️ Неверное решение';
-            b.onclick = (e) => { e.stopPropagation(); window.openReportError(subject, taskNumber, type, imageUrl); };
+            b.className = 'exam-show-btn';
+            b.innerHTML = '👁 Показать ответ';
+            b.onclick = (e) => { e.stopPropagation(); wrapper.classList.add('revealed'); b.style.display = 'none'; if (extraNote) extraNote.style.display = 'none'; };
             return b;
         }
-
-        document.getElementById('reportErrorCancel').onclick = () => {
-            document.getElementById('reportErrorModal').classList.add('hidden');
-        };
-        document.getElementById('reportErrorModal').onclick = (e) => {
-            if (e.target.id === 'reportErrorModal') document.getElementById('reportErrorModal').classList.add('hidden');
-        };
-
-        document.getElementById('reportErrorSend').onclick = async () => {
-            const text = document.getElementById('reportErrorText').value.trim();
-            const st = document.getElementById('reportErrorStatus');
-            if (text.length < 3) { st.textContent = '⚠️ Напиши хотя бы пару слов'; st.className = 'fb-status error'; return; }
-            st.textContent = '⏳ Отправка...'; st.className = 'fb-status loading';
-            try {
-                const r = await fetch('/api/feedback', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ message: text, contact: '', image: reportCtx.image || '', subject: reportCtx.subject, task_number: reportCtx.task_number, context_type: reportCtx.type, token: authToken || '' })
-                });
-                if (r.ok) { st.textContent = '✅ Спасибо! Отправлено.'; st.className = 'fb-status success'; setTimeout(() => document.getElementById('reportErrorModal').classList.add('hidden'), 1200); }
-                else { st.textContent = '❌ Ошибка отправки. Попробуй позже.'; st.className = 'fb-status error'; }
-            } catch (e) { st.textContent = '❌ Сеть недоступна'; st.className = 'fb-status error'; }
-        };
-
-        (function initReportButtons() {
-            const resultEl = document.getElementById('result');
-            if (!resultEl) return;
-            const observer = new MutationObserver(() => {
-                resultEl.querySelectorAll('.subject-block').forEach(section => {
-                    const subject = section.querySelector('h2')?.textContent?.trim() || '';
-                    Array.from(section.children).forEach(child => {
-                        if (child.tagName === 'H2') return;
-                        if (child.dataset.reportAdded) return;
-                        const hasAI = child.querySelector('.ai-text-block');
-                        const hasImage = child.querySelector('.solution-img');
-                        if (!hasAI && !hasImage) return;
-                        child.dataset.reportAdded = '1';
-                        const numHeader = child.querySelector('.task-number-header');
-                        const number = numHeader ? numHeader.textContent.replace(/[^\d]/g, '') : '';
-                        const type = hasAI ? 'ai' : 'image';
-                        let imageUrl = '';
-                        if (hasImage) {
-                            const imgEl = child.querySelector('.solution-img');
-                            if (imgEl && imgEl.dataset.originalUrl) {
-                                imageUrl = '/api/image?url=' + encodeURIComponent(imgEl.dataset.originalUrl) + '&w=800';
-                            }
-                        }
-                        child.appendChild(createReportButton(subject, number, type, imageUrl));
-                    });
-                });
-            });
-            observer.observe(resultEl, { childList: true, subtree: true });
-        })();
-
-        document.addEventListener('DOMContentLoaded', () => {
-            const toggleBtn = $('themeToggleBtn');
-            if (toggleBtn) {
-                const current = localStorage.getItem('gdz_theme') || 'light'; toggleBtn.textContent = (current === 'dark') ? '☀️' : '🌙';
-                toggleBtn.addEventListener('click', async () => {
-                    const current = localStorage.getItem('gdz_theme') || 'light'; const next = (current === 'dark') ? 'light' : 'dark'; applyTheme(next);
-                    if (authToken) { try { await fetch('/api/auth/update', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ token: authToken, theme: next }) }); } catch (e) {} }
-                });
-            }
-        });
-
-        async function init() {
-            if (authToken) {
-                try {
-                    const device = getDeviceInfo(); const r = await fetch('/api/auth/me?token=' + encodeURIComponent(authToken) + '&device=' + encodeURIComponent(device) + '&t=' + Date.now());
-                    if (r.ok) { const d = await r.json(); authUser = d.user; currentAvatar = authUser.avatar || null; subjectYears = parseJson(authUser.subject_years); hideAiSubjects = parseJson(authUser.hide_ai_subjects); applyTheme(authUser.theme || 'light'); setAuthState(true); await showMain(); return; }
-                    else if (r.status === 403) { const d = await r.json(); authToken = ''; localStorage.removeItem('gdz_token'); setAuthState(false); showAuth(); showToast(d.detail || 'Доступ заблокирован', 'error'); return; }
-                    else { authToken = ''; localStorage.removeItem('gdz_token'); }
-                } catch {}
-            }
-            setAuthState(false); showAuth();
-        }
-
-        function showAuth() { setAuthState(false); authScreen.classList.remove('hidden'); mainScreen.classList.add('hidden'); }
-        async function showMain() {
-            setAuthState(true); authScreen.classList.add('hidden'); mainScreen.classList.remove('hidden'); updateGreeting(); renderTopbar();
-            if (authUser && authUser.is_admin) { $('adminFillBtn').style.display = 'flex'; } else { $('adminFillBtn').style.display = 'none'; }
-            await loadSubjects(); renderSubjects(); checkAnnouncements();
-        }
-
-        function updateGreeting() {
-            const hour = new Date().getHours(); let greeting = 'Доброй ночи'; if (hour >= 7 && hour < 9) greeting = 'Доброе утро'; else if (hour >= 9 && hour < 18) greeting = 'Добрый день'; else if (hour >= 18 && hour < 23) greeting = 'Добрый вечер';
-            const name = authUser.name || authUser.email.split('@')[0]; const greetEl = $('welcomeGreeting');
-            if (greetEl) { greetEl.innerHTML = `${greeting}, <span>${escapeHtml(name)}</span>! 👋`; greetEl.style.animation = 'none'; greetEl.offsetHeight; greetEl.style.animation = null; }
-        }
-        async function loadSubjects() { try { const r = await fetch('/api/subjects?token=' + encodeURIComponent(authToken) + '&t=' + Date.now()); const d = await r.json(); SUBJECTS = d.subjects || []; } catch (e) { subjectsContainer.innerHTML = '<p class="empty">Не удалось загрузить предметы</p>'; } }
-
-        function renderSubjects() {
-            subjectsContainer.innerHTML = ''; const numberSubjects = SUBJECTS.filter(s => s.type === 'numbers');
-            if (numberSubjects.length === 0) { subjectsContainer.innerHTML = `<p class="empty" style="padding: 20px; background: rgba(237, 137, 54, 0.1); border-radius: 8px; border: 1px solid #ed8936;">Нет предметов с картинками.</p>`; }
-            else {
-                const groups = {}; numberSubjects.forEach(s => { const g = s.group_name || 'Прочее'; if (!groups[g]) groups[g] = []; groups[g].push(s); });
-                Object.entries(groups).forEach(([groupName, items]) => {
-                    const groupDiv = document.createElement('div'); groupDiv.className = 'subject-group';
-                    const title = document.createElement('h3'); title.className = 'group-title'; title.textContent = groupName; groupDiv.appendChild(title);
-                    items.forEach(s => {
-                        const row = document.createElement('div'); row.className = 'input-row'; const headerRow = document.createElement('div'); headerRow.className = 'subject-header-row';
-                        const label = document.createElement('label'); label.className = 'input-label'; label.style.display = 'flex'; label.style.flexDirection = 'column'; label.style.alignItems = 'flex-start'; label.style.gap = '2px';
-                        const currentPart = activeParts[s.name] || '1'; const activeYear = subjectYears[s.name] || (currentPart === '2' ? (s.default_year_alt || s.default_year) : s.default_year);
-                        const yearBadge = `<span class="year-badge" style="color:#10b981; font-size:13px;">${activeYear ? `(${escapeHtml(activeYear)})` : ''}</span>`;
-                        const noteBadge = s.note ? `<span style="font-size: 12px; color: #94a3b8; font-weight: normal; line-height: 1.2;">📝 ${escapeHtml(s.note)}</span>` : '';
-                        let partBtn = ''; if (s.url_alt) { partBtn = `<button type="button" class="part-toggle-btn" onclick="togglePart('${s.name.replace(/'/g, "\\'")}', this)" data-part="${currentPart}">Часть ${currentPart}</button>`; }
-                        label.innerHTML = `<div>${escapeHtml(s.name)} ${yearBadge} ${partBtn}</div>${noteBadge}`; headerRow.appendChild(label);
-                        const gearBtn = document.createElement('button'); gearBtn.className = 'gear-btn'; gearBtn.innerHTML = '⚙️'; gearBtn.onclick = () => openSubjectSettings(s.name); headerRow.appendChild(gearBtn); row.appendChild(headerRow);
-                        const ta = document.createElement('textarea'); ta.className = 'text-input'; ta.id = 'subj_' + s.id; ta.rows = 2; ta.dataset.subject = s.name; ta.dataset.type = s.type || 'numbers'; ta.dataset.url = s.url || ''; ta.dataset.urlAlt = s.url_alt || ''; ta.placeholder = '447, 449, 451 — или текст задания'; row.appendChild(ta); groupDiv.appendChild(row);
-                    });
-                    subjectsContainer.appendChild(groupDiv);
-                });
-            }
-            textHint.innerHTML = `Вставь сюда весь текст (История, Музыка и т.д.). Умный парсер сам разберет.`;
-        }
-
-        window.togglePart = (subjName, btn) => { const current = activeParts[subjName] || '1'; const next = current === '1' ? '2' : '1'; activeParts[subjName] = next; btn.textContent = 'Часть ' + next; btn.dataset.part = next; const subj = SUBJECTS.find(s => s.name === subjName); if (subj) { const activeYear = subjectYears[subjName] || (next === '2' ? (subj.default_year_alt || subj.default_year) : subj.default_year); const yearSpan = btn.parentElement.querySelector('.year-badge'); if (yearSpan) yearSpan.textContent = activeYear ? `(${activeYear})` : ''; } };
-        function openSubjectSettings(subjectName) { currentSubjectId = subjectName; $('subjectSettingsTitle').textContent = `⚙️ Настройки: ${subjectName}`; const subj = SUBJECTS.find(s => s.name === subjectName); const currentPart = activeParts[subjectName] || '1'; const adminDefault = currentPart === '2' ? (subj.default_year_alt || subj.default_year) : subj.default_year; $('subjectSetYear').value = subjectYears[subjectName] || ''; const hintEl = $('subjectSettingsAdminHint'); if (adminDefault) { hintEl.innerHTML = `👑 Администратор установил год по умолчанию: <b>${adminDefault}</b>.`; $('subjectSetYear').placeholder = adminDefault; } else { hintEl.innerHTML = 'Администратор не устанавливал год по умолчанию.'; $('subjectSetYear').placeholder = 'Например: 2025'; } $('subjectSettingsStatus').textContent = ''; $('subjectSettingsStatus').className = 'fb-status'; subjectSettingsModal.classList.remove('hidden'); }
-        $('closeSubjectSettingsBtn').onclick = () => subjectSettingsModal.classList.add('hidden'); subjectSettingsModal.onclick = (e) => { if (e.target === subjectSettingsModal) subjectSettingsModal.classList.add('hidden'); };
-        $('saveSubjectSettingsBtn').onclick = async () => { if (!currentSubjectId) return; const yearVal = $('subjectSetYear').value.trim(); const st = $('subjectSettingsStatus'); st.textContent = '⏳ Сохраняем...'; st.className = 'fb-status loading'; if (yearVal) subjectYears[currentSubjectId] = yearVal; else delete subjectYears[currentSubjectId]; try { const r = await fetch('/api/auth/update', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ token: authToken, subject_years: JSON.stringify(subjectYears) }) }); const d = await r.json(); if (!r.ok) throw new Error(d.detail || 'Ошибка'); authUser = d.user; subjectYears = parseJson(authUser.subject_years); renderSubjects(); st.textContent = '✅ Сохранено!'; st.className = 'fb-status success'; setTimeout(() => subjectSettingsModal.classList.add('hidden'), 1000); } catch (e) { st.textContent = '❌ ' + e.message; st.className = 'fb-status error'; } };
-
-        $('adminFillBtn').onclick = () => { subjectsContainer.querySelectorAll('.text-input').forEach(ta => ta.value = '11'); allTextTasks.value = '11'; };
-
-        const INVISIBLE_SUBJECTS = [{ name: 'Разговоры о важном', url: '', type: 'text', keywords: ['разговоры о важном'] }];
-        function findSubjectInLine(line, subjectsList) { const lowerLine = line.toLowerCase(); for (let s of INVISIBLE_SUBJECTS) for (let kw of s.keywords) if (lowerLine.includes(kw)) return s; for (let s of subjectsList) if (lowerLine.includes(s.name.toLowerCase())) return s; for (let s of subjectsList) { const keywords = s.name.toLowerCase().replace(/[()]/g, '').split(' ').filter(w => w.length > 3 && w !== 'язык' && w !== 'класс'); for (let kw of keywords) if (lowerLine.includes(kw)) return s; } return null; }
-        function extractNumbers(str, subjectName) { let clean = str; const isPageBased = /английск|географ/i.test(subjectName) || (/информатика/i.test(subjectName) && !/тетрад/i.test(subjectName)); if (isPageBased) { let pageMatches = []; const pageRegex = /(?:стр\.?|страниц[ыа]?|page)\s*(\d+)/gi; let match; while ((match = pageRegex.exec(clean)) !== null) pageMatches.push(match[1]); if (pageMatches.length > 0) return [...new Set(pageMatches)].join(', '); let simpleNums = clean.match(/\b\d+\b/g); if (simpleNums && simpleNums.length > 0) return [...new Set(simpleNums)].join(', '); } clean = clean.replace(/\b(19|20)\d{2}\s*(год|г\.)?\b/gi, '').replace(/\([^)]*\)/g, '').replace(/(?:https?:\/\/|www\.)\S+/gi, '').replace(/\b\d{1,2}[./]\d{1,2}([./]\d{2,4})?\b/g, '').replace(/\b\d{1,2}\s+(января|февраля|марта|апреля|мая|июня|июля|августа|сентября|октября|ноября|декабря)\b/gi, '').replace(/(?:п\.|пункт|параграф|пар\.)\s*\d+/gi, '').replace(/\b([5-9]|1[0-1])\s*(класс|кл)\b/gi, '').replace(/(?:страниц[ыа]?|стр\.?)\s*\d+(?:\s*,\s*\d+)*/gi, '').replace(/^\s*\d+[.):,\-]?\s+/g, ''); let matches = []; const specificRegex = /(?:№|номер|номера|упражнение|задание|задача|упр\.?|вар\.?|вариант)\s*([\dA-Za-zА-Яа-я\s,и]+)/gi; let match; while ((match = specificRegex.exec(clean)) !== null) { const nums = match[1].match(/\d+[A-Za-zА-Яа-я]?/g); if (nums) matches.push(...nums); } if (matches.length === 0) { const trimmed = clean.trim(); if (/^[\d\s,]+$/.test(trimmed)) { const generalMatches = trimmed.match(/\b\d+\b/g); if (generalMatches) matches = generalMatches; } } if (matches.length === 0) return ""; return [...new Set(matches)].filter(n => n !== '').join(', '); }
-        function parseDualTasks(subject, rawText) { const textLower = rawText.toLowerCase(); const subjectNameLower = subject.name.toLowerCase(); const isEnglishOnly = subjectNameLower.includes('англ'); if (!isEnglishOnly) return [{ subject: subject.name, url: subject.url, type: subject.type, numbers: extractNumbers(rawText, subject.name), raw_text: rawText }]; const hasWb = /тетрад|печатн|р\.т\.|тпо/.test(textLower); const hasTb = /учебник|учеб\./.test(textLower); if (hasWb && hasTb) { const baseNameMatch = subject.name.match(/^(.*?)(?:\s*\(|$)/); const baseName = baseNameMatch ? baseNameMatch[1].trim() : subject.name; const textbookSubj = SUBJECTS.find(s => s.name.includes(baseName) && !s.name.toLowerCase().includes('тетрад') && s.type === 'numbers'); const workbookSubj = SUBJECTS.find(s => s.name.includes(baseName) && s.name.toLowerCase().includes('тетрад') && s.type === 'numbers'); if (textbookSubj && workbookSubj) { let tbNums = []; let tbRegex = /(?:стр\.?|страниц[ыа]?|page|номера|№)\s*([\d,\s\-]+)\s*(?:учебника|учеб\.)/gi; let tbRegex2 = /(?:учебника|учеб\.)\s*(?:стр\.?|страниц[ыа]?|page|номера|№)?\s*([\d,\s\-]+)/gi; let match; while ((match = tbRegex.exec(rawText)) !== null) { let nums = match[1].match(/\d+/g); if (nums) tbNums.push(...nums); } while ((match = tbRegex2.exec(rawText)) !== null) { let nums = match[1].match(/\d+/g); if (nums) tbNums.push(...nums); } let wbClean = rawText.replace(/(?:со|на|в|по|из)?\s*(?:стр|страниц[ыа]?|page)?\s*[\d,\s\-]+\s*(?:учебника|учеб\.)/gi, ''); wbClean = wbClean.replace(/(?:учебника|учеб\.)\s*(?:стр|страниц[ыа]?|page)?\s*[\d,\s\-]+/gi, ''); let wbNums = []; let pRegex = /(?:стр\.?|страниц[ыа]?|page)\s*(\d+)/gi; while ((match = pRegex.exec(wbClean)) !== null) wbNums.push(match[1]); if (wbNums.length === 0) { let nRegex = /(?:№|номер|номера|упражнение|задание|задача|упр\.?)\s*([\d\s,и]+)/gi; while ((match = nRegex.exec(wbClean)) !== null) { let nums = match[1].match(/\d+/g); if (nums) wbNums.push(...nums); } } let jobs = []; if (wbNums.length > 0) jobs.push({ subject: workbookSubj.name, url: workbookSubj.url, type: 'numbers', numbers: [...new Set(wbNums)].join(', '), raw_text: rawText }); if (tbNums.length > 0) jobs.push({ subject: textbookSubj.name, url: textbookSubj.url, type: 'numbers', numbers: [...new Set(tbNums)].join(', '), raw_text: rawText }); if (jobs.length > 0) return jobs; } } let finalSubj = subject; let cleanedText = rawText; if (hasWb) { const baseNameMatch = subject.name.match(/^(.*?)(?:\s*\(|$)/); const baseName = baseNameMatch ? baseNameMatch[1].trim() : subject.name; finalSubj = SUBJECTS.find(s => s.name.includes(baseName) && s.name.toLowerCase().includes('тетрад')) || subject; cleanedText = cleanedText.replace(/(?:со|на|в|по|из)?\s*(?:стр|страниц[ыа]?|page)?\s*[\d,\s\-]+\s*(?:учебника|учеб\.)/gi, '').replace(/(?:учебника|учеб\.)\s*(?:стр|страниц[ыа]?|page)?\s*[\d,\s\-]+/gi, ''); } else if (hasTb) { const baseNameMatch = subject.name.match(/^(.*?)(?:\s*\(|$)/); const baseName = baseNameMatch ? baseNameMatch[1].trim() : subject.name; finalSubj = SUBJECTS.find(s => s.name.includes(baseName) && !s.name.toLowerCase().includes('тетрад')) || subject; cleanedText = cleanedText.replace(/(?:со|на|в|по|из)?\s*(?:стр|страниц[ыа]?|page)?\s*[\d,\s\-]+\s*(?:тетради|тетрадь|р\.т\.)/gi, '').replace(/(?:тетради|тетрадь|р\.т\.)\s*(?:стр|страниц[ыа]?|page)?\s*[\d,\s\-]+/gi, ''); } return [{ subject: finalSubj.name, url: finalSubj.url, type: finalSubj.type, numbers: extractNumbers(cleanedText, finalSubj.name), raw_text: rawText }]; }
-
-        clearBtn.onclick = () => { subjectsContainer.querySelectorAll('.text-input').forEach(ta => ta.value = ''); allTextTasks.value = ''; result.innerHTML = ''; showToast('Поля очищены', 'info'); };
-
         btn.addEventListener('click', async () => {
             let jobs = [];
-            subjectsContainer.querySelectorAll('.text-input').forEach(el => { const v = el.value.trim(); if (!v) return; const subject = SUBJECTS.find(s => s.id == el.id.replace('subj_', '')); if (subject) { const taskJobs = parseDualTasks(subject, v); const activePart = activeParts[subject.name] || '1'; taskJobs.forEach(job => { if (activePart === '2' && subject.url_alt) job.url = subject.url_alt; }); jobs.push(...taskJobs); } });
-            const textValue = allTextTasks.value.trim();
-            if (textValue) { let cleanText = textValue.replace(/на\s*\d{1,2}[./]\d{1,2}\s*(\([А-Яа-я]+\))?:?/gi, '').replace(/\b\d{1,2}[./]\d{1,2}([./]\d{2,4})?\b/g, ''); const lines = cleanText.split('\n'); let currentSubj = null; let currentText = []; for (let line of lines) { line = line.trim(); if (!line) continue; let sanitizedLine = line.replace(/^\s*\d+[а-яa-z]?[.):\-\s]+/i, '').trim(); if (!sanitizedLine) continue; let matchedSubj = findSubjectInLine(sanitizedLine, SUBJECTS); if (matchedSubj) { if (currentSubj && currentText.length > 0) { const taskJobs = parseDualTasks(currentSubj, currentText.join('\n').trim()); const activePart = activeParts[currentSubj.name] || '1'; taskJobs.forEach(job => { if (activePart === '2' && currentSubj.url_alt) job.url = currentSubj.url_alt; }); jobs.push(...taskJobs); } currentSubj = matchedSubj; let cleanLine = sanitizedLine; matchedSubj.name.toLowerCase().replace(/[()]/g, '').split(' ').filter(w => w.length > 2).forEach(kw => cleanLine = cleanLine.replace(new RegExp(kw, 'gi'), '')); cleanLine = cleanLine.replace(/иностранный|[()]/gi, '').replace(/^[:\-\s]+/, '').trim().replace(/на\s*\d{1,2}[./]\d{1,2}\s*(\([А-Яа-я]+\))?:?/gi, '').trim(); currentText = cleanLine ? [cleanLine] : []; } else currentText.push(line); } if (currentSubj && currentText.length > 0) { const taskJobs = parseDualTasks(currentSubj, currentText.join('\n').trim()); const activePart = activeParts[currentSubj.name] || '1'; taskJobs.forEach(job => { if (activePart === '2' && currentSubj.url_alt) job.url = currentSubj.url_alt; }); jobs.push(...taskJobs); } if (currentText.length > 0 && jobs.length === 0) jobs.push({ subject: "Текстовые задания", url: "", type: "text", numbers: "", raw_text: currentText.join('\n') }); }
-
+            subjectsContainer.querySelectorAll('.text-input').forEach(el => { const v = el.value.trim(); if (!v) return; const subj = SUBJECTS.find(s => s.id == el.id.replace('subj_', '')); if (subj) { const tj = parseDualTasks(subj, v); const ap = activeParts[subj.name] || '1'; tj.forEach(job => { if (ap === '2' && subj.url_alt) job.url = subj.url_alt; }); jobs.push(...tj); } });
+            const tv = allTextTasks.value.trim();
+            if (tv) { let ct = tv.replace(/на\s*\d{1,2}[./]\d{1,2}\s*(\([А-Яа-я]+\))?:?/gi, '').replace(/\b\d{1,2}[./]\d{1,2}([./]\d{2,4})?\b/g, ''); const lines = ct.split('\n'); let cs = null; let ctx = []; for (let line of lines) { line = line.trim(); if (!line) continue; let sl = line.replace(/^\s*\d+[а-яa-z]?[.):\-\s]+/i, '').trim(); if (!sl) continue; let m = findSubjectInLine(sl, SUBJECTS); if (m) { if (cs && ctx.length > 0) { const tj = parseDualTasks(cs, ctx.join('\n').trim()); const ap = activeParts[cs.name] || '1'; tj.forEach(job => { if (ap === '2' && cs.url_alt) job.url = cs.url_alt; }); jobs.push(...tj); } cs = m; let cl = sl; m.name.toLowerCase().replace(/[()]/g, '').split(' ').filter(w => w.length > 2).forEach(kw => cl = cl.replace(new RegExp(kw, 'gi'), '')); cl = cl.replace(/иностранный|[()]/gi, '').replace(/^[:\-\s]+/, '').trim().replace(/на\s*\d{1,2}[./]\d{1,2}\s*(\([А-Яа-я]+\))?:?/gi, '').trim(); ctx = cl ? [cl] : []; } else ctx.push(line); } if (cs && ctx.length > 0) { const tj = parseDualTasks(cs, ctx.join('\n').trim()); const ap = activeParts[cs.name] || '1'; tj.forEach(job => { if (ap === '2' && cs.url_alt) job.url = cs.url_alt; }); jobs.push(...tj); } if (ctx.length > 0 && jobs.length === 0) jobs.push({ subject: "Текстовые задания", url: "", type: "text", numbers: "", raw_text: ctx.join('\n') }); }
             if (!jobs.length) return showToast('Заполни хотя бы одно поле', 'error');
             const btnText = $('btnText'); btn.disabled = true; btnText.innerHTML = '<span class="btn-spinner"></span> Решаю...'; result.innerHTML = '';
-            const loadingToast = showLoadingToast('Ищу решения...');
-
+            const lt = showLoadingToast('Ищу решения...');
             try {
                 const resp = await fetch('/api/parse', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({jobs, token: authToken}) });
-                const data = await resp.json(); if (loadingToast) loadingToast.stop();
+                const data = await resp.json(); if (lt) lt.stop();
                 if (!resp.ok) throw new Error(data.detail || 'Ошибка');
                 if (data.total === 0) { showToast('Ничего не найдено', 'error'); btn.disabled = false; btnText.innerHTML = '🚀 Решить'; return; }
                 showToast(`Обработано ${data.total} заданий`, 'success');
-
                 if (authToken) { for (const j of jobs) { if (!j.numbers) continue; fetch('/api/history/save', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({token: authToken, subject: j.subject, numbers: j.numbers}) }).catch(() => {}); } }
-
-                let imageResults = []; let textResults = []; let seenTexts = new Set();
-                data.results.forEach(r => { let isText = r.is_text || r.number === null; if (r.subject === "Текстовые задания") isText = true; if (isText) { const textKey = r.subject + '|||' + (r.raw_text || '').trim(); if (!seenTexts.has(textKey)) { seenTexts.add(textKey); textResults.push(r); } } else imageResults.push(r); });
-                if (imageResults.length === 0 && textResults.length === 0) { showToast('Решения не найдены. Проверьте ввод.', 'error'); btn.disabled = false; btnText.innerHTML = '🚀 Решить'; return; }
-
-                const bySubject = {}; imageResults.forEach(r => { (bySubject[r.subject] = bySubject[r.subject] || []).push(r); });
-
-                if (imageResults.length > 1) {
-                    const shareAllDiv = document.createElement('div');
-                    shareAllDiv.style.cssText = 'margin-bottom: 20px; text-align: center;';
-                    const shareAllBtn = document.createElement('button');
-                    shareAllBtn.className = 'btn-modern-primary';
-                    shareAllBtn.style.cssText = 'background: linear-gradient(135deg, #48bb78, #38a169); width: 100%; font-size: 16px; padding: 15px;';
-                    shareAllBtn.innerHTML = `📤 Поделиться всеми (${imageResults.length} шт.)`;
-                    shareAllBtn.onclick = shareAllSolutions;
-                    shareAllDiv.appendChild(shareAllBtn);
-                    result.appendChild(shareAllDiv);
-                }
-
-                Object.entries(bySubject).forEach(([subject, items]) => {
+                let imgR = []; let textR = []; let seenT = new Set();
+                data.results.forEach(r => { let isT = r.is_text || r.number === null; if (r.subject === "Текстовые задания") isT = true; if (isT) { const k = r.subject + '|||' + (r.raw_text || '').trim(); if (!seenT.has(k)) { seenT.add(k); textR.push(r); } } else imgR.push(r); });
+                if (imgR.length === 0 && textR.length === 0) { showToast('Решения не найдены', 'error'); btn.disabled = false; btnText.innerHTML = '🚀 Решить'; return; }
+                const byS = {}; imgR.forEach(r => { (byS[r.subject] = byS[r.subject] || []).push(r); });
+                if (imgR.length > 1 && !examMode) { const sd = document.createElement('div'); sd.style.cssText = 'margin-bottom: 20px; text-align: center;'; const sb = document.createElement('button'); sb.className = 'btn-modern-primary'; sb.style.cssText = 'background: linear-gradient(135deg, #48bb78, #38a169); width: 100%; font-size: 16px; padding: 15px;'; sb.innerHTML = `📤 Поделиться всеми (${imgR.length} шт.)`; sb.onclick = shareAllSolutions; sd.appendChild(sb); result.appendChild(sd); }
+                Object.entries(byS).forEach(([subject, items]) => {
                     const sec = document.createElement('section'); sec.className = 'subject-block'; sec.innerHTML = `<h2 class="color-blue">${escapeHtml(subject)}</h2>`;
                     items.forEach(r => {
                         if (!r.found || !r.solutions || r.solutions.length === 0) { sec.innerHTML += `<div class="img-error">⚠️ Решение для №${r.number || ''} не найдено на gdz.ru</div>`; return; }
-                        const subjectObj = SUBJECTS.find(s => s.name === subject); const currentPart = activeParts[subject] || '1'; const adminDefaultYear = currentPart === '2' ? (subjectObj.default_year_alt || subjectObj.default_year) : subjectObj.default_year; const targetYear = subjectYears[subject] || adminDefaultYear;
-                        let hasRenderedSomething = false;
+                        const so = SUBJECTS.find(s => s.name === subject); const cp = activeParts[subject] || '1'; const ady = cp === '2' ? (so.default_year_alt || so.default_year) : so.default_year; const ty = subjectYears[subject] || ady;
+                        let hasR = false;
+                        let aiS = r.solutions.find(sol => sol.edition && sol.edition.includes('ИИ') && sol.text && sol.text.trim().length > 0);
+                        let imgS = r.solutions.filter(sol => sol.images && sol.images.length > 0 && (!sol.edition || !sol.edition.includes('ИИ')));
 
-                        let aiSolution = r.solutions.find(sol => sol.edition && sol.edition.includes('ИИ') && sol.text && sol.text.trim().length > 0);
-                        if (aiSolution && !hideAiSubjects[subject]) {
-                            hasRenderedSomething = true;
+                        // ===== РЕЖИМ ЭКЗАМЕНА =====
+                        if (examMode && (aiS || imgS.length > 0)) {
+                            hasR = true;
                             const wrapper = document.createElement('div'); wrapper.style.cssText = 'display: flex; flex-direction: column; gap: 8px; margin-bottom: 25px;';
-                            if (r.number) { const numHeader = document.createElement('div'); numHeader.className = 'task-number-header'; numHeader.textContent = `Задание №${r.number}`; wrapper.appendChild(numHeader); }
-                            const edHeader = document.createElement('div'); edHeader.className = 'edition-header'; edHeader.textContent = aiSolution.edition; wrapper.appendChild(edHeader);
+                            if (r.number) { const nh = document.createElement('div'); nh.className = 'task-number-header'; nh.textContent = `Задание №${r.number}`; wrapper.appendChild(nh); }
+                            wrapper.appendChild(makeExamBlock(r.condition, r.raw_text));
+                            const hiddenWrap = document.createElement('div'); hiddenWrap.className = 'exam-hidden-wrap';
+                            const note = document.createElement('div'); note.className = 'hint'; note.style.cssText = 'font-size:13px; text-align:center; padding:8px;'; note.textContent = '👇 Решение скрыто. Попробуй сначала решить сам!'; wrapper.appendChild(note);
+                            const showBtn = makeExamShowBtn(hiddenWrap, note);
+                            wrapper.appendChild(showBtn);
 
-                            const btnRow = document.createElement('div');
-                            btnRow.style.display = 'flex';
-                            btnRow.style.gap = '8px';
-                            const copyBtn = document.createElement('button'); copyBtn.className = 'copy-btn'; copyBtn.innerHTML = '📋 Скопировать текст'; copyBtn.style.marginBottom = '0';
-                            copyBtn.onclick = (e) => { e.stopPropagation(); copyTextToClipboard(aiSolution.text, copyBtn); };
-                            btnRow.appendChild(copyBtn);
-                            const shareBtn = document.createElement('button'); shareBtn.className = 'copy-btn'; shareBtn.innerHTML = '📤 Поделиться'; shareBtn.style.marginBottom = '0';
-                            shareBtn.onclick = (e) => { e.stopPropagation(); const caption = getTaskLabel(subject, r.number); const cleanText = cleanTextForSharing(aiSolution.text); const fullText = `${caption}\n\n${cleanText}`; if(navigator.share) { navigator.share({ title: 'GDZ Решение', text: fullText }).catch(()=>{}); } else { copyTextToClipboard(fullText, shareBtn); } };
-                            btnRow.appendChild(shareBtn);
-                            wrapper.appendChild(btnRow);
-
-                            const textDiv = document.createElement('div'); textDiv.className = 'ai-text-block'; textDiv.innerHTML = renderMarkdown(aiSolution.text);
-                            if (window.renderMathInElement) renderMathInElement(textDiv, { delimiters: [{left: '$$', right: '$$', display: true}, {left: '$', right: '$', display: false}, {left: '\\(', right: '\\)', display: false}, {left: '\\[', right: '\\]', display: true}], throwOnError: false });
-                            wrapper.appendChild(textDiv);
-                            if (r.raw_text) { const taskTextDiv = document.createElement('div'); taskTextDiv.className = 'task-raw-text'; let displayText = r.raw_text.replace(new RegExp(r.subject, 'gi'), '').replace(/^[:\-\s]+/, '').trim() || r.numbers || 'Без текста'; taskTextDiv.textContent = displayText; wrapper.appendChild(taskTextDiv); }
+                            // ИИ внутри hidden
+                            if (aiS && !hideAiSubjects[subject]) {
+                                const aiWrap = document.createElement('div'); aiWrap.style.cssText = 'display: flex; flex-direction: column; gap: 8px; margin-bottom: 15px;';
+                                const eh = document.createElement('div'); eh.className = 'edition-header'; eh.textContent = aiS.edition; aiWrap.appendChild(eh);
+                                const tb = document.createElement('div'); tb.style.cssText = 'display:flex; gap:8px;';
+                                const cb = document.createElement('button'); cb.className = 'copy-btn'; cb.innerHTML = '📋 Скопировать'; cb.style.marginBottom = '0'; cb.onclick = (e) => { e.stopPropagation(); copyTextToClipboard(aiS.text, cb); }; tb.appendChild(cb);
+                                const shb = document.createElement('button'); shb.className = 'copy-btn'; shb.innerHTML = '📤 Поделиться'; shb.style.marginBottom = '0'; shb.onclick = (e) => { e.stopPropagation(); const c = getTaskLabel(subject, r.number); const ct = cleanTextForSharing(aiS.text); const ft = `${c}\n\n${ct}`; if(navigator.share) { navigator.share({ title: 'GDZ', text: ft }).catch(()=>{}); } else { copyTextToClipboard(ft, shb); } }; tb.appendChild(shb);
+                                aiWrap.appendChild(tb);
+                                const td = document.createElement('div'); td.className = 'ai-text-block'; td.innerHTML = renderMarkdown(aiS.text); if (window.renderMathInElement) renderMathInElement(td, { delimiters: [{left: '$$', right: '$$', display: true}, {left: '$', right: '$', display: false}, {left: '\\(', right: '\\)', display: false}, {left: '\\[', right: '\\]', display: true}], throwOnError: false }); aiWrap.appendChild(td);
+                                hiddenWrap.appendChild(aiWrap);
+                            }
+                            // Картинки внутри hidden
+                            if (imgS.length > 0) {
+                                let sel = imgS[0];
+                                if (ty) { const tn = parseInt(ty); let ay = []; imgS.forEach(sol => { if (sol.edition) { const mm = sol.edition.match(/\b(20\d{2})\b/g); if (mm) mm.forEach(y => ay.push(parseInt(y))); } }); if (ay.length > 0) { let fy = [...new Set(ay)].filter(y => y >= tn).sort((a,b) => a - b); let sy = fy.length > 0 ? fy[0] : Math.max(...ay); let fb = imgS.find(sol => sol.edition && sol.edition.includes(sy.toString())); if (fb) sel = fb; } }
+                                const eh = document.createElement('div'); eh.className = 'edition-header'; eh.textContent = sel.edition || 'Решение'; hiddenWrap.appendChild(eh);
+                                const isM = subject.toLowerCase().includes('англ') || subject.toLowerCase().includes('география (тетрадь)');
+                                const imgUrlForReport = '/api/image?url=' + encodeURIComponent(sel.images[0]) + '&w=800';
+                                if (isM) { const ic = document.createElement('div'); ic.className = 'merged-container'; const iels = []; sel.images.forEach(u => { const im = document.createElement('img'); im.className = 'solution-img img-loading'; im.alt = 'Загрузка...'; im.dataset.originalUrl = u; loadImage(im, u); ic.appendChild(im); iels.push({ im, u }); }); hiddenWrap.appendChild(ic);
+                                    const ctrl = document.createElement('div'); ctrl.style.cssText = 'display: flex; gap: 10px; justify-content: flex-end; flex-wrap: wrap; margin-top: 10px;';
+                                    const rb = document.createElement('button'); rb.innerHTML = '🔄 Обновить'; rb.style.cssText = 'padding: 8px 16px; background: rgba(150,150,150,0.15); color: inherit; border: 1px solid rgba(150,150,150,0.3); border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer;'; rb.onclick = (e) => { e.stopPropagation(); iels.forEach(it => { it.im.classList.remove('img-tall', 'img-retrying'); it.im.classList.add('img-loading'); it.im.src = ''; loadImage(it.im, it.u); }); }; ctrl.appendChild(rb);
+                                    const db = document.createElement('button'); db.innerHTML = '⬇️ Скачать'; db.style.cssText = 'padding: 8px 16px; background: #4299e1; color: #fff; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer;'; db.onclick = async (e) => { e.stopPropagation(); db.textContent = '⏳ Склеиваем...'; await downloadMergedImage(sel.images, `GDZ_${subject}_${r.number || 1}_merged.jpg`); db.textContent = '⬇️ Скачать'; fetch('/api/track-download', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({token: authToken}) }).catch(()=>{}); }; ctrl.appendChild(db);
+                                    const sb = document.createElement('button'); sb.innerHTML = '📤 Поделиться'; sb.style.cssText = 'padding: 8px 16px; background: #48bb78; color: #fff; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer;'; sb.onclick = (e) => { e.stopPropagation(); shareImageFile(sel.images, `GDZ_${subject}_${r.number || 1}.jpg`, getTaskLabel(subject, r.number)); }; ctrl.appendChild(sb);
+                                    hiddenWrap.appendChild(ctrl);
+                                } else {
+                                    const isMulti = subject.toLowerCase().includes('контурн');
+                                    const toR = isMulti ? sel.images : [sel.images[0]];
+                                    toR.forEach((u, idx) => {
+                                        const iw = document.createElement('div'); iw.style.cssText = 'display: flex; flex-direction: column; gap: 8px; margin-bottom: 15px;';
+                                        const im = document.createElement('img'); im.className = 'solution-img img-loading'; im.style.marginTop = '0'; im.alt = 'Загрузка...'; im.dataset.originalUrl = u; loadImage(im, u); iw.appendChild(im);
+                                        const ctrl = document.createElement('div'); ctrl.style.cssText = 'display: flex; gap: 10px; justify-content: flex-end; flex-wrap: wrap;';
+                                        const rb = document.createElement('button'); rb.innerHTML = '🔄 Обновить'; rb.style.cssText = 'padding: 8px 16px; background: rgba(150,150,150,0.15); color: inherit; border: 1px solid rgba(150,150,150,0.3); border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer;'; rb.onclick = (e) => { e.stopPropagation(); im.classList.remove('img-tall', 'img-retrying'); im.classList.add('img-loading'); im.src = ''; loadImage(im, u); }; ctrl.appendChild(rb);
+                                        const db = document.createElement('button'); db.innerHTML = '⬇️ Скачать'; db.style.cssText = 'padding: 8px 16px; background: #4299e1; color: #fff; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer;'; db.onclick = (e) => { e.stopPropagation(); if (im.src && im.src.includes('/api/image')) { downloadSingleImage(im.src, `GDZ_${subject}_${r.number || 1}_${idx + 1}.jpg`); fetch('/api/track-download', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({token: authToken}) }).catch(()=>{}); } else alert('Подожди загрузки'); }; ctrl.appendChild(db);
+                                        const sb = document.createElement('button'); sb.innerHTML = '📤 Поделиться'; sb.style.cssText = 'padding: 8px 16px; background: #48bb78; color: #fff; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer;'; sb.onclick = (e) => { e.stopPropagation(); shareImageFile([u], `GDZ_${subject}_${r.number || 1}_${idx + 1}.jpg`, getTaskLabel(subject, r.number)); }; ctrl.appendChild(sb);
+                                        iw.appendChild(ctrl); hiddenWrap.appendChild(iw);
+                                    });
+                                }
+                                const reportBtn = createReportButton(subject, String(r.number || ''), 'image', imgUrlForReport);
+                                hiddenWrap.appendChild(reportBtn);
+                            } else if (aiS) {
+                                hiddenWrap.appendChild(createReportButton(subject, String(r.number || ''), 'ai', ''));
+                            }
+                            wrapper.appendChild(hiddenWrap);
+                            sec.appendChild(wrapper);
+                            return;
+                        }
+                        // ===== ОБЫЧНЫЙ РЕЖИМ =====
+                        if (aiS && !hideAiSubjects[subject]) {
+                            hasR = true;
+                            const wrapper = document.createElement('div'); wrapper.style.cssText = 'display: flex; flex-direction: column; gap: 8px; margin-bottom: 25px;';
+                            if (r.number) { const nh = document.createElement('div'); nh.className = 'task-number-header'; nh.textContent = `Задание №${r.number}`; wrapper.appendChild(nh); }
+                            const eh = document.createElement('div'); eh.className = 'edition-header'; eh.textContent = aiS.edition; wrapper.appendChild(eh);
+                            const tb = document.createElement('div'); tb.style.display = 'flex'; tb.style.gap = '8px';
+                            const cb = document.createElement('button'); cb.className = 'copy-btn'; cb.innerHTML = '📋 Скопировать текст'; cb.style.marginBottom = '0'; cb.onclick = (e) => { e.stopPropagation(); copyTextToClipboard(aiS.text, cb); }; tb.appendChild(cb);
+                            const shb = document.createElement('button'); shb.className = 'copy-btn'; shb.innerHTML = '📤 Поделиться'; shb.style.marginBottom = '0'; shb.onclick = (e) => { e.stopPropagation(); const c = getTaskLabel(subject, r.number); const ct = cleanTextForSharing(aiS.text); const ft = `${c}\n\n${ct}`; if(navigator.share) { navigator.share({ title: 'GDZ', text: ft }).catch(()=>{}); } else { copyTextToClipboard(ft, shb); } }; tb.appendChild(shb);
+                            wrapper.appendChild(tb);
+                            const td = document.createElement('div'); td.className = 'ai-text-block'; td.innerHTML = renderMarkdown(aiS.text); if (window.renderMathInElement) renderMathInElement(td, { delimiters: [{left: '$$', right: '$$', display: true}, {left: '$', right: '$', display: false}, {left: '\\(', right: '\\)', display: false}, {left: '\\[', right: '\\]', display: true}], throwOnError: false }); wrapper.appendChild(td);
+                            if (r.raw_text) { const ttd = document.createElement('div'); ttd.className = 'task-raw-text'; let dt = r.raw_text.replace(new RegExp(r.subject, 'gi'), '').replace(/^[:\-\s]+/, '').trim() || r.numbers || 'Без текста'; ttd.textContent = dt; wrapper.appendChild(ttd); }
+                            wrapper.appendChild(createReportButton(subject, String(r.number || ''), 'ai', ''));
                             sec.appendChild(wrapper);
                         }
-
-                        let imageSolutions = r.solutions.filter(sol => sol.images && sol.images.length > 0 && (!sol.edition || !sol.edition.includes('ИИ')));
-                        if (imageSolutions.length > 0) {
-                            hasRenderedSomething = true; let selectedSolution = imageSolutions[0];
-                            if (targetYear) { const targetYearNum = parseInt(targetYear); let allYears = []; imageSolutions.forEach(sol => { if (sol.edition) { const match = sol.edition.match(/\b(20\d{2})\b/g); if (match) match.forEach(y => allYears.push(parseInt(y))); } }); if (allYears.length > 0) { let futureYears = [...new Set(allYears)].filter(y => y >= targetYearNum).sort((a,b) => a - b); let selectedYear = futureYears.length > 0 ? futureYears[0] : Math.max(...allYears); let foundByYear = imageSolutions.find(sol => sol.edition && sol.edition.includes(selectedYear.toString())); if (foundByYear) selectedSolution = foundByYear; } }
+                        if (imgS.length > 0) {
+                            hasR = true; let sel = imgS[0];
+                            if (ty) { const tn = parseInt(ty); let ay = []; imgS.forEach(sol => { if (sol.edition) { const mm = sol.edition.match(/\b(20\d{2})\b/g); if (mm) mm.forEach(y => ay.push(parseInt(y))); } }); if (ay.length > 0) { let fy = [...new Set(ay)].filter(y => y >= tn).sort((a,b) => a - b); let sy = fy.length > 0 ? fy[0] : Math.max(...ay); let fb = imgS.find(sol => sol.edition && sol.edition.includes(sy.toString())); if (fb) sel = fb; } }
                             const wrapper = document.createElement('div'); wrapper.style.cssText = 'display: flex; flex-direction: column; gap: 8px; margin-bottom: 25px;';
-                            if (!aiSolution && r.number) { const numHeader = document.createElement('div'); numHeader.className = 'task-number-header'; numHeader.textContent = `Задание №${r.number}`; wrapper.appendChild(numHeader); }
-                            if (selectedSolution.edition) { const edHeader = document.createElement('div'); edHeader.className = 'edition-header'; edHeader.textContent = selectedSolution.edition; wrapper.appendChild(edHeader); }
-                            const isMergedSubject = subject.toLowerCase().includes('англ') || subject.toLowerCase().includes('география (тетрадь)'); const isMultiImageSubject = subject.toLowerCase().includes('контурн');
-                            const captionText = getTaskLabel(subject, r.number);
-
-                            if (isMergedSubject) {
-                                const imgContainer = document.createElement('div'); imgContainer.className = 'merged-container'; const imgElements = [];
-                                selectedSolution.images.forEach((u) => { const img = document.createElement('img'); img.className = 'solution-img img-loading'; img.alt = 'Загрузка...'; img.dataset.originalUrl = u; loadImage(img, u); imgContainer.appendChild(img); imgElements.push({ img, url: u }); });
-                                wrapper.appendChild(imgContainer);
-                                if (r.raw_text) { const textDiv = document.createElement('div'); textDiv.className = 'task-raw-text'; textDiv.textContent = r.raw_text.replace(new RegExp(r.subject, 'gi'), '').replace(/^[:\-\s]+/, '').trim() || r.numbers || 'Без текста'; wrapper.appendChild(textDiv); }
-                                const controls = document.createElement('div'); controls.style.cssText = 'display: flex; gap: 10px; justify-content: flex-end; flex-wrap: wrap; margin-top: 10px;';
-                                const refreshBtn = document.createElement('button'); refreshBtn.innerHTML = '🔄 Обновить'; refreshBtn.style.cssText = 'padding: 8px 16px; display: flex; align-items: center; gap: 6px; background: rgba(150, 150, 150, 0.15); color: inherit; border: 1px solid rgba(150, 150, 150, 0.3); border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s;'; refreshBtn.onclick = (e) => { e.stopPropagation(); imgElements.forEach(item => { item.img.classList.remove('img-tall', 'img-retrying'); item.img.classList.add('img-loading'); item.img.src = ''; loadImage(item.img, item.url); }); };
-                                const dlBtn = document.createElement('button'); dlBtn.innerHTML = '⬇️ Скачать'; dlBtn.style.cssText = 'padding: 8px 16px; display: flex; align-items: center; gap: 6px; background: #4299e1; color: #ffffff; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s; box-shadow: 0 2px 5px rgba(66, 153, 225, 0.3);'; dlBtn.onclick = async (e) => { e.stopPropagation(); dlBtn.textContent = '⏳ Склеиваем...'; await downloadMergedImage(selectedSolution.images, `GDZ_${subject}_${r.number || 1}_merged.jpg`); dlBtn.textContent = '⬇️ Скачать'; fetch('/api/track-download', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({token: authToken}) }).catch(()=>{}); };
-                                const shareBtn = document.createElement('button'); shareBtn.innerHTML = '📤 Поделиться'; shareBtn.style.cssText = 'padding: 8px 16px; display: flex; align-items: center; gap: 6px; background: #48bb78; color: #ffffff; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s; box-shadow: 0 2px 5px rgba(72, 187, 120, 0.3);'; shareBtn.onclick = (e) => { e.stopPropagation(); shareImageFile(selectedSolution.images, `GDZ_${subject}_${r.number || 1}.jpg`, captionText); };
-                                controls.appendChild(refreshBtn); controls.appendChild(dlBtn); controls.appendChild(shareBtn); wrapper.appendChild(controls); sec.appendChild(wrapper);
+                            if (!aiS && r.number) { const nh = document.createElement('div'); nh.className = 'task-number-header'; nh.textContent = `Задание №${r.number}`; wrapper.appendChild(nh); }
+                            if (sel.edition) { const eh = document.createElement('div'); eh.className = 'edition-header'; eh.textContent = sel.edition; wrapper.appendChild(eh); }
+                            const isM = subject.toLowerCase().includes('англ') || subject.toLowerCase().includes('география (тетрадь)');
+                            const imgUrlForReport = '/api/image?url=' + encodeURIComponent(sel.images[0]) + '&w=800';
+                            if (isM) { const ic = document.createElement('div'); ic.className = 'merged-container'; const iels = []; sel.images.forEach(u => { const im = document.createElement('img'); im.className = 'solution-img img-loading'; im.alt = 'Загрузка...'; im.dataset.originalUrl = u; loadImage(im, u); ic.appendChild(im); iels.push({ im, u }); }); wrapper.appendChild(ic);
+                                if (r.raw_text) { const td = document.createElement('div'); td.className = 'task-raw-text'; td.textContent = r.raw_text.replace(new RegExp(r.subject, 'gi'), '').replace(/^[:\-\s]+/, '').trim() || r.numbers || 'Без текста'; wrapper.appendChild(td); }
+                                const ctrl = document.createElement('div'); ctrl.style.cssText = 'display: flex; gap: 10px; justify-content: flex-end; flex-wrap: wrap; margin-top: 10px;';
+                                const rb = document.createElement('button'); rb.innerHTML = '🔄 Обновить'; rb.style.cssText = 'padding: 8px 16px; background: rgba(150,150,150,0.15); color: inherit; border: 1px solid rgba(150,150,150,0.3); border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer;'; rb.onclick = (e) => { e.stopPropagation(); iels.forEach(it => { it.im.classList.remove('img-tall', 'img-retrying'); it.im.classList.add('img-loading'); it.im.src = ''; loadImage(it.im, it.u); }); }; ctrl.appendChild(rb);
+                                const db = document.createElement('button'); db.innerHTML = '⬇️ Скачать'; db.style.cssText = 'padding: 8px 16px; background: #4299e1; color: #fff; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer;'; db.onclick = async (e) => { e.stopPropagation(); db.textContent = '⏳ Склеиваем...'; await downloadMergedImage(sel.images, `GDZ_${subject}_${r.number || 1}_merged.jpg`); db.textContent = '⬇️ Скачать'; fetch('/api/track-download', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({token: authToken}) }).catch(()=>{}); }; ctrl.appendChild(db);
+                                const sb = document.createElement('button'); sb.innerHTML = '📤 Поделиться'; sb.style.cssText = 'padding: 8px 16px; background: #48bb78; color: #fff; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer;'; sb.onclick = (e) => { e.stopPropagation(); shareImageFile(sel.images, `GDZ_${subject}_${r.number || 1}.jpg`, getTaskLabel(subject, r.number)); }; ctrl.appendChild(sb);
+                                wrapper.appendChild(ctrl);
                             } else {
-                                const imagesToRender = isMultiImageSubject ? selectedSolution.images : [selectedSolution.images[0]];
-                                imagesToRender.forEach((u, imgIndex) => {
-                                    const imgWrap = document.createElement('div'); imgWrap.style.cssText = 'display: flex; flex-direction: column; gap: 8px; margin-bottom: 15px;';
-                                    const img = document.createElement('img'); img.className = 'solution-img img-loading'; img.style.marginTop = '0'; img.alt = 'Загрузка...'; img.dataset.originalUrl = u; loadImage(img, u); imgWrap.appendChild(img);
-                                    const controls = document.createElement('div'); controls.style.cssText = 'display: flex; gap: 10px; justify-content: flex-end; flex-wrap: wrap;';
-                                    const refreshBtn = document.createElement('button'); refreshBtn.innerHTML = '🔄 Обновить'; refreshBtn.style.cssText = 'padding: 8px 16px; display: flex; align-items: center; gap: 6px; background: rgba(150, 150, 150, 0.15); color: inherit; border: 1px solid rgba(150, 150, 150, 0.3); border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s;'; refreshBtn.onclick = (e) => { e.stopPropagation(); img.classList.remove('img-tall', 'img-retrying'); img.classList.add('img-loading'); img.src = ''; loadImage(img, u); };
-                                    const dlBtn = document.createElement('button'); dlBtn.innerHTML = '⬇️ Скачать'; dlBtn.style.cssText = 'padding: 8px 16px; display: flex; align-items: center; gap: 6px; background: #4299e1; color: #ffffff; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s; box-shadow: 0 2px 5px rgba(66, 153, 225, 0.3);'; dlBtn.onclick = (e) => { e.stopPropagation(); if (img.src && img.src.includes('/api/image')) { downloadSingleImage(img.src, `GDZ_${subject}_${r.number || 1}_${imgIndex + 1}.jpg`); fetch('/api/track-download', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({token: authToken}) }).catch(()=>{}); } else alert('Картинка еще не загрузилась, подождите...'); };
-                                    const shareBtn = document.createElement('button'); shareBtn.innerHTML = '📤 Поделиться'; shareBtn.style.cssText = 'padding: 8px 16px; display: flex; align-items: center; gap: 6px; background: #48bb78; color: #ffffff; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s; box-shadow: 0 2px 5px rgba(72, 187, 120, 0.3);'; shareBtn.onclick = (e) => { e.stopPropagation(); shareImageFile([u], `GDZ_${subject}_${r.number || 1}_${imgIndex + 1}.jpg`, captionText); };
-                                    controls.appendChild(refreshBtn); controls.appendChild(dlBtn); controls.appendChild(shareBtn); imgWrap.appendChild(controls); wrapper.appendChild(imgWrap);
+                                const isMulti = subject.toLowerCase().includes('контурн');
+                                const toR = isMulti ? sel.images : [sel.images[0]];
+                                toR.forEach((u, idx) => {
+                                    const iw = document.createElement('div'); iw.style.cssText = 'display: flex; flex-direction: column; gap: 8px; margin-bottom: 15px;';
+                                    const im = document.createElement('img'); im.className = 'solution-img img-loading'; im.style.marginTop = '0'; im.alt = 'Загрузка...'; im.dataset.originalUrl = u; loadImage(im, u); iw.appendChild(im);
+                                    const ctrl = document.createElement('div'); ctrl.style.cssText = 'display: flex; gap: 10px; justify-content: flex-end; flex-wrap: wrap;';
+                                    const rb = document.createElement('button'); rb.innerHTML = '🔄 Обновить'; rb.style.cssText = 'padding: 8px 16px; background: rgba(150,150,150,0.15); color: inherit; border: 1px solid rgba(150,150,150,0.3); border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer;'; rb.onclick = (e) => { e.stopPropagation(); im.classList.remove('img-tall', 'img-retrying'); im.classList.add('img-loading'); im.src = ''; loadImage(im, u); }; ctrl.appendChild(rb);
+                                    const db = document.createElement('button'); db.innerHTML = '⬇️ Скачать'; db.style.cssText = 'padding: 8px 16px; background: #4299e1; color: #fff; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer;'; db.onclick = (e) => { e.stopPropagation(); if (im.src && im.src.includes('/api/image')) { downloadSingleImage(im.src, `GDZ_${subject}_${r.number || 1}_${idx + 1}.jpg`); fetch('/api/track-download', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({token: authToken}) }).catch(()=>{}); } else alert('Подожди загрузки'); }; ctrl.appendChild(db);
+                                    const sb = document.createElement('button'); sb.innerHTML = '📤 Поделиться'; sb.style.cssText = 'padding: 8px 16px; background: #48bb78; color: #fff; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer;'; sb.onclick = (e) => { e.stopPropagation(); shareImageFile([u], `GDZ_${subject}_${r.number || 1}_${idx + 1}.jpg`, getTaskLabel(subject, r.number)); }; ctrl.appendChild(sb);
+                                    iw.appendChild(ctrl); wrapper.appendChild(iw);
                                 });
-                                if (!aiSolution && r.raw_text) { const textDiv = document.createElement('div'); textDiv.className = 'task-raw-text'; textDiv.textContent = r.raw_text.replace(new RegExp(r.subject, 'gi'), '').replace(/^[:\-\s]+/, '').trim() || r.numbers || 'Без текста'; wrapper.appendChild(textDiv); }
-                                sec.appendChild(wrapper);
+                                if (!aiS && r.raw_text) { const td = document.createElement('div'); td.className = 'task-raw-text'; td.textContent = r.raw_text.replace(new RegExp(r.subject, 'gi'), '').replace(/^[:\-\s]+/, '').trim() || r.numbers || 'Без текста'; wrapper.appendChild(td); }
                             }
+                            wrapper.appendChild(createReportButton(subject, String(r.number || ''), 'image', imgUrlForReport));
+                            sec.appendChild(wrapper);
                         }
-                        if (!hasRenderedSomething) sec.innerHTML += `<div class="img-error" style="margin-bottom: 15px;">⚠️ Решение для №${r.number || ''} не найдено. Проверьте ссылку в админке.</div>`;
+                        if (!hasR) sec.innerHTML += `<div class="img-error" style="margin-bottom: 15px;">⚠️ Решение для №${r.number || ''} не найдено. Проверьте ссылку в админке.</div>`;
                     });
                     result.appendChild(sec);
                 });
-
-                if (textResults.length > 0) {
+                if (textR.length > 0) {
                     const sec = document.createElement('section'); sec.className = 'subject-block';
-                    const textBySubject = {}; textResults.forEach(r => { textBySubject[r.subject] = textBySubject[r.subject] || []; textBySubject[r.subject].push(r); });
-                    Object.entries(textBySubject).forEach(([subject, items]) => {
+                    const tbs = {}; textR.forEach(r => { tbs[r.subject] = tbs[r.subject] || []; tbs[r.subject].push(r); });
+                    Object.entries(tbs).forEach(([subject, items]) => {
                         const div = document.createElement('div'); div.className = 'text-subject-block'; div.innerHTML = `<h3 class="color-blue">${escapeHtml(subject)}</h3>`;
                         items.forEach(r => {
-                            let content = escapeHtml(r.raw_text || '').trim().replace(/^№?\d+\s*/i, '');
-                            let lines = content.split('\n').map(l => l.trim()).filter(l => l.length > 2 || (l.length > 0 && !/^[а-яa-z]$/i.test(l))); content = lines.join('<br>');
-                            let header = (r.number && !content.includes(r.number)) ? `<span style="font-weight:700; color:#e53e3e; margin-right: 8px;">№${r.number}</span>` : '';
-                            const textBlock = document.createElement('div'); textBlock.className = 'task-text'; textBlock.innerHTML = `${header} ${content}`;
-                            const btnRow = document.createElement('div'); btnRow.style.display = 'flex'; btnRow.style.gap = '8px'; btnRow.style.marginTop = '8px';
-                            const copyBtn = document.createElement('button'); copyBtn.className = 'copy-btn'; copyBtn.innerHTML = '📋 Скопировать текст'; copyBtn.style.margin = '0';
-                            copyBtn.onclick = () => copyTextToClipboard(r.raw_text, copyBtn);
-                            btnRow.appendChild(copyBtn);
-                            const shareBtn = document.createElement('button'); shareBtn.className = 'copy-btn'; shareBtn.innerHTML = '📤 Поделиться'; shareBtn.style.margin = '0';
-                            shareBtn.onclick = () => { const caption = getTaskLabel(subject, r.number); const cleanText = cleanTextForSharing(r.raw_text); const fullText = `${caption}\n\n${cleanText}`; if(navigator.share) { navigator.share({ title: 'GDZ Решение', text: fullText }).catch(()=>{}); } else { copyTextToClipboard(fullText, shareBtn); } };
-                            btnRow.appendChild(shareBtn);
-                            textBlock.appendChild(btnRow);
-                            div.appendChild(textBlock);
+                            let c = escapeHtml(r.raw_text || '').trim().replace(/^№?\d+\s*/i, '');
+                            let lines = c.split('\n').map(l => l.trim()).filter(l => l.length > 2 || (l.length > 0 && !/^[а-яa-z]$/i.test(l))); c = lines.join('<br>');
+                            let h = (r.number && !c.includes(r.number)) ? `<span style="font-weight:700; color:#e53e3e; margin-right: 8px;">№${r.number}</span>` : '';
+                            const tb = document.createElement('div'); tb.className = 'task-text'; tb.innerHTML = `${h} ${c}`;
+                            const br = document.createElement('div'); br.style.display = 'flex'; br.style.gap = '8px'; br.style.marginTop = '8px';
+                            const cb = document.createElement('button'); cb.className = 'copy-btn'; cb.innerHTML = '📋 Скопировать текст'; cb.style.margin = '0'; cb.onclick = () => copyTextToClipboard(r.raw_text, cb); br.appendChild(cb);
+                            const shb = document.createElement('button'); shb.className = 'copy-btn'; shb.innerHTML = '📤 Поделиться'; shb.style.margin = '0'; shb.onclick = () => { const c2 = getTaskLabel(subject, r.number); const ct = cleanTextForSharing(r.raw_text); const ft = `${c2}\n\n${ct}`; if(navigator.share) { navigator.share({ title: 'GDZ', text: ft }).catch(()=>{}); } else { copyTextToClipboard(ft, shb); } }; br.appendChild(shb);
+                            tb.appendChild(br); div.appendChild(tb);
                         });
                         sec.appendChild(div);
                     });
                     result.appendChild(sec);
                 }
-            } catch (err) { if (loadingToast) loadingToast.stop(); showToast(err.message, 'error'); } finally { btn.disabled = false; btnText.innerHTML = '🚀 Решить'; }
+            } catch (err) { if (lt) lt.stop(); showToast(err.message, 'error'); } finally { btn.disabled = false; btnText.innerHTML = '🚀 Решить'; }
         });
-
-        function renderMarkdown(text) { if (!text) return ''; let html = text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); const lines = html.split('\n'); let result = ''; let inUl = false; let inOl = false; let inMath = false; let mathBuffer = []; const closeLists = () => { if (inUl) { result += '</ul>'; inUl = false; } if (inOl) { result += '</ol>'; inOl = false; } }; for (let line of lines) { let trimmed = line.trim(); if (trimmed.startsWith('$$')) { if (trimmed.length > 2 && trimmed.endsWith('$$')) { closeLists(); result += `<div style="text-align:center; margin: 10px 0;">${trimmed}</div>`; continue; } inMath = !inMath; if (inMath) mathBuffer = ['$$']; else { mathBuffer.push('$$'); closeLists(); result += `<div style="text-align:center; margin: 10px 0;">${mathBuffer.join('\n')}</div>`; mathBuffer = []; } continue; } if (inMath) { mathBuffer.push(line); continue; } if (!trimmed) { closeLists(); continue; } line = line.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>').replace(/(?<!\*)\*([^*]+)\*(?!\*)/g, '<i>$1</i>'); if (line.startsWith('* ')) { if (inOl) { result += '</ol>'; inOl = false; } if (!inUl) { result += '<ul>'; inUl = true; } result += `<li>${line.substring(2)}</li>`; } else if (/^\d+\.\s/.test(line)) { if (inUl) { result += '</ul>'; inUl = false; } if (!inOl) { result += '<ol>'; inOl = true; } result += `<li>${line.replace(/^\d+\.\s/, '')}</li>`; } else if (line.startsWith('#### ')) { closeLists(); result += `<h5>${line.substring(5)}</h5>`; } else if (line.startsWith('### ')) { closeLists(); result += `<h4>${line.substring(4)}</h4>`; } else { closeLists(); result += `<p>${line}</p>`; } } closeLists(); return result; }
+        function renderMarkdown(text) { if (!text) return ''; let h = text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); const lines = h.split('\n'); let r = ''; let inU = false, inO = false, inM = false, mb = []; const cl = () => { if (inU) { r += '</ul>'; inU = false; } if (inO) { r += '</ol>'; inO = false; } }; for (let line of lines) { let t = line.trim(); if (t.startsWith('$$')) { if (t.length > 2 && t.endsWith('$$')) { cl(); r += `<div style="text-align:center; margin: 10px 0;">${t}</div>`; continue; } inM = !inM; if (inM) mb = ['$$']; else { mb.push('$$'); cl(); r += `<div style="text-align:center; margin: 10px 0;">${mb.join('\n')}</div>`; mb = []; } continue; } if (inM) { mb.push(line); continue; } if (!t) { cl(); continue; } line = line.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>').replace(/(?<!\*)\*([^*]+)\*(?!\*)/g, '<i>$1</i>'); if (line.startsWith('* ')) { if (inO) { r += '</ol>'; inO = false; } if (!inU) { r += '<ul>'; inU = true; } r += `<li>${line.substring(2)}</li>`; } else if (/^\d+\.\s/.test(line)) { if (inU) { r += '</ul>'; inU = false; } if (!inO) { r += '<ol>'; inO = true; } r += `<li>${line.replace(/^\d+\.\s/, '')}</li>`; } else if (line.startsWith('#### ')) { cl(); r += `<h5>${line.substring(5)}</h5>`; } else if (line.startsWith('### ')) { cl(); r += `<h4>${line.substring(4)}</h4>`; } else { cl(); r += `<p>${line}</p>`; } } cl(); return r; }
         function escapeHtml(t) { const d = document.createElement('div'); d.textContent = t || ''; return d.innerHTML; }
-
-        function renderTopbar() {
-            topbarRight.innerHTML = ''; const name = authUser.name || authUser.email.split('@')[0]; const initial = getInitial(authUser.name, authUser.email); const avatarStyle = currentAvatar ? `background-image: url('${currentAvatar}')` : '';
-            topbarRight.innerHTML = `<div class="user-menu-container" id="userMenuContainer"><button class="user-menu-btn" id="userMenuBtn"><div class="user-avatar-mini" style="${avatarStyle}">${currentAvatar ? '' : initial}</div><span>${escapeHtml(name)}</span><span style="font-size:10px; opacity:0.6;">▼</span></button><div class="dropdown-menu" id="userDropdown"><div class="dropdown-header" id="dropdownGreeting"></div><button class="dropdown-item" onclick="openAchievements()">🏆 Достижения</button><button class="dropdown-item" onclick="openSettings()">⚙️ Настройки</button><button class="dropdown-item" onclick="openHistory()">📜 История</button><button class="dropdown-item" onclick="document.getElementById('userDropdown').classList.remove('show'); supportModal.classList.remove('hidden')">❓ Поддержка</button>${authUser.is_admin ? '<button class="dropdown-item" onclick="document.getElementById(\'userDropdown\').classList.remove(\'show\'); window.location.href=\'/admin\'">👑 Админка</button>' : ''}<div class="dropdown-divider"></div><button class="dropdown-item logout" onclick="logout()">🚪 Выйти</button></div></div>`;
-            const hour = new Date().getHours(); let g = 'Доброй ночи'; if (hour >= 7 && hour < 9) g = 'Доброе утро'; else if (hour >= 9 && hour < 18) g = 'Добрый день'; else if (hour >= 18 && hour < 23) g = 'Добрый вечер'; $('dropdownGreeting').innerText = `${g}, ${name}!`;
-            $('userMenuBtn').onclick = (e) => { e.stopPropagation(); $('userDropdown').classList.toggle('show'); }; document.addEventListener('click', (e) => { if (!e.target.closest('#userMenuContainer')) $('userDropdown').classList.remove('show'); });
-        }
-
-        async function openAchievements() {
-            document.getElementById('userDropdown')?.classList.remove('show');
-            const modal = document.getElementById('achievementsModal'); const list = document.getElementById('achievementsList');
-            modal.classList.remove('hidden'); list.innerHTML = '<p class="empty" style="grid-column: 1 / -1;">Загрузка...</p>';
-            try {
-                const r = await fetch('/api/achievements?token=' + encodeURIComponent(authToken));
-                const d = await r.json(); list.innerHTML = '';
-                d.achievements.forEach(ach => {
-                    const div = document.createElement('div'); div.className = 'ach-card' + (ach.unlocked ? ' unlocked' : '');
-                    div.innerHTML = `<div class="ach-icon">${ach.icon}</div><div class="ach-title">${ach.title}</div><div class="ach-desc">${ach.desc}</div>`;
-                    list.appendChild(div);
-                });
-            } catch (e) { list.innerHTML = '<p class="empty" style="grid-column: 1 / -1;">Ошибка загрузки</p>'; }
-        }
-
-        async function checkAnnouncements() {
-            try {
-                const r = await fetch('/api/announcements/active?token=' + encodeURIComponent(authToken));
-                const d = await r.json();
-                if (d.announcement) {
-                    const hiddenAnn = localStorage.getItem('hidden_ann_' + d.announcement.id);
-                    if (!hiddenAnn) {
-                        document.getElementById('annText').textContent = d.announcement.message;
-                        const banner = document.getElementById('globalAnnouncement');
-                        banner.style.display = 'flex';
-                        banner.dataset.id = d.announcement.id;
-                    }
-                }
-            } catch(e) {}
-        }
-
-        function closeAnnouncement() {
-            const banner = document.getElementById('globalAnnouncement');
-            const id = banner.dataset.id;
-            if (id) localStorage.setItem('hidden_ann_' + id, 'true');
-            banner.style.display = 'none';
-        }
-
-        let authMode = 'login'; function switchTab(mode) { authMode = mode; document.querySelectorAll('.auth-tab').forEach(t => t.classList.toggle('active', t.dataset.tab === mode)); $('nameField').style.display = mode === 'register' ? 'block' : 'none'; $('authSubmit').textContent = mode === 'login' ? 'Войти' : 'Создать аккаунт'; } document.querySelectorAll('.auth-tab').forEach(t => t.onclick = () => switchTab(t.dataset.tab));
-        $('authForm').onsubmit = async (e) => {
-            e.preventDefault(); const email = $('authEmail').value.trim(); const password = $('authPwd').value; const name = $('authName').value.trim(); const st = $('authStatus'); const device = getDeviceInfo();
-            st.textContent = '⏳ Подождите...'; st.className = 'fb-status loading';
-            const url = authMode === 'login' ? '/api/auth/login' : '/api/auth/register'; const body = authMode === 'login' ? {email, password, device} : {email, password, name, device};
-            try { const r = await fetch(url, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body) }); const d = await r.json(); if (!r.ok) { if (r.status === 403) st.innerHTML = '🚫 ' + (d.detail || 'Доступ заблокирован'); else st.textContent = '❌ ' + (d.detail || 'Ошибка'); st.className = 'fb-status error'; return; } authToken = d.token; authUser = d.user; currentAvatar = d.user.avatar || null; subjectYears = parseJson(authUser.subject_years); hideAiSubjects = parseJson(authUser.hide_ai_subjects); localStorage.setItem('gdz_token', authToken); applyTheme(authUser.theme || 'light'); await showMain(); }
-            catch (err) { st.textContent = '❌ ' + err.message; st.className = 'fb-status error'; }
-        };
-
+        function renderTopbar() { topbarRight.innerHTML = ''; const name = authUser.name || authUser.email.split('@')[0]; const init = getInitial(authUser.name, authUser.email); const as = currentAvatar ? `background-image: url('${currentAvatar}')` : ''; topbarRight.innerHTML = `<div class="user-menu-container" id="userMenuContainer"><button class="user-menu-btn" id="userMenuBtn"><div class="user-avatar-mini" style="${as}">${currentAvatar ? '' : init}</div><span>${escapeHtml(name)}</span><span style="font-size:10px; opacity:0.6;">▼</span></button><div class="dropdown-menu" id="userDropdown"><div class="dropdown-header" id="dropdownGreeting"></div><button class="dropdown-item" onclick="openAchievements()">🏆 Достижения</button><button class="dropdown-item" onclick="openSettings()">⚙️ Настройки</button><button class="dropdown-item" onclick="openHistory()">📜 История</button><button class="dropdown-item" onclick="document.getElementById('userDropdown').classList.remove('show'); supportModal.classList.remove('hidden')">❓ Поддержка</button>${authUser.is_admin ? '<button class="dropdown-item" onclick="document.getElementById(\'userDropdown\').classList.remove(\'show\'); window.location.href=\'/admin\'">👑 Админка</button>' : ''}<div class="dropdown-divider"></div><button class="dropdown-item logout" onclick="logout()">🚪 Выйти</button></div></div>`; const h = new Date().getHours(); let g = 'Доброй ночи'; if (h >= 7 && h < 9) g = 'Доброе утро'; else if (h >= 9 && h < 18) g = 'Добрый день'; else if (h >= 18 && h < 23) g = 'Добрый вечер'; $('dropdownGreeting').innerText = `${g}, ${name}!`; $('userMenuBtn').onclick = (e) => { e.stopPropagation(); $('userDropdown').classList.toggle('show'); }; document.addEventListener('click', (e) => { if (!e.target.closest('#userMenuContainer')) $('userDropdown').classList.remove('show'); }); }
+        async function openAchievements() { document.getElementById('userDropdown')?.classList.remove('show'); const m = document.getElementById('achievementsModal'); const l = document.getElementById('achievementsList'); m.classList.remove('hidden'); l.innerHTML = '<p class="empty" style="grid-column: 1 / -1;">Загрузка...</p>'; try { const r = await fetch('/api/achievements?token=' + encodeURIComponent(authToken)); const d = await r.json(); l.innerHTML = ''; d.achievements.forEach(a => { const div = document.createElement('div'); div.className = 'ach-card' + (a.unlocked ? ' unlocked' : ''); div.innerHTML = `<div class="ach-icon">${a.icon}</div><div class="ach-title">${a.title}</div><div class="ach-desc">${a.desc}</div>`; l.appendChild(div); }); } catch (e) { l.innerHTML = '<p class="empty" style="grid-column: 1 / -1;">Ошибка</p>'; } }
+        async function checkAnnouncements() { try { const r = await fetch('/api/announcements/active?token=' + encodeURIComponent(authToken)); const d = await r.json(); if (d.announcement) { const h = localStorage.getItem('hidden_ann_' + d.announcement.id); if (!h) { document.getElementById('annText').textContent = d.announcement.message; const b = document.getElementById('globalAnnouncement'); b.style.display = 'flex'; b.dataset.id = d.announcement.id; } } } catch(e) {} }
+        function closeAnnouncement() { const b = document.getElementById('globalAnnouncement'); const id = b.dataset.id; if (id) localStorage.setItem('hidden_ann_' + id, 'true'); b.style.display = 'none'; }
+        let authMode = 'login'; function switchTab(mode) { authMode = mode; document.querySelectorAll('.auth-tab').forEach(t => t.classList.toggle('active', t.dataset.tab === mode)); $('nameField').style.display = mode === 'register' ? 'block' : 'none'; $('authSubmit').textContent = mode === 'login' ? 'Войти' : 'Создать аккаунт'; }
+        document.querySelectorAll('.auth-tab').forEach(t => t.onclick = () => switchTab(t.dataset.tab));
+        $('authForm').onsubmit = async (e) => { e.preventDefault(); const em = $('authEmail').value.trim(); const pw = $('authPwd').value; const nm = $('authName').value.trim(); const st = $('authStatus'); const dv = getDeviceInfo(); st.textContent = '⏳ Подождите...'; st.className = 'fb-status loading'; const url = authMode === 'login' ? '/api/auth/login' : '/api/auth/register'; const body = authMode === 'login' ? {email: em, password: pw, device: dv} : {email: em, password: pw, name: nm, device: dv}; try { const r = await fetch(url, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body) }); const d = await r.json(); if (!r.ok) { if (r.status === 403) st.innerHTML = '🚫 ' + (d.detail || 'Доступ заблокирован'); else st.textContent = '❌ ' + (d.detail || 'Ошибка'); st.className = 'fb-status error'; return; } authToken = d.token; authUser = d.user; currentAvatar = d.user.avatar || null; subjectYears = parseJson(authUser.subject_years); hideAiSubjects = parseJson(authUser.hide_ai_subjects); localStorage.setItem('gdz_token', authToken); applyTheme(authUser.theme || 'light'); await showMain(); } catch (err) { st.textContent = '❌ ' + err.message; st.className = 'fb-status error'; } };
         async function logout() { if (!confirm('Выйти из аккаунта?')) return; try { await fetch('/api/auth/logout', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({token: authToken}) }); } catch {} authToken = ''; authUser = null; currentAvatar = null; subjectYears = {}; hideAiSubjects = {}; activeParts = {}; localStorage.removeItem('gdz_token'); applyTheme('light'); topbarRight.innerHTML = ''; showAuth(); }
-
-        async function openHistory() {
-            document.getElementById('userDropdown')?.classList.remove('show'); historyModal.classList.remove('hidden');
-            const list = $('historyList'); list.innerHTML = '<p class="empty">Загрузка...</p>';
-            try { const r = await fetch('/api/history/list?token=' + encodeURIComponent(authToken)); const d = await r.json(); if (!r.ok) throw new Error(d.detail || 'Ошибка'); if (!d.items.length) { list.innerHTML = '<p class="empty">История пуста</p>'; return; } list.innerHTML = ''; d.items.forEach(it => { const row = document.createElement('div'); row.className = 'history-row'; row.innerHTML = `<div class="history-info"><strong>${escapeHtml(it.subject)}</strong><span>${escapeHtml(it.numbers)}</span></div><span class="history-date">${escapeHtml(it.created)}</span>`; row.onclick = () => { allTextTasks.value = `${it.subject}: ${it.numbers}`; historyModal.classList.add('hidden'); }; list.appendChild(row); }); }
-            catch (e) { list.innerHTML = '<p class="empty">Ошибка: ' + e.message + '</p>'; }
-        }
-        $('closeHistoryBtn').onclick = () => historyModal.classList.add('hidden'); $('clearHistoryBtn').onclick = async () => { if (!confirm('Очистить всю историю?')) return; try { await fetch('/api/history/clear', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({token: authToken}) }); $('historyList').innerHTML = '<p class="empty">История пуста</p>'; } catch {} };
-
-        function updateAvatarPreview() { const preview = $('avatarPreview'); if (currentAvatar) { preview.style.backgroundImage = 'url("' + currentAvatar + '")'; preview.textContent = ''; } else { preview.style.backgroundImage = ''; preview.textContent = getInitial(authUser?.name, authUser?.email); } }
-        function openSettings() {
-            document.getElementById('userDropdown')?.classList.remove('show'); settingsModal.classList.remove('hidden'); $('settingsStatus').textContent = ''; $('settingsStatus').className = 'fb-status'; $('setName').value = authUser?.name || ''; $('setOldPwd').value = ''; $('setNewPwd').value = ''; updateAvatarPreview();
-            const hideList = $('hideAiList'); hideList.innerHTML = ''; SUBJECTS.forEach(s => { hideList.innerHTML += `<label style="display: flex; align-items: center; gap: 8px; cursor: pointer; padding: 4px 0;"><input type="checkbox" value="${s.name}" ${hideAiSubjects[s.name] ? 'checked' : ''} style="width: 18px; height: 18px; accent-color: #4299e1;"><span>${s.name}</span></label>`; });
-        }
-        function cancelSettings() { settingsModal.classList.add('hidden'); } $('closeSettingsBtn').onclick = cancelSettings; settingsModal.onclick = (e) => { if (e.target === settingsModal) cancelSettings(); };
-
-        $('avatarInput').onchange = async (e) => { const file = e.target.files[0]; if (!file) return; try { const b64 = await shrinkImage(file, 300, 0.85); currentAvatar = b64; updateAvatarPreview(); await fetch('/api/auth/avatar', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({token: authToken, avatar: b64}) }); renderTopbar(); } catch (err) { showToast('Ошибка: ' + err.message, 'error'); } e.target.value = ''; };
+        async function openHistory() { document.getElementById('userDropdown')?.classList.remove('show'); historyModal.classList.remove('hidden'); const l = $('historyList'); l.innerHTML = '<p class="empty">Загрузка...</p>'; try { const r = await fetch('/api/history/list?token=' + encodeURIComponent(authToken)); const d = await r.json(); if (!r.ok) throw new Error(d.detail || 'Ошибка'); if (!d.items.length) { l.innerHTML = '<p class="empty">История пуста</p>'; return; } l.innerHTML = ''; d.items.forEach(it => { const row = document.createElement('div'); row.className = 'history-row'; row.innerHTML = `<div class="history-info"><strong>${escapeHtml(it.subject)}</strong><span>${escapeHtml(it.numbers)}</span></div><span class="history-date">${escapeHtml(it.created)}</span>`; row.onclick = () => { allTextTasks.value = `${it.subject}: ${it.numbers}`; historyModal.classList.add('hidden'); }; l.appendChild(row); }); } catch (e) { l.innerHTML = '<p class="empty">Ошибка: ' + e.message + '</p>'; } }
+        $('closeHistoryBtn').onclick = () => historyModal.classList.add('hidden'); $('clearHistoryBtn').onclick = async () => { if (!confirm('Очистить историю?')) return; try { await fetch('/api/history/clear', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({token: authToken}) }); $('historyList').innerHTML = '<p class="empty">История пуста</p>'; } catch {} };
+        function updateAvatarPreview() { const p = $('avatarPreview'); if (currentAvatar) { p.style.backgroundImage = 'url("' + currentAvatar + '")'; p.textContent = ''; } else { p.style.backgroundImage = ''; p.textContent = getInitial(authUser?.name, authUser?.email); } }
+        function openSettings() { document.getElementById('userDropdown')?.classList.remove('show'); settingsModal.classList.remove('hidden'); $('settingsStatus').textContent = ''; $('settingsStatus').className = 'fb-status'; $('setName').value = authUser?.name || ''; $('setOldPwd').value = ''; $('setNewPwd').value = ''; updateAvatarPreview(); const hl = $('hideAiList'); hl.innerHTML = ''; SUBJECTS.forEach(s => { hl.innerHTML += `<label style="display: flex; align-items: center; gap: 8px; cursor: pointer; padding: 4px 0;"><input type="checkbox" value="${s.name}" ${hideAiSubjects[s.name] ? 'checked' : ''} style="width: 18px; height: 18px; accent-color: #4299e1;"><span>${s.name}</span></label>`; }); }
+        function cancelSettings() { settingsModal.classList.add('hidden'); }
+        $('closeSettingsBtn').onclick = cancelSettings; settingsModal.onclick = (e) => { if (e.target === settingsModal) cancelSettings(); };
+        $('avatarInput').onchange = async (e) => { const f = e.target.files[0]; if (!f) return; try { const b = await shrinkImage(f, 300, 0.85); currentAvatar = b; updateAvatarPreview(); await fetch('/api/auth/avatar', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({token: authToken, avatar: b}) }); renderTopbar(); } catch (err) { showToast('Ошибка: ' + err.message, 'error'); } e.target.value = ''; };
         $('avatarRemoveBtn').onclick = async () => { if (!confirm('Убрать аватарку?')) return; currentAvatar = null; updateAvatarPreview(); try { await fetch('/api/auth/avatar', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({token: authToken, avatar: ''}) }); renderTopbar(); } catch {} };
-        $('saveSettingsBtn').onclick = async () => {
-            const st = $('settingsStatus'); const newName = $('setName').value.trim(); const oldPwd = $('setOldPwd').value; const newPwd = $('setNewPwd').value;
-            st.textContent = '⏳ Применяем...'; st.className = 'fb-status loading';
-            const hideCheckboxes = document.querySelectorAll('#hideAiList input[type="checkbox"]'); let newHideAi = {}; hideCheckboxes.forEach(cb => { if (cb.checked) newHideAi[cb.value] = true; });
-            const payload = { token: authToken, name: newName, hide_ai_subjects: JSON.stringify(newHideAi) };
-            try { const r1 = await fetch('/api/auth/update', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload) }); const d1 = await r1.json(); if (!r1.ok) throw new Error(d1.detail || 'Ошибка'); authUser = d1.user; hideAiSubjects = parseJson(authUser.hide_ai_subjects); updateGreeting(); renderTopbar(); if (oldPwd && newPwd) { const r2 = await fetch('/api/auth/change-password', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({token: authToken, old_password: oldPwd, new_password: newPwd}) }); const d2 = await r2.json(); if (!r2.ok) { st.textContent = '⚠️ Профиль применён, пароль: ' + (d2.detail || 'Ошибка'); st.className = 'fb-status error'; return; } st.textContent = '✅ Профиль и пароль применены'; } else st.textContent = '✅ Настройки применены'; st.className = 'fb-status success'; setTimeout(() => settingsModal.classList.add('hidden'), 1500); }
-            catch (e) { st.textContent = '❌ ' + e.message; st.className = 'fb-status error'; }
-        };
+        $('saveSettingsBtn').onclick = async () => { const st = $('settingsStatus'); const nn = $('setName').value.trim(); const op = $('setOldPwd').value; const np = $('setNewPwd').value; st.textContent = '⏳ Применяем...'; st.className = 'fb-status loading'; const hc = document.querySelectorAll('#hideAiList input[type="checkbox"]'); let nh = {}; hc.forEach(cb => { if (cb.checked) nh[cb.value] = true; }); const p = { token: authToken, name: nn, hide_ai_subjects: JSON.stringify(nh) }; try { const r1 = await fetch('/api/auth/update', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(p) }); const d1 = await r1.json(); if (!r1.ok) throw new Error(d1.detail || 'Ошибка'); authUser = d1.user; hideAiSubjects = parseJson(authUser.hide_ai_subjects); updateGreeting(); renderTopbar(); if (op && np) { const r2 = await fetch('/api/auth/change-password', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({token: authToken, old_password: op, new_password: np}) }); const d2 = await r2.json(); if (!r2.ok) { st.textContent = '⚠️ Профиль применён, пароль: ' + (d2.detail || 'Ошибка'); st.className = 'fb-status error'; return; } st.textContent = '✅ Профиль и пароль применены'; } else st.textContent = '✅ Настройки применены'; st.className = 'fb-status success'; setTimeout(() => settingsModal.classList.add('hidden'), 1500); } catch (e) { st.textContent = '❌ ' + e.message; st.className = 'fb-status error'; } };
         $('logoutBtn').onclick = () => { settingsModal.classList.add('hidden'); logout(); };
-        $('deleteAccountBtn').onclick = async () => { if (!confirm('Удалить аккаунт?') || !confirm('Точно удалить?')) return; const st = $('settingsStatus'); st.textContent = '⏳ Удаляем...'; st.className = 'fb-status loading'; try { const r = await fetch('/api/auth/delete', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({token: authToken}) }); if (!r.ok) throw new Error('Ошибка удаления'); authToken = ''; authUser = null; currentAvatar = null; localStorage.removeItem('gdz_token'); localStorage.removeItem('gdz_theme'); applyTheme('light'); settingsModal.classList.add('hidden'); showAuth(); } catch (e) { st.textContent = '❌ ' + e.message; st.className = 'fb-status error'; } };
-
+        $('deleteAccountBtn').onclick = async () => { if (!confirm('Удалить аккаунт?') || !confirm('Точно?')) return; const st = $('settingsStatus'); st.textContent = '⏳ Удаляем...'; st.className = 'fb-status loading'; try { const r = await fetch('/api/auth/delete', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({token: authToken}) }); if (!r.ok) throw new Error('Ошибка'); authToken = ''; authUser = null; currentAvatar = null; localStorage.removeItem('gdz_token'); localStorage.removeItem('gdz_theme'); applyTheme('light'); settingsModal.classList.add('hidden'); showAuth(); } catch (e) { st.textContent = '❌ ' + e.message; st.className = 'fb-status error'; } };
         $('closeSupport').onclick = () => supportModal.classList.add('hidden'); supportModal.onclick = (e) => { if (e.target === supportModal) supportModal.classList.add('hidden'); };
-        $('fbImage').onchange = async (e) => { const file = e.target.files[0]; if (!file) { fbImageBase64 = ""; $('fbImageName').textContent = 'Файл не выбран'; return; } try { fbImageBase64 = await shrinkImage(file, 800, 0.8); $('fbImageName').textContent = file.name; } catch (err) { alert("Ошибка: " + err.message); fbImageBase64 = ""; $('fbImageName').textContent = 'Файл не выбран'; e.target.value = ''; } };
-        $('feedbackForm').onsubmit = async (e) => {
-            e.preventDefault(); const msg = $('fbMessage').value.trim(); if (!msg) return; const st = $('fbStatus'); st.textContent = '⏳ Отправляем...'; st.className = 'fb-status loading';
-            try { const r = await fetch('/api/feedback', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({message: msg, contact: $('fbContact').value.trim(), image: fbImageBase64, token: authToken || ''}) }); if (!r.ok) throw new Error('Ошибка'); st.textContent = '✅ Отправлено! Спасибо.'; st.className = 'fb-status success'; $('fbMessage').value = ''; $('fbContact').value = ''; $('fbImage').value = ''; $('fbImageName').textContent = 'Файл не выбран'; fbImageBase64 = ""; setTimeout(() => supportModal.classList.add('hidden'), 2000); }
-            catch (err) { st.textContent = '❌ ' + err.message; st.className = 'fb-status error'; }
-        };
-
+        $('fbImage').onchange = async (e) => { const f = e.target.files[0]; if (!f) { fbImageBase64 = ""; $('fbImageName').textContent = 'Файл не выбран'; return; } try { fbImageBase64 = await shrinkImage(f, 800, 0.8); $('fbImageName').textContent = f.name; } catch (err) { alert("Ошибка: " + err.message); fbImageBase64 = ""; $('fbImageName').textContent = 'Файл не выбран'; e.target.value = ''; } };
+        $('feedbackForm').onsubmit = async (e) => { e.preventDefault(); const m = $('fbMessage').value.trim(); if (!m) return; const st = $('fbStatus'); st.textContent = '⏳ Отправляем...'; st.className = 'fb-status loading'; try { const r = await fetch('/api/feedback', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({message: m, contact: $('fbContact').value.trim(), image: fbImageBase64, token: authToken || ''}) }); if (!r.ok) throw new Error('Ошибка'); st.textContent = '✅ Отправлено!'; st.className = 'fb-status success'; $('fbMessage').value = ''; $('fbContact').value = ''; $('fbImage').value = ''; $('fbImageName').textContent = 'Файл не выбран'; fbImageBase64 = ""; setTimeout(() => supportModal.classList.add('hidden'), 2000); } catch (err) { st.textContent = '❌ ' + err.message; st.className = 'fb-status error'; } };
         function openImageModal(src) { imageModalImg.src = src; imageModal.classList.remove('hidden'); document.body.style.overflow = 'hidden'; }
         function closeModal() { imageModal.classList.add('hidden'); imageModalImg.src = ''; document.body.style.overflow = ''; }
-        $('closeImageModal').onclick = closeModal; imageModal.onclick = (e) => { if (e.target === imageModal) closeModal(); }; document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !isStealthMode) closeModal(); });
-
+        $('closeImageModal').onclick = closeModal; imageModal.onclick = (e) => { if (e.target === imageModal) closeModal(); };
+        document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !isStealthMode) closeModal(); });
         let activeLoads = 0; const MAX_PARALLEL = 3, pendingQueue = [];
         const PLACEHOLDER_RETRIES = 4, RETRY_DELAYS = [500, 1000, 2000, 3000];
         const MIN_REAL_WIDTH = 200, MIN_REAL_HEIGHT = 150;
         const LOAD_TIMEOUT = 15000, TALL_RATIO = 3.0;
-
         function scheduleLoad(fn) { return new Promise((resolve) => { pendingQueue.push({ fn, resolve }); processQueue(); }); }
         function processQueue() { while (activeLoads < MAX_PARALLEL && pendingQueue.length > 0) { const { fn, resolve } = pendingQueue.shift(); activeLoads++; fn().then(resolve).finally(() => { activeLoads--; processQueue(); }); } }
-        function loadImage(img, imgUrl) {
-            scheduleLoad(() => new Promise((resolve) => {
-                let attempt = 0;
-                function tryOnce() {
-                    let tid = null; img.classList.remove('img-retrying', 'img-tall'); img.classList.add('img-loading'); img.alt = 'Загрузка...';
-                    tid = setTimeout(() => onFail('Timeout'), LOAD_TIMEOUT);
-                    function cleanup() { if (tid) { clearTimeout(tid); tid = null; } img.removeEventListener('load', onLoad); img.removeEventListener('error', onError); }
-                    function onLoad() { cleanup(); const w = img.naturalWidth, h = img.naturalHeight; if (w < MIN_REAL_WIDTH || h < MIN_REAL_HEIGHT) { attempt++; if (attempt <= PLACEHOLDER_RETRIES) { const delay = RETRY_DELAYS[attempt - 1] || 3000; img.classList.remove('img-loading'); img.classList.add('img-retrying'); setTimeout(tryOnce, delay); return; } const wrap = img.parentElement; if (wrap) wrap.style.display = 'none'; resolve(); return; } img.classList.remove('img-loading', 'img-retrying'); if (h / w >= TALL_RATIO) img.classList.add('img-tall'); img.onclick = () => openImageModal(img.src); resolve(); }
-                    function onError() { cleanup(); onFail('Error'); }
-                    img.addEventListener('load', onLoad, { once: true }); img.addEventListener('error', onError, { once: true });
-                    img.src = '/api/image?url=' + encodeURIComponent(imgUrl) + '&w=1000&t=' + Date.now();
-                }
-                function onFail(reason) { attempt++; if (attempt <= PLACEHOLDER_RETRIES) { const delay = RETRY_DELAYS[attempt - 1] || 3000; img.classList.remove('img-loading'); img.classList.add('img-retrying'); setTimeout(tryOnce, delay); return; } const wrap = img.parentElement; if (wrap) wrap.style.display = 'none'; resolve(); }
-                tryOnce();
-            }));
-        }
-
-        async function downloadSingleImage(url, filename) { try { const response = await fetch(url); const blob = await response.blob(); const blobUrl = window.URL.createObjectURL(blob); const a = document.createElement('a'); a.href = blobUrl; a.download = filename || 'image.jpg'; document.body.appendChild(a); a.click(); a.remove(); window.URL.revokeObjectURL(blobUrl); } catch (e) { console.error('Ошибка скачивания:', e); } }
-        async function downloadMergedImage(urls, filename) {
-            try {
-                const images = []; let maxWidth = 0; let totalHeight = 0;
-                for (let rawUrl of urls) { const proxyUrl = '/api/image?url=' + encodeURIComponent(rawUrl) + '&w=2000'; const img = new Image(); img.crossOrigin = "Anonymous"; img.src = proxyUrl; await new Promise((resolve, reject) => { img.onload = resolve; img.onerror = reject; }); images.push(img); if (img.width > maxWidth) maxWidth = img.width; totalHeight += img.height; }
-                const canvas = document.createElement('canvas'); canvas.width = maxWidth; canvas.height = totalHeight; const ctx = canvas.getContext('2d');
-                let yOffset = 0; for (let img of images) { ctx.drawImage(img, 0, yOffset); yOffset += img.height; }
-                canvas.toBlob((blob) => { const blobUrl = window.URL.createObjectURL(blob); const a = document.createElement('a'); a.href = blobUrl; a.download = filename || 'merged.jpg'; document.body.appendChild(a); a.click(); a.remove(); window.URL.revokeObjectURL(blobUrl); }, 'image/jpeg', 0.95);
-            } catch (e) { console.error('Ошибка склейки:', e); alert('Не удалось склеить картинки. Попробуйте обновить страницу.'); }
-        }
-
-        function createParticles() { const particlesContainer = document.getElementById('particles'); if (!particlesContainer) return; for (let i = 0; i < 40; i++) { const particle = document.createElement('div'); particle.className = 'particle'; particle.style.left = Math.random() * 100 + '%'; particle.style.top = Math.random() * 100 + '%'; particle.style.animationDelay = Math.random() * 3 + 's'; particle.style.animationDuration = (Math.random() * 2 + 2) + 's'; particlesContainer.appendChild(particle); } }
-        document.addEventListener('mousemove', (e) => { const shapes = document.querySelectorAll('.shape'); const x = e.clientX / window.innerWidth; const y = e.clientY / window.innerHeight; shapes.forEach((shape, index) => { const speed = (index + 1) * 15; shape.style.transform = `translate(${x * speed}px, ${y * speed}px)`; }); });
-        document.querySelectorAll('.btn-primary, .btn-secondary').forEach(btn => btn.classList.add('ripple')); createParticles(); init();
+        function loadImage(img, imgUrl) { scheduleLoad(() => new Promise((resolve) => { let attempt = 0; function tryOnce() { let tid = null; img.classList.remove('img-retrying', 'img-tall'); img.classList.add('img-loading'); img.alt = 'Загрузка...'; tid = setTimeout(() => onFail('Timeout'), LOAD_TIMEOUT); function cleanup() { if (tid) { clearTimeout(tid); tid = null; } img.removeEventListener('load', onLoad); img.removeEventListener('error', onError); } function onLoad() { cleanup(); const w = img.naturalWidth, h = img.naturalHeight; if (w < MIN_REAL_WIDTH || h < MIN_REAL_HEIGHT) { attempt++; if (attempt <= PLACEHOLDER_RETRIES) { const delay = RETRY_DELAYS[attempt - 1] || 3000; img.classList.remove('img-loading'); img.classList.add('img-retrying'); setTimeout(tryOnce, delay); return; } const wrap = img.parentElement; if (wrap) wrap.style.display = 'none'; resolve(); return; } img.classList.remove('img-loading', 'img-retrying'); if (h / w >= TALL_RATIO) img.classList.add('img-tall'); img.onclick = () => openImageModal(img.src); resolve(); } function onError() { cleanup(); onFail('Error'); } img.addEventListener('load', onLoad, { once: true }); img.addEventListener('error', onError, { once: true }); img.src = '/api/image?url=' + encodeURIComponent(imgUrl) + '&w=1000&t=' + Date.now(); } function onFail(reason) { attempt++; if (attempt <= PLACEHOLDER_RETRIES) { const delay = RETRY_DELAYS[attempt - 1] || 3000; img.classList.remove('img-loading'); img.classList.add('img-retrying'); setTimeout(tryOnce, delay); return; } const wrap = img.parentElement; if (wrap) wrap.style.display = 'none'; resolve(); } tryOnce(); })); }
+        async function downloadSingleImage(url, filename) { try { const r = await fetch(url); const b = await r.blob(); const bu = window.URL.createObjectURL(b); const a = document.createElement('a'); a.href = bu; a.download = filename || 'image.jpg'; document.body.appendChild(a); a.click(); a.remove(); window.URL.revokeObjectURL(bu); } catch (e) { console.error(e); } }
+        async function downloadMergedImage(urls, filename) { try { const images = []; let mw = 0, th = 0; for (let ru of urls) { const pu = '/api/image?url=' + encodeURIComponent(ru) + '&w=2000'; const img = new Image(); img.crossOrigin = "Anonymous"; img.src = pu; await new Promise((res, rej) => { img.onload = res; img.onerror = rej; }); images.push(img); if (img.width > mw) mw = img.width; th += img.height; } const c = document.createElement('canvas'); c.width = mw; c.height = th; const ctx = c.getContext('2d'); let yo = 0; for (let img of images) { ctx.drawImage(img, 0, yo); yo += img.height; } c.toBlob((b) => { const bu = window.URL.createObjectURL(b); const a = document.createElement('a'); a.href = bu; a.download = filename || 'merged.jpg'; document.body.appendChild(a); a.click(); a.remove(); window.URL.revokeObjectURL(bu); }, 'image/jpeg', 0.95); } catch (e) { console.error(e); alert('Не удалось склеить'); } }
+        function createParticles() { const p = document.getElementById('particles'); if (!p) return; for (let i = 0; i < 40; i++) { const d = document.createElement('div'); d.className = 'particle'; d.style.left = Math.random() * 100 + '%'; d.style.top = Math.random() * 100 + '%'; d.style.animationDelay = Math.random() * 3 + 's'; d.style.animationDuration = (Math.random() * 2 + 2) + 's'; p.appendChild(d); } }
+        document.addEventListener('mousemove', (e) => { const s = document.querySelectorAll('.shape'); const x = e.clientX / window.innerWidth; const y = e.clientY / window.innerHeight; s.forEach((sh, i) => { const sp = (i + 1) * 15; sh.style.transform = `translate(${x * sp}px, ${y * sp}px)`; }); });
+        document.querySelectorAll('.btn-primary, .btn-secondary').forEach(b => b.classList.add('ripple')); createParticles(); init();
     </script>
 </body>
 </html>
