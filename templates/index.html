@@ -43,44 +43,29 @@
         })();
     </script>
     <style>
-        /* Шрифт Manrope для всего */
-        * {
-            font-family: 'Manrope', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
-        }
-
+        * { font-family: 'Manrope', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important; }
         html.has-auth #authScreen { display: none !important; }
         html.has-auth #mainScreen { display: flex !important; flex-direction: column; }
         html.no-auth #authScreen { display: flex !important; }
         html.no-auth #mainScreen { display: none !important; }
 
-        /* ─── ЛИПКИЙ ТОПБАР ─── */
         .topbar {
-            position: sticky;
-            top: 10px;
-            z-index: 100;
-            background: rgba(255, 255, 255, 0.85) !important;
-            backdrop-filter: blur(16px) !important;
-            -webkit-backdrop-filter: blur(16px) !important;
-            border: 1px solid rgba(0, 0, 0, 0.05);
-            border-radius: 16px;
-            padding: 8px 16px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.05);
-            margin-bottom: 24px;
+            position: sticky; top: 10px; z-index: 100; background: rgba(255, 255, 255, 0.85) !important;
+            backdrop-filter: blur(16px) !important; -webkit-backdrop-filter: blur(16px) !important;
+            border: 1px solid rgba(0, 0, 0, 0.05); border-radius: 16px; padding: 8px 16px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.05); margin-bottom: 24px;
         }
         .theme-dark .topbar { background: rgba(26, 32, 44, 0.85) !important; border-color: rgba(255,255,255,0.05); box-shadow: 0 4px 20px rgba(0,0,0,0.3); }
 
         .action-buttons-row { display: flex; gap: 12px; margin-top: 24px; align-items: stretch; flex-wrap: wrap; }
-
         .btn-modern-primary {
             flex: 1; background: linear-gradient(135deg, #4299e1, #3182ce); color: white; border: none; border-radius: 14px;
             padding: 15px 24px; font-size: 16px; font-weight: 800; cursor: pointer; box-shadow: 0 4px 15px rgba(66, 153, 225, 0.4);
             transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); display: flex; align-items: center; justify-content: center; gap: 10px;
         }
         .btn-modern-primary:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(66, 153, 225, 0.6); }
-        .btn-modern-primary:active:not(:disabled) { transform: translateY(1px); }
         .btn-modern-primary:disabled { background: #a0aec0; box-shadow: none; cursor: not-allowed; transform: none; }
 
-        /* Спиннер для кнопки */
         .btn-spinner { display: inline-block; width: 20px; height: 20px; border: 3px solid rgba(255, 255, 255, 0.3); border-radius: 50%; border-top-color: #ffffff; animation: spin 0.8s linear infinite; }
         @keyframes spin { to { transform: rotate(360deg); } }
 
@@ -104,7 +89,6 @@
             background: #ffffff; color: #1a202c; padding: 14px 20px; border-radius: 14px; box-shadow: 0 10px 30px rgba(0,0,0,0.15);
             font-weight: 700; font-size: 15px; display: flex; align-items: center; gap: 10px;
             animation: toastIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; pointer-events: auto; border-left: 4px solid #4299e1;
-            width: 100%; box-sizing: border-box;
         }
         .toast.error { border-left-color: #e53e3e; }
         .toast.success { border-left-color: #48bb78; }
@@ -114,22 +98,12 @@
         @keyframes toastIn { from { opacity: 0; transform: translateY(20px) scale(0.9); } to { opacity: 1; transform: translateY(0) scale(1); } }
         @keyframes toastOut { from { opacity: 1; transform: translateY(0) scale(1); } to { opacity: 0; transform: translateY(20px) scale(0.9); } }
 
-        /* Спиннер для уведомления */
-        .toast-spinner {
-            display: inline-block; width: 18px; height: 18px;
-            border: 3px solid rgba(66, 153, 225, 0.2); border-top-color: #4299e1;
-            border-radius: 50%; animation: spin 0.8s linear infinite; flex-shrink: 0;
-        }
+        .toast-spinner { display: inline-block; width: 18px; height: 18px; border: 3px solid rgba(66, 153, 225, 0.2); border-top-color: #4299e1; border-radius: 50%; animation: spin 0.8s linear infinite; flex-shrink: 0; }
         .theme-dark .toast-spinner { border-color: rgba(144, 205, 244, 0.2); border-top-color: #90cdf4; }
-
-        /* Таймер в уведомлении */
-        .toast-timer {
-            margin-left: auto; font-family: monospace; font-weight: 800; font-size: 15px;
-            color: #ed8936; background: rgba(237, 137, 54, 0.15); padding: 3px 10px; border-radius: 8px;
-        }
+        .toast-timer { margin-left: auto; font-family: monospace; font-weight: 800; font-size: 15px; color: #ed8936; background: rgba(237, 137, 54, 0.15); padding: 3px 10px; border-radius: 8px; }
         .theme-dark .toast-timer { color: #fbd38d; background: rgba(237, 137, 54, 0.2); }
 
-        /* ─── СТИЛИ ДЛЯ ТЕМНОЙ ТЕМЫ ─── */
+        /* ─── ТЕМНАЯ ТЕМА ─── */
         .theme-dark body, body.theme-dark { background: #0f172a; color: #e2e8f0; }
         .theme-dark .card, .theme-dark .subject-block, .theme-dark .modal-content, .theme-dark .image-modal-content { background: rgba(30, 41, 59, 0.85); color: #e2e8f0; border: 1px solid rgba(255,255,255,0.05); box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
         .theme-dark h1, .theme-dark h2, .theme-dark h3 { color: #f7fafc; }
@@ -138,18 +112,13 @@
         .theme-dark .subtitle { color: #94a3b8; }
         .theme-dark .hint { color: #64748b; }
         .theme-dark .version { background: rgba(74,85,104,0.6); color: #cbd5e0; }
-        .theme-dark .num-input, .theme-dark .text-input, .theme-dark select, .theme-dark .form-label input, .theme-dark .form-label textarea {
-            background: rgba(15,23,42,0.5); border-color: rgba(71,85,105,0.6); color: #e2e8f0;
-        }
-        .theme-dark .num-input::placeholder, .theme-dark .text-input::placeholder, .theme-dark .form-label input::placeholder, .theme-dark .form-label textarea::placeholder { color: #64748b; }
+        .theme-dark .num-input, .theme-dark .text-input, .theme-dark select, .theme-dark .form-label input, .theme-dark .form-label textarea { background: rgba(15,23,42,0.5); border-color: rgba(71,85,105,0.6); color: #e2e8f0; }
+        .theme-dark .num-input::placeholder, .theme-dark .text-input::placeholder { color: #64748b; }
         .theme-dark .form-label { color: #cbd5e0; }
         .theme-dark .icon-btn, .theme-dark .support-btn { background: rgba(30,41,59,0.6); border-color: rgba(71,85,105,0.6); color: #e2e8f0; }
         .theme-dark .footer { color: #64748b; }
         .theme-dark .subject-block h2 { color: #63b3ed; }
-        .theme-dark .task-card { border-bottom-color: rgba(71,85,105,0.5); }
         .theme-dark .history-row, .theme-dark .message-card, .theme-dark .user-card { background: rgba(15,23,42,0.5); color: #e2e8f0; }
-        .theme-dark .history-info strong { color: #e2e8f0; }
-        .theme-dark .history-info span { color: #94a3b8; }
         .theme-dark .btn-secondary { background: rgba(71,85,105,0.6); color: #e2e8f0; }
         .theme-dark .auth-tabs, .theme-dark .admin-tabs { background: rgba(15,23,42,0.5); }
         .theme-dark .auth-tab, .theme-dark .admin-tab { color: #94a3b8; }
@@ -158,55 +127,40 @@
         .theme-dark .modal-content h3 { color: #f7fafc; }
         .theme-dark .modal-text { color: #cbd5e0; }
         .theme-dark .settings-section { border-color: rgba(71,85,105,0.5); }
-        .theme-dark .theme-btn { background: rgba(30,41,59,0.5); border-color: rgba(71,85,105,0.6); color: #cbd5e0; }
-        .theme-dark .theme-btn.active { background: rgba(71,85,105,0.7); border-color: #4299e1; color: #f7fafc; }
         .theme-dark .msg-body, .theme-dark .user-row { color: #e2e8f0; }
-        .theme-dark .msg-contact { color: #94a3b8; border-color: rgba(71,85,105,0.5); }
-        .theme-dark .user-row.small { color: #94a3b8; }
-        .theme-dark .msg-ver { background: rgba(71,85,105,0.6); color: #e2e8f0; }
         .theme-dark .auth-screen-box { background: #1e293b; border: 1px solid rgba(255,255,255,0.05); }
         .theme-dark .auth-screen-title { color: #f7fafc; }
         .theme-dark .auth-screen-subtitle { color: #94a3b8; }
         .theme-dark .subject-group { border-color: rgba(71,85,105,0.5); }
         .theme-dark .task-text { background: rgba(15,23,42,0.5); color: #e2e8f0; }
 
-        /* Карточки и поля ввода */
+        /* Карточки и поля */
         .subject-header-row { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px; }
         .gear-btn { background: transparent; border: none; font-size: 18px; cursor: pointer; padding: 0 5px; opacity: 0.6; transition: opacity 0.2s; }
         .gear-btn:hover { opacity: 1; transform: rotate(45deg); }
-
         .part-toggle-btn { background: #edf2f7; border: 1px solid #cbd5e0; border-radius: 12px; padding: 2px 8px; font-size: 12px; font-weight: 700; cursor: pointer; color: #4a5568; margin-left: 8px; }
         .theme-dark .part-toggle-btn { background: #334155; border-color: #475569; color: #e2e8f0; }
-
         .task-number-header { display: inline-block; font-size: 15px; font-weight: 800; color: #2b6cb0 !important; background: #ebf8ff; padding: 6px 14px; border-radius: 20px; margin-bottom: 12px; border: 1px solid #bee3f8; width: fit-content; }
         .theme-dark .task-number-header { color: #90cdf4 !important; background: rgba(66, 153, 225, 0.15); border-color: rgba(66, 153, 225, 0.3); }
-
         .edition-header { font-size: 14px; font-weight: 700; color: #4a5568; margin: 15px 0 8px 0; padding-left: 10px; border-left: 3px solid #4299e1; }
         .theme-dark .edition-header { color: #a0aec0; border-left-color: #63b3ed; }
-
         .ai-text-block { background: rgba(66, 153, 225, 0.05); border: 1px solid #bee3f8; border-left: 4px solid #4299e1; border-radius: 12px; padding: 16px; font-size: 15px; line-height: 1.6; color: #1a202c; margin-bottom: 12px; overflow-x: auto; }
         .theme-dark .ai-text-block { background: rgba(66, 153, 225, 0.1); border-color: #2b6cb0; border-left-color: #63b3ed; color: #e2e8f0; }
-
         .ai-text-block h4 { margin: 15px 0 10px 0; font-size: 18px; color: #2b6cb0; border-bottom: 1px solid #bee3f8; padding-bottom: 4px; }
         .ai-text-block h5 { margin: 15px 0 5px 0; font-size: 16px; color: #2b6cb0; }
         .theme-dark .ai-text-block h4, .theme-dark .ai-text-block h5 { color: #90cdf4; border-bottom-color: #4a5568; }
-
         .copy-btn { display: inline-flex; align-items: center; gap: 4px; margin-bottom: 10px; padding: 6px 12px; font-size: 13px; font-weight: 700; border-radius: 8px; border: 1px solid #bee3f8; background: rgba(66, 153, 225, 0.05); color: #2b6cb0; cursor: pointer; transition: all 0.2s; }
         .copy-btn:hover { background: rgba(66, 153, 225, 0.15); border-color: #90cdf4; }
         .theme-dark .copy-btn { background: rgba(66, 153, 225, 0.2); border-color: rgba(66, 153, 225, 0.3); color: #90cdf4; }
-
         .welcome-greeting { text-align: center; font-size: 24px; font-weight: 800; margin-bottom: 20px; margin-top: 10px; color: #2d3748; opacity: 0; transform: translateY(-20px); animation: slideDownFade 0.8s cubic-bezier(0.25, 0.8, 0.25, 1) forwards; }
         .theme-dark .welcome-greeting { color: #e2e8f0; }
         .welcome-greeting span { color: #4299e1; }
         @keyframes slideDownFade { to { opacity: 1; transform: translateY(0); } }
-
         .user-menu-container { position: relative; display: inline-block; }
         .user-menu-btn { display: flex; align-items: center; gap: 8px; background: #edf2f7; padding: 6px 14px; border-radius: 20px; border: none; cursor: pointer; font-weight: 700; color: #4a5568; transition: all 0.2s; }
         .user-menu-btn:hover { background: #e2e8f0; }
         .theme-dark .user-menu-btn { background: rgba(74,85,104,0.6); color: #e2e8f0; }
-        .theme-dark .user-menu-btn:hover { background: rgba(74,85,104,0.9); }
         .user-avatar-mini { width: 24px; height: 24px; border-radius: 50%; background: #4299e1; color: white; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; background-size: cover; background-position: center; }
-
         .dropdown-menu { position: absolute; top: calc(100% + 10px); right: 0; background: white; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.15); min-width: 220px; opacity: 0; visibility: hidden; transform: translateY(-10px) scale(0.95); transition: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275); z-index: 1000; overflow: hidden; border: 1px solid #e2e8f0; }
         .theme-dark .dropdown-menu { background: #1e293b; border-color: #334155; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
         .dropdown-menu.show { opacity: 1; visibility: visible; transform: translateY(0) scale(1); }
@@ -221,19 +175,47 @@
         .dropdown-item.logout { color: #ef4444; }
         .dropdown-item.logout:hover { background: #fef2f2; color: #dc2626; }
         .theme-dark .dropdown-item.logout:hover { background: rgba(239,68,68,0.2); }
-
         .divider-text { display: flex; align-items: center; text-align: center; color: #94a3b8; margin: 25px 0; font-weight: 700; font-size: 14px; }
         .divider-text::before, .divider-text::after { content: ''; flex: 1; border-bottom: 1px solid #334155; }
         .divider-text::before { margin-right: 15px; }
         .divider-text::after { margin-left: 15px; }
-
         .task-raw-text { background: #0f172a; border: 1px solid #334155; border-left: 4px solid #3b82f6; padding: 12px 16px; border-radius: 8px; font-size: 15px; font-weight: 500; color: #e2e8f0; white-space: pre-wrap; margin-top: 8px; line-height: 1.5; }
-
         .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.85) !important; display: flex; align-items: center; justify-content: center; padding: 20px; z-index: 9999 !important; }
         .modal-content { background: #ffffff !important; color: #1a202c !important; border-radius: 16px; padding: 24px; max-width: 450px; width: 100%; max-height: 90vh; overflow-y: auto; box-shadow: 0 10px 50px rgba(0,0,0,0.5) !important; }
         .theme-dark .modal-content { background: #1e293b !important; color: #ffffff !important; border: 1px solid #334155 !important; }
-
         #status { display: none !important; }
+
+        /* Сетка для ачивок */
+        .achievements-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+        }
+        .ach-card {
+            background: rgba(150, 150, 150, 0.05);
+            border: 1px solid rgba(150, 150, 150, 0.2);
+            border-radius: 12px;
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            gap: 6px;
+            opacity: 0.5;
+            filter: grayscale(100%);
+            transition: all 0.3s;
+        }
+        .ach-card.unlocked {
+            background: rgba(66, 153, 225, 0.1);
+            border-color: #4299e1;
+            opacity: 1;
+            filter: none;
+        }
+        .theme-dark .ach-card { background: rgba(0,0,0,0.2); border-color: #334155; }
+        .theme-dark .ach-card.unlocked { background: rgba(66, 153, 225, 0.15); border-color: #4299e1; }
+        .ach-icon { font-size: 32px; }
+        .ach-title { font-weight: 800; font-size: 14px; }
+        .ach-desc { font-size: 11px; color: #94a3b8; line-height: 1.2; }
     </style>
     <link rel="stylesheet" href="/static/style.css?v=2">
     <link rel="stylesheet" href="/static/animations.css?v=2">
@@ -242,10 +224,7 @@
     <div id="toastContainer" class="toast-container"></div>
 
     <div class="floating-shapes">
-        <div class="shape shape-1"></div>
-        <div class="shape shape-2"></div>
-        <div class="shape shape-3"></div>
-        <div class="shape shape-4"></div>
+        <div class="shape shape-1"></div><div class="shape shape-2"></div><div class="shape shape-3"></div><div class="shape shape-4"></div>
     </div>
     <div class="particles" id="particles"></div>
 
@@ -259,18 +238,9 @@
                 <button type="button" class="auth-tab" data-tab="register">Регистрация</button>
             </div>
             <form id="authForm">
-                <label class="form-label" id="nameField" style="display:none;">
-                    Имя
-                    <input type="text" id="authName" placeholder="Как тебя зовут">
-                </label>
-                <label class="form-label">
-                    Email
-                    <input type="email" id="authEmail" placeholder="you@example.com" required>
-                </label>
-                <label class="form-label">
-                    Пароль
-                    <input type="password" id="authPwd" placeholder="минимум 6 символов" required>
-                </label>
+                <label class="form-label" id="nameField" style="display:none;">Имя <input type="text" id="authName" placeholder="Как тебя зовут"></label>
+                <label class="form-label">Email <input type="email" id="authEmail" placeholder="you@example.com" required></label>
+                <label class="form-label">Пароль <input type="password" id="authPwd" placeholder="минимум 6 символов" required></label>
                 <div id="authStatus" class="fb-status"></div>
                 <button type="submit" id="authSubmit" class="btn-primary">Войти</button>
             </form>
@@ -292,86 +262,51 @@
 
         <section class="card">
             <h2>📝 Домашка</h2>
-
             <div id="subjectsContainer"><p class="empty">Загрузка предметов...</p></div>
-
             <div class="divider-text">ТЕКСТОВЫЕ ЗАДАНИЯ ИЛИ ВЕСЬ ТЕКСТ СРАЗУ</div>
             <div class="text-box">
-                <div id="textHint" style="margin-bottom: 10px; font-size: 14px; color: #94a3b8; font-weight: 500;">
-                    Вставь сюда весь текст. Умный парсер сам найдет Алгебру, Геометрию и текстовые предметы.
-                </div>
-                <textarea id="allTextTasks" class="text-input" rows="6" placeholder="Например:
-Алгебра: № 237, 268
-Английский (Учебник): стр. 19" style="resize: vertical; font-size: 15px; width: 100%; padding: 12px;"></textarea>
+                <div id="textHint" style="margin-bottom: 10px; font-size: 14px; color: #94a3b8; font-weight: 500;">Вставь сюда весь текст. Умный парсер сам найдет Алгебру, Геометрию и текстовые предметы.</div>
+                <textarea id="allTextTasks" class="text-input" rows="6" placeholder="Например:&#10;Алгебра: № 237, 268&#10;Английский (Учебник): стр. 19" style="resize: vertical; font-size: 15px; width: 100%; padding: 12px;"></textarea>
             </div>
-
             <div class="action-buttons-row">
-                <button id="btn" class="btn-modern-primary">
-                    <span id="btnText">🚀 Решить</span>
-                </button>
+                <button id="btn" class="btn-modern-primary"><span id="btnText">🚀 Решить</span></button>
                 <button id="clearBtn" class="btn-modern-clear">🗑 Очистить</button>
-                <button id="adminFillBtn" class="btn-modern-primary" style="display: none; background: #8b5cf6; box-shadow: 0 4px 15px rgba(139, 92, 246, 0.4);">🧪 Тест: 11</button>
             </div>
         </section>
-
         <div id="result" class="result"></div>
         <footer class="footer"><span>GDZ Парсер · v{{ version }}</span></footer>
     </div>
 
+    <!-- Модалки -->
     <div id="historyModal" class="modal hidden">
         <div class="modal-content">
             <h3>📜 История поисков</h3>
             <div id="historyList"></div>
-            <div class="modal-actions">
-                <button id="clearHistoryBtn" class="btn-secondary">🗑 Очистить</button>
-                <button id="closeHistoryBtn" class="btn-primary">Закрыть</button>
-            </div>
+            <div class="modal-actions"><button id="clearHistoryBtn" class="btn-secondary">🗑 Очистить</button><button id="closeHistoryBtn" class="btn-primary">Закрыть</button></div>
+        </div>
+    </div>
+
+    <div id="achievementsModal" class="modal hidden">
+        <div class="modal-content" style="max-width: 500px;">
+            <h3>🏆 Ваши достижения</h3>
+            <p class="hint" style="margin-bottom: 15px;">Выполняйте задания, чтобы открывать новые бейджи!</p>
+            <div id="achievementsList" class="achievements-grid"></div>
+            <div class="modal-actions" style="margin-top: 20px;"><button type="button" onclick="document.getElementById('achievementsModal').classList.add('hidden')" class="btn-secondary">Закрыть</button></div>
         </div>
     </div>
 
     <div id="settingsModal" class="modal hidden">
         <div class="modal-content">
             <h3>⚙️ Настройки аккаунта</h3>
-            <div class="settings-section">
-                <label class="form-label">Аватарка</label>
-                <div class="avatar-block">
-                    <div class="avatar-preview" id="avatarPreview"><span id="avatarInitial">?</span></div>
-                    <div class="avatar-actions">
-                        <label class="btn-small avatar-upload-btn">
-                            🖼 Из галереи
-                            <input type="file" id="avatarInput" accept="image/*" hidden>
-                        </label>
-                        <button type="button" id="avatarRemoveBtn" class="btn-small avatar-remove-btn">🗑 Убрать</button>
-                    </div>
-                </div>
-            </div>
-            <div class="settings-section">
-                <label class="form-label">
-                    Имя
-                    <input type="text" id="setName" placeholder="Как тебя зовут">
-                </label>
-            </div>
-            <div class="settings-section" id="hideAiSection">
-                <label class="form-label">🙈 Скрыть ИИ-решебник для предметов</label>
-                <p class="hint" style="margin-bottom: 8px;">Картинки останутся, но текстовый ответ от нейросети пропадет.</p>
-                <div id="hideAiList" style="display: flex; flex-direction: column; gap: 8px; max-height: 200px; overflow-y: auto; padding-right: 5px;"></div>
-            </div>
-            <div class="settings-section" id="passwordSection">
-                <label class="form-label">Смена пароля</label>
-                <input type="password" id="setOldPwd" class="num-input" placeholder="Текущий пароль" style="margin-bottom:8px;">
-                <input type="password" id="setNewPwd" class="num-input" placeholder="Новый пароль (мин. 6 символов)">
-            </div>
-            <div class="settings-section" id="logoutSection">
-                <label class="form-label">Сессия</label>
-                <button type="button" id="logoutBtn" class="btn-logout">🚪 Выйти из аккаунта</button>
-            </div>
+            <div class="settings-section"><label class="form-label">Аватарка</label><div class="avatar-block"><div class="avatar-preview" id="avatarPreview"><span id="avatarInitial">?</span></div><div class="avatar-actions"><label class="btn-small avatar-upload-btn">🖼 Из галереи<input type="file" id="avatarInput" accept="image/*" hidden></label><button type="button" id="avatarRemoveBtn" class="btn-small avatar-remove-btn">🗑 Убрать</button></div></div></div>
+            <div class="settings-section"><label class="form-label">Имя <input type="text" id="setName" placeholder="Как тебя зовут"></label></div>
+            <div class="settings-section" id="hideAiSection"><label class="form-label">🙈 Скрыть ИИ-решебник для предметов</label><p class="hint" style="margin-bottom: 8px;">Картинки останутся, но текстовый ответ от нейросети пропадет.</p><div id="hideAiList" style="display: flex; flex-direction: column; gap: 8px; max-height: 200px; overflow-y: auto; padding-right: 5px;"></div></div>
+            <div class="settings-section" id="passwordSection"><label class="form-label">Смена пароля</label><input type="password" id="setOldPwd" class="num-input" placeholder="Текущий пароль" style="margin-bottom:8px;"><input type="password" id="setNewPwd" class="num-input" placeholder="Новый пароль (мин. 6 символов)"></div>
+            <div class="settings-section" id="logoutSection"><label class="form-label">Сессия</label><button type="button" id="logoutBtn" class="btn-logout">🚪 Выйти из аккаунта</button></div>
             <div id="settingsStatus" class="fb-status"></div>
             <div class="modal-actions" style="justify-content:space-between;">
                 <button type="button" id="deleteAccountBtn" class="btn-danger">🗑 Удалить аккаунт</button>
-                <div style="display:flex; gap:10px;">
-                    <button type="button" id="closeSettingsBtn" class="btn-secondary">Отмена</button>
-                    <button type="button" id="saveSettingsBtn" class="btn-primary" style="width:auto;">💾 Применить</button>
-                </div>
+                <div style="display:flex; gap:10px;"><button type="button" id="closeSettingsBtn" class="btn-secondary">Отмена</button><button type="button" id="saveSettingsBtn" class="btn-primary" style="width:auto;">💾 Применить</button></div>
             </div>
         </div>
     </div>
@@ -380,18 +315,9 @@
         <div class="modal-content">
             <h3 id="subjectSettingsTitle">⚙️ Настройки предмета</h3>
             <p class="hint" style="margin-bottom: 15px;" id="subjectSettingsAdminHint"></p>
-            <div class="settings-section">
-                <label class="form-label">
-                    Ваш предпочитаемый год
-                    <input type="text" id="subjectSetYear" placeholder="Например: 2025">
-                </label>
-                <p class="hint" style="margin-top: 5px;">Оставь пустым, чтобы использовать год, заданный администратором.</p>
-            </div>
+            <div class="settings-section"><label class="form-label">Ваш предпочитаемый год <input type="text" id="subjectSetYear" placeholder="Например: 2025"></label><p class="hint" style="margin-top: 5px;">Оставь пустым, чтобы использовать год, заданный администратором.</p></div>
             <div id="subjectSettingsStatus" class="fb-status"></div>
-            <div class="modal-actions">
-                <button type="button" id="closeSubjectSettingsBtn" class="btn-secondary">Отмена</button>
-                <button type="button" id="saveSubjectSettingsBtn" class="btn-primary" style="width:auto;">💾 Сохранить</button>
-            </div>
+            <div class="modal-actions"><button type="button" id="closeSubjectSettingsBtn" class="btn-secondary">Отмена</button><button type="button" id="saveSubjectSettingsBtn" class="btn-primary" style="width:auto;">💾 Сохранить</button></div>
         </div>
     </div>
 
@@ -400,16 +326,9 @@
             <h3>💬 Техподдержка</h3>
             <p class="modal-text">Нашли ошибку или есть вопрос? Напишите — мы ответим.</p>
             <form id="feedbackForm">
-                <label class="form-label">
-                    Сообщение <span class="required">*</span>
-                    <textarea id="fbMessage" rows="4" placeholder="Опишите проблему..."></textarea>
-                </label>
-                <label class="form-label">
-                    Контакт <span class="hint">(необязательно)</span>
-                    <input type="text" id="fbContact" placeholder="Telegram, email">
-                </label>
-                <label class="form-label">
-                    Прикрепить фото <span class="hint">(необязательно)</span>
+                <label class="form-label">Сообщение <span class="required">*</span><textarea id="fbMessage" rows="4" placeholder="Опишите проблему..."></textarea></label>
+                <label class="form-label">Контакт <span class="hint">(необязательно)</span><input type="text" id="fbContact" placeholder="Telegram, email"></label>
+                <label class="form-label">Прикрепить фото <span class="hint">(необязательно)</span>
                     <div style="display: flex; align-items: center; gap: 10px; margin-top: 6px;">
                         <button type="button" class="btn-small avatar-upload-btn" onclick="document.getElementById('fbImage').click()">🖼 Выбрать фото</button>
                         <span id="fbImageName" style="font-size: 13px; color: #94a3b8;">Файл не выбран</span>
@@ -417,20 +336,12 @@
                     </div>
                 </label>
                 <div id="fbStatus" class="fb-status"></div>
-                <div class="modal-actions">
-                    <button type="button" id="closeSupport" class="btn-secondary">Отмена</button>
-                    <button type="submit" id="fbSubmit" class="btn-primary">Отправить</button>
-                </div>
+                <div class="modal-actions"><button type="button" id="closeSupport" class="btn-secondary">Отмена</button><button type="submit" id="fbSubmit" class="btn-primary">Отправить</button></div>
             </form>
         </div>
     </div>
 
-    <div id="imageModal" class="modal hidden">
-        <div class="image-modal-content">
-            <button id="closeImageModal" class="image-modal-close">✕</button>
-            <img id="imageModalImg" src="" alt="">
-        </div>
-    </div>
+    <div id="imageModal" class="modal hidden"><div class="image-modal-content"><button id="closeImageModal" class="image-modal-close">✕</button><img id="imageModalImg" src="" alt=""></div></div>
 
     <script>
         let authToken = localStorage.getItem('gdz_token') || '';
@@ -445,197 +356,65 @@
         let activeParts = {};
 
         const $ = id => document.getElementById(id);
-        const authScreen = $('authScreen');
-        const mainScreen = $('mainScreen');
+        const authScreen = $('authScreen'), mainScreen = $('mainScreen');
         const btn = $('btn'), result = $('result'), clearBtn = $('clearBtn');
-        const historyModal = $('historyModal');
-        const settingsModal = $('settingsModal');
-        const subjectSettingsModal = $('subjectSettingsModal');
-        const supportModal = $('supportModal');
-        const imageModal = $('imageModal');
-        const imageModalImg = $('imageModalImg');
-        const topbarRight = $('topbarRight');
-        const subjectsContainer = $('subjectsContainer');
-        const allTextTasks = $('allTextTasks');
-        const textHint = $('textHint');
+        const historyModal = $('historyModal'), settingsModal = $('settingsModal'), subjectSettingsModal = $('subjectSettingsModal'), supportModal = $('supportModal'), imageModal = $('imageModal'), imageModalImg = $('imageModalImg'), topbarRight = $('topbarRight'), subjectsContainer = $('subjectsContainer'), allTextTasks = $('allTextTasks'), textHint = $('textHint');
 
-        // Функция для создания Toast-уведомления
         function showToast(message, type = 'info', duration = 3000) {
             const container = $('toastContainer');
             if (!container) return;
-            const toast = document.createElement('div');
-            toast.className = 'toast ' + type;
-
-            let icon = 'ℹ️';
-            if (type === 'success') icon = '✅';
-            if (type === 'error') icon = '❌';
-            if (type === 'loading') {
-                toast.innerHTML = '';
-            } else {
-                toast.innerHTML = `<span>${icon}</span> <span>${message}</span>`;
-            }
-
+            const toast = document.createElement('div'); toast.className = 'toast ' + type;
+            let icon = 'ℹ️'; if (type === 'success') icon = '✅'; if (type === 'error') icon = '❌'; if (type === 'loading') toast.innerHTML = '';
+            else toast.innerHTML = `<span>${icon}</span> <span>${message}</span>`;
             container.appendChild(toast);
-
-            if (type !== 'loading') {
-                setTimeout(() => {
-                    toast.style.animation = 'toastOut 0.3s forwards';
-                    setTimeout(() => toast.remove(), 300);
-                }, duration);
-            }
+            if (type !== 'loading') setTimeout(() => { toast.style.animation = 'toastOut 0.3s forwards'; setTimeout(() => toast.remove(), 300); }, duration);
             return toast;
         }
 
-        // Функция для Toast-уведомления с таймером и спиннером
         function showLoadingToast(message) {
-            const container = $('toastContainer');
-            if (!container) return null;
-            const toast = document.createElement('div');
-            toast.className = 'toast loading';
-            toast.innerHTML = `
-                <span class="toast-spinner"></span>
-                <span>${message}</span>
-                <span class="toast-timer" id="toastTimer">00:00</span>
-            `;
+            const container = $('toastContainer'); if (!container) return null;
+            const toast = document.createElement('div'); toast.className = 'toast loading';
+            toast.innerHTML = `<span class="toast-spinner"></span><span>${message}</span><span class="toast-timer" id="toastTimer">00:00</span>`;
             container.appendChild(toast);
-
-            // Запускаем таймер
             let seconds = 0;
             const timerInterval = setInterval(() => {
-                seconds++;
-                const m = String(Math.floor(seconds / 60)).padStart(2, '0');
-                const s = String(seconds % 60).padStart(2, '0');
-                const timerEl = document.getElementById('toastTimer');
-                if (timerEl) timerEl.textContent = `${m}:${s}`;
+                seconds++; const m = String(Math.floor(seconds / 60)).padStart(2, '0'); const s = String(seconds % 60).padStart(2, '0');
+                const timerEl = document.getElementById('toastTimer'); if (timerEl) timerEl.textContent = `${m}:${s}`;
             }, 1000);
-
-            // Возвращаем объект с функцией для остановки и удаления
-            return {
-                element: toast,
-                stop: () => {
-                    clearInterval(timerInterval);
-                    toast.style.animation = 'toastOut 0.3s forwards';
-                    setTimeout(() => toast.remove(), 300);
-                }
-            };
+            return { element: toast, stop: () => { clearInterval(timerInterval); toast.style.animation = 'toastOut 0.3s forwards'; setTimeout(() => toast.remove(), 300); } };
         }
 
         function getDeviceInfo() {
-            const ua = navigator.userAgent;
-            let device = '💻 Компьютер';
-            if (/mobile/i.test(ua)) device = '📱 Телефон';
-            else if (/tablet|ipad/i.test(ua)) device = '📱 Планшет';
-            let browser = 'Unknown';
-            if (/chrome/i.test(ua) && !/edg/i.test(ua)) browser = 'Chrome';
-            else if (/edg/i.test(ua)) browser = 'Edge';
-            else if (/firefox/i.test(ua)) browser = 'Firefox';
-            else if (/safari/i.test(ua)) browser = 'Safari';
-            else if (/yabrowser/i.test(ua)) browser = 'Yandex';
-            let os = 'Unknown';
-            if (/windows/i.test(ua)) os = 'Windows';
-            else if (/mac/i.test(ua)) os = 'macOS';
-            else if (/android/i.test(ua)) os = 'Android';
-            else if (/iphone|ipad|ios/i.test(ua)) os = 'iOS';
-            else if (/linux/i.test(ua)) os = 'Linux';
+            const ua = navigator.userAgent; let device = '💻 Компьютер';
+            if (/mobile/i.test(ua)) device = '📱 Телефон'; else if (/tablet|ipad/i.test(ua)) device = '📱 Планшет';
+            let browser = 'Unknown'; if (/chrome/i.test(ua) && !/edg/i.test(ua)) browser = 'Chrome'; else if (/edg/i.test(ua)) browser = 'Edge'; else if (/firefox/i.test(ua)) browser = 'Firefox'; else if (/safari/i.test(ua)) browser = 'Safari'; else if (/yabrowser/i.test(ua)) browser = 'Yandex';
+            let os = 'Unknown'; if (/windows/i.test(ua)) os = 'Windows'; else if (/mac/i.test(ua)) os = 'macOS'; else if (/android/i.test(ua)) os = 'Android'; else if (/iphone|ipad|ios/i.test(ua)) os = 'iOS'; else if (/linux/i.test(ua)) os = 'Linux';
             return `${device} · ${os} · ${browser} · ${window.screen.width}×${window.screen.height} · ${navigator.language || 'unknown'}`;
         }
 
-        function fileToBase64(file, maxSizeMb = 5) {
-            return new Promise((resolve, reject) => {
-                if (file.size > maxSizeMb * 1024 * 1024) { reject(new Error(`Файл больше ${maxSizeMb} МБ`)); return; }
-                const reader = new FileReader();
-                reader.onload = () => resolve(reader.result);
-                reader.onerror = () => reject(new Error('Ошибка чтения файла'));
-                reader.readAsDataURL(file);
-            });
-        }
-
-        async function shrinkImage(file, maxW = 400, quality = 0.85) {
-            const dataUrl = await fileToBase64(file, 20);
-            return new Promise((resolve, reject) => {
-                const img = new Image();
-                img.onload = () => {
-                    const canvas = document.createElement('canvas');
-                    let w = img.width, h = img.height;
-                    if (w > maxW) { h = Math.round(h * (maxW / w)); w = maxW; }
-                    canvas.width = w; canvas.height = h;
-                    canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-                    resolve(canvas.toDataURL('image/jpeg', quality));
-                };
-                img.onerror = () => reject(new Error('Не удалось загрузить картинку'));
-                img.src = dataUrl;
-            });
-        }
+        function fileToBase64(file, maxSizeMb = 5) { return new Promise((resolve, reject) => { if (file.size > maxSizeMb * 1024 * 1024) { reject(new Error(`Файл больше ${maxSizeMb} МБ`)); return; } const reader = new FileReader(); reader.onload = () => resolve(reader.result); reader.onerror = () => reject(new Error('Ошибка чтения файла')); reader.readAsDataURL(file); }); }
+        async function shrinkImage(file, maxW = 400, quality = 0.85) { const dataUrl = await fileToBase64(file, 20); return new Promise((resolve, reject) => { const img = new Image(); img.onload = () => { const canvas = document.createElement('canvas'); let w = img.width, h = img.height; if (w > maxW) { h = Math.round(h * (maxW / w)); w = maxW; } canvas.width = w; canvas.height = h; canvas.getContext('2d').drawImage(img, 0, 0, w, h); resolve(canvas.toDataURL('image/jpeg', quality)); }; img.onerror = () => reject(new Error('Не удалось загрузить картинку')); img.src = dataUrl; }); }
 
         function applyTheme(theme) {
-            currentTheme = theme;
-            const root = document.documentElement;
-            root.classList.remove('theme-dark');
-
-            if (theme === 'dark') {
-                root.classList.add('theme-dark');
-                localStorage.setItem('gdz_theme', 'dark');
-            } else {
-                localStorage.setItem('gdz_theme', 'light');
-            }
-            const toggleBtn = $('themeToggleBtn');
-            if (toggleBtn) toggleBtn.textContent = (theme === 'dark') ? '☀️' : '🌙';
+            currentTheme = theme; const root = document.documentElement; root.classList.remove('theme-dark');
+            if (theme === 'dark') { root.classList.add('theme-dark'); localStorage.setItem('gdz_theme', 'dark'); } else localStorage.setItem('gdz_theme', 'light');
+            const toggleBtn = $('themeToggleBtn'); if (toggleBtn) toggleBtn.textContent = (theme === 'dark') ? '☀️' : '🌙';
         }
 
-        function getInitial(name, email) {
-            const n = (name || '').trim();
-            if (n) return n[0].toUpperCase();
-            if (email) return email[0].toUpperCase();
-            return '?';
-        }
-
-        function setAuthState(hasAuth) {
-            const root = document.documentElement;
-            root.classList.remove('has-auth', 'no-auth');
-            root.classList.add(hasAuth ? 'has-auth' : 'no-auth');
-        }
-
-        function parseJson(str) {
-            try { return JSON.parse(str || '{}'); } catch (e) { return {}; }
-        }
-
+        function getInitial(name, email) { const n = (name || '').trim(); if (n) return n[0].toUpperCase(); if (email) return email[0].toUpperCase(); return '?'; }
+        function setAuthState(hasAuth) { const root = document.documentElement; root.classList.remove('has-auth', 'no-auth'); root.classList.add(hasAuth ? 'has-auth' : 'no-auth'); }
+        function parseJson(str) { try { return JSON.parse(str || '{}'); } catch (e) { return {}; } }
         async function copyTextToClipboard(text, btnElement) {
-            try {
-                await navigator.clipboard.writeText(text);
-                const originalText = btnElement.innerHTML;
-                btnElement.innerHTML = '✅ Скопировано';
-                btnElement.style.color = '#10b981';
-                btnElement.style.borderColor = '#10b981';
-                setTimeout(() => {
-                    btnElement.innerHTML = originalText;
-                    btnElement.style.color = '';
-                    btnElement.style.borderColor = '';
-                }, 2000);
-            } catch (err) {
-                showToast('Не удалось скопировать текст', 'error');
-            }
+            try { await navigator.clipboard.writeText(text); const originalText = btnElement.innerHTML; btnElement.innerHTML = '✅ Скопировано'; btnElement.style.color = '#10b981'; btnElement.style.borderColor = '#10b981'; setTimeout(() => { btnElement.innerHTML = originalText; btnElement.style.color = ''; btnElement.style.borderColor = ''; }, 2000); } catch (err) { showToast('Не удалось скопировать текст', 'error'); }
         }
 
         document.addEventListener('DOMContentLoaded', () => {
             const toggleBtn = $('themeToggleBtn');
             if (toggleBtn) {
-                const current = localStorage.getItem('gdz_theme') || 'light';
-                toggleBtn.textContent = (current === 'dark') ? '☀️' : '🌙';
+                const current = localStorage.getItem('gdz_theme') || 'light'; toggleBtn.textContent = (current === 'dark') ? '☀️' : '🌙';
                 toggleBtn.addEventListener('click', async () => {
-                    const current = localStorage.getItem('gdz_theme') || 'light';
-                    const next = (current === 'dark') ? 'light' : 'dark';
-                    applyTheme(next);
-
-                    // СОХРАНЯЕМ ВЫБОР В БАЗУ ДАННЫХ (если вошел)
-                    if (authToken) {
-                        try {
-                            await fetch('/api/auth/update', {
-                                method: 'POST',
-                                headers: {'Content-Type': 'application/json'},
-                                body: JSON.stringify({ token: authToken, theme: next })
-                            });
-                        } catch (e) { console.error('Не удалось сохранить тему на сервере'); }
-                    }
+                    const current = localStorage.getItem('gdz_theme') || 'light'; const next = (current === 'dark') ? 'light' : 'dark'; applyTheme(next);
+                    if (authToken) { try { await fetch('/api/auth/update', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ token: authToken, theme: next }) }); } catch (e) {} }
                 });
             }
         });
@@ -643,136 +422,42 @@
         async function init() {
             if (authToken) {
                 try {
-                    const device = getDeviceInfo();
-                    const r = await fetch('/api/auth/me?token=' + encodeURIComponent(authToken) + '&device=' + encodeURIComponent(device) + '&t=' + Date.now());
-                    if (r.ok) {
-                        const d = await r.json();
-                        authUser = d.user;
-                        currentAvatar = authUser.avatar || null;
-                        subjectYears = parseJson(authUser.subject_years);
-                        hideAiSubjects = parseJson(authUser.hide_ai_subjects);
-
-                        // При загрузке применяем тему из базы (если она там есть)
-                        if (authUser.theme) {
-                            applyTheme(authUser.theme);
-                        } else {
-                            applyTheme('light');
-                        }
-
-                        setAuthState(true);
-                        await showMain();
-                        return;
-                    } else if (r.status === 403) {
-                        const d = await r.json();
-                        authToken = ''; localStorage.removeItem('gdz_token'); setAuthState(false); showAuth();
-                        showToast(d.detail || 'Доступ заблокирован', 'error');
-                        return;
-                    } else {
-                        authToken = ''; localStorage.removeItem('gdz_token');
-                    }
+                    const device = getDeviceInfo(); const r = await fetch('/api/auth/me?token=' + encodeURIComponent(authToken) + '&device=' + encodeURIComponent(device) + '&t=' + Date.now());
+                    if (r.ok) { const d = await r.json(); authUser = d.user; currentAvatar = authUser.avatar || null; subjectYears = parseJson(authUser.subject_years); hideAiSubjects = parseJson(authUser.hide_ai_subjects); applyTheme(authUser.theme || 'light'); setAuthState(true); await showMain(); return; }
+                    else if (r.status === 403) { const d = await r.json(); authToken = ''; localStorage.removeItem('gdz_token'); setAuthState(false); showAuth(); showToast(d.detail || 'Доступ заблокирован', 'error'); return; }
+                    else { authToken = ''; localStorage.removeItem('gdz_token'); }
                 } catch {}
             }
-            setAuthState(false);
-            showAuth();
+            setAuthState(false); showAuth();
         }
 
-        function showAuth() {
-            setAuthState(false);
-            authScreen.classList.remove('hidden');
-            mainScreen.classList.add('hidden');
-        }
-
-        async function showMain() {
-            setAuthState(true);
-            authScreen.classList.add('hidden');
-            mainScreen.classList.remove('hidden');
-            updateGreeting();
-            renderTopbar();
-
-            if (authUser && authUser.is_admin) { $('adminFillBtn').style.display = 'flex'; }
-            else { $('adminFillBtn').style.display = 'none'; }
-
-            await loadSubjects();
-            renderSubjects();
-        }
-
+        function showAuth() { setAuthState(false); authScreen.classList.remove('hidden'); mainScreen.classList.add('hidden'); }
+        async function showMain() { setAuthState(true); authScreen.classList.add('hidden'); mainScreen.classList.remove('hidden'); updateGreeting(); renderTopbar(); await loadSubjects(); renderSubjects(); }
         function updateGreeting() {
-            const hour = new Date().getHours();
-            let greeting = 'Доброй ночи';
-            if (hour >= 7 && hour < 9) greeting = 'Доброе утро';
-            else if (hour >= 9 && hour < 18) greeting = 'Добрый день';
-            else if (hour >= 18 && hour < 23) greeting = 'Добрый вечер';
-
-            const name = authUser.name || authUser.email.split('@')[0];
-            const greetEl = $('welcomeGreeting');
-            if (greetEl) {
-                greetEl.innerHTML = `${greeting}, <span>${escapeHtml(name)}</span>! 👋`;
-                greetEl.style.animation = 'none'; greetEl.offsetHeight; greetEl.style.animation = null;
-            }
+            const hour = new Date().getHours(); let greeting = 'Доброй ночи'; if (hour >= 7 && hour < 9) greeting = 'Доброе утро'; else if (hour >= 9 && hour < 18) greeting = 'Добрый день'; else if (hour >= 18 && hour < 23) greeting = 'Добрый вечер';
+            const name = authUser.name || authUser.email.split('@')[0]; const greetEl = $('welcomeGreeting');
+            if (greetEl) { greetEl.innerHTML = `${greeting}, <span>${escapeHtml(name)}</span>! 👋`; greetEl.style.animation = 'none'; greetEl.offsetHeight; greetEl.style.animation = null; }
         }
-
-        async function loadSubjects() {
-            try {
-                const r = await fetch('/api/subjects?token=' + encodeURIComponent(authToken) + '&t=' + Date.now());
-                const d = await r.json();
-                SUBJECTS = d.subjects || [];
-            } catch (e) {
-                subjectsContainer.innerHTML = '<p class="empty">Не удалось загрузить предметы</p>';
-            }
-        }
+        async function loadSubjects() { try { const r = await fetch('/api/subjects?token=' + encodeURIComponent(authToken) + '&t=' + Date.now()); const d = await r.json(); SUBJECTS = d.subjects || []; } catch (e) { subjectsContainer.innerHTML = '<p class="empty">Не удалось загрузить предметы</p>'; } }
 
         function renderSubjects() {
-            subjectsContainer.innerHTML = '';
-            const numberSubjects = SUBJECTS.filter(s => s.type === 'numbers');
-
-            if (numberSubjects.length === 0) {
-                subjectsContainer.innerHTML = `<p class="empty" style="padding: 20px; background: rgba(237, 137, 54, 0.1); border-radius: 8px; border: 1px solid #ed8936;">Нет предметов с картинками.</p>`;
-            } else {
-                const groups = {};
-                numberSubjects.forEach(s => {
-                    const g = s.group_name || 'Прочее';
-                    if (!groups[g]) groups[g] = [];
-                    groups[g].push(s);
-                });
+            subjectsContainer.innerHTML = ''; const numberSubjects = SUBJECTS.filter(s => s.type === 'numbers');
+            if (numberSubjects.length === 0) { subjectsContainer.innerHTML = `<p class="empty" style="padding: 20px; background: rgba(237, 137, 54, 0.1); border-radius: 8px; border: 1px solid #ed8936;">Нет предметов с картинками.</p>`; }
+            else {
+                const groups = {}; numberSubjects.forEach(s => { const g = s.group_name || 'Прочее'; if (!groups[g]) groups[g] = []; groups[g].push(s); });
                 Object.entries(groups).forEach(([groupName, items]) => {
-                    const groupDiv = document.createElement('div');
-                    groupDiv.className = 'subject-group';
-                    const title = document.createElement('h3');
-                    title.className = 'group-title';
-                    title.textContent = groupName;
-                    groupDiv.appendChild(title);
+                    const groupDiv = document.createElement('div'); groupDiv.className = 'subject-group';
+                    const title = document.createElement('h3'); title.className = 'group-title'; title.textContent = groupName; groupDiv.appendChild(title);
                     items.forEach(s => {
-                        const row = document.createElement('div');
-                        row.className = 'input-row';
-                        const headerRow = document.createElement('div');
-                        headerRow.className = 'subject-header-row';
-                        const label = document.createElement('label');
-                        label.className = 'input-label';
-                        label.style.display = 'flex'; label.style.flexDirection = 'column'; label.style.alignItems = 'flex-start'; label.style.gap = '2px';
-
-                        const currentPart = activeParts[s.name] || '1';
-                        const activeYear = subjectYears[s.name] || (currentPart === '2' ? (s.default_year_alt || s.default_year) : s.default_year);
+                        const row = document.createElement('div'); row.className = 'input-row'; const headerRow = document.createElement('div'); headerRow.className = 'subject-header-row';
+                        const label = document.createElement('label'); label.className = 'input-label'; label.style.display = 'flex'; label.style.flexDirection = 'column'; label.style.alignItems = 'flex-start'; label.style.gap = '2px';
+                        const currentPart = activeParts[s.name] || '1'; const activeYear = subjectYears[s.name] || (currentPart === '2' ? (s.default_year_alt || s.default_year) : s.default_year);
                         const yearBadge = `<span class="year-badge" style="color:#10b981; font-size:13px;">${activeYear ? `(${escapeHtml(activeYear)})` : ''}</span>`;
                         const noteBadge = s.note ? `<span style="font-size: 12px; color: #94a3b8; font-weight: normal; line-height: 1.2;">📝 ${escapeHtml(s.note)}</span>` : '';
-                        let partBtn = '';
-                        if (s.url_alt) { partBtn = `<button type="button" class="part-toggle-btn" onclick="togglePart('${s.name.replace(/'/g, "\\'")}', this)" data-part="${currentPart}">Часть ${currentPart}</button>`; }
-
-                        label.innerHTML = `<div>${escapeHtml(s.name)} ${yearBadge} ${partBtn}</div>${noteBadge}`;
-                        headerRow.appendChild(label);
-
-                        const gearBtn = document.createElement('button');
-                        gearBtn.className = 'gear-btn'; gearBtn.innerHTML = '⚙️';
-                        gearBtn.onclick = () => openSubjectSettings(s.name);
-                        headerRow.appendChild(gearBtn);
-                        row.appendChild(headerRow);
-
-                        const ta = document.createElement('textarea');
-                        ta.className = 'text-input'; ta.id = 'subj_' + s.id; ta.rows = 2;
-                        ta.dataset.subject = s.name; ta.dataset.type = s.type || 'numbers';
-                        ta.dataset.url = s.url || ''; ta.dataset.urlAlt = s.url_alt || '';
-                        ta.placeholder = '447, 449, 451 — или текст задания';
-                        row.appendChild(ta);
-                        groupDiv.appendChild(row);
+                        let partBtn = ''; if (s.url_alt) { partBtn = `<button type="button" class="part-toggle-btn" onclick="togglePart('${s.name.replace(/'/g, "\\'")}', this)" data-part="${currentPart}">Часть ${currentPart}</button>`; }
+                        label.innerHTML = `<div>${escapeHtml(s.name)} ${yearBadge} ${partBtn}</div>${noteBadge}`; headerRow.appendChild(label);
+                        const gearBtn = document.createElement('button'); gearBtn.className = 'gear-btn'; gearBtn.innerHTML = '⚙️'; gearBtn.onclick = () => openSubjectSettings(s.name); headerRow.appendChild(gearBtn); row.appendChild(headerRow);
+                        const ta = document.createElement('textarea'); ta.className = 'text-input'; ta.id = 'subj_' + s.id; ta.rows = 2; ta.dataset.subject = s.name; ta.dataset.type = s.type || 'numbers'; ta.dataset.url = s.url || ''; ta.dataset.urlAlt = s.url_alt || ''; ta.placeholder = '447, 449, 451 — или текст задания'; row.appendChild(ta); groupDiv.appendChild(row);
                     });
                     subjectsContainer.appendChild(groupDiv);
                 });
@@ -780,320 +465,76 @@
             textHint.innerHTML = `Вставь сюда весь текст (История, Музыка и т.д.). Умный парсер сам разберет.`;
         }
 
-        window.togglePart = (subjName, btn) => {
-            const current = activeParts[subjName] || '1';
-            const next = current === '1' ? '2' : '1';
-            activeParts[subjName] = next;
-            btn.textContent = 'Часть ' + next; btn.dataset.part = next;
-            const subj = SUBJECTS.find(s => s.name === subjName);
-            if (subj) {
-                const activeYear = subjectYears[subjName] || (next === '2' ? (subj.default_year_alt || subj.default_year) : subj.default_year);
-                const yearSpan = btn.parentElement.querySelector('.year-badge');
-                if (yearSpan) yearSpan.textContent = activeYear ? `(${activeYear})` : '';
-            }
-        };
-
-        function openSubjectSettings(subjectName) {
-            currentSubjectId = subjectName;
-            $('subjectSettingsTitle').textContent = `⚙️ Настройки: ${subjectName}`;
-            const subj = SUBJECTS.find(s => s.name === subjectName);
-            const currentPart = activeParts[subjectName] || '1';
-            const adminDefault = currentPart === '2' ? (subj.default_year_alt || subj.default_year) : subj.default_year;
-            $('subjectSetYear').value = subjectYears[subjectName] || '';
-            const hintEl = $('subjectSettingsAdminHint');
-            if (adminDefault) { hintEl.innerHTML = `👑 Администратор установил год по умолчанию: <b>${adminDefault}</b>.`; $('subjectSetYear').placeholder = adminDefault; }
-            else { hintEl.innerHTML = 'Администратор не устанавливал год по умолчанию.'; $('subjectSetYear').placeholder = 'Например: 2025'; }
-            $('subjectSettingsStatus').textContent = ''; $('subjectSettingsStatus').className = 'fb-status';
-            subjectSettingsModal.classList.remove('hidden');
-        }
-
-        $('closeSubjectSettingsBtn').onclick = () => subjectSettingsModal.classList.add('hidden');
-        subjectSettingsModal.onclick = (e) => { if (e.target === subjectSettingsModal) subjectSettingsModal.classList.add('hidden'); };
-
-        $('saveSubjectSettingsBtn').onclick = async () => {
-            if (!currentSubjectId) return;
-            const yearVal = $('subjectSetYear').value.trim();
-            const st = $('subjectSettingsStatus');
-            st.textContent = '⏳ Сохраняем...'; st.className = 'fb-status loading';
-            if (yearVal) subjectYears[currentSubjectId] = yearVal; else delete subjectYears[currentSubjectId];
-            try {
-                const r = await fetch('/api/auth/update', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ token: authToken, subject_years: JSON.stringify(subjectYears) }) });
-                const d = await r.json();
-                if (!r.ok) throw new Error(d.detail || 'Ошибка');
-                authUser = d.user; subjectYears = parseJson(authUser.subject_years); renderSubjects();
-                st.textContent = '✅ Сохранено!'; st.className = 'fb-status success';
-                setTimeout(() => subjectSettingsModal.classList.add('hidden'), 1000);
-            } catch (e) { st.textContent = '❌ ' + e.message; st.className = 'fb-status error'; }
-        };
-
-        $('adminFillBtn').onclick = () => { subjectsContainer.querySelectorAll('.text-input').forEach(ta => ta.value = '11'); };
+        window.togglePart = (subjName, btn) => { const current = activeParts[subjName] || '1'; const next = current === '1' ? '2' : '1'; activeParts[subjName] = next; btn.textContent = 'Часть ' + next; btn.dataset.part = next; const subj = SUBJECTS.find(s => s.name === subjName); if (subj) { const activeYear = subjectYears[subjName] || (next === '2' ? (subj.default_year_alt || subj.default_year) : subj.default_year); const yearSpan = btn.parentElement.querySelector('.year-badge'); if (yearSpan) yearSpan.textContent = activeYear ? `(${activeYear})` : ''; } };
+        function openSubjectSettings(subjectName) { currentSubjectId = subjectName; $('subjectSettingsTitle').textContent = `⚙️ Настройки: ${subjectName}`; const subj = SUBJECTS.find(s => s.name === subjectName); const currentPart = activeParts[subjectName] || '1'; const adminDefault = currentPart === '2' ? (subj.default_year_alt || subj.default_year) : subj.default_year; $('subjectSetYear').value = subjectYears[subjectName] || ''; const hintEl = $('subjectSettingsAdminHint'); if (adminDefault) { hintEl.innerHTML = `👑 Администратор установил год по умолчанию: <b>${adminDefault}</b>.`; $('subjectSetYear').placeholder = adminDefault; } else { hintEl.innerHTML = 'Администратор не устанавливал год по умолчанию.'; $('subjectSetYear').placeholder = 'Например: 2025'; } $('subjectSettingsStatus').textContent = ''; $('subjectSettingsStatus').className = 'fb-status'; subjectSettingsModal.classList.remove('hidden'); }
+        $('closeSubjectSettingsBtn').onclick = () => subjectSettingsModal.classList.add('hidden'); subjectSettingsModal.onclick = (e) => { if (e.target === subjectSettingsModal) subjectSettingsModal.classList.add('hidden'); };
+        $('saveSubjectSettingsBtn').onclick = async () => { if (!currentSubjectId) return; const yearVal = $('subjectSetYear').value.trim(); const st = $('subjectSettingsStatus'); st.textContent = '⏳ Сохраняем...'; st.className = 'fb-status loading'; if (yearVal) subjectYears[currentSubjectId] = yearVal; else delete subjectYears[currentSubjectId]; try { const r = await fetch('/api/auth/update', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ token: authToken, subject_years: JSON.stringify(subjectYears) }) }); const d = await r.json(); if (!r.ok) throw new Error(d.detail || 'Ошибка'); authUser = d.user; subjectYears = parseJson(authUser.subject_years); renderSubjects(); st.textContent = '✅ Сохранено!'; st.className = 'fb-status success'; setTimeout(() => subjectSettingsModal.classList.add('hidden'), 1000); } catch (e) { st.textContent = '❌ ' + e.message; st.className = 'fb-status error'; } };
 
         const INVISIBLE_SUBJECTS = [{ name: 'Разговоры о важном', url: '', type: 'text', keywords: ['разговоры о важном'] }];
+        function findSubjectInLine(line, subjectsList) { const lowerLine = line.toLowerCase(); for (let s of INVISIBLE_SUBJECTS) for (let kw of s.keywords) if (lowerLine.includes(kw)) return s; for (let s of subjectsList) if (lowerLine.includes(s.name.toLowerCase())) return s; for (let s of subjectsList) { const keywords = s.name.toLowerCase().replace(/[()]/g, '').split(' ').filter(w => w.length > 3 && w !== 'язык' && w !== 'класс'); for (let kw of keywords) if (lowerLine.includes(kw)) return s; } return null; }
+        function extractNumbers(str, subjectName) { let clean = str; const isPageBased = /английск|географ/i.test(subjectName) || (/информатика/i.test(subjectName) && !/тетрад/i.test(subjectName)); if (isPageBased) { let pageMatches = []; const pageRegex = /(?:стр\.?|страниц[ыа]?|page)\s*(\d+)/gi; let match; while ((match = pageRegex.exec(clean)) !== null) pageMatches.push(match[1]); if (pageMatches.length > 0) return [...new Set(pageMatches)].join(', '); let simpleNums = clean.match(/\b\d+\b/g); if (simpleNums && simpleNums.length > 0) return [...new Set(simpleNums)].join(', '); } clean = clean.replace(/\b(19|20)\d{2}\s*(год|г\.)?\b/gi, '').replace(/\([^)]*\)/g, '').replace(/(?:https?:\/\/|www\.)\S+/gi, '').replace(/\b\d{1,2}[./]\d{1,2}([./]\d{2,4})?\b/g, '').replace(/\b\d{1,2}\s+(января|февраля|марта|апреля|мая|июня|июля|августа|сентября|октября|ноября|декабря)\b/gi, '').replace(/(?:п\.|пункт|параграф|пар\.)\s*\d+/gi, '').replace(/\b([5-9]|1[0-1])\s*(класс|кл)\b/gi, '').replace(/(?:страниц[ыа]?|стр\.?)\s*\d+(?:\s*,\s*\d+)*/gi, '').replace(/^\s*\d+[.):,\-]?\s+/g, ''); let matches = []; const specificRegex = /(?:№|номер|номера|упражнение|задание|задача|упр\.?|вар\.?|вариант)\s*([\dA-Za-zА-Яа-я\s,и]+)/gi; let match; while ((match = specificRegex.exec(clean)) !== null) { const nums = match[1].match(/\d+[A-Za-zА-Яа-я]?/g); if (nums) matches.push(...nums); } if (matches.length === 0) { const trimmed = clean.trim(); if (/^[\d\s,]+$/.test(trimmed)) { const generalMatches = trimmed.match(/\b\d+\b/g); if (generalMatches) matches = generalMatches; } } if (matches.length === 0) return ""; return [...new Set(matches)].filter(n => n !== '').join(', '); }
+        function parseDualTasks(subject, rawText) { const textLower = rawText.toLowerCase(); const subjectNameLower = subject.name.toLowerCase(); const isEnglishOnly = subjectNameLower.includes('англ'); if (!isEnglishOnly) return [{ subject: subject.name, url: subject.url, type: subject.type, numbers: extractNumbers(rawText, subject.name), raw_text: rawText }]; const hasWb = /тетрад|печатн|р\.т\.|тпо/.test(textLower); const hasTb = /учебник|учеб\./.test(textLower); if (hasWb && hasTb) { const baseNameMatch = subject.name.match(/^(.*?)(?:\s*\(|$)/); const baseName = baseNameMatch ? baseNameMatch[1].trim() : subject.name; const textbookSubj = SUBJECTS.find(s => s.name.includes(baseName) && !s.name.toLowerCase().includes('тетрад') && s.type === 'numbers'); const workbookSubj = SUBJECTS.find(s => s.name.includes(baseName) && s.name.toLowerCase().includes('тетрад') && s.type === 'numbers'); if (textbookSubj && workbookSubj) { let tbNums = []; let tbRegex = /(?:стр\.?|страниц[ыа]?|page|номера|№)\s*([\d,\s\-]+)\s*(?:учебника|учеб\.)/gi; let tbRegex2 = /(?:учебника|учеб\.)\s*(?:стр\.?|страниц[ыа]?|page|номера|№)?\s*([\d,\s\-]+)/gi; let match; while ((match = tbRegex.exec(rawText)) !== null) { let nums = match[1].match(/\d+/g); if (nums) tbNums.push(...nums); } while ((match = tbRegex2.exec(rawText)) !== null) { let nums = match[1].match(/\d+/g); if (nums) tbNums.push(...nums); } let wbClean = rawText.replace(/(?:со|на|в|по|из)?\s*(?:стр|страниц[ыа]?|page)?\s*[\d,\s\-]+\s*(?:учебника|учеб\.)/gi, ''); wbClean = wbClean.replace(/(?:учебника|учеб\.)\s*(?:стр|страниц[ыа]?|page)?\s*[\d,\s\-]+/gi, ''); let wbNums = []; let pRegex = /(?:стр\.?|страниц[ыа]?|page)\s*(\d+)/gi; while ((match = pRegex.exec(wbClean)) !== null) wbNums.push(match[1]); if (wbNums.length === 0) { let nRegex = /(?:№|номер|номера|упражнение|задание|задача|упр\.?)\s*([\d\s,и]+)/gi; while ((match = nRegex.exec(wbClean)) !== null) { let nums = match[1].match(/\d+/g); if (nums) wbNums.push(...nums); } } let jobs = []; if (wbNums.length > 0) jobs.push({ subject: workbookSubj.name, url: workbookSubj.url, type: 'numbers', numbers: [...new Set(wbNums)].join(', '), raw_text: rawText }); if (tbNums.length > 0) jobs.push({ subject: textbookSubj.name, url: textbookSubj.url, type: 'numbers', numbers: [...new Set(tbNums)].join(', '), raw_text: rawText }); if (jobs.length > 0) return jobs; } } let finalSubj = subject; let cleanedText = rawText; if (hasWb) { const baseNameMatch = subject.name.match(/^(.*?)(?:\s*\(|$)/); const baseName = baseNameMatch ? baseNameMatch[1].trim() : subject.name; finalSubj = SUBJECTS.find(s => s.name.includes(baseName) && s.name.toLowerCase().includes('тетрад')) || subject; cleanedText = cleanedText.replace(/(?:со|на|в|по|из)?\s*(?:стр|страниц[ыа]?|page)?\s*[\d,\s\-]+\s*(?:учебника|учеб\.)/gi, '').replace(/(?:учебника|учеб\.)\s*(?:стр|страниц[ыа]?|page)?\s*[\d,\s\-]+/gi, ''); } else if (hasTb) { const baseNameMatch = subject.name.match(/^(.*?)(?:\s*\(|$)/); const baseName = baseNameMatch ? baseNameMatch[1].trim() : subject.name; finalSubj = SUBJECTS.find(s => s.name.includes(baseName) && !s.name.toLowerCase().includes('тетрад')) || subject; cleanedText = cleanedText.replace(/(?:со|на|в|по|из)?\s*(?:стр|страниц[ыа]?|page)?\s*[\d,\s\-]+\s*(?:тетради|тетрадь|р\.т\.)/gi, '').replace(/(?:тетради|тетрадь|р\.т\.)\s*(?:стр|страниц[ыа]?|page)?\s*[\d,\s\-]+/gi, ''); } return [{ subject: finalSubj.name, url: finalSubj.url, type: finalSubj.type, numbers: extractNumbers(cleanedText, finalSubj.name), raw_text: rawText }]; }
 
-        function findSubjectInLine(line, subjectsList) {
-            const lowerLine = line.toLowerCase();
-            for (let s of INVISIBLE_SUBJECTS) for (let kw of s.keywords) if (lowerLine.includes(kw)) return s;
-            for (let s of subjectsList) if (lowerLine.includes(s.name.toLowerCase())) return s;
-            for (let s of subjectsList) {
-                const keywords = s.name.toLowerCase().replace(/[()]/g, '').split(' ').filter(w => w.length > 3 && w !== 'язык' && w !== 'класс');
-                for (let kw of keywords) if (lowerLine.includes(kw)) return s;
-            }
-            return null;
-        }
-
-        function extractNumbers(str, subjectName) {
-            let clean = str;
-            const isPageBased = /английск|географ/i.test(subjectName) || (/информатика/i.test(subjectName) && !/тетрад/i.test(subjectName));
-            if (isPageBased) {
-                let pageMatches = []; const pageRegex = /(?:стр\.?|страниц[ыа]?|page)\s*(\d+)/gi;
-                let match; while ((match = pageRegex.exec(clean)) !== null) pageMatches.push(match[1]);
-                if (pageMatches.length > 0) return [...new Set(pageMatches)].join(', ');
-                let simpleNums = clean.match(/\b\d+\b/g);
-                if (simpleNums && simpleNums.length > 0) return [...new Set(simpleNums)].join(', ');
-            }
-            clean = clean.replace(/\b(19|20)\d{2}\s*(год|г\.)?\b/gi, '');
-            clean = clean.replace(/\([^)]*\)/g, '');
-            clean = clean.replace(/(?:https?:\/\/|www\.)\S+/gi, '');
-            clean = clean.replace(/\b\d{1,2}[./]\d{1,2}([./]\d{2,4})?\b/g, '');
-            clean = clean.replace(/\b\d{1,2}\s+(января|февраля|марта|апреля|мая|июня|июля|августа|сентября|октября|ноября|декабря)\b/gi, '');
-            clean = clean.replace(/(?:п\.|пункт|параграф|пар\.)\s*\d+/gi, '');
-            clean = clean.replace(/\b([5-9]|1[0-1])\s*(класс|кл)\b/gi, '');
-            clean = clean.replace(/(?:страниц[ыа]?|стр\.?)\s*\d+(?:\s*,\s*\d+)*/gi, '');
-            clean = clean.replace(/^\s*\d+[.):,\-]?\s+/g, '');
-            let matches = []; const specificRegex = /(?:№|номер|номера|упражнение|задание|задача|упр\.?|вар\.?|вариант)\s*([\dA-Za-zА-Яа-я\s,и]+)/gi;
-            let match; while ((match = specificRegex.exec(clean)) !== null) {
-                const nums = match[1].match(/\d+[A-Za-zА-Яа-я]?/g);
-                if (nums) matches.push(...nums);
-            }
-            if (matches.length === 0) {
-                const trimmed = clean.trim();
-                if (/^[\d\s,]+$/.test(trimmed)) {
-                    const generalMatches = trimmed.match(/\b\d+\b/g);
-                    if (generalMatches) matches = generalMatches;
-                }
-            }
-            if (matches.length === 0) return "";
-            return [...new Set(matches)].filter(n => n !== '').join(', ');
-        }
-
-        function parseDualTasks(subject, rawText) {
-            const textLower = rawText.toLowerCase();
-            const subjectNameLower = subject.name.toLowerCase();
-            const isEnglishOnly = subjectNameLower.includes('англ');
-            if (!isEnglishOnly) return [{ subject: subject.name, url: subject.url, type: subject.type, numbers: extractNumbers(rawText, subject.name), raw_text: rawText }];
-            const hasWb = /тетрад|печатн|р\.т\.|тпо/.test(textLower);
-            const hasTb = /учебник|учеб\./.test(textLower);
-            if (hasWb && hasTb) {
-                const baseNameMatch = subject.name.match(/^(.*?)(?:\s*\(|$)/);
-                const baseName = baseNameMatch ? baseNameMatch[1].trim() : subject.name;
-                const textbookSubj = SUBJECTS.find(s => s.name.includes(baseName) && !s.name.toLowerCase().includes('тетрад') && s.type === 'numbers');
-                const workbookSubj = SUBJECTS.find(s => s.name.includes(baseName) && s.name.toLowerCase().includes('тетрад') && s.type === 'numbers');
-                if (textbookSubj && workbookSubj) {
-                    let tbNums = []; let tbRegex = /(?:стр\.?|страниц[ыа]?|page|номера|№)\s*([\d,\s\-]+)\s*(?:учебника|учеб\.)/gi;
-                    let tbRegex2 = /(?:учебника|учеб\.)\s*(?:стр\.?|страниц[ыа]?|page|номера|№)?\s*([\d,\s\-]+)/gi;
-                    let match;
-                    while ((match = tbRegex.exec(rawText)) !== null) { let nums = match[1].match(/\d+/g); if (nums) tbNums.push(...nums); }
-                    while ((match = tbRegex2.exec(rawText)) !== null) { let nums = match[1].match(/\d+/g); if (nums) tbNums.push(...nums); }
-                    let wbClean = rawText.replace(/(?:со|на|в|по|из)?\s*(?:стр|страниц[ыа]?|page)?\s*[\d,\s\-]+\s*(?:учебника|учеб\.)/gi, '');
-                    wbClean = wbClean.replace(/(?:учебника|учеб\.)\s*(?:стр|страниц[ыа]?|page)?\s*[\d,\s\-]+/gi, '');
-                    let wbNums = []; let pRegex = /(?:стр\.?|страниц[ыа]?|page)\s*(\d+)/gi;
-                    while ((match = pRegex.exec(wbClean)) !== null) wbNums.push(match[1]);
-                    if (wbNums.length === 0) {
-                        let nRegex = /(?:№|номер|номера|упражнение|задание|задача|упр\.?)\s*([\d\s,и]+)/gi;
-                        while ((match = nRegex.exec(wbClean)) !== null) { let nums = match[1].match(/\d+/g); if (nums) wbNums.push(...nums); }
-                    }
-                    let jobs = [];
-                    if (wbNums.length > 0) jobs.push({ subject: workbookSubj.name, url: workbookSubj.url, type: 'numbers', numbers: [...new Set(wbNums)].join(', '), raw_text: rawText });
-                    if (tbNums.length > 0) jobs.push({ subject: textbookSubj.name, url: textbookSubj.url, type: 'numbers', numbers: [...new Set(tbNums)].join(', '), raw_text: rawText });
-                    if (jobs.length > 0) return jobs;
-                }
-            }
-            let finalSubj = subject; let cleanedText = rawText;
-            if (hasWb) {
-                const baseNameMatch = subject.name.match(/^(.*?)(?:\s*\(|$)/);
-                const baseName = baseNameMatch ? baseNameMatch[1].trim() : subject.name;
-                finalSubj = SUBJECTS.find(s => s.name.includes(baseName) && s.name.toLowerCase().includes('тетрад')) || subject;
-                cleanedText = cleanedText.replace(/(?:со|на|в|по|из)?\s*(?:стр|страниц[ыа]?|page)?\s*[\d,\s\-]+\s*(?:учебника|учеб\.)/gi, '');
-                cleanedText = cleanedText.replace(/(?:учебника|учеб\.)\s*(?:стр|страниц[ыа]?|page)?\s*[\d,\s\-]+/gi, '');
-            } else if (hasTb) {
-                const baseNameMatch = subject.name.match(/^(.*?)(?:\s*\(|$)/);
-                const baseName = baseNameMatch ? baseNameMatch[1].trim() : subject.name;
-                finalSubj = SUBJECTS.find(s => s.name.includes(baseName) && !s.name.toLowerCase().includes('тетрад')) || subject;
-                cleanedText = cleanedText.replace(/(?:со|на|в|по|из)?\s*(?:стр|страниц[ыа]?|page)?\s*[\d,\s\-]+\s*(?:тетради|тетрадь|р\.т\.)/gi, '');
-                cleanedText = cleanedText.replace(/(?:тетради|тетрадь|р\.т\.)\s*(?:стр|страниц[ыа]?|page)?\s*[\d,\s\-]+/gi, '');
-            }
-            return [{ subject: finalSubj.name, url: finalSubj.url, type: finalSubj.type, numbers: extractNumbers(cleanedText, finalSubj.name), raw_text: rawText }];
-        }
-
-        clearBtn.onclick = () => {
-            subjectsContainer.querySelectorAll('.text-input').forEach(ta => ta.value = '');
-            allTextTasks.value = ''; result.innerHTML = '';
-            showToast('Поля очищены', 'info');
-            // УБРАЛИ allTextTasks.focus(); - клавиатура больше не вылезает
-        };
+        clearBtn.onclick = () => { subjectsContainer.querySelectorAll('.text-input').forEach(ta => ta.value = ''); allTextTasks.value = ''; result.innerHTML = ''; showToast('Поля очищены', 'info'); };
 
         btn.addEventListener('click', async () => {
             let jobs = [];
-            subjectsContainer.querySelectorAll('.text-input').forEach(el => {
-                const v = el.value.trim(); if (!v) return;
-                const subject = SUBJECTS.find(s => s.id == el.id.replace('subj_', ''));
-                if (subject) {
-                    const taskJobs = parseDualTasks(subject, v);
-                    const activePart = activeParts[subject.name] || '1';
-                    taskJobs.forEach(job => { if (activePart === '2' && subject.url_alt) job.url = subject.url_alt; });
-                    jobs.push(...taskJobs);
-                }
-            });
-
+            subjectsContainer.querySelectorAll('.text-input').forEach(el => { const v = el.value.trim(); if (!v) return; const subject = SUBJECTS.find(s => s.id == el.id.replace('subj_', '')); if (subject) { const taskJobs = parseDualTasks(subject, v); const activePart = activeParts[subject.name] || '1'; taskJobs.forEach(job => { if (activePart === '2' && subject.url_alt) job.url = subject.url_alt; }); jobs.push(...taskJobs); } });
             const textValue = allTextTasks.value.trim();
-            if (textValue) {
-                let cleanText = textValue.replace(/на\s*\d{1,2}[./]\d{1,2}\s*(\([А-Яа-я]+\))?:?/gi, '').replace(/\b\d{1,2}[./]\d{1,2}([./]\d{2,4})?\b/g, '');
-                const lines = cleanText.split('\n'); let currentSubj = null; let currentText = [];
-                for (let line of lines) {
-                    line = line.trim(); if (!line) continue;
-                    let sanitizedLine = line.replace(/^\s*\d+[а-яa-z]?[.):\-\s]+/i, '').trim(); if (!sanitizedLine) continue;
-                    let matchedSubj = findSubjectInLine(sanitizedLine, SUBJECTS);
-                    if (matchedSubj) {
-                        if (currentSubj && currentText.length > 0) {
-                            const taskJobs = parseDualTasks(currentSubj, currentText.join('\n').trim());
-                            const activePart = activeParts[currentSubj.name] || '1';
-                            taskJobs.forEach(job => { if (activePart === '2' && currentSubj.url_alt) job.url = currentSubj.url_alt; });
-                            jobs.push(...taskJobs);
-                        }
-                        currentSubj = matchedSubj;
-                        let cleanLine = sanitizedLine;
-                        matchedSubj.name.toLowerCase().replace(/[()]/g, '').split(' ').filter(w => w.length > 2).forEach(kw => cleanLine = cleanLine.replace(new RegExp(kw, 'gi'), ''));
-                        cleanLine = cleanLine.replace(/иностранный|[()]/gi, '').replace(/^[:\-\s]+/, '').trim().replace(/на\s*\d{1,2}[./]\d{1,2}\s*(\([А-Яа-я]+\))?:?/gi, '').trim();
-                        currentText = cleanLine ? [cleanLine] : [];
-                    } else currentText.push(line);
-                }
-                if (currentSubj && currentText.length > 0) {
-                    const taskJobs = parseDualTasks(currentSubj, currentText.join('\n').trim());
-                    const activePart = activeParts[currentSubj.name] || '1';
-                    taskJobs.forEach(job => { if (activePart === '2' && currentSubj.url_alt) job.url = currentSubj.url_alt; });
-                    jobs.push(...taskJobs);
-                }
-                if (currentText.length > 0 && jobs.length === 0) jobs.push({ subject: "Текстовые задания", url: "", type: "text", numbers: "", raw_text: currentText.join('\n') });
-            }
+            if (textValue) { let cleanText = textValue.replace(/на\s*\d{1,2}[./]\d{1,2}\s*(\([А-Яа-я]+\))?:?/gi, '').replace(/\b\d{1,2}[./]\d{1,2}([./]\d{2,4})?\b/g, ''); const lines = cleanText.split('\n'); let currentSubj = null; let currentText = []; for (let line of lines) { line = line.trim(); if (!line) continue; let sanitizedLine = line.replace(/^\s*\d+[а-яa-z]?[.):\-\s]+/i, '').trim(); if (!sanitizedLine) continue; let matchedSubj = findSubjectInLine(sanitizedLine, SUBJECTS); if (matchedSubj) { if (currentSubj && currentText.length > 0) { const taskJobs = parseDualTasks(currentSubj, currentText.join('\n').trim()); const activePart = activeParts[currentSubj.name] || '1'; taskJobs.forEach(job => { if (activePart === '2' && currentSubj.url_alt) job.url = currentSubj.url_alt; }); jobs.push(...taskJobs); } currentSubj = matchedSubj; let cleanLine = sanitizedLine; matchedSubj.name.toLowerCase().replace(/[()]/g, '').split(' ').filter(w => w.length > 2).forEach(kw => cleanLine = cleanLine.replace(new RegExp(kw, 'gi'), '')); cleanLine = cleanLine.replace(/иностранный|[()]/gi, '').replace(/^[:\-\s]+/, '').trim().replace(/на\s*\d{1,2}[./]\d{1,2}\s*(\([А-Яа-я]+\))?:?/gi, '').trim(); currentText = cleanLine ? [cleanLine] : []; } else currentText.push(line); } if (currentSubj && currentText.length > 0) { const taskJobs = parseDualTasks(currentSubj, currentText.join('\n').trim()); const activePart = activeParts[currentSubj.name] || '1'; taskJobs.forEach(job => { if (activePart === '2' && currentSubj.url_alt) job.url = currentSubj.url_alt; }); jobs.push(...taskJobs); } if (currentText.length > 0 && jobs.length === 0) jobs.push({ subject: "Текстовые задания", url: "", type: "text", numbers: "", raw_text: currentText.join('\n') }); }
 
             if (!jobs.length) return showToast('Заполни хотя бы одно поле', 'error');
-
-            const btnText = $('btnText');
-            btn.disabled = true;
-            btnText.innerHTML = '<span class="btn-spinner"></span> Решаю...';
-            result.innerHTML = '';
-
+            const btnText = $('btnText'); btn.disabled = true; btnText.innerHTML = '<span class="btn-spinner"></span> Решаю...'; result.innerHTML = '';
             const loadingToast = showLoadingToast('Ищу решения...');
 
             try {
                 const resp = await fetch('/api/parse', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({jobs, token: authToken}) });
-                const data = await resp.json();
-
-                if (loadingToast) loadingToast.stop();
-
+                const data = await resp.json(); if (loadingToast) loadingToast.stop();
                 if (!resp.ok) throw new Error(data.detail || 'Ошибка');
-                if (data.total === 0) {
-                    showToast('Ничего не найдено', 'error');
-                    btn.disabled = false; btnText.innerHTML = '🚀 Решить';
-                    return;
-                }
-
+                if (data.total === 0) { showToast('Ничего не найдено', 'error'); btn.disabled = false; btnText.innerHTML = '🚀 Решить'; return; }
                 showToast(`Обработано ${data.total} заданий`, 'success');
 
-                if (authToken) {
-                    for (const j of jobs) {
-                        if (!j.numbers) continue;
-                        fetch('/api/history/save', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({token: authToken, subject: j.subject, numbers: j.numbers}) }).catch(() => {});
-                    }
-                }
+                if (authToken) { for (const j of jobs) { if (!j.numbers) continue; fetch('/api/history/save', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({token: authToken, subject: j.subject, numbers: j.numbers}) }).catch(() => {}); } }
 
                 let imageResults = []; let textResults = []; let seenTexts = new Set();
-                data.results.forEach(r => {
-                    let isText = r.is_text || r.number === null;
-                    if (r.subject === "Текстовые задания") isText = true;
-                    if (isText) {
-                        const textKey = r.subject + '|||' + (r.raw_text || '').trim();
-                        if (!seenTexts.has(textKey)) { seenTexts.add(textKey); textResults.push(r); }
-                    } else imageResults.push(r);
-                });
+                data.results.forEach(r => { let isText = r.is_text || r.number === null; if (r.subject === "Текстовые задания") isText = true; if (isText) { const textKey = r.subject + '|||' + (r.raw_text || '').trim(); if (!seenTexts.has(textKey)) { seenTexts.add(textKey); textResults.push(r); } } else imageResults.push(r); });
+                if (imageResults.length === 0 && textResults.length === 0) { showToast('Решения не найдены. Проверьте ввод.', 'error'); btn.disabled = false; btnText.innerHTML = '🚀 Решить'; return; }
 
-                if (imageResults.length === 0 && textResults.length === 0) {
-                    showToast('Решения не найдены. Проверьте ввод.', 'error');
-                    btn.disabled = false; btnText.innerHTML = '🚀 Решить';
-                    return;
-                }
-
-                const bySubject = {};
-                imageResults.forEach(r => { (bySubject[r.subject] = bySubject[r.subject] || []).push(r); });
-
+                const bySubject = {}; imageResults.forEach(r => { (bySubject[r.subject] = bySubject[r.subject] || []).push(r); });
                 Object.entries(bySubject).forEach(([subject, items]) => {
-                    const sec = document.createElement('section'); sec.className = 'subject-block';
-                    sec.innerHTML = `<h2 class="color-blue">${escapeHtml(subject)}</h2>`;
-
+                    const sec = document.createElement('section'); sec.className = 'subject-block'; sec.innerHTML = `<h2 class="color-blue">${escapeHtml(subject)}</h2>`;
                     items.forEach(r => {
-                        if (!r.found || !r.solutions || r.solutions.length === 0) {
-                            sec.innerHTML += `<div class="img-error">⚠️ Решение для №${r.number || ''} не найдено на gdz.ru</div>`; return;
-                        }
-                        const subjectObj = SUBJECTS.find(s => s.name === subject);
-                        const currentPart = activeParts[subject] || '1';
-                        const adminDefaultYear = currentPart === '2' ? (subjectObj.default_year_alt || subjectObj.default_year) : subjectObj.default_year;
-                        const targetYear = subjectYears[subject] || adminDefaultYear;
+                        if (!r.found || !r.solutions || r.solutions.length === 0) { sec.innerHTML += `<div class="img-error">⚠️ Решение для №${r.number || ''} не найдено на gdz.ru</div>`; return; }
+                        const subjectObj = SUBJECTS.find(s => s.name === subject); const currentPart = activeParts[subject] || '1'; const adminDefaultYear = currentPart === '2' ? (subjectObj.default_year_alt || subjectObj.default_year) : subjectObj.default_year; const targetYear = subjectYears[subject] || adminDefaultYear;
                         let hasRenderedSomething = false;
-
                         let aiSolution = r.solutions.find(sol => sol.edition && sol.edition.includes('ИИ') && sol.text && sol.text.trim().length > 0);
                         if (aiSolution && !hideAiSubjects[subject]) {
-                            hasRenderedSomething = true;
-                            const wrapper = document.createElement('div'); wrapper.style.cssText = 'display: flex; flex-direction: column; gap: 8px; margin-bottom: 25px;';
+                            hasRenderedSomething = true; const wrapper = document.createElement('div'); wrapper.style.cssText = 'display: flex; flex-direction: column; gap: 8px; margin-bottom: 25px;';
                             if (r.number) { const numHeader = document.createElement('div'); numHeader.className = 'task-number-header'; numHeader.textContent = `Задание №${r.number}`; wrapper.appendChild(numHeader); }
                             const edHeader = document.createElement('div'); edHeader.className = 'edition-header'; edHeader.textContent = aiSolution.edition; wrapper.appendChild(edHeader);
-
-                            const copyBtn = document.createElement('button'); copyBtn.className = 'copy-btn'; copyBtn.innerHTML = '📋 Скопировать текст';
-                            copyBtn.onclick = (e) => { e.stopPropagation(); copyTextToClipboard(aiSolution.text, copyBtn); }; wrapper.appendChild(copyBtn);
-
+                            const copyBtn = document.createElement('button'); copyBtn.className = 'copy-btn'; copyBtn.innerHTML = '📋 Скопировать текст'; copyBtn.onclick = (e) => { e.stopPropagation(); copyTextToClipboard(aiSolution.text, copyBtn); }; wrapper.appendChild(copyBtn);
                             const textDiv = document.createElement('div'); textDiv.className = 'ai-text-block'; textDiv.innerHTML = renderMarkdown(aiSolution.text);
                             if (window.renderMathInElement) renderMathInElement(textDiv, { delimiters: [{left: '$$', right: '$$', display: true}, {left: '$', right: '$', display: false}, {left: '\\(', right: '\\)', display: false}, {left: '\\[', right: '\\]', display: true}], throwOnError: false });
                             wrapper.appendChild(textDiv);
-
-                            if (r.raw_text) {
-                                const taskTextDiv = document.createElement('div'); taskTextDiv.className = 'task-raw-text';
-                                let displayText = r.raw_text.replace(new RegExp(r.subject, 'gi'), '').replace(/^[:\-\s]+/, '').trim() || r.numbers || 'Без текста';
-                                taskTextDiv.textContent = displayText; wrapper.appendChild(taskTextDiv);
-                            }
+                            if (r.raw_text) { const taskTextDiv = document.createElement('div'); taskTextDiv.className = 'task-raw-text'; let displayText = r.raw_text.replace(new RegExp(r.subject, 'gi'), '').replace(/^[:\-\s]+/, '').trim() || r.numbers || 'Без текста'; taskTextDiv.textContent = displayText; wrapper.appendChild(taskTextDiv); }
                             sec.appendChild(wrapper);
                         }
-
                         let imageSolutions = r.solutions.filter(sol => sol.images && sol.images.length > 0 && (!sol.edition || !sol.edition.includes('ИИ')));
                         if (imageSolutions.length > 0) {
-                            hasRenderedSomething = true;
-                            let selectedSolution = imageSolutions[0];
-                            if (targetYear) {
-                                const targetYearNum = parseInt(targetYear); let allYears = [];
-                                imageSolutions.forEach(sol => { if (sol.edition) { const match = sol.edition.match(/\b(20\d{2})\b/g); if (match) match.forEach(y => allYears.push(parseInt(y))); } });
-                                if (allYears.length > 0) {
-                                    let futureYears = [...new Set(allYears)].filter(y => y >= targetYearNum).sort((a,b) => a - b);
-                                    let selectedYear = futureYears.length > 0 ? futureYears[0] : Math.max(...allYears);
-                                    let foundByYear = imageSolutions.find(sol => sol.edition && sol.edition.includes(selectedYear.toString()));
-                                    if (foundByYear) selectedSolution = foundByYear;
-                                }
-                            }
+                            hasRenderedSomething = true; let selectedSolution = imageSolutions[0];
+                            if (targetYear) { const targetYearNum = parseInt(targetYear); let allYears = []; imageSolutions.forEach(sol => { if (sol.edition) { const match = sol.edition.match(/\b(20\d{2})\b/g); if (match) match.forEach(y => allYears.push(parseInt(y))); } }); if (allYears.length > 0) { let futureYears = [...new Set(allYears)].filter(y => y >= targetYearNum).sort((a,b) => a - b); let selectedYear = futureYears.length > 0 ? futureYears[0] : Math.max(...allYears); let foundByYear = imageSolutions.find(sol => sol.edition && sol.edition.includes(selectedYear.toString())); if (foundByYear) selectedSolution = foundByYear; } }
                             const wrapper = document.createElement('div'); wrapper.style.cssText = 'display: flex; flex-direction: column; gap: 8px; margin-bottom: 25px;';
                             if (!aiSolution && r.number) { const numHeader = document.createElement('div'); numHeader.className = 'task-number-header'; numHeader.textContent = `Задание №${r.number}`; wrapper.appendChild(numHeader); }
                             if (selectedSolution.edition) { const edHeader = document.createElement('div'); edHeader.className = 'edition-header'; edHeader.textContent = selectedSolution.edition; wrapper.appendChild(edHeader); }
-
-                            const isMergedSubject = subject.toLowerCase().includes('англ') || subject.toLowerCase().includes('география (тетрадь)');
-                            const isMultiImageSubject = subject.toLowerCase().includes('контурн');
-
+                            const isMergedSubject = subject.toLowerCase().includes('англ') || subject.toLowerCase().includes('география (тетрадь)'); const isMultiImageSubject = subject.toLowerCase().includes('контурн');
                             if (isMergedSubject) {
-                                const imgContainer = document.createElement('div'); imgContainer.className = 'merged-container';
-                                const imgElements = [];
+                                const imgContainer = document.createElement('div'); imgContainer.className = 'merged-container'; const imgElements = [];
                                 selectedSolution.images.forEach((u) => { const img = document.createElement('img'); img.className = 'solution-img img-loading'; img.alt = 'Загрузка...'; loadImage(img, u); imgContainer.appendChild(img); imgElements.push({ img, url: u }); });
                                 wrapper.appendChild(imgContainer);
                                 if (r.raw_text) { const textDiv = document.createElement('div'); textDiv.className = 'task-raw-text'; textDiv.textContent = r.raw_text.replace(new RegExp(r.subject, 'gi'), '').replace(/^[:\-\s]+/, '').trim() || r.numbers || 'Без текста'; wrapper.appendChild(textDiv); }
                                 const controls = document.createElement('div'); controls.style.cssText = 'display: flex; gap: 10px; justify-content: flex-end; flex-wrap: wrap; margin-top: 10px;';
-                                const refreshBtn = document.createElement('button'); refreshBtn.innerHTML = '🔄 Обновить'; refreshBtn.style.cssText = 'padding: 8px 16px; display: flex; align-items: center; gap: 6px; background: rgba(150, 150, 150, 0.15); color: inherit; border: 1px solid rgba(150, 150, 150, 0.3); border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s;';
-                                refreshBtn.onclick = (e) => { e.stopPropagation(); imgElements.forEach(item => { item.img.classList.remove('img-tall', 'img-retrying'); item.img.classList.add('img-loading'); item.img.src = ''; loadImage(item.img, item.url); }); };
-                                const dlBtn = document.createElement('button'); dlBtn.innerHTML = '⬇️ Скачать одной картинкой'; dlBtn.style.cssText = 'padding: 8px 16px; display: flex; align-items: center; gap: 6px; background: #4299e1; color: #ffffff; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s; box-shadow: 0 2px 5px rgba(66, 153, 225, 0.3);';
-                                dlBtn.onclick = async (e) => { e.stopPropagation(); dlBtn.textContent = '⏳ Склеиваем...'; await downloadMergedImage(selectedSolution.images, `GDZ_${r.subject || 'Предмет'}_№${r.number || 1}_merged.jpg`); dlBtn.textContent = '⬇️ Скачать одной картинкой'; };
+                                const refreshBtn = document.createElement('button'); refreshBtn.innerHTML = '🔄 Обновить'; refreshBtn.style.cssText = 'padding: 8px 16px; display: flex; align-items: center; gap: 6px; background: rgba(150, 150, 150, 0.15); color: inherit; border: 1px solid rgba(150, 150, 150, 0.3); border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s;'; refreshBtn.onclick = (e) => { e.stopPropagation(); imgElements.forEach(item => { item.img.classList.remove('img-tall', 'img-retrying'); item.img.classList.add('img-loading'); item.img.src = ''; loadImage(item.img, item.url); }); };
+                                const dlBtn = document.createElement('button'); dlBtn.innerHTML = '⬇️ Скачать одной картинкой'; dlBtn.style.cssText = 'padding: 8px 16px; display: flex; align-items: center; gap: 6px; background: #4299e1; color: #ffffff; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s; box-shadow: 0 2px 5px rgba(66, 153, 225, 0.3);'; dlBtn.onclick = async (e) => { e.stopPropagation(); dlBtn.textContent = '⏳ Склеиваем...'; await downloadMergedImage(selectedSolution.images, `GDZ_${r.subject || 'Предмет'}_№${r.number || 1}_merged.jpg`); dlBtn.textContent = '⬇️ Скачать одной картинкой'; fetch('/api/track-download', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({token: authToken}) }).catch(()=>{}); };
                                 controls.appendChild(refreshBtn); controls.appendChild(dlBtn); wrapper.appendChild(controls); sec.appendChild(wrapper);
                             } else {
                                 const imagesToRender = isMultiImageSubject ? selectedSolution.images : [selectedSolution.images[0]];
@@ -1101,10 +542,8 @@
                                     const imgWrap = document.createElement('div'); imgWrap.style.cssText = 'display: flex; flex-direction: column; gap: 8px; margin-bottom: 15px;';
                                     const img = document.createElement('img'); img.className = 'solution-img img-loading'; img.style.marginTop = '0'; img.alt = 'Загрузка...'; loadImage(img, u); imgWrap.appendChild(img);
                                     const controls = document.createElement('div'); controls.style.cssText = 'display: flex; gap: 10px; justify-content: flex-end; flex-wrap: wrap;';
-                                    const refreshBtn = document.createElement('button'); refreshBtn.innerHTML = '🔄 Обновить'; refreshBtn.style.cssText = 'padding: 8px 16px; display: flex; align-items: center; gap: 6px; background: rgba(150, 150, 150, 0.15); color: inherit; border: 1px solid rgba(150, 150, 150, 0.3); border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s;';
-                                    refreshBtn.onclick = (e) => { e.stopPropagation(); img.classList.remove('img-tall', 'img-retrying'); img.classList.add('img-loading'); img.src = ''; loadImage(img, u); };
-                                    const dlBtn = document.createElement('button'); dlBtn.innerHTML = '⬇️ Скачать'; dlBtn.style.cssText = 'padding: 8px 16px; display: flex; align-items: center; gap: 6px; background: #4299e1; color: #ffffff; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s; box-shadow: 0 2px 5px rgba(66, 153, 225, 0.3);';
-                                    dlBtn.onclick = (e) => { e.stopPropagation(); if (img.src && img.src.includes('/api/image')) downloadSingleImage(img.src, `GDZ_${r.subject || 'Предмет'}_№${r.number || 1}_${imgIndex + 1}.jpg`); else alert('Картинка еще не загрузилась, подождите...'); };
+                                    const refreshBtn = document.createElement('button'); refreshBtn.innerHTML = '🔄 Обновить'; refreshBtn.style.cssText = 'padding: 8px 16px; display: flex; align-items: center; gap: 6px; background: rgba(150, 150, 150, 0.15); color: inherit; border: 1px solid rgba(150, 150, 150, 0.3); border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s;'; refreshBtn.onclick = (e) => { e.stopPropagation(); img.classList.remove('img-tall', 'img-retrying'); img.classList.add('img-loading'); img.src = ''; loadImage(img, u); };
+                                    const dlBtn = document.createElement('button'); dlBtn.innerHTML = '⬇️ Скачать'; dlBtn.style.cssText = 'padding: 8px 16px; display: flex; align-items: center; gap: 6px; background: #4299e1; color: #ffffff; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s; box-shadow: 0 2px 5px rgba(66, 153, 225, 0.3);'; dlBtn.onclick = (e) => { e.stopPropagation(); if (img.src && img.src.includes('/api/image')) { downloadSingleImage(img.src, `GDZ_${r.subject || 'Предмет'}_№${r.number || 1}_${imgIndex + 1}.jpg`); fetch('/api/track-download', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({token: authToken}) }).catch(()=>{}); } else alert('Картинка еще не загрузилась, подождите...'); };
                                     controls.appendChild(refreshBtn); controls.appendChild(dlBtn); imgWrap.appendChild(controls); wrapper.appendChild(imgWrap);
                                 });
                                 if (!aiSolution && r.raw_text) { const textDiv = document.createElement('div'); textDiv.className = 'task-raw-text'; textDiv.textContent = r.raw_text.replace(new RegExp(r.subject, 'gi'), '').replace(/^[:\-\s]+/, '').trim() || r.numbers || 'Без текста'; wrapper.appendChild(textDiv); }
@@ -1118,15 +557,12 @@
 
                 if (textResults.length > 0) {
                     const sec = document.createElement('section'); sec.className = 'subject-block';
-                    const textBySubject = {};
-                    textResults.forEach(r => { textBySubject[r.subject] = textBySubject[r.subject] || []; textBySubject[r.subject].push(r); });
+                    const textBySubject = {}; textResults.forEach(r => { textBySubject[r.subject] = textBySubject[r.subject] || []; textBySubject[r.subject].push(r); });
                     Object.entries(textBySubject).forEach(([subject, items]) => {
-                        const div = document.createElement('div'); div.className = 'text-subject-block';
-                        div.innerHTML = `<h3 class="color-blue">${escapeHtml(subject)}</h3>`;
+                        const div = document.createElement('div'); div.className = 'text-subject-block'; div.innerHTML = `<h3 class="color-blue">${escapeHtml(subject)}</h3>`;
                         items.forEach(r => {
                             let content = escapeHtml(r.raw_text || '').trim().replace(/^№?\d+\s*/i, '');
-                            let lines = content.split('\n').map(l => l.trim()).filter(l => l.length > 2 || (l.length > 0 && !/^[а-яa-z]$/i.test(l)));
-                            content = lines.join('<br>');
+                            let lines = content.split('\n').map(l => l.trim()).filter(l => l.length > 2 || (l.length > 0 && !/^[а-яa-z]$/i.test(l))); content = lines.join('<br>');
                             let header = (r.number && !content.includes(r.number)) ? `<span style="font-weight:700; color:#e53e3e; margin-right: 8px;">№${r.number}</span>` : '';
                             const textBlock = document.createElement('div'); textBlock.className = 'task-text'; textBlock.innerHTML = `${header} ${content}`;
                             const copyBtn = document.createElement('button'); copyBtn.className = 'copy-btn'; copyBtn.innerHTML = '📋 Скопировать текст'; copyBtn.style.marginTop = '8px'; copyBtn.onclick = () => copyTextToClipboard(r.raw_text, copyBtn); textBlock.appendChild(copyBtn);
@@ -1136,256 +572,92 @@
                     });
                     result.appendChild(sec);
                 }
-
-            } catch (err) {
-                if (loadingToast) loadingToast.stop();
-                showToast(err.message, 'error');
-            } finally {
-                btn.disabled = false; btnText.innerHTML = '🚀 Решить';
-            }
+            } catch (err) { if (loadingToast) loadingToast.stop(); showToast(err.message, 'error'); } finally { btn.disabled = false; btnText.innerHTML = '🚀 Решить'; }
         });
 
-        function renderMarkdown(text) {
-            if (!text) return '';
-            let html = text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-            const lines = html.split('\n');
-            let result = ''; let inUl = false; let inOl = false; let inMath = false; let mathBuffer = [];
-            const closeLists = () => { if (inUl) { result += '</ul>'; inUl = false; } if (inOl) { result += '</ol>'; inOl = false; } };
-            for (let line of lines) {
-                let trimmed = line.trim();
-                if (trimmed.startsWith('$$')) {
-                    if (trimmed.length > 2 && trimmed.endsWith('$$')) { closeLists(); result += `<div style="text-align:center; margin: 10px 0;">${trimmed}</div>`; continue; }
-                    inMath = !inMath;
-                    if (inMath) mathBuffer = ['$$']; else { mathBuffer.push('$$'); closeLists(); result += `<div style="text-align:center; margin: 10px 0;">${mathBuffer.join('\n')}</div>`; mathBuffer = []; }
-                    continue;
-                }
-                if (inMath) { mathBuffer.push(line); continue; }
-                if (!trimmed) { closeLists(); continue; }
-                line = line.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>').replace(/(?<!\*)\*([^*]+)\*(?!\*)/g, '<i>$1</i>');
-                if (line.startsWith('* ')) { if (inOl) { result += '</ol>'; inOl = false; } if (!inUl) { result += '<ul>'; inUl = true; } result += `<li>${line.substring(2)}</li>`; }
-                else if (/^\d+\.\s/.test(line)) { if (inUl) { result += '</ul>'; inUl = false; } if (!inOl) { result += '<ol>'; inOl = true; } result += `<li>${line.replace(/^\d+\.\s/, '')}</li>`; }
-                else if (line.startsWith('#### ')) { closeLists(); result += `<h5>${line.substring(5)}</h5>`; }
-                else if (line.startsWith('### ')) { closeLists(); result += `<h4>${line.substring(4)}</h4>`; }
-                else { closeLists(); result += `<p>${line}</p>`; }
-            }
-            closeLists(); return result;
-        }
-
+        function renderMarkdown(text) { if (!text) return ''; let html = text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); const lines = html.split('\n'); let result = ''; let inUl = false; let inOl = false; let inMath = false; let mathBuffer = []; const closeLists = () => { if (inUl) { result += '</ul>'; inUl = false; } if (inOl) { result += '</ol>'; inOl = false; } }; for (let line of lines) { let trimmed = line.trim(); if (trimmed.startsWith('$$')) { if (trimmed.length > 2 && trimmed.endsWith('$$')) { closeLists(); result += `<div style="text-align:center; margin: 10px 0;">${trimmed}</div>`; continue; } inMath = !inMath; if (inMath) mathBuffer = ['$$']; else { mathBuffer.push('$$'); closeLists(); result += `<div style="text-align:center; margin: 10px 0;">${mathBuffer.join('\n')}</div>`; mathBuffer = []; } continue; } if (inMath) { mathBuffer.push(line); continue; } if (!trimmed) { closeLists(); continue; } line = line.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>').replace(/(?<!\*)\*([^*]+)\*(?!\*)/g, '<i>$1</i>'); if (line.startsWith('* ')) { if (inOl) { result += '</ol>'; inOl = false; } if (!inUl) { result += '<ul>'; inUl = true; } result += `<li>${line.substring(2)}</li>`; } else if (/^\d+\.\s/.test(line)) { if (inUl) { result += '</ul>'; inUl = false; } if (!inOl) { result += '<ol>'; inOl = true; } result += `<li>${line.replace(/^\d+\.\s/, '')}</li>`; } else if (line.startsWith('#### ')) { closeLists(); result += `<h5>${line.substring(5)}</h5>`; } else if (line.startsWith('### ')) { closeLists(); result += `<h4>${line.substring(4)}</h4>`; } else { closeLists(); result += `<p>${line}</p>`; } } closeLists(); return result; }
         function escapeHtml(t) { const d = document.createElement('div'); d.textContent = t || ''; return d.innerHTML; }
 
         function renderTopbar() {
-            topbarRight.innerHTML = '';
-            const name = authUser.name || authUser.email.split('@')[0];
-            const initial = getInitial(authUser.name, authUser.email);
-            const avatarStyle = currentAvatar ? `background-image: url('${currentAvatar}')` : '';
-
-            topbarRight.innerHTML = `
-                <div class="user-menu-container" id="userMenuContainer">
-                    <button class="user-menu-btn" id="userMenuBtn">
-                        <div class="user-avatar-mini" style="${avatarStyle}">${currentAvatar ? '' : initial}</div>
-                        <span>${escapeHtml(name)}</span>
-                        <span style="font-size:10px; opacity:0.6;">▼</span>
-                    </button>
-                    <div class="dropdown-menu" id="userDropdown">
-                        <div class="dropdown-header" id="dropdownGreeting"></div>
-                        <button class="dropdown-item" onclick="openSettings()">⚙️ Настройки</button>
-                        <button class="dropdown-item" onclick="openHistory()">📜 История</button>
-                        <button class="dropdown-item" onclick="document.getElementById('userDropdown').classList.remove('show'); supportModal.classList.remove('hidden')">❓ Поддержка</button>
-                        ${authUser.is_admin ? '<button class="dropdown-item" onclick="document.getElementById(\'userDropdown\').classList.remove(\'show\'); window.location.href=\'/admin\'">👑 Админка</button>' : ''}
-                        <div class="dropdown-divider"></div>
-                        <button class="dropdown-item logout" onclick="logout()">🚪 Выйти</button>
-                    </div>
-                </div>
-            `;
-
-            const hour = new Date().getHours(); let g = 'Доброй ночи';
-            if (hour >= 7 && hour < 9) g = 'Доброе утро'; else if (hour >= 9 && hour < 18) g = 'Добрый день'; else if (hour >= 18 && hour < 23) g = 'Добрый вечер';
-            $('dropdownGreeting').innerText = `${g}, ${name}!`;
-
-            $('userMenuBtn').onclick = (e) => { e.stopPropagation(); $('userDropdown').classList.toggle('show'); };
-            document.addEventListener('click', (e) => { if (!e.target.closest('#userMenuContainer')) $('userDropdown').classList.remove('show'); });
+            topbarRight.innerHTML = ''; const name = authUser.name || authUser.email.split('@')[0]; const initial = getInitial(authUser.name, authUser.email); const avatarStyle = currentAvatar ? `background-image: url('${currentAvatar}')` : '';
+            topbarRight.innerHTML = `<div class="user-menu-container" id="userMenuContainer"><button class="user-menu-btn" id="userMenuBtn"><div class="user-avatar-mini" style="${avatarStyle}">${currentAvatar ? '' : initial}</div><span>${escapeHtml(name)}</span><span style="font-size:10px; opacity:0.6;">▼</span></button><div class="dropdown-menu" id="userDropdown"><div class="dropdown-header" id="dropdownGreeting"></div><button class="dropdown-item" onclick="openAchievements()">🏆 Достижения</button><button class="dropdown-item" onclick="openSettings()">⚙️ Настройки</button><button class="dropdown-item" onclick="openHistory()">📜 История</button><button class="dropdown-item" onclick="document.getElementById('userDropdown').classList.remove('show'); supportModal.classList.remove('hidden')">❓ Поддержка</button>${authUser.is_admin ? '<button class="dropdown-item" onclick="document.getElementById(\'userDropdown\').classList.remove(\'show\'); window.location.href=\'/admin\'">👑 Админка</button>' : ''}<div class="dropdown-divider"></div><button class="dropdown-item logout" onclick="logout()">🚪 Выйти</button></div></div>`;
+            const hour = new Date().getHours(); let g = 'Доброй ночи'; if (hour >= 7 && hour < 9) g = 'Доброе утро'; else if (hour >= 9 && hour < 18) g = 'Добрый день'; else if (hour >= 18 && hour < 23) g = 'Добрый вечер'; $('dropdownGreeting').innerText = `${g}, ${name}!`;
+            $('userMenuBtn').onclick = (e) => { e.stopPropagation(); $('userDropdown').classList.toggle('show'); }; document.addEventListener('click', (e) => { if (!e.target.closest('#userMenuContainer')) $('userDropdown').classList.remove('show'); });
         }
 
-        let authMode = 'login';
-        function switchTab(mode) {
-            authMode = mode;
-            document.querySelectorAll('.auth-tab').forEach(t => t.classList.toggle('active', t.dataset.tab === mode));
-            $('nameField').style.display = mode === 'register' ? 'block' : 'none';
-            $('authSubmit').textContent = mode === 'login' ? 'Войти' : 'Создать аккаунт';
-        }
-        document.querySelectorAll('.auth-tab').forEach(t => t.onclick = () => switchTab(t.dataset.tab));
-
-        $('authForm').onsubmit = async (e) => {
-            e.preventDefault();
-            const email = $('authEmail').value.trim();
-            const password = $('authPwd').value;
-            const name = $('authName').value.trim();
-            const st = $('authStatus');
-            const device = getDeviceInfo();
-
-            st.textContent = '⏳ Подождите...'; st.className = 'fb-status loading';
-            const url = authMode === 'login' ? '/api/auth/login' : '/api/auth/register';
-            const body = authMode === 'login' ? {email, password, device} : {email, password, name, device};
-
+        async function openAchievements() {
+            document.getElementById('userDropdown')?.classList.remove('show');
+            const modal = document.getElementById('achievementsModal'); const list = document.getElementById('achievementsList');
+            modal.classList.remove('hidden'); list.innerHTML = '<p class="empty" style="grid-column: 1 / -1;">Загрузка...</p>';
             try {
-                const r = await fetch(url, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body) });
-                const d = await r.json();
-                if (!r.ok) {
-                    if (r.status === 403) st.innerHTML = '🚫 ' + (d.detail || 'Доступ заблокирован');
-                    else st.textContent = '❌ ' + (d.detail || 'Ошибка');
-                    st.className = 'fb-status error'; return;
-                }
-                authToken = d.token; authUser = d.user; currentAvatar = d.user.avatar || null;
-                subjectYears = parseJson(authUser.subject_years); hideAiSubjects = parseJson(authUser.hide_ai_subjects);
-                localStorage.setItem('gdz_token', authToken);
+                const r = await fetch('/api/achievements?token=' + encodeURIComponent(authToken));
+                const d = await r.json(); list.innerHTML = '';
+                d.achievements.forEach(ach => {
+                    const div = document.createElement('div'); div.className = 'ach-card' + (ach.unlocked ? ' unlocked' : '');
+                    div.innerHTML = `<div class="ach-icon">${ach.icon}</div><div class="ach-title">${ach.title}</div><div class="ach-desc">${ach.desc}</div>`;
+                    list.appendChild(div);
+                });
+            } catch (e) { list.innerHTML = '<p class="empty" style="grid-column: 1 / -1;">Ошибка загрузки</p>'; }
+        }
 
-                applyTheme(authUser.theme || 'light');
-                await showMain();
-            } catch (err) { st.textContent = '❌ ' + err.message; st.className = 'fb-status error'; }
+        let authMode = 'login'; function switchTab(mode) { authMode = mode; document.querySelectorAll('.auth-tab').forEach(t => t.classList.toggle('active', t.dataset.tab === mode)); $('nameField').style.display = mode === 'register' ? 'block' : 'none'; $('authSubmit').textContent = mode === 'login' ? 'Войти' : 'Создать аккаунт'; } document.querySelectorAll('.auth-tab').forEach(t => t.onclick = () => switchTab(t.dataset.tab));
+        $('authForm').onsubmit = async (e) => {
+            e.preventDefault(); const email = $('authEmail').value.trim(); const password = $('authPwd').value; const name = $('authName').value.trim(); const st = $('authStatus'); const device = getDeviceInfo();
+            st.textContent = '⏳ Подождите...'; st.className = 'fb-status loading';
+            const url = authMode === 'login' ? '/api/auth/login' : '/api/auth/register'; const body = authMode === 'login' ? {email, password, device} : {email, password, name, device};
+            try { const r = await fetch(url, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body) }); const d = await r.json(); if (!r.ok) { if (r.status === 403) st.innerHTML = '🚫 ' + (d.detail || 'Доступ заблокирован'); else st.textContent = '❌ ' + (d.detail || 'Ошибка'); st.className = 'fb-status error'; return; } authToken = d.token; authUser = d.user; currentAvatar = d.user.avatar || null; subjectYears = parseJson(authUser.subject_years); hideAiSubjects = parseJson(authUser.hide_ai_subjects); localStorage.setItem('gdz_token', authToken); applyTheme(authUser.theme || 'light'); await showMain(); }
+            catch (err) { st.textContent = '❌ ' + err.message; st.className = 'fb-status error'; }
         };
 
-        async function logout() {
-            if (!confirm('Выйти из аккаунта?')) return;
-            try { await fetch('/api/auth/logout', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({token: authToken}) }); } catch {}
-            authToken = ''; authUser = null; currentAvatar = null; subjectYears = {}; hideAiSubjects = {}; activeParts = {};
-            localStorage.removeItem('gdz_token'); applyTheme('light'); topbarRight.innerHTML = ''; showAuth();
-        }
+        async function logout() { if (!confirm('Выйти из аккаунта?')) return; try { await fetch('/api/auth/logout', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({token: authToken}) }); } catch {} authToken = ''; authUser = null; currentAvatar = null; subjectYears = {}; hideAiSubjects = {}; activeParts = {}; localStorage.removeItem('gdz_token'); applyTheme('light'); topbarRight.innerHTML = ''; showAuth(); }
 
         async function openHistory() {
-            document.getElementById('userDropdown')?.classList.remove('show');
-            historyModal.classList.remove('hidden');
+            document.getElementById('userDropdown')?.classList.remove('show'); historyModal.classList.remove('hidden');
             const list = $('historyList'); list.innerHTML = '<p class="empty">Загрузка...</p>';
-            try {
-                const r = await fetch('/api/history/list?token=' + encodeURIComponent(authToken));
-                const d = await r.json(); if (!r.ok) throw new Error(d.detail || 'Ошибка');
-                if (!d.items.length) { list.innerHTML = '<p class="empty">История пуста</p>'; return; }
-                list.innerHTML = '';
-                d.items.forEach(it => {
-                    const row = document.createElement('div'); row.className = 'history-row';
-                    row.innerHTML = `<div class="history-info"><strong>${escapeHtml(it.subject)}</strong><span>${escapeHtml(it.numbers)}</span></div><span class="history-date">${escapeHtml(it.created)}</span>`;
-                    row.onclick = () => { allTextTasks.value = `${it.subject}: ${it.numbers}`; historyModal.classList.add('hidden'); };
-                    list.appendChild(row);
-                });
-            } catch (e) { list.innerHTML = '<p class="empty">Ошибка: ' + e.message + '</p>'; }
+            try { const r = await fetch('/api/history/list?token=' + encodeURIComponent(authToken)); const d = await r.json(); if (!r.ok) throw new Error(d.detail || 'Ошибка'); if (!d.items.length) { list.innerHTML = '<p class="empty">История пуста</p>'; return; } list.innerHTML = ''; d.items.forEach(it => { const row = document.createElement('div'); row.className = 'history-row'; row.innerHTML = `<div class="history-info"><strong>${escapeHtml(it.subject)}</strong><span>${escapeHtml(it.numbers)}</span></div><span class="history-date">${escapeHtml(it.created)}</span>`; row.onclick = () => { allTextTasks.value = `${it.subject}: ${it.numbers}`; historyModal.classList.add('hidden'); }; list.appendChild(row); }); }
+            catch (e) { list.innerHTML = '<p class="empty">Ошибка: ' + e.message + '</p>'; }
         }
+        $('closeHistoryBtn').onclick = () => historyModal.classList.add('hidden'); $('clearHistoryBtn').onclick = async () => { if (!confirm('Очистить всю историю?')) return; try { await fetch('/api/history/clear', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({token: authToken}) }); $('historyList').innerHTML = '<p class="empty">История пуста</p>'; } catch {} };
 
-        $('closeHistoryBtn').onclick = () => historyModal.classList.add('hidden');
-        $('clearHistoryBtn').onclick = async () => {
-            if (!confirm('Очистить всю историю?')) return;
-            try { await fetch('/api/history/clear', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({token: authToken}) }); $('historyList').innerHTML = '<p class="empty">История пуста</p>'; } catch {}
-        };
-
-        function updateAvatarPreview() {
-            const preview = $('avatarPreview');
-            if (currentAvatar) { preview.style.backgroundImage = 'url("' + currentAvatar + '")'; preview.textContent = ''; }
-            else { preview.style.backgroundImage = ''; preview.textContent = getInitial(authUser?.name, authUser?.email); }
-        }
-
+        function updateAvatarPreview() { const preview = $('avatarPreview'); if (currentAvatar) { preview.style.backgroundImage = 'url("' + currentAvatar + '")'; preview.textContent = ''; } else { preview.style.backgroundImage = ''; preview.textContent = getInitial(authUser?.name, authUser?.email); } }
         function openSettings() {
-            document.getElementById('userDropdown')?.classList.remove('show');
-            settingsModal.classList.remove('hidden');
-            $('settingsStatus').textContent = ''; $('settingsStatus').className = 'fb-status';
-            $('setName').value = authUser?.name || ''; $('setOldPwd').value = ''; $('setNewPwd').value = ''; updateAvatarPreview();
-            const hideList = $('hideAiList'); hideList.innerHTML = '';
-            SUBJECTS.forEach(s => { hideList.innerHTML += `<label style="display: flex; align-items: center; gap: 8px; cursor: pointer; padding: 4px 0;"><input type="checkbox" value="${s.name}" ${hideAiSubjects[s.name] ? 'checked' : ''} style="width: 18px; height: 18px; accent-color: #4299e1;"><span>${s.name}</span></label>`; });
+            document.getElementById('userDropdown')?.classList.remove('show'); settingsModal.classList.remove('hidden'); $('settingsStatus').textContent = ''; $('settingsStatus').className = 'fb-status'; $('setName').value = authUser?.name || ''; $('setOldPwd').value = ''; $('setNewPwd').value = ''; updateAvatarPreview();
+            const hideList = $('hideAiList'); hideList.innerHTML = ''; SUBJECTS.forEach(s => { hideList.innerHTML += `<label style="display: flex; align-items: center; gap: 8px; cursor: pointer; padding: 4px 0;"><input type="checkbox" value="${s.name}" ${hideAiSubjects[s.name] ? 'checked' : ''} style="width: 18px; height: 18px; accent-color: #4299e1;"><span>${s.name}</span></label>`; });
         }
+        function cancelSettings() { settingsModal.classList.add('hidden'); } $('closeSettingsBtn').onclick = cancelSettings; settingsModal.onclick = (e) => { if (e.target === settingsModal) cancelSettings(); };
 
-        function cancelSettings() { settingsModal.classList.add('hidden'); }
-        $('closeSettingsBtn').onclick = cancelSettings;
-        settingsModal.onclick = (e) => { if (e.target === settingsModal) cancelSettings(); };
-
-        $('avatarInput').onchange = async (e) => {
-            const file = e.target.files[0]; if (!file) return;
-            try { const b64 = await shrinkImage(file, 300, 0.85); currentAvatar = b64; updateAvatarPreview(); await fetch('/api/auth/avatar', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({token: authToken, avatar: b64}) }); renderTopbar(); }
-            catch (err) { showToast('Ошибка: ' + err.message, 'error'); } e.target.value = '';
-        };
-
-        $('avatarRemoveBtn').onclick = async () => {
-            if (!confirm('Убрать аватарку?')) return;
-            currentAvatar = null; updateAvatarPreview();
-            try { await fetch('/api/auth/avatar', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({token: authToken, avatar: ''}) }); renderTopbar(); } catch {}
-        };
-
+        $('avatarInput').onchange = async (e) => { const file = e.target.files[0]; if (!file) return; try { const b64 = await shrinkImage(file, 300, 0.85); currentAvatar = b64; updateAvatarPreview(); await fetch('/api/auth/avatar', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({token: authToken, avatar: b64}) }); renderTopbar(); } catch (err) { showToast('Ошибка: ' + err.message, 'error'); } e.target.value = ''; };
+        $('avatarRemoveBtn').onclick = async () => { if (!confirm('Убрать аватарку?')) return; currentAvatar = null; updateAvatarPreview(); try { await fetch('/api/auth/avatar', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({token: authToken, avatar: ''}) }); renderTopbar(); } catch {} };
         $('saveSettingsBtn').onclick = async () => {
             const st = $('settingsStatus'); const newName = $('setName').value.trim(); const oldPwd = $('setOldPwd').value; const newPwd = $('setNewPwd').value;
             st.textContent = '⏳ Применяем...'; st.className = 'fb-status loading';
-            const hideCheckboxes = document.querySelectorAll('#hideAiList input[type="checkbox"]'); let newHideAi = {};
-            hideCheckboxes.forEach(cb => { if (cb.checked) newHideAi[cb.value] = true; });
+            const hideCheckboxes = document.querySelectorAll('#hideAiList input[type="checkbox"]'); let newHideAi = {}; hideCheckboxes.forEach(cb => { if (cb.checked) newHideAi[cb.value] = true; });
             const payload = { token: authToken, name: newName, hide_ai_subjects: JSON.stringify(newHideAi) };
-            try {
-                const r1 = await fetch('/api/auth/update', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload) });
-                const d1 = await r1.json(); if (!r1.ok) throw new Error(d1.detail || 'Ошибка');
-                authUser = d1.user; hideAiSubjects = parseJson(authUser.hide_ai_subjects); updateGreeting(); renderTopbar();
-                if (oldPwd && newPwd) {
-                    const r2 = await fetch('/api/auth/change-password', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({token: authToken, old_password: oldPwd, new_password: newPwd}) });
-                    const d2 = await r2.json(); if (!r2.ok) { st.textContent = '⚠️ Профиль применён, пароль: ' + (d2.detail || 'Ошибка'); st.className = 'fb-status error'; return; }
-                    st.textContent = '✅ Профиль и пароль применены';
-                } else st.textContent = '✅ Настройки применены';
-                st.className = 'fb-status success';
-                setTimeout(() => settingsModal.classList.add('hidden'), 1500);
-            } catch (e) { st.textContent = '❌ ' + e.message; st.className = 'fb-status error'; }
+            try { const r1 = await fetch('/api/auth/update', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload) }); const d1 = await r1.json(); if (!r1.ok) throw new Error(d1.detail || 'Ошибка'); authUser = d1.user; hideAiSubjects = parseJson(authUser.hide_ai_subjects); updateGreeting(); renderTopbar(); if (oldPwd && newPwd) { const r2 = await fetch('/api/auth/change-password', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({token: authToken, old_password: oldPwd, new_password: newPwd}) }); const d2 = await r2.json(); if (!r2.ok) { st.textContent = '⚠️ Профиль применён, пароль: ' + (d2.detail || 'Ошибка'); st.className = 'fb-status error'; return; } st.textContent = '✅ Профиль и пароль применены'; } else st.textContent = '✅ Настройки применены'; st.className = 'fb-status success'; setTimeout(() => settingsModal.classList.add('hidden'), 1500); }
+            catch (e) { st.textContent = '❌ ' + e.message; st.className = 'fb-status error'; }
         };
-
         $('logoutBtn').onclick = () => { settingsModal.classList.add('hidden'); logout(); };
+        $('deleteAccountBtn').onclick = async () => { if (!confirm('Удалить аккаунт?') || !confirm('Точно удалить?')) return; const st = $('settingsStatus'); st.textContent = '⏳ Удаляем...'; st.className = 'fb-status loading'; try { const r = await fetch('/api/auth/delete', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({token: authToken}) }); if (!r.ok) throw new Error('Ошибка удаления'); authToken = ''; authUser = null; currentAvatar = null; localStorage.removeItem('gdz_token'); localStorage.removeItem('gdz_theme'); applyTheme('light'); settingsModal.classList.add('hidden'); showAuth(); } catch (e) { st.textContent = '❌ ' + e.message; st.className = 'fb-status error'; } };
 
-        $('deleteAccountBtn').onclick = async () => {
-            if (!confirm('Удалить аккаунт?') || !confirm('Точно удалить?')) return;
-            const st = $('settingsStatus'); st.textContent = '⏳ Удаляем...'; st.className = 'fb-status loading';
-            try {
-                const r = await fetch('/api/auth/delete', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({token: authToken}) });
-                if (!r.ok) throw new Error('Ошибка удаления');
-                authToken = ''; authUser = null; currentAvatar = null;
-                localStorage.removeItem('gdz_token'); localStorage.removeItem('gdz_theme');
-                applyTheme('light'); settingsModal.classList.add('hidden'); showAuth();
-            } catch (e) { st.textContent = '❌ ' + e.message; st.className = 'fb-status error'; }
-        };
-
-        $('closeSupport').onclick = () => supportModal.classList.add('hidden');
-        supportModal.onclick = (e) => { if (e.target === supportModal) supportModal.classList.add('hidden'); };
-
-        $('fbImage').onchange = async (e) => {
-            const file = e.target.files[0];
-            if (!file) { fbImageBase64 = ""; $('fbImageName').textContent = 'Файл не выбран'; return; }
-            try { fbImageBase64 = await shrinkImage(file, 800, 0.8); $('fbImageName').textContent = file.name; }
-            catch (err) { alert("Ошибка: " + err.message); fbImageBase64 = ""; $('fbImageName').textContent = 'Файл не выбран'; e.target.value = ''; }
-        };
-
+        $('closeSupport').onclick = () => supportModal.classList.add('hidden'); supportModal.onclick = (e) => { if (e.target === supportModal) supportModal.classList.add('hidden'); };
+        $('fbImage').onchange = async (e) => { const file = e.target.files[0]; if (!file) { fbImageBase64 = ""; $('fbImageName').textContent = 'Файл не выбран'; return; } try { fbImageBase64 = await shrinkImage(file, 800, 0.8); $('fbImageName').textContent = file.name; } catch (err) { alert("Ошибка: " + err.message); fbImageBase64 = ""; $('fbImageName').textContent = 'Файл не выбран'; e.target.value = ''; } };
         $('feedbackForm').onsubmit = async (e) => {
-            e.preventDefault(); const msg = $('fbMessage').value.trim(); if (!msg) return;
-            const st = $('fbStatus'); st.textContent = '⏳ Отправляем...'; st.className = 'fb-status loading';
-            try {
-                const r = await fetch('/api/feedback', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({message: msg, contact: $('fbContact').value.trim(), image: fbImageBase64}) });
-                if (!r.ok) throw new Error('Ошибка');
-                st.textContent = '✅ Отправлено! Спасибо.'; st.className = 'fb-status success';
-                $('fbMessage').value = ''; $('fbContact').value = ''; $('fbImage').value = ''; $('fbImageName').textContent = 'Файл не выбран'; fbImageBase64 = "";
-                setTimeout(() => supportModal.classList.add('hidden'), 2000);
-            } catch (err) { st.textContent = '❌ ' + err.message; st.className = 'fb-status error'; }
+            e.preventDefault(); const msg = $('fbMessage').value.trim(); if (!msg) return; const st = $('fbStatus'); st.textContent = '⏳ Отправляем...'; st.className = 'fb-status loading';
+            try { const r = await fetch('/api/feedback', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({message: msg, contact: $('fbContact').value.trim(), image: fbImageBase64}) }); if (!r.ok) throw new Error('Ошибка'); st.textContent = '✅ Отправлено! Спасибо.'; st.className = 'fb-status success'; $('fbMessage').value = ''; $('fbContact').value = ''; $('fbImage').value = ''; $('fbImageName').textContent = 'Файл не выбран'; fbImageBase64 = ""; setTimeout(() => supportModal.classList.add('hidden'), 2000); }
+            catch (err) { st.textContent = '❌ ' + err.message; st.className = 'fb-status error'; }
         };
 
         function openImageModal(src) { imageModalImg.src = src; imageModal.classList.remove('hidden'); document.body.style.overflow = 'hidden'; }
         function closeModal() { imageModal.classList.add('hidden'); imageModalImg.src = ''; document.body.style.overflow = ''; }
-        $('closeImageModal').onclick = closeModal;
-        imageModal.onclick = (e) => { if (e.target === imageModal) closeModal(); };
-        document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeModal(); });
+        $('closeImageModal').onclick = closeModal; imageModal.onclick = (e) => { if (e.target === imageModal) closeModal(); }; document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeModal(); });
 
-        let activeLoads = 0;
-        const MAX_PARALLEL = 3, pendingQueue = [];
+        let activeLoads = 0; const MAX_PARALLEL = 3, pendingQueue = [];
         const PLACEHOLDER_RETRIES = 4, RETRY_DELAYS = [500, 1000, 2000, 3000];
         const MIN_REAL_WIDTH = 200, MIN_REAL_HEIGHT = 150;
         const LOAD_TIMEOUT = 15000, TALL_RATIO = 3.0;
 
         function scheduleLoad(fn) { return new Promise((resolve) => { pendingQueue.push({ fn, resolve }); processQueue(); }); }
-        function processQueue() {
-            while (activeLoads < MAX_PARALLEL && pendingQueue.length > 0) {
-                const { fn, resolve } = pendingQueue.shift(); activeLoads++;
-                fn().then(resolve).finally(() => { activeLoads--; processQueue(); });
-            }
-        }
-        function showImageError(img, imgUrl) {
-            const err = document.createElement('div'); err.className = 'img-error';
-            err.innerHTML = `⚠️ Не удалось получить решение<br><br><a href="${imgUrl}" target="_blank" class="img-error-link">Открыть напрямую с gdz.ru →</a>`;
-            img.replaceWith(err);
-        }
+        function processQueue() { while (activeLoads < MAX_PARALLEL && pendingQueue.length > 0) { const { fn, resolve } = pendingQueue.shift(); activeLoads++; fn().then(resolve).finally(() => { activeLoads--; processQueue(); }); } }
         function loadImage(img, imgUrl) {
             scheduleLoad(() => new Promise((resolve) => {
                 let attempt = 0;
@@ -1395,78 +667,32 @@
                     function cleanup() { if (tid) { clearTimeout(tid); tid = null; } img.removeEventListener('load', onLoad); img.removeEventListener('error', onError); }
                     function onLoad() {
                         cleanup(); const w = img.naturalWidth, h = img.naturalHeight;
-                        if (w < MIN_REAL_WIDTH || h < MIN_REAL_HEIGHT) {
-                            attempt++;
-                            if (attempt <= PLACEHOLDER_RETRIES) {
-                                const delay = RETRY_DELAYS[attempt - 1] || 3000;
-                                img.classList.remove('img-loading'); img.classList.add('img-retrying'); setTimeout(tryOnce, delay); return;
-                            }
-                            const wrap = img.parentElement; if (wrap) wrap.style.display = 'none'; resolve(); return;
-                        }
+                        if (w < MIN_REAL_WIDTH || h < MIN_REAL_HEIGHT) { attempt++; if (attempt <= PLACEHOLDER_RETRIES) { const delay = RETRY_DELAYS[attempt - 1] || 3000; img.classList.remove('img-loading'); img.classList.add('img-retrying'); setTimeout(tryOnce, delay); return; } const wrap = img.parentElement; if (wrap) wrap.style.display = 'none'; resolve(); return; }
                         img.classList.remove('img-loading', 'img-retrying'); if (h / w >= TALL_RATIO) img.classList.add('img-tall'); img.onclick = () => openImageModal(img.src); resolve();
                     }
                     function onError() { cleanup(); onFail('Error'); }
                     img.addEventListener('load', onLoad, { once: true }); img.addEventListener('error', onError, { once: true });
                     img.src = '/api/image?url=' + encodeURIComponent(imgUrl) + '&w=1000&t=' + Date.now();
                 }
-                function onFail(reason) {
-                    attempt++;
-                    if (attempt <= PLACEHOLDER_RETRIES) {
-                        const delay = RETRY_DELAYS[attempt - 1] || 3000;
-                        img.classList.remove('img-loading'); img.classList.add('img-retrying'); setTimeout(tryOnce, delay); return;
-                    }
-                    const wrap = img.parentElement; if (wrap) wrap.style.display = 'none'; resolve();
-                }
+                function onFail(reason) { attempt++; if (attempt <= PLACEHOLDER_RETRIES) { const delay = RETRY_DELAYS[attempt - 1] || 3000; img.classList.remove('img-loading'); img.classList.add('img-retrying'); setTimeout(tryOnce, delay); return; } const wrap = img.parentElement; if (wrap) wrap.style.display = 'none'; resolve(); }
                 tryOnce();
             }));
         }
 
-        async function downloadSingleImage(url, filename) {
-            try {
-                const response = await fetch(url); const blob = await response.blob(); const blobUrl = window.URL.createObjectURL(blob);
-                const a = document.createElement('a'); a.href = blobUrl; a.download = filename || 'image.jpg';
-                document.body.appendChild(a); a.click(); a.remove(); window.URL.revokeObjectURL(blobUrl);
-            } catch (e) { console.error('Ошибка скачивания:', e); }
-        }
-
+        async function downloadSingleImage(url, filename) { try { const response = await fetch(url); const blob = await response.blob(); const blobUrl = window.URL.createObjectURL(blob); const a = document.createElement('a'); a.href = blobUrl; a.download = filename || 'image.jpg'; document.body.appendChild(a); a.click(); a.remove(); window.URL.revokeObjectURL(blobUrl); } catch (e) { console.error('Ошибка скачивания:', e); } }
         async function downloadMergedImage(urls, filename) {
             try {
                 const images = []; let maxWidth = 0; let totalHeight = 0;
-                for (let rawUrl of urls) {
-                    const proxyUrl = '/api/image?url=' + encodeURIComponent(rawUrl) + '&w=2000'; const img = new Image();
-                    img.crossOrigin = "Anonymous"; img.src = proxyUrl;
-                    await new Promise((resolve, reject) => { img.onload = resolve; img.onerror = reject; });
-                    images.push(img); if (img.width > maxWidth) maxWidth = img.width; totalHeight += img.height;
-                }
+                for (let rawUrl of urls) { const proxyUrl = '/api/image?url=' + encodeURIComponent(rawUrl) + '&w=2000'; const img = new Image(); img.crossOrigin = "Anonymous"; img.src = proxyUrl; await new Promise((resolve, reject) => { img.onload = resolve; img.onerror = reject; }); images.push(img); if (img.width > maxWidth) maxWidth = img.width; totalHeight += img.height; }
                 const canvas = document.createElement('canvas'); canvas.width = maxWidth; canvas.height = totalHeight; const ctx = canvas.getContext('2d');
                 let yOffset = 0; for (let img of images) { ctx.drawImage(img, 0, yOffset); yOffset += img.height; }
-                canvas.toBlob((blob) => {
-                    const blobUrl = window.URL.createObjectURL(blob); const a = document.createElement('a');
-                    a.href = blobUrl; a.download = filename || 'merged.jpg';
-                    document.body.appendChild(a); a.click(); a.remove(); window.URL.revokeObjectURL(blobUrl);
-                }, 'image/jpeg', 0.95);
+                canvas.toBlob((blob) => { const blobUrl = window.URL.createObjectURL(blob); const a = document.createElement('a'); a.href = blobUrl; a.download = filename || 'merged.jpg'; document.body.appendChild(a); a.click(); a.remove(); window.URL.revokeObjectURL(blobUrl); }, 'image/jpeg', 0.95);
             } catch (e) { console.error('Ошибка склейки:', e); alert('Не удалось склеить картинки. Попробуйте обновить страницу.'); }
         }
 
-        function createParticles() {
-            const particlesContainer = document.getElementById('particles'); if (!particlesContainer) return;
-            for (let i = 0; i < 40; i++) {
-                const particle = document.createElement('div'); particle.className = 'particle';
-                particle.style.left = Math.random() * 100 + '%'; particle.style.top = Math.random() * 100 + '%';
-                particle.style.animationDelay = Math.random() * 3 + 's'; particle.style.animationDuration = (Math.random() * 2 + 2) + 's';
-                particlesContainer.appendChild(particle);
-            }
-        }
-
-        document.addEventListener('mousemove', (e) => {
-            const shapes = document.querySelectorAll('.shape');
-            const x = e.clientX / window.innerWidth; const y = e.clientY / window.innerHeight;
-            shapes.forEach((shape, index) => { const speed = (index + 1) * 15; shape.style.transform = `translate(${x * speed}px, ${y * speed}px)`; });
-        });
-
-        document.querySelectorAll('.btn-primary, .btn-secondary').forEach(btn => btn.classList.add('ripple'));
-        createParticles();
-        init();
+        function createParticles() { const particlesContainer = document.getElementById('particles'); if (!particlesContainer) return; for (let i = 0; i < 40; i++) { const particle = document.createElement('div'); particle.className = 'particle'; particle.style.left = Math.random() * 100 + '%'; particle.style.top = Math.random() * 100 + '%'; particle.style.animationDelay = Math.random() * 3 + 's'; particle.style.animationDuration = (Math.random() * 2 + 2) + 's'; particlesContainer.appendChild(particle); } }
+        document.addEventListener('mousemove', (e) => { const shapes = document.querySelectorAll('.shape'); const x = e.clientX / window.innerWidth; const y = e.clientY / window.innerHeight; shapes.forEach((shape, index) => { const speed = (index + 1) * 15; shape.style.transform = `translate(${x * speed}px, ${y * speed}px)`; }); });
+        document.querySelectorAll('.btn-primary, .btn-secondary').forEach(btn => btn.classList.add('ripple')); createParticles(); init();
     </script>
 </body>
 </html>

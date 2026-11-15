@@ -13,10 +13,9 @@ from curl_cffi import requests as cffi_requests
 from PIL import Image
 import asyncio
 import asyncpg
-
 from parser import parse_tasks
 
-VERSION = "148.0.0"
+VERSION = "149.0.0"
 ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "")
 ADMIN_EMAIL = os.getenv("ADMIN_EMAIL", "admin@gdz.ru").lower().strip()
 DATABASE_URL = os.getenv("DATABASE_URL")
@@ -25,70 +24,50 @@ db_pool = None
 
 DEFAULT_SUBJECTS = [
     {"name": "Алгебра", "url": "https://gdz.ru/class-7/algebra/makarichev-18/",
-     "url_alt": "https://gdz.ru/class-7/algebra/merzlyak-polonskij/", "type": "numbers",
-     "group_name": "🧮 Точные науки", "sort_order": 1, "max_number": 1000, "note": "",
-     "default_year": "2023", "default_year_alt": "2016"},
-
+     "url_alt": "https://gdz.ru/class-7/algebra/merzlyak-polonskij/", "type": "numbers", "group_name": "🧮 Точные науки",
+     "sort_order": 1, "max_number": 1000, "note": "", "default_year": "2023", "default_year_alt": "2016"},
     {"name": "Геометрия", "url": "https://gdz.ru/class-7/geometria/merzljak/", "url_alt": "", "type": "numbers",
-     "group_name": "🧮 Точные науки", "sort_order": 2, "max_number": 1000, "note": "",
-     "default_year": "2016", "default_year_alt": ""},
-
+     "group_name": "🧮 Точные науки", "sort_order": 2, "max_number": 1000, "note": "", "default_year": "2016",
+     "default_year_alt": ""},
     {"name": "Вероятность и статистика", "url": "https://gdz.ru/class-7/matematika/vysockij-yashenko-bazovij-uroven/",
      "url_alt": "", "type": "numbers", "group_name": "🧮 Точные науки", "sort_order": 3, "max_number": 500, "note": "",
      "default_year": "2023", "default_year_alt": ""},
-
     {"name": "Информатика", "url": "https://gdz.ru/class-7/informatika/reshebnik-bosova-l-l-7/", "url_alt": "",
      "type": "numbers", "group_name": "🧮 Точные науки", "sort_order": 4, "max_number": 500, "note": "",
      "default_year": "2023", "default_year_alt": ""},
-
     {"name": "Информатика (Тетрадь)",
      "url": "https://gdz.ru/class-7/informatika/reshebnik-rabochaya-tetrad-bosova-l-l-2013/", "url_alt": "",
      "type": "numbers", "group_name": "🧮 Точные науки", "sort_order": 4.5, "max_number": 500, "note": "",
      "default_year": "2026", "default_year_alt": ""},
-
     {"name": "Русский язык", "url": "https://gdz.ru/class-7/russkii_yazik/baranova/", "url_alt": "", "type": "numbers",
-     "group_name": "📖 Гуманитарные науки", "sort_order": 5, "max_number": 560, "note": "",
-     "default_year": "2025", "default_year_alt": ""},
-
+     "group_name": "📖 Гуманитарные науки", "sort_order": 5, "max_number": 560, "note": "", "default_year": "2025",
+     "default_year_alt": ""},
     {"name": "Английский язык(Учебник)",
      "url": "https://gdz.ru/class-7/english/reshebnik-angliyskiy-v-fokuse-vaulina-yu-e/", "url_alt": "",
      "type": "numbers", "group_name": "📖 Гуманитарные науки", "sort_order": 7, "max_number": 500, "note": "",
      "default_year": "2025", "default_year_alt": ""},
-
     {"name": "Английский язык(Тетрадь)", "url": "https://gdz.ru/class-7/english/workbook-spotlight-7/", "url_alt": "",
      "type": "numbers", "group_name": "📖 Гуманитарные науки", "sort_order": 8, "max_number": 500, "note": "",
      "default_year": "2026", "default_year_alt": ""},
-
     {"name": "Физика", "url": "https://gdz.ru/class-7/fizika/peryshkin-7/", "url_alt": "", "type": "numbers",
-     "group_name": "🌿 Естественные науки", "sort_order": 9, "max_number": 500, "note": "",
-     "default_year": "", "default_year_alt": ""},
-
-    # --- НОВЫЕ ПРЕДМЕТЫ ГЕОГРАФИИ ---
+     "group_name": "🌿 Естественные науки", "sort_order": 9, "max_number": 500, "note": "", "default_year": "",
+     "default_year_alt": ""},
     {"name": "География (Тетрадь)", "url": "https://gdz.ru/class-7/geografiya/rabochaya-tetrad-nikolina/",
-     "url_alt": "", "type": "numbers",
-     "group_name": "🌿 Естественные науки", "sort_order": 10, "max_number": 500, "note": "",
-     "default_year": "", "default_year_alt": ""},
-
+     "url_alt": "", "type": "numbers", "group_name": "🌿 Естественные науки", "sort_order": 10, "max_number": 500,
+     "note": "", "default_year": "", "default_year_alt": ""},
     {"name": "География (Контурные карты)", "url": "https://gdz.ru/class-7/geografiya/konturnie-karti-kurbskij/",
-     "url_alt": "", "type": "numbers",
-     "group_name": "🌿 Естественные науки", "sort_order": 11, "max_number": 500, "note": "",
-     "default_year": "", "default_year_alt": ""},
-
+     "url_alt": "", "type": "numbers", "group_name": "🌿 Естественные науки", "sort_order": 11, "max_number": 500,
+     "note": "", "default_year": "", "default_year_alt": ""},
     {"name": "Биология", "url": "", "url_alt": "", "type": "text", "group_name": "🌿 Естественные науки",
      "sort_order": 12, "max_number": 0, "note": "", "default_year": "", "default_year_alt": ""},
-
     {"name": "Литература", "url": "", "url_alt": "", "type": "text", "group_name": "📖 Гуманитарные науки",
      "sort_order": 13, "max_number": 0, "note": "", "default_year": "", "default_year_alt": ""},
-
     {"name": "История", "url": "", "url_alt": "", "type": "text", "group_name": "📖 Гуманитарные науки",
      "sort_order": 14, "max_number": 0, "note": "", "default_year": "", "default_year_alt": ""},
-
     {"name": "Музыка", "url": "", "url_alt": "", "type": "text", "group_name": "🎨 Остальные предметы", "sort_order": 15,
      "max_number": 0, "note": "", "default_year": "", "default_year_alt": ""},
-
     {"name": "Труд (технология)", "url": "", "url_alt": "", "type": "text", "group_name": "🎨 Остальные предметы",
      "sort_order": 16, "max_number": 0, "note": "", "default_year": "", "default_year_alt": ""},
-
     {"name": "Изобразительное искусство", "url": "", "url_alt": "", "type": "text",
      "group_name": "🎨 Остальные предметы", "sort_order": 17, "max_number": 0, "note": "", "default_year": "",
      "default_year_alt": ""},
@@ -121,7 +100,6 @@ async def init_db():
             await conn.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS year TEXT DEFAULT ''")
             await conn.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS subject_years TEXT DEFAULT '{}'")
             await conn.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS hide_ai_subjects TEXT DEFAULT '{}'")
-
             await conn.execute(
                 "CREATE TABLE IF NOT EXISTS blocked_devices (device TEXT PRIMARY KEY, blocked_at TIMESTAMP DEFAULT NOW())")
             await conn.execute(
@@ -150,6 +128,11 @@ async def init_db():
                 "CREATE TABLE IF NOT EXISTS templates (name TEXT PRIMARY KEY, content TEXT NOT NULL, updated_at TIMESTAMP DEFAULT NOW())")
             await conn.execute(
                 "CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT, updated_at TIMESTAMP DEFAULT NOW())")
+
+            # --- НОВАЯ ТАБЛИЦА ДЛЯ АЧИВОК ---
+            await conn.execute(
+                "CREATE TABLE IF NOT EXISTS user_achievements (user_id INTEGER REFERENCES users(id) ON DELETE CASCADE, achievement_id TEXT NOT NULL, unlocked_at TIMESTAMP DEFAULT NOW(), PRIMARY KEY (user_id, achievement_id))")
+            # --------------------------------
 
             count = await conn.fetchval("SELECT COUNT(*) FROM subjects WHERE user_id IS NULL")
             if count == 0:
@@ -411,15 +394,15 @@ async def admin_add_subject(data: dict):
     if data.get("user_id") and not await check_main_admin(data): raise HTTPException(403, "Только главный админ")
     if db_pool is None: raise HTTPException(500, "БД недоступна")
     name = (data.get("name") or "").strip();
-    url = (data.get("url") or "").strip()
+    url = (data.get("url") or "").strip();
     url_alt = (data.get("url_alt") or "").strip()
     s_type = (data.get("type") or "numbers").strip();
     group_name = (data.get("group_name") or "").strip()
     sort_order = int(data.get("sort_order") or 999);
-    max_number = int(data.get("max_number") or 0)
-    note = (data.get("note") or "").strip();
-    user_id = data.get("user_id")
-    default_year = (data.get("default_year") or "").strip()
+    max_number = int(data.get("max_number") or 0);
+    note = (data.get("note") or "").strip()
+    user_id = data.get("user_id");
+    default_year = (data.get("default_year") or "").strip();
     default_year_alt = (data.get("default_year_alt") or "").strip()
     if not name: raise HTTPException(400, "Нужно название")
     if s_type not in ("numbers", "text"): raise HTTPException(400, "Неверный type")
@@ -451,9 +434,7 @@ async def admin_update_subject(data: dict):
     for key in ("sort_order", "max_number"):
         if key in data and data[key] is not None:
             try:
-                fields.append(f"{key} = ${idx}");
-                params.append(int(data[key]));
-                idx += 1
+                fields.append(f"{key} = ${idx}"); params.append(int(data[key])); idx += 1
             except:
                 pass
     if not fields: raise HTTPException(400, "Нечего обновлять")
@@ -594,7 +575,6 @@ async def update_profile(req: UpdateProfileRequest):
         req.subject_years); idx += 1
     if req.hide_ai_subjects is not None: updates.append(f"hide_ai_subjects = ${idx}"); params.append(
         req.hide_ai_subjects); idx += 1
-
     if req.theme in ('light', 'dark', 'custom'):
         updates.append(f"theme = ${idx}");
         params.append(req.theme);
@@ -807,8 +787,8 @@ async def admin_clear(data: dict):
 
 @app.post("/api/admin/export-db")
 async def admin_export_db(data: dict):
-    token = data.get("token")
-    password = data.get("password")
+    token = data.get("token");
+    password = data.get("password");
     allowed = False
     if password and password == ADMIN_PASSWORD:
         allowed = True
@@ -819,10 +799,8 @@ async def admin_export_db(data: dict):
     if db_pool is None: raise HTTPException(500, "БД недоступна")
 
     sql_dump = "-- GDZ Parser DB Backup\n-- Дата: " + datetime.now().isoformat() + "\n\n"
-
-    # 1. СОЗДАНИЕ И ОБНОВЛЕНИЕ СТРУКТУРЫ ТАБЛИЦ
     sql_dump += """
--- СОЗДАНИЕ И ОБНОВЛЕНИЕ СТРУКТУРЫ ТАБЛИЦ
+-- СОЗДАНИЕ ТАБЛИЦ
 CREATE TABLE IF NOT EXISTS users (id SERIAL PRIMARY KEY, email TEXT UNIQUE NOT NULL, password_hash TEXT NOT NULL, name TEXT, is_admin BOOLEAN DEFAULT FALSE, created_at TIMESTAMP DEFAULT NOW());
 ALTER TABLE users ADD COLUMN IF NOT EXISTS device TEXT;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS last_seen TIMESTAMP DEFAULT NOW();
@@ -857,20 +835,21 @@ ALTER TABLE feedback ADD COLUMN IF NOT EXISTS image TEXT;
 CREATE TABLE IF NOT EXISTS logs (id SERIAL PRIMARY KEY, user_id INTEGER, action TEXT, details TEXT, ip TEXT, created_at TIMESTAMP DEFAULT NOW());
 CREATE TABLE IF NOT EXISTS templates (name TEXT PRIMARY KEY, content TEXT NOT NULL, updated_at TIMESTAMP DEFAULT NOW());
 CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT, updated_at TIMESTAMP DEFAULT NOW());
+
+-- Таблица ачивок
+CREATE TABLE IF NOT EXISTS user_achievements (user_id INTEGER REFERENCES users(id) ON DELETE CASCADE, achievement_id TEXT NOT NULL, unlocked_at TIMESTAMP DEFAULT NOW(), PRIMARY KEY (user_id, achievement_id));
 """
 
-    # 2. ВСТАВКА ДАННЫХ (Порядок таблиц важен для внешних ключей)
     async with db_pool.acquire() as conn:
         tables = ['users', 'blocked_devices', 'subjects', 'user_subjects', 'user_schedule', 'sessions', 'history',
-                  'feedback', 'templates', 'settings', 'logs']
-
+                  'feedback', 'templates', 'settings', 'logs', 'user_achievements']
         for table in tables:
             sql_dump += f"\n-- Данные таблицы {table}\n"
             try:
                 rows = await conn.fetch(f"SELECT * FROM {table}")
                 for row in rows:
-                    row_dict = dict(row)
-                    cols = ", ".join(row_dict.keys())
+                    row_dict = dict(row);
+                    cols = ", ".join(row_dict.keys());
                     vals = []
                     for v in row_dict.values():
                         if v is None:
@@ -882,9 +861,7 @@ CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT, updated_a
                         elif isinstance(v, datetime):
                             vals.append(f"'{v.isoformat()}'")
                         else:
-                            # Глубокая очистка строки: убираем нулевые байты, экранируем слэши и кавычки
-                            safe_str = str(v).replace('\x00', '').replace('\\', '\\\\').replace("'", "''")
-                            vals.append(f"'{safe_str}'")
+                            vals.append("'" + str(v).replace('\x00', '').replace('\\', '\\\\').replace("'", "''") + "'")
 
                     if table == 'settings':
                         sql_dump += f"INSERT INTO {table} ({cols}) VALUES ({', '.join(vals)}) ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value;\n"
@@ -897,16 +874,7 @@ CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT, updated_a
             except Exception as e:
                 sql_dump += f"-- Ошибка при чтении {table}: {e}\n"
 
-        # 3. ОБНОВЛЕНИЕ СЧЕТЧИКОВ SERIAL
-        sql_dump += """
-\n-- Обновляем счетчики SERIAL, чтобы новые записи шли с правильного ID
-SELECT setval('users_id_seq', COALESCE((SELECT MAX(id) FROM users), 0) + 1, false);
-SELECT setval('subjects_id_seq', COALESCE((SELECT MAX(id) FROM subjects), 0) + 1, false);
-SELECT setval('history_id_seq', COALESCE((SELECT MAX(id) FROM history), 0) + 1, false);
-SELECT setval('feedback_id_seq', COALESCE((SELECT MAX(id) FROM feedback), 0) + 1, false);
-SELECT setval('logs_id_seq', COALESCE((SELECT MAX(id) FROM logs), 0) + 1, false);
-"""
-
+        sql_dump += "\n-- Обновляем счетчики SERIAL\nSELECT setval('users_id_seq', COALESCE((SELECT MAX(id) FROM users), 0) + 1, false);\nSELECT setval('subjects_id_seq', COALESCE((SELECT MAX(id) FROM subjects), 0) + 1, false);\nSELECT setval('history_id_seq', COALESCE((SELECT MAX(id) FROM history), 0) + 1, false);\nSELECT setval('feedback_id_seq', COALESCE((SELECT MAX(id) FROM feedback), 0) + 1, false);\nSELECT setval('logs_id_seq', COALESCE((SELECT MAX(id) FROM logs), 0) + 1, false);\n"
     return Response(content=sql_dump.encode('utf-8'), media_type="application/sql",
                     headers={"Content-Disposition": "attachment; filename=gdz_backup.sql"})
 
@@ -1115,43 +1083,155 @@ async def parse(req: ParseRequest, request: Request):
         raise HTTPException(500, f"Ошибка парсинга: {e}")
     subjects = ", ".join(j.subject for j in jobs)[:200]
     ip = request.client.host if request.client else ""
-
     user = await get_user_by_token(req.token) if req.token else None
     user_id = user["id"] if user else None
-
     await log_action(user_id, "parse", subjects, ip)
     return {"results": results, "total": len(results)}
 
 
-@app.get("/api/image")
-async def proxy_image(url: str, w: int = 1000):
-    if not url.startswith("https://gdz.ru/"): raise HTTPException(400, "Недопустимый URL")
-    w = max(400, min(w, 2000))
+# --- ЭНДПОИНТЫ ДЛЯ АЧИВОК ---
+@app.get("/api/achievements")
+async def get_achievements(token: str = ""):
+    user = await get_user_by_token(token)
+    if not user: raise HTTPException(401, "Не авторизован")
+    if db_pool is None: return {"achievements": []}
 
-    def fetch_and_compress():
-        r = cffi_requests.get(url, impersonate="chrome", timeout=8, headers={"Referer": "https://gdz.ru/"})
-        if r.status_code != 200: raise Exception(f"HTTP {r.status_code}")
+    uid = user["id"]
+    async with db_pool.acquire() as conn:
+        # 1. Сбор статистики
+        total_parses = await conn.fetchval("SELECT COUNT(*) FROM logs WHERE user_id = $1 AND action = 'parse'", uid)
+        parses_morning = await conn.fetchval(
+            "SELECT COUNT(*) FROM logs WHERE user_id = $1 AND action = 'parse' AND EXTRACT(HOUR FROM created_at) < 7",
+            uid)
+        parses_night = await conn.fetchval(
+            "SELECT COUNT(*) FROM logs WHERE user_id = $1 AND action = 'parse' AND EXTRACT(HOUR FROM created_at) >= 23",
+            uid)
+        parses_weekend = await conn.fetchval(
+            "SELECT COUNT(*) FROM logs WHERE user_id = $1 AND action = 'parse' AND EXTRACT(DOW FROM created_at) IN (0, 6)",
+            uid)
+
+        math_parses = await conn.fetchval(
+            "SELECT COUNT(*) FROM logs WHERE user_id = $1 AND action = 'parse' AND (details ILIKE '%Алгебра%' OR details ILIKE '%Геометрия%')",
+            uid)
+        hist_parses = await conn.fetchval(
+            "SELECT COUNT(*) FROM logs WHERE user_id = $1 AND action = 'parse' AND details ILIKE '%История%'", uid)
+        eng_parses = await conn.fetchval(
+            "SELECT COUNT(*) FROM logs WHERE user_id = $1 AND action = 'parse' AND details ILIKE '%Английский%'", uid)
+        geo_parses = await conn.fetchval(
+            "SELECT COUNT(*) FROM logs WHERE user_id = $1 AND action = 'parse' AND details ILIKE '%География%'", uid)
+
+        downloads = await conn.fetchval("SELECT COUNT(*) FROM logs WHERE user_id = $1 AND action = 'download'", uid)
+        feedbacks = await conn.fetchval("SELECT COUNT(*) FROM logs WHERE user_id = $1 AND action = 'feedback'", uid)
+
+        # Перепроверка (два одинаковых поиска подряд)
+        last_two = await conn.fetch("SELECT numbers FROM history WHERE user_id = $1 ORDER BY id DESC LIMIT 2", uid)
+        double_check = len(last_two) == 2 and last_two[0]["numbers"] == last_two[1]["numbers"] and last_two[0][
+            "numbers"] != ""
+
+        # Ураган (3 поиска за 10 секунд)
+        recent_parses = await conn.fetch(
+            "SELECT created_at FROM logs WHERE user_id = $1 AND action = 'parse' ORDER BY created_at DESC LIMIT 3", uid)
+        hurricane = False
+        if len(recent_parses) == 3:
+            diff = (recent_parses[0]["created_at"] - recent_parses[2]["created_at"]).total_seconds()
+            if diff <= 10: hurricane = True
+
+        # Железная выдержка / В ударе (стрики)
+        dates_rows = await conn.fetch(
+            "SELECT DISTINCT DATE(created_at) as d FROM logs WHERE user_id = $1 AND action = 'parse' ORDER BY d DESC",
+            uid)
+        dates = [r["d"] for r in dates_rows]
+        streak_3 = streak_7 = False
+        cur_streak = 0
+        for i in range(len(dates)):
+            if i == 0:
+                cur_streak = 1
+            elif (dates[i - 1] - dates[i]).days == 1:
+                cur_streak += 1
+            else:
+                cur_streak = 1
+
+            if cur_streak >= 3: streak_3 = True
+            if cur_streak >= 7: streak_7 = True
+
+        # Первооткрыватель (зашел в первый день месяца)
+        pioneer = await conn.fetchval(
+            "SELECT COUNT(*) FROM logs WHERE user_id = $1 AND action = 'login' AND EXTRACT(DAY FROM created_at) = 1",
+            uid) > 0
+
+        # 2. Список всех ачивок
+        ach_list = [
+            {"id": "lark", "icon": "🌅", "title": "Жаворонок", "desc": "Поиск до 7 утра",
+             "unlocked": parses_morning > 0},
+            {"id": "streak3", "icon": "🔥", "title": "В ударе", "desc": "3 дня подряд", "unlocked": streak_3},
+            {"id": "streak7", "icon": "🛡", "title": "Железная выдержка", "desc": "7 дней подряд", "unlocked": streak_7},
+            {"id": "weekend", "icon": "🏖", "title": "Выходной?", "desc": "Поиск в сб/вс",
+             "unlocked": parses_weekend > 0},
+            {"id": "night", "icon": "🐢", "title": "Мастер откладывания", "desc": "5 поисков после 23:00",
+             "unlocked": parses_night >= 5},
+
+            {"id": "pythagoras", "icon": "🧮", "title": "Пифагор", "desc": "20 раз Алгебра/Геометрия",
+             "unlocked": math_parses >= 20},
+            {"id": "historian", "icon": "🏺", "title": "Юный историк", "desc": "10 раз История",
+             "unlocked": hist_parses >= 10},
+            {"id": "polyglot", "icon": "🗣", "title": "Полиглот", "desc": "10 раз Английский",
+             "unlocked": eng_parses >= 10},
+            {"id": "columbus", "icon": "🌍", "title": "Колумб", "desc": "10 раз География",
+             "unlocked": geo_parses >= 10},
+
+            {"id": "robot_friend", "icon": "🤖", "title": "Друг робота", "desc": "10 поисков",
+             "unlocked": total_parses >= 10},
+            {"id": "double_check", "icon": "🔁", "title": "Перепроверка", "desc": "2 одинаковых поиска",
+             "unlocked": double_check},
+            {"id": "collector", "icon": "📸", "title": "Коллекционер", "desc": "Скачать 20 картинок",
+             "unlocked": downloads >= 20},
+            {"id": "helper", "icon": "🕵️", "title": "Помощник проекта", "desc": "Написать в техподдержку",
+             "unlocked": feedbacks > 0},
+
+            {"id": "pioneer", "icon": "🥇", "title": "Первооткрыватель", "desc": "Зашел 1-го числа",
+             "unlocked": pioneer},
+            {"id": "hurricane", "icon": "🌪", "title": "Ураган", "desc": "3 поиска за 10 сек", "unlocked": hurricane},
+        ]
+
+        # 3. Сохраняем новые
+        unlocked_ids = {r["achievement_id"] for r in
+                        await conn.fetch("SELECT achievement_id FROM user_achievements WHERE user_id = $1", uid)}
+        for a in ach_list:
+            if a["unlocked"] and a["id"] not in unlocked_ids:
+                await conn.execute(
+                    "INSERT INTO user_achievements (user_id, achievement_id) VALUES ($1, $2) ON CONFLICT DO NOTHING",
+                    uid, a["id"])
+
+    return {"achievements": ach_list}
+
+
+class DownloadTrack(BaseModel):
+    token: str
+
+
+@app.post("/api/track-download")
+async def track_download(req: DownloadTrack):
+    user = await get_user_by_token(req.token)
+    if user: await log_action(user["id"], "download", "image")
+    return {"ok": True}
+
+
+class FeedbackTrack(BaseModel):
+    message: str;
+    contact: str = "";
+    image: str = ""
+
+
+@app.post("/api/feedback")
+async def feedback(req: FeedbackRequest):
+    if not req.message.strip(): raise HTTPException(400, "Сообщение пустое")
+    if db_pool is not None:
         try:
-            img = Image.open(BytesIO(r.content))
-            if img.width > w:
-                ratio = w / img.width;
-                img = img.resize((w, int(img.height * ratio)), Image.LANCZOS)
-            if img.mode in ("RGBA", "P", "LA"):
-                bg = Image.new("RGB", img.size, (255, 255, 255))
-                if img.mode in ("RGBA", "LA"):
-                    bg.paste(img, mask=img.split()[-1])
-                else:
-                    bg.paste(img)
-                img = bg
-            buf = BytesIO();
-            img.save(buf, format="JPEG", quality=80, optimize=True)
-            return buf.getvalue(), "image/jpeg"
-        except Exception:
-            return r.content, r.headers.get("content-type", "image/jpeg")
-
-    try:
-        data, content_type = await asyncio.to_thread(fetch_and_compress)
-    except Exception:
-        return Response(content=PLACEHOLDER_JPEG, media_type="image/jpeg", headers={"Cache-Control": "no-cache"})
-    return Response(content=data, media_type=content_type or "image/jpeg",
-                    headers={"Cache-Control": "public, max-age=86400"})
+            async with db_pool.acquire() as conn:
+                await conn.execute(
+                    "INSERT INTO feedback (date, message, contact, version, image) VALUES ($1, $2, $3, $4, $5)",
+                    datetime.now().strftime("%d.%m.%Y %H:%M"), req.message.strip(), req.contact.strip(), VERSION,
+                    req.image)
+        except Exception as e:
+            print(f"[main] Ошибка feedback: {e}")
+    return {"ok": True}
