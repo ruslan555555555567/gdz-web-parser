@@ -214,6 +214,8 @@
                         </select>
                     </label>
 
+                    <label class="form-label">Срок действия (дней) <input type="number" id="annDuration" class="num-input" value="3" min="1" max="30"></label>
+
                     <div id="annUserList" style="display: none; max-height: 200px; overflow-y: auto; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 8px; margin-bottom: 15px;">
                         <p class="hint" style="margin-bottom:10px;">Выбери пользователей:</p>
                         <div id="annUsersCheckboxes"></div>
@@ -885,6 +887,7 @@
             const msg = document.getElementById('annMessage').value.trim();
             if (!msg) return alert('Напиши текст!');
             const type = document.getElementById('annTargetType').value;
+            const duration = parseInt(document.getElementById('annDuration').value) || 3;
             const cbs = document.querySelectorAll('.ann-user-cb:checked');
             const ids = Array.from(cbs).map(cb => cb.value).join(',');
             if (type !== 'all' && !ids) return alert('Выбери хотя бы одного пользователя!');
@@ -893,7 +896,7 @@
             try {
                 const r = await fetch('/api/admin/announcements/send', {
                     method: 'POST', headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ token: authData.token, message: msg, target_type: type, target_users: ids })
+                    body: JSON.stringify({ token: authData.token, message: msg, target_type: type, target_users: ids, duration_days: duration })
                 });
                 if (!r.ok) throw new Error('Ошибка');
                 st.textContent = '✅ Объявление отправлено!'; st.className = 'fb-status success';
@@ -911,7 +914,7 @@
                 if (!d.announcements.length) { list.innerHTML = '<p class="empty">Нет объявлений</p>'; return; }
                 d.announcements.forEach(a => {
                     list.innerHTML += `<div style="background:rgba(255,255,255,0.05); padding:10px; border-radius:8px; margin-bottom:8px; display:flex; justify-content:space-between;">
-                        <div><strong>${escapeHtml(a.message)}</strong><br><span style="font-size:12px; color:#a0aec0;">${a.created} · ${a.target_type}</span></div>
+                        <div><strong>${escapeHtml(a.message)}</strong><br><span style="font-size:12px; color:#a0aec0;">${a.created} · до ${a.expires || '—'} · ${a.target_type}</span></div>
                         <button onclick="deleteAnn(${a.id})" style="background:none; border:none; cursor:pointer; font-size:16px;">🗑</button>
                     </div>`;
                 });

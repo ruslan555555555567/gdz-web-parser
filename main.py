@@ -15,7 +15,7 @@ import asyncio
 import asyncpg
 from parser import parse_tasks
 
-VERSION = "150.0.0"
+VERSION = "151.0.0"
 ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "")
 ADMIN_EMAIL = os.getenv("ADMIN_EMAIL", "admin@gdz.ru").lower().strip()
 DATABASE_URL = os.getenv("DATABASE_URL")
@@ -130,9 +130,11 @@ async def init_db():
                 "CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT, updated_at TIMESTAMP DEFAULT NOW())")
             await conn.execute(
                 "CREATE TABLE IF NOT EXISTS user_achievements (user_id INTEGER REFERENCES users(id) ON DELETE CASCADE, achievement_id TEXT NOT NULL, unlocked_at TIMESTAMP DEFAULT NOW(), PRIMARY KEY (user_id, achievement_id))")
-            # НОВАЯ ТАБЛИЦА ОБЪЯВЛЕНИЙ
             await conn.execute(
-                "CREATE TABLE IF NOT EXISTS announcements (id SERIAL PRIMARY KEY, message TEXT NOT NULL, target_type TEXT DEFAULT 'all', target_users TEXT DEFAULT '', created_at TIMESTAMP DEFAULT NOW())")
+                "CREATE TABLE IF NOT EXISTS announcements (id SERIAL PRIMARY KEY, message TEXT NOT NULL, target_type TEXT DEFAULT 'all', target_users TEXT DEFAULT '', created_at TIMESTAMP DEFAULT NOW(), expires_at TIMESTAMP)")
+
+            # Добавляем колонку expires_at, если таблица уже была создана ранее
+            await conn.execute("ALTER TABLE announcements ADD COLUMN IF NOT EXISTS expires_at TIMESTAMP")
 
             count = await conn.fetchval("SELECT COUNT(*) FROM subjects WHERE user_id IS NULL")
             if count == 0:
@@ -278,7 +280,8 @@ class SettingsSaveRequest(BaseModel): password: str = ""; token: str = ""; setti
 class ScheduleSaveRequest(BaseModel): token: str; schedule: dict
 
 
-class AnnouncementSend(BaseModel): token: str; message: str; target_type: str; target_users: str = ""
+class AnnouncementSend(
+    BaseModel): token: str; message: str; target_type: str; target_users: str = ""; duration_days: int = 3
 
 
 @app.on_event("startup")
@@ -839,7 +842,7 @@ CREATE TABLE IF NOT EXISTS logs (id SERIAL PRIMARY KEY, user_id INTEGER, action 
 CREATE TABLE IF NOT EXISTS templates (name TEXT PRIMARY KEY, content TEXT NOT NULL, updated_at TIMESTAMP DEFAULT NOW());
 CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT, updated_at TIMESTAMP DEFAULT NOW());
 CREATE TABLE IF NOT EXISTS user_achievements (user_id INTEGER REFERENCES users(id) ON DELETE CASCADE, achievement_id TEXT NOT NULL, unlocked_at TIMESTAMP DEFAULT NOW(), PRIMARY KEY (user_id, achievement_id));
-CREATE TABLE IF NOT EXISTS announcements (id SERIAL PRIMARY KEY, message TEXT NOT NULL, target_type TEXT DEFAULT 'all', target_users TEXT DEFAULT '', created_at TIMESTAMP DEFAULT NOW());
+CREATE TABLE IF NOT EXISTS announcements (id SERIAL PRIMARY KEY, message TEXT NOT NULL, target_type TEXT DEFAULT 'all', target_users TEXT DEFAULT '', created_at TIMESTAMP DEFAULT NOW(), expires_at TIMESTAMP);
 """
 
     async with db_pool.acquire() as conn:
@@ -1201,16 +1204,19 @@ class AnnouncementSend(BaseModel):
     token: str;
     message: str;
     target_type: str;
-    target_users: str = ""
+    target_users: str = "";
+    duration_days: int = 3
 
 
 @app.post("/api/admin/announcements/send")
 async def admin_send_announcement(req: AnnouncementSend):
     if not await check_main_admin({"token": req.token}): raise HTTPException(403, "Только главный админ")
     if not req.message.strip(): raise HTTPException(400, "Пустое сообщение")
+    expires_at = datetime.utcnow() + timedelta(days=req.duration_days)
     async with db_pool.acquire() as conn:
-        await conn.execute("INSERT INTO announcements (message, target_type, target_users) VALUES ($1, $2, $3)",
-                           req.message.strip(), req.target_type, req.target_users)
+        await conn.execute(
+            "INSERT INTO announcements (message, target_type, target_users, expires_at) VALUES ($1, $2, $3, $4)",
+            req.message.strip(), req.target_type, req.target_users, expires_at)
     return {"ok": True}
 
 
@@ -1219,7 +1225,7 @@ async def admin_list_announcements(data: dict):
     if not await check_admin(data): raise HTTPException(401, "Нет доступа")
     async with db_pool.acquire() as conn:
         rows = await conn.fetch(
-            "SELECT id, message, target_type, target_users, to_char(created_at, 'DD.MM HH24:MI') AS created FROM announcements ORDER BY id DESC")
+            "SELECT id, message, target_type, target_users, to_char(created_at, 'DD.MM HH24:MI') AS created, to_char(expires_at, 'DD.MM HH24:MI') AS expires FROM announcements ORDER BY id DESC")
     return {"announcements": [dict(r) for r in rows]}
 
 
@@ -1238,7 +1244,7 @@ async def get_active_announcement(token: str = ""):
     if db_pool is None: return {"announcement": None}
     async with db_pool.acquire() as conn:
         row = await conn.fetchrow(
-            "SELECT id, message, target_type, target_users FROM announcements ORDER BY id DESC LIMIT 1")
+            "SELECT id, message, target_type, target_users FROM announcements WHERE expires_at > NOW() ORDER BY id DESC LIMIT 1")
         if not row: return {"announcement": None}
         target_type = row["target_type"]
         target_users = [int(x) for x in row["target_users"].split(",") if x.strip().isdigit()]

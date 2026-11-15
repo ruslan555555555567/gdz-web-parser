@@ -188,16 +188,16 @@
         .ach-title { font-weight: 800; font-size: 14px; }
         .ach-desc { font-size: 11px; color: #94a3b8; line-height: 1.2; }
 
-        /* ─── БАННЕР ОБЪЯВЛЕНИЙ ─── */
+        /* ─── БАННЕР ОБЪЯВЛЕНИЙ (ТЕПЕРЬ ЧАСТЬ САЙТА) ─── */
         .announcement-banner {
-            position: fixed; top: 0; left: 0; right: 0; z-index: 99999;
             background: linear-gradient(135deg, #4299e1, #3182ce);
-            color: white; padding: 12px 16px;
+            color: white; padding: 12px 16px; border-radius: 12px;
             display: flex; justify-content: space-between; align-items: center;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-            transform: translateY(-100%); animation: slideDownAnn 0.5s forwards cubic-bezier(0.25, 0.8, 0.25, 1);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+            margin-bottom: 20px;
+            animation: fadeInAnn 0.5s forwards cubic-bezier(0.25, 0.8, 0.25, 1);
         }
-        @keyframes slideDownAnn { to { transform: translateY(0); } }
+        @keyframes fadeInAnn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
         .ann-content { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 15px; }
         .ann-icon { font-size: 20px; }
         .ann-close { background: rgba(255,255,255,0.2); border: none; color: white; width: 28px; height: 28px; border-radius: 50%; cursor: pointer; font-weight: 900; display: flex; align-items: center; justify-content: center; transition: 0.2s; }
@@ -207,14 +207,6 @@
     <link rel="stylesheet" href="/static/animations.css?v=2">
 </head>
 <body>
-    <div id="globalAnnouncement" class="announcement-banner" style="display:none;">
-        <div class="ann-content">
-            <span class="ann-icon">📢</span>
-            <span id="annText"></span>
-        </div>
-        <button onclick="closeAnnouncement()" class="ann-close">✕</button>
-    </div>
-
     <div id="toastContainer" class="toast-container"></div>
 
     <div class="floating-shapes">
@@ -248,6 +240,15 @@
                 <button id="themeToggleBtn" class="theme-toggle-btn" title="Сменить тему">🌙</button>
             </div>
             <div class="topbar-right" id="topbarRight"></div>
+        </div>
+
+        <!-- БАННЕР ОБЪЯВЛЕНИЙ ТЕПЕРЬ ЗДЕСЬ, ПОД ТОПБАРОМ -->
+        <div id="globalAnnouncement" class="announcement-banner" style="display:none;">
+            <div class="ann-content">
+                <span class="ann-icon">📢</span>
+                <span id="annText"></span>
+            </div>
+            <button onclick="closeAnnouncement()" class="ann-close">✕</button>
         </div>
 
         <div class="welcome-greeting" id="welcomeGreeting"></div>
@@ -613,8 +614,7 @@
             const banner = document.getElementById('globalAnnouncement');
             const id = banner.dataset.id;
             if (id) localStorage.setItem('hidden_ann_' + id, 'true');
-            banner.style.transform = 'translateY(-100%)';
-            setTimeout(() => banner.style.display = 'none', 500);
+            banner.style.display = 'none';
         }
 
         let authMode = 'login'; function switchTab(mode) { authMode = mode; document.querySelectorAll('.auth-tab').forEach(t => t.classList.toggle('active', t.dataset.tab === mode)); $('nameField').style.display = mode === 'register' ? 'block' : 'none'; $('authSubmit').textContent = mode === 'login' ? 'Войти' : 'Создать аккаунт'; } document.querySelectorAll('.auth-tab').forEach(t => t.onclick = () => switchTab(t.dataset.tab));
