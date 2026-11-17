@@ -24,10 +24,11 @@ from aiogram.enums import ParseMode
 
 # --- НАСТРОЙКА ЛОГИРОВАНИЯ ---
 import logging
+
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
-VERSION = "178.0.0"  # Обновил версию, чтобы ты видел, что код применился
+VERSION = "179.0.0"  # Новая версия для проверки деплоя
 ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "")
 ADMIN_EMAIL = os.getenv("ADMIN_EMAIL", "admin@gdz.ru").lower().strip()
 DATABASE_URL = os.getenv("DATABASE_URL")
@@ -39,6 +40,7 @@ RENDER_EXTERNAL_URL = os.getenv("RENDER_EXTERNAL_URL", "")
 db_pool = None
 bot = None
 dp = Dispatcher() if TELEGRAM_BOT_TOKEN else None
+polling_task = None  # Глобальная переменная для хранения задачи поллинга
 
 if TELEGRAM_BOT_TOKEN:
     bot = Bot(token=TELEGRAM_BOT_TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
@@ -357,19 +359,8 @@ if dp is not None:
 
 @app.post("/api/telegram/webhook")
 async def telegram_webhook(request: Request):
-    logger.info("🌐 [WEBHOOK LOG] Получен запрос от Telegram!")
-    if not bot or not dp:
-        logger.error("❌ [WEBHOOK LOG] Бот или диспетчер не инициализированы.")
-        raise HTTPException(500, "Bot not configured")
-
-    try:
-        update_data = await request.json()
-        update = types.Update.model_validate(update_data, context={"bot": bot})
-        await dp.feed_update(bot, update)
-        return {"ok": True}
-    except Exception as e:
-        logger.error(f"❌ [WEBHOOK LOG] Ошибка при обработке: {e}")
-        return {"ok": False}
+    # Оставлен для совместимости, но не используется
+    return {"ok": True}
 
 
 @app.get("/api/telegram/link-code")
@@ -388,14 +379,25 @@ async def get_telegram_link_code(token: str = ""):
 
 @app.on_event("startup")
 async def startup():
+    global polling_task
     await init_db()
-    if bot and RENDER_EXTERNAL_URL:
-        webhook_url = f"{RENDER_EXTERNAL_URL}/api/telegram/webhook"
+    if bot and dp:
         try:
-            await bot.set_webhook(url=webhook_url, drop_pending_updates=True)
-            logger.info(f"✅ Webhook автоматически установлен: {webhook_url}")
+            await bot.delete_webhook(drop_pending_updates=True)
+            logger.info("✅ Вебхук удален. Бот запущен в режиме поллинга!")
+
+            # Сохраняем задачу в глобальную переменную, чтобы она не удалилась
+            polling_task = asyncio.create_task(dp.start_polling(bot))
         except Exception as e:
-            logger.error(f"❌ Ошибка автоустановки Webhook: {e}")
+            logger.error(f"❌ Ошибка запуска бота: {e}")
+
+
+@app.on_event("shutdown")
+async def shutdown():
+    global polling_task
+    if polling_task:
+        polling_task.cancel()
+        logger.info("🛑 Поллинг остановлен.")
 
 
 @app.get("/sw.js")
