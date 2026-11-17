@@ -22,7 +22,12 @@ from aiogram import Bot, Dispatcher, types
 from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
 
-VERSION = "178.0.0"
+# --- НАСТРОЙКА ЛОГИРОВАНИЯ ---
+import logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
+
+VERSION = "178.0.0"  # Обновил версию, чтобы ты видел, что код применился
 ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "")
 ADMIN_EMAIL = os.getenv("ADMIN_EMAIL", "admin@gdz.ru").lower().strip()
 DATABASE_URL = os.getenv("DATABASE_URL")
@@ -168,7 +173,7 @@ async def init_db():
                         s["name"], s["url"], s["url_alt"], s["type"], s["group_name"], s["sort_order"], s["max_number"],
                         s["note"], s["default_year"], s["default_year_alt"])
     except Exception as e:
-        print(f"[main] Ошибка PostgreSQL: {e}")
+        logger.error(f"[main] Ошибка PostgreSQL: {e}")
         db_pool = None
 
 
@@ -180,7 +185,7 @@ async def log_action(user_id, action: str, details: str = "", ip: str = ""):
                                action, details[:500], ip[:50])
             await conn.execute("DELETE FROM logs WHERE id NOT IN (SELECT id FROM logs ORDER BY id DESC LIMIT 5000)")
     except Exception as e:
-        print(f"[log] {e}")
+        logger.error(f"[log] {e}")
 
 
 def hash_password(password: str) -> str:
@@ -255,9 +260,9 @@ templates = Jinja2Templates(directory="templates")
 if dp is not None:
     @dp.message()
     async def handle_telegram_message(message: types.Message):
-        print(f"📥 [BOT LOG] Получено сообщение от {message.from_user.id}: {message.text}")
+        logger.info(f"📥 [BOT LOG] Получено сообщение от {message.from_user.id}: {message.text}")
         if not db_pool:
-            print("❌ [BOT LOG] Ошибка: БД не подключена (db_pool is None)")
+            logger.error("❌ [BOT LOG] Ошибка: БД не подключена (db_pool is None)")
             return
 
         if message.text and message.text.startswith('/start '):
@@ -336,7 +341,7 @@ if dp is not None:
                     await message.answer_photo(photo=types.URLInputFile(img_url, filename=f"sol_{i}.jpg"),
                                                caption=f"📚 {subject} · № {number}" if i == 0 else "")
                 except Exception as e:
-                    print("Ошибка отправки фото:", e)
+                    logger.error(f"Ошибка отправки фото: {e}")
 
         ai_solution = next(
             (sol for sol in r['solutions'] if sol.get('edition', '').startswith('ИИ') and sol.get('text')), None)
@@ -352,9 +357,9 @@ if dp is not None:
 
 @app.post("/api/telegram/webhook")
 async def telegram_webhook(request: Request):
-    print("🌐 [WEBHOOK LOG] Получен запрос от Telegram!")
+    logger.info("🌐 [WEBHOOK LOG] Получен запрос от Telegram!")
     if not bot or not dp:
-        print("❌ [WEBHOOK LOG] Бот или диспетчер не инициализированы.")
+        logger.error("❌ [WEBHOOK LOG] Бот или диспетчер не инициализированы.")
         raise HTTPException(500, "Bot not configured")
 
     try:
@@ -363,7 +368,7 @@ async def telegram_webhook(request: Request):
         await dp.feed_update(bot, update)
         return {"ok": True}
     except Exception as e:
-        print(f"❌ [WEBHOOK LOG] Ошибка при обработке: {e}")
+        logger.error(f"❌ [WEBHOOK LOG] Ошибка при обработке: {e}")
         return {"ok": False}
 
 
@@ -388,9 +393,9 @@ async def startup():
         webhook_url = f"{RENDER_EXTERNAL_URL}/api/telegram/webhook"
         try:
             await bot.set_webhook(url=webhook_url, drop_pending_updates=True)
-            print(f"✅ Webhook автоматически установлен: {webhook_url}")
+            logger.info(f"✅ Webhook автоматически установлен: {webhook_url}")
         except Exception as e:
-            print(f"❌ Ошибка автоустановки Webhook: {e}")
+            logger.error(f"❌ Ошибка автоустановки Webhook: {e}")
 
 
 @app.get("/sw.js")
@@ -486,7 +491,7 @@ async def render_page(request: Request, name: str, context: dict):
             tmpl = templates.env.from_string(html)
             return HTMLResponse(tmpl.render(request=request, **context))
         except Exception as e:
-            print(f"[template] ошибка рендера {name}: {e}")
+            logger.error(f"[template] ошибка рендера {name}: {e}")
     return templates.TemplateResponse(request, name, context)
 
 
@@ -862,7 +867,7 @@ async def feedback(req: FeedbackRequest, request: Request):
                     datetime.now().strftime("%d.%m.%Y %H:%M"), req.message.strip(), req.contact.strip(), VERSION,
                     req.image, req.subject.strip(), req.task_number.strip(), req.context_type.strip())
         except Exception as e:
-            print(f"[main] Ошибка feedback: {e}")
+            logger.error(f"[main] Ошибка feedback: {e}")
     details = req.message.strip()[:200]
     if req.subject or req.task_number: details = f"[{req.subject} №{req.task_number}] {details}"
     await log_action(user_id, "feedback", details, ip)
