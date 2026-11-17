@@ -22,7 +22,7 @@ from aiogram import Bot, Dispatcher, types
 from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
 
-VERSION = "172.0.0"
+VERSION = "173.0.0"
 ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "")
 ADMIN_EMAIL = os.getenv("ADMIN_EMAIL", "admin@gdz.ru").lower().strip()
 DATABASE_URL = os.getenv("DATABASE_URL")
@@ -30,7 +30,7 @@ DATABASE_URL = os.getenv("DATABASE_URL")
 # --- НАСТРОЙКИ БОТА ---
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 TELEGRAM_WEBHOOK_SECRET = os.getenv("TELEGRAM_WEBHOOK_SECRET", "gdz_secret")
-RENDER_EXTERNAL_URL = os.getenv("RENDER_EXTERNAL_URL", "https://твой-сайт.onrender.com")
+RENDER_EXTERNAL_URL = os.getenv("RENDER_EXTERNAL_URL", "")
 
 db_pool = None
 bot = None
@@ -118,8 +118,6 @@ async def init_db():
             await conn.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS subject_years TEXT DEFAULT '{}'")
             await conn.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS hide_ai_subjects TEXT DEFAULT '{}'")
             await conn.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS hide_images_subjects TEXT DEFAULT '{}'")
-
-            # --- КОЛОНКИ ДЛЯ TELEGRAM ---
             await conn.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS telegram_chat_id BIGINT")
             await conn.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS telegram_link_code TEXT")
 
@@ -258,7 +256,10 @@ templates = Jinja2Templates(directory="templates")
 if dp is not None:
     @dp.message()
     async def handle_telegram_message(message: types.Message):
-        if not db_pool: return
+        print(f"📥 [BOT LOG] Получено сообщение от {message.from_user.id}: {message.text}")
+        if not db_pool:
+            print("❌ [BOT LOG] Ошибка: БД не подключена (db_pool is None)")
+            return
 
         if message.text and message.text.startswith('/start '):
             code = message.text.split(' ', 1)[1].strip().upper()
@@ -337,18 +338,13 @@ if dp is not None:
                                                caption=f"📚 {subject} · № {number}" if i == 0 else "")
                 except Exception as e:
                     print("Ошибка отправки фото:", e)
-                    await message.answer(f"⚠️ Не удалось загрузить картинку {i + 1}.")
 
         ai_solution = next(
             (sol for sol in r['solutions'] if sol.get('edition', '').startswith('ИИ') and sol.get('text')), None)
         if ai_solution:
             txt = ai_solution['text']
-            if len(txt) > 4000:
-                txt = txt[:4000] + "\n\n... (текст обрезан)"
+            if len(txt) > 4000: txt = txt[:4000] + "\n\n... (текст обрезан)"
             await message.answer(f"🤖 <b>ИИ-решение:</b>\n\n{txt}")
-
-        if not img_solutions and not ai_solution:
-            await message.answer(f"⚠️ Найдено решение, но текста и картинок нет.")
 
 
 # =========================================================================
@@ -357,14 +353,24 @@ if dp is not None:
 
 @app.post("/api/telegram/webhook")
 async def telegram_webhook(request: Request):
-    if not bot or not dp: raise HTTPException(500, "Bot not configured")
+    print("🌐 [WEBHOOK LOG] Получен запрос от Telegram!")
+    if not bot or not dp:
+        print("❌ [WEBHOOK LOG] Бот или диспетчер не инициализированы.")
+        raise HTTPException(500, "Bot not configured")
+
     secret = request.headers.get("X-Telegram-Bot-Api-Secret-Token", "")
     if not secrets.compare_digest(secret, TELEGRAM_WEBHOOK_SECRET):
+        print(f"❌ [WEBHOOK LOG] Неверный секретный токен! Получено: '{secret}', Ожидалось: '{TELEGRAM_WEBHOOK_SECRET}'")
         raise HTTPException(403, "Forbidden")
-    update_data = await request.json()
-    update = types.Update.model_validate(update_data, context={"bot": bot})
-    await dp.feed_update(bot, update)
-    return {"ok": True}
+
+    try:
+        update_data = await request.json()
+        update = types.Update.model_validate(update_data, context={"bot": bot})
+        await dp.feed_update(bot, update)
+        return {"ok": True}
+    except Exception as e:
+        print(f"❌ [WEBHOOK LOG] Ошибка при обработке: {e}")
+        return {"ok": False}
 
 
 @app.get("/api/telegram/link-code")
@@ -384,13 +390,13 @@ async def get_telegram_link_code(token: str = ""):
 @app.on_event("startup")
 async def startup():
     await init_db()
-    if bot:
+    if bot and RENDER_EXTERNAL_URL:
         webhook_url = f"{RENDER_EXTERNAL_URL}/api/telegram/webhook"
         try:
             await bot.set_webhook(url=webhook_url, secret_token=TELEGRAM_WEBHOOK_SECRET)
-            print(f"✅ Webhook установлен: {webhook_url}")
+            print(f"✅ Webhook автоматически установлен: {webhook_url}")
         except Exception as e:
-            print(f"❌ Ошибка установки Webhook: {e}")
+            print(f"❌ Ошибка автоустановки Webhook: {e}")
 
 
 @app.get("/sw.js")
