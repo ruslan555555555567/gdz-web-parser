@@ -22,7 +22,7 @@ from aiogram import Bot, Dispatcher, types
 from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
 
-VERSION = "173.0.0"
+VERSION = "174.0.0"
 ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "")
 ADMIN_EMAIL = os.getenv("ADMIN_EMAIL", "admin@gdz.ru").lower().strip()
 DATABASE_URL = os.getenv("DATABASE_URL")
@@ -30,6 +30,7 @@ DATABASE_URL = os.getenv("DATABASE_URL")
 # --- НАСТРОЙКИ БОТА ---
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 TELEGRAM_WEBHOOK_SECRET = os.getenv("TELEGRAM_WEBHOOK_SECRET", "gdz_secret")
+TELEGRAM_WEBHOOK_URL = os.getenv("TELEGRAM_WEBHOOK_URL", "")  # ⬅️ НОВАЯ СТРОКА ДЛЯ CLOUDFLARE
 RENDER_EXTERNAL_URL = os.getenv("RENDER_EXTERNAL_URL", "")
 
 db_pool = None
@@ -390,13 +391,16 @@ async def get_telegram_link_code(token: str = ""):
 @app.on_event("startup")
 async def startup():
     await init_db()
-    if bot and RENDER_EXTERNAL_URL:
-        webhook_url = f"{RENDER_EXTERNAL_URL}/api/telegram/webhook"
+    # ⬇️ ОБНОВЛЕННАЯ ЛОГИКА ЗАПУСКА (ПРИОРИТЕТ У CLOUDFLARE)
+    webhook_url = TELEGRAM_WEBHOOK_URL or (
+        f"{RENDER_EXTERNAL_URL}/api/telegram/webhook" if RENDER_EXTERNAL_URL else ""
+    )
+    if bot and webhook_url:
         try:
             await bot.set_webhook(url=webhook_url, secret_token=TELEGRAM_WEBHOOK_SECRET)
-            print(f"✅ Webhook автоматически установлен: {webhook_url}")
+            print(f"✅ Webhook установлен: {webhook_url}")
         except Exception as e:
-            print(f"❌ Ошибка автоустановки Webhook: {e}")
+            print(f"❌ Ошибка установки Webhook: {e}")
 
 
 @app.get("/sw.js")
