@@ -22,7 +22,7 @@ from aiogram import Bot, Dispatcher, types
 from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
 
-VERSION = "176.0.0"
+VERSION = "177.0.0"
 ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "")
 ADMIN_EMAIL = os.getenv("ADMIN_EMAIL", "admin@gdz.ru").lower().strip()
 DATABASE_URL = os.getenv("DATABASE_URL")
@@ -352,8 +352,19 @@ if dp is not None:
 
 @app.post("/api/telegram/webhook")
 async def telegram_webhook(request: Request):
-    # Этот эндпоинт больше не используется для работы, но оставлен на всякий случай
-    return {"ok": True}
+    print("🌐 [WEBHOOK LOG] Получен запрос от Telegram!")
+    if not bot or not dp:
+        print("❌ [WEBHOOK LOG] Бот или диспетчер не инициализированы.")
+        raise HTTPException(500, "Bot not configured")
+
+    try:
+        update_data = await request.json()
+        update = types.Update.model_validate(update_data, context={"bot": bot})
+        await dp.feed_update(bot, update)
+        return {"ok": True}
+    except Exception as e:
+        print(f"❌ [WEBHOOK LOG] Ошибка при обработке: {e}")
+        return {"ok": False}
 
 
 @app.get("/api/telegram/link-code")
@@ -373,17 +384,13 @@ async def get_telegram_link_code(token: str = ""):
 @app.on_event("startup")
 async def startup():
     await init_db()
-    # ⬇️ ТЕПЕРЬ БОТ РАБОТАЕТ В РЕЖИМЕ ПОЛЛИНГА (БЕЗ ВЕБХУКОВ)
-    if bot and dp:
+    if bot and RENDER_EXTERNAL_URL:
+        webhook_url = f"{RENDER_EXTERNAL_URL}/api/telegram/webhook"
         try:
-            # Удаляем старый вебхук, чтобы Telegram не мешал поллингу
-            await bot.delete_webhook(drop_pending_updates=True)
-            print("✅ Вебхук удален. Бот запущен в режиме поллинга!")
-
-            # Запускаем фоновую задачу для бота
-            asyncio.create_task(dp.start_polling(bot))
+            await bot.set_webhook(url=webhook_url, drop_pending_updates=True)
+            print(f"✅ Webhook автоматически установлен: {webhook_url}")
         except Exception as e:
-            print(f"❌ Ошибка запуска бота: {e}")
+            print(f"❌ Ошибка автоустановки Webhook: {e}")
 
 
 @app.get("/sw.js")
