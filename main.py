@@ -22,15 +22,13 @@ from aiogram import Bot, Dispatcher, types
 from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
 
-VERSION = "175.0.0"
+VERSION = "176.0.0"
 ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "")
 ADMIN_EMAIL = os.getenv("ADMIN_EMAIL", "admin@gdz.ru").lower().strip()
 DATABASE_URL = os.getenv("DATABASE_URL")
 
 # --- НАСТРОЙКИ БОТА ---
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
-TELEGRAM_WEBHOOK_SECRET = os.getenv("TELEGRAM_WEBHOOK_SECRET", "gdz_secret")
-TELEGRAM_WEBHOOK_URL = os.getenv("TELEGRAM_WEBHOOK_URL", "")  # ⬅️ НОВАЯ СТРОКА ДЛЯ CLOUDFLARE
 RENDER_EXTERNAL_URL = os.getenv("RENDER_EXTERNAL_URL", "")
 
 db_pool = None
@@ -354,24 +352,8 @@ if dp is not None:
 
 @app.post("/api/telegram/webhook")
 async def telegram_webhook(request: Request):
-    print("🌐 [WEBHOOK LOG] Получен запрос от Telegram!")
-    if not bot or not dp:
-        print("❌ [WEBHOOK LOG] Бот или диспетчер не инициализированы.")
-        raise HTTPException(500, "Bot not configured")
-
-    secret = request.headers.get("X-Telegram-Bot-Api-Secret-Token", "")
-    if not secrets.compare_digest(secret, TELEGRAM_WEBHOOK_SECRET):
-        print(f"❌ [WEBHOOK LOG] Неверный секретный токен! Получено: '{secret}', Ожидалось: '{TELEGRAM_WEBHOOK_SECRET}'")
-        raise HTTPException(403, "Forbidden")
-
-    try:
-        update_data = await request.json()
-        update = types.Update.model_validate(update_data, context={"bot": bot})
-        await dp.feed_update(bot, update)
-        return {"ok": True}
-    except Exception as e:
-        print(f"❌ [WEBHOOK LOG] Ошибка при обработке: {e}")
-        return {"ok": False}
+    # Этот эндпоинт больше не используется для работы, но оставлен на всякий случай
+    return {"ok": True}
 
 
 @app.get("/api/telegram/link-code")
@@ -391,16 +373,17 @@ async def get_telegram_link_code(token: str = ""):
 @app.on_event("startup")
 async def startup():
     await init_db()
-    # ⬇️ ОБНОВЛЕННАЯ ЛОГИКА ЗАПУСКА (ПРИОРИТЕТ У CLOUDFLARE)
-    webhook_url = TELEGRAM_WEBHOOK_URL or (
-        f"{RENDER_EXTERNAL_URL}/api/telegram/webhook" if RENDER_EXTERNAL_URL else ""
-    )
-    if bot and webhook_url:
+    # ⬇️ ТЕПЕРЬ БОТ РАБОТАЕТ В РЕЖИМЕ ПОЛЛИНГА (БЕЗ ВЕБХУКОВ)
+    if bot and dp:
         try:
-            await bot.set_webhook(url=webhook_url, secret_token=TELEGRAM_WEBHOOK_SECRET)
-            print(f"✅ Webhook установлен: {webhook_url}")
+            # Удаляем старый вебхук, чтобы Telegram не мешал поллингу
+            await bot.delete_webhook(drop_pending_updates=True)
+            print("✅ Вебхук удален. Бот запущен в режиме поллинга!")
+
+            # Запускаем фоновую задачу для бота
+            asyncio.create_task(dp.start_polling(bot))
         except Exception as e:
-            print(f"❌ Ошибка установки Webhook: {e}")
+            print(f"❌ Ошибка запуска бота: {e}")
 
 
 @app.get("/sw.js")
